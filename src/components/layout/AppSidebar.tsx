@@ -7,15 +7,19 @@ import {
   User,
   Settings,
   Frame,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
-const items = [
+const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Orçamentos", url: "/orcamentos", icon: FileText },
   { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
   { title: "Produtos", url: "/produtos", icon: Package },
 ];
+
+const adminItems = [{ title: "Revendedores", url: "/revendedores", icon: Users }];
 
 const bottomItems = [
   { title: "Conta", url: "/conta", icon: User },
@@ -24,6 +28,8 @@ const bottomItems = [
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const { role, profile } = useAuth();
+  const items = role === "admin" ? [...baseItems, ...adminItems] : baseItems;
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
@@ -90,13 +96,15 @@ export function AppSidebar() {
 
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 rounded-md bg-sidebar-accent/50 p-3">
-          <div className="h-9 w-9 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground">
-            RV
+          <div className="h-9 w-9 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
+            {(profile?.full_name || profile?.username || "U").slice(0, 2)}
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold">Revendedor</div>
-            <div className="text-[11px] text-sidebar-foreground/60">
-              rev@totalmaxx.com
+          <div className="leading-tight min-w-0">
+            <div className="text-sm font-semibold truncate">
+              {profile?.full_name || profile?.username || "Usuário"}
+            </div>
+            <div className="text-[11px] text-sidebar-foreground/60 uppercase tracking-wider">
+              {role || "—"}
             </div>
           </div>
         </div>

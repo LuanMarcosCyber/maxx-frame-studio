@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { signIn, session, loading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,8 +25,9 @@ function Login() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!username.trim() || !password) return;
     setSubmitting(true);
-    const { error } = await signIn(email.trim(), password);
+    const { error } = await signIn(username, password);
     setSubmitting(false);
     if (error) toast.error(error);
     else navigate({ to: "/", replace: true });
@@ -69,20 +70,23 @@ function Login() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Acesse sua conta</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Entre com o e-mail e senha fornecidos pelo administrador.
+            Entre com o usuário e senha fornecidos pelo administrador.
           </p>
 
           <form onSubmit={onSubmit} className="space-y-4 mt-8">
             <div className="space-y-1.5">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="username">Usuário</Label>
               <Input
-                id="email"
-                type="email"
-                autoComplete="email"
+                id="username"
+                type="text"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@empresa.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="seu.usuario"
               />
             </div>
             <div className="space-y-1.5">

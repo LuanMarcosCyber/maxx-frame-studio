@@ -3,14 +3,22 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "admin" | "revendedor";
+export const EMAIL_DOMAIN = "totalmaxx.local";
+export const usernameToEmail = (username: string) =>
+  `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
+
+interface Profile {
+  full_name: string | null;
+  username: string | null;
+}
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
-  profile: { full_name: string | null } | null;
+  profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (username: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -19,14 +27,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string | null } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       if (s?.user) {
-        // Defer DB calls to avoid deadlocks
         setTimeout(() => loadUserData(s.user.id), 0);
       } else {
         setRole(null);
@@ -46,15 +53,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserData = async (userId: string) => {
     const [{ data: roleRow }, { data: profileRow }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("full_name, username").eq("id", userId).maybeSingle(),
     ]);
     setRole((roleRow?.role as AppRole) ?? "revendedor");
-    setProfile(profileRow ?? { full_name: null });
+    setProfile(profileRow ?? { full_name: null, username: null });
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
+    const email = usernameToEmail(username);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    if (error) {
+      // Mask technical email-related errors with a user-friendly message
+      return { error: "Usuário ou senha inválidos." };
+    }
+    return { error: null };
   };
 
   const signOut = async () => {
