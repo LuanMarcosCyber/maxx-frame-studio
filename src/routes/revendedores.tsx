@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, KeyRound, ShieldCheck, User as UserIcon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,17 +53,15 @@ function RevendedoresPage() {
 
   if (loading || !role) {
     return (
-      <AppShell>
-        <AppHeader title="Revendedores" subtitle="Gerenciamento de usuários" />
-        <div className="p-8 text-sm text-muted-foreground">Carregando...</div>
+      <AppShell title="Revendedores" subtitle="Gerenciamento de usuários">
+        <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
   }
   if (role !== "admin") return null;
 
   return (
-    <AppShell>
-      <AppHeader title="Revendedores" subtitle="Gerenciar usuários do sistema" />
+    <AppShell title="Revendedores" subtitle="Gerenciar usuários do sistema">
       <Content />
     </AppShell>
   );
