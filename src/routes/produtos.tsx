@@ -1,26 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Search, Plus, MoreHorizontal } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({ meta: [{ title: "Produtos — Total Maxx ERP" }] }),
   component: Produtos,
 });
 
-const rows = [
-  ["MOL-001", "Moldura Clássica Dourada 30mm", "R$ 48,00", "35%", "5%"],
-  ["MOL-014", "Moldura Lisa Preta 20mm", "R$ 22,50", "40%", "4%"],
-  ["FOA-003", "Foam Branco 5mm", "R$ 12,80", "30%", "3%"],
-  ["PSP-008", "Paspatur Creme 1.5mm", "R$ 18,00", "35%", "6%"],
-  ["VID-002", "Vidro Antirreflexo 2mm", "R$ 65,00", "28%", "8%"],
-  ["DEC-011", "Cantoneira Decorativa Bronze", "R$ 9,40", "45%", "2%"],
-];
+const fmtMoney = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtPct = (n: number) => `${Number(n).toLocaleString("pt-BR")}%`;
 
 function Produtos() {
+  const { session } = useAuth();
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["products"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, code, description, value_per_meter, profit_margin, waste_percentage")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   return (
     <AppShell
       title="Produtos"
@@ -51,20 +63,40 @@ function Produtos() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {rows.map(([cod, desc, val, mar, per]) => (
-                  <tr key={cod} className="hover:bg-muted/40 transition">
-                    <td className="py-3.5 px-6 font-mono font-semibold">{cod}</td>
-                    <td className="py-3.5 px-3">{desc}</td>
-                    <td className="py-3.5 px-3 font-semibold">{val}</td>
-                    <td className="py-3.5 px-3 text-muted-foreground">{mar}</td>
-                    <td className="py-3.5 px-3 text-muted-foreground">{per}</td>
-                    <td className="py-3.5 px-6 text-right">
-                      <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
-                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                      </button>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      Carregando...
                     </td>
                   </tr>
-                ))}
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                      Nenhum produto cadastrado.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((p) => (
+                    <tr key={p.id} className="hover:bg-muted/40 transition">
+                      <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
+                      <td className="py-3.5 px-3">{p.description}</td>
+                      <td className="py-3.5 px-3 font-semibold">
+                        {fmtMoney(Number(p.value_per_meter))}
+                      </td>
+                      <td className="py-3.5 px-3 text-muted-foreground">
+                        {fmtPct(Number(p.profit_margin))}
+                      </td>
+                      <td className="py-3.5 px-3 text-muted-foreground">
+                        {fmtPct(Number(p.waste_percentage))}
+                      </td>
+                      <td className="py-3.5 px-6 text-right">
+                        <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
+                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

@@ -1,22 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MoreHorizontal } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Total Maxx ERP" }] }),
   component: Pedidos,
 });
-
-const rows = [
-  ["#876", "Carlos Andrade", "12/05/2026", "R$ 3.890,00", "Em produção"],
-  ["#875", "Atelier Norte", "10/05/2026", "R$ 2.110,00", "Entregue"],
-  ["#874", "Maria Silva", "08/05/2026", "R$ 1.240,00", "Em produção"],
-  ["#873", "Loja Quadros RJ", "06/05/2026", "R$ 760,00", "Aguardando"],
-  ["#872", "Galeria Vértice", "04/05/2026", "R$ 540,00", "Entregue"],
-];
 
 const statusStyle: Record<string, string> = {
   "Em produção": "bg-blue-100 text-blue-700",
@@ -24,7 +19,25 @@ const statusStyle: Record<string, string> = {
   Aguardando: "bg-amber-100 text-amber-700",
 };
 
+const fmtMoney = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+
 function Pedidos() {
+  const { session } = useAuth();
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["orders"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, number, client_name, total_value, status, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   return (
     <AppShell title="Pedidos" subtitle="Acompanhe o status dos seus pedidos">
       <Card className="p-6">
@@ -51,26 +64,46 @@ function Pedidos() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map(([n, cli, dt, val, st]) => (
-                <tr key={n} className="hover:bg-muted/40 transition">
-                  <td className="py-3.5 px-6 font-mono font-semibold">{n}</td>
-                  <td className="py-3.5 px-3">{cli}</td>
-                  <td className="py-3.5 px-3 text-muted-foreground">{dt}</td>
-                  <td className="py-3.5 px-3 font-semibold">{val}</td>
-                  <td className="py-3.5 px-3">
-                    <span
-                      className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusStyle[st]}`}
-                    >
-                      {st}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-6 text-right">
-                    <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    Carregando...
                   </td>
                 </tr>
-              ))}
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    Nenhum pedido cadastrado.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((o) => (
+                  <tr key={o.id} className="hover:bg-muted/40 transition">
+                    <td className="py-3.5 px-6 font-mono font-semibold">{o.number}</td>
+                    <td className="py-3.5 px-3">{o.client_name}</td>
+                    <td className="py-3.5 px-3 text-muted-foreground">
+                      {fmtDate(o.created_at)}
+                    </td>
+                    <td className="py-3.5 px-3 font-semibold">
+                      {fmtMoney(Number(o.total_value))}
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <span
+                        className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                          statusStyle[o.status] ?? "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {o.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-6 text-right">
+                      <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

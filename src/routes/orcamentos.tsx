@@ -1,25 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MoreHorizontal } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/orcamentos")({
-  head: () => ({
-    meta: [{ title: "Orçamentos — Total Maxx ERP" }],
-  }),
+  head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
   component: Orcamentos,
 });
-
-const rows = [
-  ["#1042", "Maria Silva", "12/05/2026", "R$ 1.240,00", "Aprovado"],
-  ["#1041", "Loja Quadros RJ", "11/05/2026", "R$ 760,00", "Pendente"],
-  ["#1040", "Atelier Norte", "10/05/2026", "R$ 2.110,00", "Aprovado"],
-  ["#1039", "Carlos Andrade", "09/05/2026", "R$ 3.890,00", "Recusado"],
-  ["#1038", "Galeria Vértice", "08/05/2026", "R$ 540,00", "Pendente"],
-  ["#1037", "Studio Foto Lar", "07/05/2026", "R$ 1.980,00", "Aprovado"],
-];
 
 const statusStyle: Record<string, string> = {
   Aprovado: "bg-emerald-100 text-emerald-700",
@@ -27,12 +19,27 @@ const statusStyle: Record<string, string> = {
   Recusado: "bg-red-100 text-red-700",
 };
 
+const fmtMoney = (n: number) =>
+  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+
 function Orcamentos() {
+  const { session } = useAuth();
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["budgets"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("budgets")
+        .select("id, number, client_name, total_value, status, created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   return (
-    <AppShell
-      title="Orçamentos"
-      subtitle="Gerencie todos os orçamentos da sua revenda"
-    >
+    <AppShell title="Orçamentos" subtitle="Gerencie todos os orçamentos da sua revenda">
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
           <div className="relative w-full sm:max-w-sm">
@@ -57,28 +64,48 @@ function Orcamentos() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map(([n, cli, dt, val, st]) => (
-                <tr key={n} className="hover:bg-muted/40 transition">
-                  <td className="py-3.5 px-6 font-mono font-semibold text-foreground">
-                    {n}
-                  </td>
-                  <td className="py-3.5 px-3">{cli}</td>
-                  <td className="py-3.5 px-3 text-muted-foreground">{dt}</td>
-                  <td className="py-3.5 px-3 font-semibold">{val}</td>
-                  <td className="py-3.5 px-3">
-                    <span
-                      className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusStyle[st]}`}
-                    >
-                      {st}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-6 text-right">
-                    <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    Carregando...
                   </td>
                 </tr>
-              ))}
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                    Nenhum orçamento cadastrado.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((b) => (
+                  <tr key={b.id} className="hover:bg-muted/40 transition">
+                    <td className="py-3.5 px-6 font-mono font-semibold text-foreground">
+                      {b.number}
+                    </td>
+                    <td className="py-3.5 px-3">{b.client_name}</td>
+                    <td className="py-3.5 px-3 text-muted-foreground">
+                      {fmtDate(b.created_at)}
+                    </td>
+                    <td className="py-3.5 px-3 font-semibold">
+                      {fmtMoney(Number(b.total_value))}
+                    </td>
+                    <td className="py-3.5 px-3">
+                      <span
+                        className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                          statusStyle[b.status] ?? "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {b.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-6 text-right">
+                      <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
