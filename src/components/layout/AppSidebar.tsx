@@ -6,9 +6,9 @@ import {
   Package,
   User,
   Settings,
-  Frame,
   Users,
 } from "lucide-react";
+import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -36,16 +36,12 @@ export function AppSidebar() {
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       {/* Logo */}
-      <div className="h-20 flex items-center gap-3 px-6 border-b border-sidebar-border">
-        <div className="h-10 w-10 rounded-lg bg-gradient-brand grid place-items-center shadow-brand">
-          <Frame className="h-5 w-5 text-brand-foreground" />
-        </div>
-        <div className="leading-tight">
-          <div className="text-base font-bold tracking-tight">Total Maxx</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/60">
-            ERP Revendedor
-          </div>
-        </div>
+      <div className="min-h-32 flex items-center justify-center px-6 py-5 bg-white border-b border-sidebar-border">
+        <img
+          src={logoTotalMaxx}
+          alt="Total Maxx Import & Export"
+          className="max-h-24 w-auto object-contain"
+        />
       </div>
 
       <nav className="flex-1 px-3 py-6 space-y-1">
