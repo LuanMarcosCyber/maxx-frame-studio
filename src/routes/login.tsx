@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Frame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — Total Maxx ERP" }] }),
@@ -35,38 +35,35 @@ function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-brand text-brand-foreground">
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-lg bg-brand-foreground/10 border border-brand-foreground/20 grid place-items-center">
-            <Frame className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="text-lg font-bold">Total Maxx</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] opacity-70">
-              ERP Revendedor
-            </div>
-          </div>
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-white border-r border-border">
+        <div className="flex items-center justify-center">
+          <img
+            src={logoTotalMaxx}
+            alt="Total Maxx Import & Export"
+            className="max-h-20 w-auto object-contain"
+          />
         </div>
         <div>
-          <h2 className="text-4xl font-bold leading-tight">
+          <h2 className="text-4xl font-bold leading-tight text-foreground">
             Orçamentos de molduras com precisão profissional.
           </h2>
-          <p className="mt-4 text-brand-foreground/80 max-w-md">
+          <p className="mt-4 text-muted-foreground max-w-md">
             Gerencie molduras, foam, paspatur, vidro e componentes em um só lugar.
           </p>
         </div>
-        <div className="text-xs text-brand-foreground/60">
-          © {new Date().getFullYear()} Total Maxx
+        <div className="text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Total Maxx Import & Export
         </div>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="h-10 w-10 rounded-lg bg-gradient-brand grid place-items-center shadow-brand">
-              <Frame className="h-5 w-5 text-brand-foreground" />
-            </div>
-            <div className="font-bold">Total Maxx</div>
+          <div className="lg:hidden flex items-center justify-center mb-8">
+            <img
+              src={logoTotalMaxx}
+              alt="Total Maxx Import & Export"
+              className="max-h-16 w-auto object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Acesse sua conta</h1>
           <p className="text-sm text-muted-foreground mt-1">
