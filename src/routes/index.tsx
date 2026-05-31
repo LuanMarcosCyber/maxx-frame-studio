@@ -228,8 +228,8 @@ function Dashboard() {
             {quickActions.map((a) => (
               <Link key={a.to} to={a.to} className="group cursor-pointer">
                 <Card className="p-6 h-full border-border/70 hover:border-primary/50 hover:shadow-elegant transition-all hover:-translate-y-0.5">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-brand-soft grid place-items-center mb-5 group-hover:scale-105 transition-transform">
-                    <a.icon className="h-7 w-7 text-primary" />
+                  <div className="h-14 w-14 rounded-xl bg-gradient-brand grid place-items-center mb-5 shadow-brand group-hover:scale-105 transition-transform">
+                    <a.icon className="h-7 w-7 text-brand-foreground" />
                   </div>
                   <div className="text-lg font-semibold text-foreground">
                     {a.title}
