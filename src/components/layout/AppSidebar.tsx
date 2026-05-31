@@ -34,18 +34,24 @@ export function AppSidebar() {
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
+    <aside
+      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)]"
+      style={{ backgroundColor: "#F8F9FB" }}
+    >
       {/* Logo */}
-      <div className="min-h-32 flex items-center justify-center px-6 py-5 bg-white border-b border-sidebar-border">
+      <div
+        className="flex items-center justify-center px-6 py-6 bg-white border-b border-border"
+        style={{ minHeight: "160px" }}
+      >
         <img
           src={logoTotalMaxx}
           alt="Total Maxx Import & Export"
-          className="max-h-24 w-auto object-contain"
+          className="max-h-32 w-auto object-contain"
         />
       </div>
 
       <nav className="flex-1 px-3 py-6 space-y-1">
-        <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+        <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Principal
         </div>
         {items.map((item) => {
@@ -57,8 +63,8 @@ export function AppSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
                 active
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-brand"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  ? "bg-gradient-brand text-brand-foreground shadow-brand"
+                  : "text-foreground/75 hover:bg-accent hover:text-foreground",
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -67,7 +73,7 @@ export function AppSidebar() {
           );
         })}
 
-        <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+        <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Sistema
         </div>
         {bottomItems.map((item) => {
@@ -79,8 +85,8 @@ export function AppSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
                 active
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-brand"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  ? "bg-gradient-brand text-brand-foreground shadow-brand"
+                  : "text-foreground/75 hover:bg-accent hover:text-foreground",
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -90,16 +96,16 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 rounded-md bg-sidebar-accent/50 p-3">
+      <div className="p-4 border-t border-border">
+        <div className="flex items-center gap-3 rounded-md bg-white border border-border p-3">
           <div className="h-9 w-9 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
             {(profile?.full_name || profile?.username || "U").slice(0, 2)}
           </div>
           <div className="leading-tight min-w-0">
-            <div className="text-sm font-semibold truncate">
+            <div className="text-sm font-semibold truncate text-foreground">
               {profile?.full_name || profile?.username || "Usuário"}
             </div>
-            <div className="text-[11px] text-sidebar-foreground/60 uppercase tracking-wider">
+            <div className="text-[11px] text-muted-foreground uppercase tracking-wider">
               {role || "—"}
             </div>
           </div>
