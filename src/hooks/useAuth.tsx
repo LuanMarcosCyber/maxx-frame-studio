@@ -10,6 +10,10 @@ export const usernameToEmail = (username: string) =>
 interface Profile {
   full_name: string | null;
   username: string | null;
+  email: string | null;
+  phone: string | null;
+  document: string | null;
+  address: string | null;
 }
 
 interface AuthContextValue {
