@@ -376,24 +376,26 @@ function CreateUserDialog({
 }
 
 function ResetPasswordDialog({
-  userId: _userId,
-  username,
+  target,
+  onOpenChange,
   onSubmit,
   submitting,
 }: {
-  userId: string;
-  username: string;
-  onSubmit: (pw: string) => Promise<unknown>;
+  target: { id: string; username: string } | null;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (pw: string) => Promise<unknown> | undefined;
   submitting: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (!target) setPassword("");
+  }, [target]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await onSubmit(password);
-      setOpen(false);
       setPassword("");
     } catch {
       // toast handled
@@ -401,17 +403,12 @@ function ResetPasswordDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <KeyRound className="h-4 w-4 mr-1" /> Redefinir senha
-        </Button>
-      </DialogTrigger>
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Redefinir senha</DialogTitle>
           <DialogDescription>
-            Defina uma nova senha para <span className="font-mono">{username}</span>.
+            Defina uma nova senha para <span className="font-mono">{target?.username}</span>.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
@@ -440,3 +437,4 @@ function ResetPasswordDialog({
     </Dialog>
   );
 }
+
