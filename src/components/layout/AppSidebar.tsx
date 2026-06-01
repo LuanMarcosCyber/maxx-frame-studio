@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { cn } from "@/lib/utils";
+import { getInitials } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
 
 const baseItems = [
