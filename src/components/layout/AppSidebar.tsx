@@ -36,13 +36,13 @@ export function AppSidebar() {
 
   return (
     <aside
-      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)]"
+      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)] sticky top-0 h-screen"
       style={{ backgroundColor: "#F8F9FB" }}
     >
       {/* Logo */}
       <div
-        className="flex items-center justify-center px-6 py-6 bg-white border-b border-border"
-        style={{ minHeight: "160px" }}
+        className="flex items-center justify-center px-6 py-6"
+        style={{ minHeight: "160px", backgroundColor: "#F8F9FB" }}
       >
         <img
           src={logoTotalMaxx}
@@ -51,7 +51,7 @@ export function AppSidebar() {
         />
       </div>
 
-      <nav className="flex-1 px-3 py-6 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-1">
         <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Principal
         </div>

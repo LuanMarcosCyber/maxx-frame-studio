@@ -2,12 +2,28 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, KeyRound, ShieldCheck, User as UserIcon } from "lucide-react";
+import { UserPlus, KeyRound, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { listResellers, createUser, resetPassword } from "@/lib/admin-users.functions";
+import { listResellers, createUser, resetPassword, deleteUser } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores")({
@@ -69,9 +85,14 @@ function RevendedoresPage() {
 
 function Content() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const list = useServerFn(listResellers);
   const create = useServerFn(createUser);
   const reset = useServerFn(resetPassword);
+  const del = useServerFn(deleteUser);
+
+  const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin", "users"],
@@ -94,9 +115,30 @@ function Content() {
 
   const resetMut = useMutation({
     mutationFn: (data: { user_id: string; password: string }) => reset({ data }),
-    onSuccess: () => toast.success("Senha redefinida com sucesso."),
+    onSuccess: () => {
+      toast.success("Senha redefinida com sucesso.");
+      setResetTarget(null);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const deleteMut = useMutation({
+    mutationFn: (user_id: string) => del({ data: { user_id } }),
+    onSuccess: () => {
+      toast.success("Usuário excluído com sucesso.");
+      setDeleteTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const handleDeleteClick = (u: { id: string; full_name: string | null; username: string | null }) => {
+    if (u.id === user?.id) {
+      toast.error("Você não pode excluir sua própria conta.");
+      return;
+    }
+    setDeleteTarget({ id: u.id, name: u.full_name || u.username || "este usuário" });
+  };
 
   return (
     <div className="space-y-6">
@@ -154,12 +196,27 @@ function Content() {
                     {new Date(u.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-right">
-                    <ResetPasswordDialog
-                      userId={u.id}
-                      username={u.username || ""}
-                      onSubmit={(pw) => resetMut.mutateAsync({ user_id: u.id, password: pw })}
-                      submitting={resetMut.isPending}
-                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Ações</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setResetTarget({ id: u.id, username: u.username || "" })}
+                        >
+                          <KeyRound className="h-4 w-4 mr-2" /> Redefinir senha
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(u)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Excluir usuário
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -167,6 +224,42 @@ function Content() {
           </TableBody>
         </Table>
       </div>
+
+      <ResetPasswordDialog
+        target={resetTarget}
+        onOpenChange={(o: boolean) => !o && setResetTarget(null)}
+        onSubmit={(pw) =>
+          resetTarget ? resetMut.mutateAsync({ user_id: resetTarget.id, password: pw }) : undefined
+        }
+        submitting={resetMut.isPending}
+      />
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <span className="font-semibold">{deleteTarget?.name}</span>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMut.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) deleteMut.mutate(deleteTarget.id);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMut.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -283,24 +376,26 @@ function CreateUserDialog({
 }
 
 function ResetPasswordDialog({
-  userId: _userId,
-  username,
+  target,
+  onOpenChange,
   onSubmit,
   submitting,
 }: {
-  userId: string;
-  username: string;
-  onSubmit: (pw: string) => Promise<unknown>;
+  target: { id: string; username: string } | null;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (pw: string) => Promise<unknown> | undefined;
   submitting: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (!target) setPassword("");
+  }, [target]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await onSubmit(password);
-      setOpen(false);
       setPassword("");
     } catch {
       // toast handled
@@ -308,17 +403,12 @@ function ResetPasswordDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <KeyRound className="h-4 w-4 mr-1" /> Redefinir senha
-        </Button>
-      </DialogTrigger>
+    <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Redefinir senha</DialogTitle>
           <DialogDescription>
-            Defina uma nova senha para <span className="font-mono">{username}</span>.
+            Defina uma nova senha para <span className="font-mono">{target?.username}</span>.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
@@ -347,3 +437,4 @@ function ResetPasswordDialog({
     </Dialog>
   );
 }
+
