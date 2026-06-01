@@ -227,9 +227,9 @@ function Content() {
 
       <ResetPasswordDialog
         target={resetTarget}
-        onOpenChange={(o) => !o && setResetTarget(null)}
+        onOpenChange={(o: boolean) => !o && setResetTarget(null)}
         onSubmit={(pw) =>
-          resetTarget && resetMut.mutateAsync({ user_id: resetTarget.id, password: pw })
+          resetTarget ? resetMut.mutateAsync({ user_id: resetTarget.id, password: pw }) : undefined
         }
         submitting={resetMut.isPending}
       />
