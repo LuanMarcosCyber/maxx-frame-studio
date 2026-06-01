@@ -51,7 +51,7 @@ export function AppSidebar() {
         />
       </div>
 
-      <nav className="flex-1 px-3 py-6 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-1">
         <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Principal
         </div>
