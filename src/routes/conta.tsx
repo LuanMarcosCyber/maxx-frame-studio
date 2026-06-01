@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { FileText, ShoppingCart, Package } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,23 @@ function Conta() {
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";
 
+  const { data: stats } = useQuery({
+    queryKey: ["conta", "stats", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [b, o, p] = await Promise.all([
+        supabase.from("budgets").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("products").select("id", { count: "exact", head: true }),
+      ]);
+      return {
+        budgets: b.count ?? 0,
+        orders: o.count ?? 0,
+        products: p.count ?? 0,
+      };
+    },
+  });
+
   const onChange = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -75,23 +94,49 @@ function Conta() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="nome">Nome completo</Label>
-              <Input id="nome" value={form.full_name} onChange={onChange("full_name")} />
+              <Input
+                id="nome"
+                value={form.full_name}
+                onChange={onChange("full_name")}
+                placeholder="Seu nome completo"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" value={form.email} onChange={onChange("email")} />
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={onChange("email")}
+                placeholder="seuemail@empresa.com"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="tel">Telefone</Label>
-              <Input id="tel" value={form.phone} onChange={onChange("phone")} />
+              <Input
+                id="tel"
+                value={form.phone}
+                onChange={onChange("phone")}
+                placeholder="(11) 99999-9999"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="doc">CNPJ / CPF</Label>
-              <Input id="doc" value={form.document} onChange={onChange("document")} />
+              <Input
+                id="doc"
+                value={form.document}
+                onChange={onChange("document")}
+                placeholder="Digite seu CPF ou CNPJ"
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="end">Endereço</Label>
-              <Input id="end" value={form.address} onChange={onChange("address")} />
+              <Input
+                id="end"
+                value={form.address}
+                onChange={onChange("address")}
+                placeholder="Rua, número, cidade - UF"
+              />
             </div>
           </div>
           <div className="flex justify-end mt-6">
@@ -105,18 +150,63 @@ function Conta() {
           </div>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex flex-col items-center text-center">
-            <div className="h-20 w-20 rounded-full bg-gradient-brand grid place-items-center text-brand-foreground text-2xl font-bold shadow-brand">
-              {getInitials(displayName || username)}
+        <div className="space-y-6">
+          <Card className="p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="h-20 w-20 rounded-full bg-gradient-brand grid place-items-center text-brand-foreground text-2xl font-bold shadow-brand">
+                {getInitials(displayName || username)}
+              </div>
+              {displayName && <div className="mt-4 font-semibold">{displayName}</div>}
+              {username && (
+                <div className="text-xs text-muted-foreground font-mono">@{username}</div>
+              )}
             </div>
-            {displayName && <div className="mt-4 font-semibold">{displayName}</div>}
-            {username && (
-              <div className="text-xs text-muted-foreground font-mono">@{username}</div>
-            )}
-          </div>
-        </Card>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-sm font-semibold mb-4">Minhas estatísticas</h3>
+            <div className="space-y-3">
+              <StatRow
+                icon={<FileText className="h-4 w-4" />}
+                label="Orçamentos"
+                value={stats?.budgets ?? 0}
+              />
+              <StatRow
+                icon={<ShoppingCart className="h-4 w-4" />}
+                label="Pedidos"
+                value={stats?.orders ?? 0}
+              />
+              <StatRow
+                icon={<Package className="h-4 w-4" />}
+                label="Produtos"
+                value={stats?.products ?? 0}
+              />
+            </div>
+          </Card>
+        </div>
       </div>
     </AppShell>
+  );
+}
+
+function StatRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border border-border bg-card px-3 py-2.5">
+      <div className="flex items-center gap-2 text-sm text-foreground/80">
+        <span className="h-7 w-7 grid place-items-center rounded-md bg-gradient-brand text-brand-foreground">
+          {icon}
+        </span>
+        {label}
+      </div>
+      <span className="text-base font-semibold tabular-nums">{value}</span>
+    </div>
   );
 }
