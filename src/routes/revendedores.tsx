@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { listResellers, createUser, resetPassword } from "@/lib/admin-users.functions";
+import { listResellers, createUser, resetPassword, deleteUser } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores")({
