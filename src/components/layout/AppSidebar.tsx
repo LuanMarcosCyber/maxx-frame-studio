@@ -100,15 +100,17 @@ export function AppSidebar() {
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 rounded-md bg-white border border-border p-3">
           <div className="h-9 w-9 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
-            {(profile?.full_name || profile?.username || "U").slice(0, 2)}
+            {getInitials(profile?.full_name || profile?.username)}
           </div>
           <div className="leading-tight min-w-0">
             <div className="text-sm font-semibold truncate text-foreground">
               {profile?.full_name || profile?.username || "Usuário"}
             </div>
-            <div className="text-[11px] text-muted-foreground uppercase tracking-wider">
-              {role || "—"}
-            </div>
+            {profile?.username && (
+              <div className="text-[11px] text-muted-foreground font-mono truncate">
+                @{profile.username}
+              </div>
+            )}
           </div>
         </div>
       </div>
