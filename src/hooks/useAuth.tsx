@@ -57,11 +57,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserData = async (userId: string) => {
     const [{ data: roleRow }, { data: profileRow }] = await Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-      supabase.from("profiles").select("full_name, username").eq("id", userId).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("full_name, username, email, phone, document, address")
+        .eq("id", userId)
+        .maybeSingle(),
     ]);
     setRole((roleRow?.role as AppRole) ?? "revendedor");
-    setProfile(profileRow ?? { full_name: null, username: null });
+    setProfile(
+      profileRow ?? {
+        full_name: null,
+        username: null,
+        email: null,
+        phone: null,
+        document: null,
+        address: null,
+      },
+    );
   };
+
+  const refreshProfile = async () => {
+    if (session?.user) await loadUserData(session.user.id);
+  };
+
 
   const signIn = async (username: string, password: string) => {
     const email = usernameToEmail(username);
