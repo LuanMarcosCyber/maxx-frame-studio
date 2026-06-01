@@ -1,5 +1,6 @@
 import { Bell, Search, ChevronDown, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { getInitials } from "@/lib/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,15 +13,6 @@ import {
 interface AppHeaderProps {
   title: string;
   subtitle?: string;
-}
-
-function initials(name?: string | null, email?: string | null) {
-  const src = name?.trim() || email?.split("@")[0] || "U";
-  return src
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
 }
 
 export function AppHeader({ title, subtitle }: AppHeaderProps) {
