@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
+import logoTotalMaxxDark from "@/assets/totalmaxx-logo-dark.png";
+import { useTheme } from "@/hooks/useTheme";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — Total Maxx ERP" }] }),
