@@ -9,9 +9,11 @@ import {
   Users,
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
+import logoTotalMaxxDark from "@/assets/totalmaxx-logo-dark.png";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 
 const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -30,22 +32,27 @@ const bottomItems = [
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
+  const { resolvedTheme } = useTheme();
   const items = role === "admin" ? [...baseItems, ...adminItems] : baseItems;
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
+  const logoSrc = resolvedTheme === "dark" ? logoTotalMaxxDark : logoTotalMaxx;
+  const sidebarBg =
+    resolvedTheme === "dark" ? "var(--sidebar)" : "#F8F9FB";
+
   return (
     <aside
       className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)] sticky top-0 h-screen"
-      style={{ backgroundColor: "#F8F9FB" }}
+      style={{ backgroundColor: sidebarBg }}
     >
       {/* Logo */}
       <div
         className="flex items-center justify-center px-6 py-6"
-        style={{ minHeight: "160px", backgroundColor: "#F8F9FB" }}
+        style={{ minHeight: "160px", backgroundColor: sidebarBg }}
       >
         <img
-          src={logoTotalMaxx}
+          src={logoSrc}
           alt="Total Maxx Import & Export"
           className="max-h-32 w-auto object-contain"
         />
@@ -98,7 +105,7 @@ export function AppSidebar() {
       </nav>
 
       <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3 rounded-md bg-white border border-border p-3">
+        <div className="flex items-center gap-3 rounded-md bg-card border border-border p-3">
           <div className="h-9 w-9 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
             {getInitials(profile?.full_name || profile?.username)}
           </div>
