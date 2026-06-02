@@ -16,10 +16,13 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { signIn, session, loading } = useAuth();
+  const { resolvedTheme } = useTheme();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const logoSrc = resolvedTheme === "dark" ? logoTotalMaxxDark : logoTotalMaxx;
+  const sidePanelBg = resolvedTheme === "dark" ? "bg-card" : "bg-white";
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/", replace: true });
