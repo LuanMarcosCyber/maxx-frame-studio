@@ -3,9 +3,6 @@ import { Sun, Moon, Monitor } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { useTheme, type ThemeMode } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -93,35 +90,6 @@ function Configuracoes() {
           </ul>
         </Card>
 
-        {isAdmin && (
-          <Card className="p-6">
-            <h3 className="text-base font-semibold mb-1">Empresa</h3>
-            <p className="text-xs text-muted-foreground mb-5">
-              Informações exibidas em orçamentos
-            </p>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="razao">Razão social</Label>
-                <Input id="razao" placeholder="Razão social da empresa" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="cnpj">CNPJ</Label>
-                <Input id="cnpj" placeholder="00.000.000/0000-00" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="moeda">Moeda padrão</Label>
-                <Input id="moeda" defaultValue="BRL (R$)" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="unid">Unidade de medida</Label>
-                <Input id="unid" defaultValue="Metros (m)" />
-              </div>
-              <Button className="w-full bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
-                Salvar configurações
-              </Button>
-            </div>
-          </Card>
-        )}
 
         {isAdmin && (
           <Card className="p-6 lg:col-span-2">
