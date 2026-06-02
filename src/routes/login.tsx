@@ -40,10 +40,10 @@ function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-white border-r border-border">
+      <div className={`hidden lg:flex flex-col justify-between p-12 ${sidePanelBg} border-r border-border`}>
         <div className="flex items-center justify-center">
           <img
-            src={logoTotalMaxx}
+            src={logoSrc}
             alt="Total Maxx Import & Export"
             className="max-h-20 w-auto object-contain"
           />
@@ -65,7 +65,7 @@ function Login() {
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-8">
             <img
-              src={logoTotalMaxx}
+              src={logoSrc}
               alt="Total Maxx Import & Export"
               className="max-h-16 w-auto object-contain"
             />
