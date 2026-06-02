@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
+import logoTotalMaxxDark from "@/assets/totalmaxx-logo-dark.png";
+import { useTheme } from "@/hooks/useTheme";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Entrar — Total Maxx ERP" }] }),
@@ -14,10 +16,13 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { signIn, session, loading } = useAuth();
+  const { resolvedTheme } = useTheme();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const logoSrc = resolvedTheme === "dark" ? logoTotalMaxxDark : logoTotalMaxx;
+  const sidePanelBg = resolvedTheme === "dark" ? "bg-card" : "bg-white";
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/", replace: true });
@@ -35,10 +40,10 @@ function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      <div className="hidden lg:flex flex-col justify-between p-12 bg-white border-r border-border">
+      <div className={`hidden lg:flex flex-col justify-between p-12 ${sidePanelBg} border-r border-border`}>
         <div className="flex items-center justify-center">
           <img
-            src={logoTotalMaxx}
+            src={logoSrc}
             alt="Total Maxx Import & Export"
             className="max-h-20 w-auto object-contain"
           />
@@ -60,7 +65,7 @@ function Login() {
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-8">
             <img
-              src={logoTotalMaxx}
+              src={logoSrc}
               alt="Total Maxx Import & Export"
               className="max-h-16 w-auto object-contain"
             />

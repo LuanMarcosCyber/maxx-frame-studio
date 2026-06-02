@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -100,12 +101,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  const themeScript = `(function(){try{var t=localStorage.getItem('totalmaxx.theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {children}
         <Scripts />
       </body>
@@ -118,12 +121,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AuthGate>
-          <Outlet />
-        </AuthGate>
-        <Toaster />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthGate>
+            <Outlet />
+          </AuthGate>
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
