@@ -22,6 +22,7 @@ function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const logoSrc = resolvedTheme === "dark" ? logoTotalMaxxDark : logoTotalMaxx;
   const sidePanelBg = resolvedTheme === "dark" ? "bg-card" : "bg-white";
 
