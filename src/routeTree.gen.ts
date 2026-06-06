@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
 
 const RevendedoresRoute = RevendedoresRouteImport.update({
   id: '/revendedores',
@@ -58,26 +59,33 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrcamentosNovoRoute = OrcamentosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => OrcamentosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
-  '/orcamentos': typeof OrcamentosRoute
+  '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
   '/revendedores': typeof RevendedoresRoute
+  '/orcamentos/novo': typeof OrcamentosNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
-  '/orcamentos': typeof OrcamentosRoute
+  '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
   '/revendedores': typeof RevendedoresRoute
+  '/orcamentos/novo': typeof OrcamentosNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +93,11 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
-  '/orcamentos': typeof OrcamentosRoute
+  '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
   '/revendedores': typeof RevendedoresRoute
+  '/orcamentos/novo': typeof OrcamentosNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/pedidos'
     | '/produtos'
     | '/revendedores'
+    | '/orcamentos/novo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/pedidos'
     | '/produtos'
     | '/revendedores'
+    | '/orcamentos/novo'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/pedidos'
     | '/produtos'
     | '/revendedores'
+    | '/orcamentos/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,7 +140,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ContaRoute: typeof ContaRoute
   LoginRoute: typeof LoginRoute
-  OrcamentosRoute: typeof OrcamentosRoute
+  OrcamentosRoute: typeof OrcamentosRouteWithChildren
   PedidosRoute: typeof PedidosRoute
   ProdutosRoute: typeof ProdutosRoute
   RevendedoresRoute: typeof RevendedoresRoute
@@ -192,15 +204,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orcamentos/novo': {
+      id: '/orcamentos/novo'
+      path: '/novo'
+      fullPath: '/orcamentos/novo'
+      preLoaderRoute: typeof OrcamentosNovoRouteImport
+      parentRoute: typeof OrcamentosRoute
+    }
   }
 }
+
+interface OrcamentosRouteChildren {
+  OrcamentosNovoRoute: typeof OrcamentosNovoRoute
+}
+
+const OrcamentosRouteChildren: OrcamentosRouteChildren = {
+  OrcamentosNovoRoute: OrcamentosNovoRoute,
+}
+
+const OrcamentosRouteWithChildren = OrcamentosRoute._addFileChildren(
+  OrcamentosRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
   ContaRoute: ContaRoute,
   LoginRoute: LoginRoute,
-  OrcamentosRoute: OrcamentosRoute,
+  OrcamentosRoute: OrcamentosRouteWithChildren,
   PedidosRoute: PedidosRoute,
   ProdutosRoute: ProdutosRoute,
   RevendedoresRoute: RevendedoresRoute,
