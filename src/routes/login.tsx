@@ -44,7 +44,7 @@ function Login() {
           <img
             src={logoSrc}
             alt="Total Maxx Import & Export"
-            className="max-h-20 w-auto object-contain"
+            className="max-h-24 w-auto object-contain"
           />
         </div>
         <div>
