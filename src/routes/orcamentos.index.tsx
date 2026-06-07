@@ -8,7 +8,7 @@ import { Search, Plus, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export const Route = createFileRoute("/orcamentos")({
+export const Route = createFileRoute("/orcamentos/")({
   head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
   component: Orcamentos,
 });
