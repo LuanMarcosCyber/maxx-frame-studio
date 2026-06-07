@@ -30,14 +30,12 @@ const bottomItems = [
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
-  const { resolvedTheme } = useTheme();
   const items = role === "admin" ? [...baseItems, ...adminItems] : baseItems;
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  const logoSrc = resolvedTheme === "dark" ? logoTotalMaxxDark : logoTotalMaxx;
-  const sidebarBg =
-    resolvedTheme === "dark" ? "var(--sidebar)" : "#F8F9FB";
+  const logoSrc = logoTotalMaxx;
+  const sidebarBg = "#F8F9FB";
 
   return (
     <aside
@@ -47,12 +45,12 @@ export function AppSidebar() {
       {/* Logo */}
       <div
         className="flex items-center justify-center px-6 py-6"
-        style={{ minHeight: "160px", backgroundColor: sidebarBg }}
+        style={{ minHeight: "176px", backgroundColor: sidebarBg }}
       >
         <img
           src={logoSrc}
           alt="Total Maxx Import & Export"
-          className="max-h-32 w-auto object-contain"
+          className="max-h-36 w-auto object-contain"
         />
       </div>
 
