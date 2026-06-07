@@ -125,7 +125,6 @@ function RootComponent() {
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
-    </QueryClientProvider>
   );
 }
 
