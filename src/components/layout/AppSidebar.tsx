@@ -9,11 +9,9 @@ import {
   Users,
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
-import logoTotalMaxxDark from "@/assets/totalmaxx-logo-dark.png";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/hooks/useTheme";
 
 const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
