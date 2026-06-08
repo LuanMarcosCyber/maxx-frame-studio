@@ -35,10 +35,10 @@ export const Route = createFileRoute("/orcamentos/novo")({
 
 type StepKey =
   | "tamanho"
+  | "paspatur"
   | "perfil"
   | "vidro"
   | "foam"
-  | "paspatur"
   | "colagem"
   | "impressao"
   | "instalacao"
@@ -46,10 +46,10 @@ type StepKey =
 
 const steps: { key: StepKey; label: string; icon: typeof Ruler; enabled: boolean }[] = [
   { key: "tamanho", label: "Tamanho", icon: Ruler, enabled: true },
+  { key: "paspatur", label: "Paspatur", icon: ImageIcon, enabled: true },
   { key: "perfil", label: "Perfil", icon: Frame, enabled: true },
   { key: "vidro", label: "Vidro / Espelho", icon: Square, enabled: true },
   { key: "foam", label: "Foam / MDF", icon: Layers, enabled: true },
-  { key: "paspatur", label: "Paspatur", icon: ImageIcon, enabled: false },
   { key: "colagem", label: "Colagem", icon: Scissors, enabled: false },
   { key: "impressao", label: "Impressão", icon: Printer, enabled: false },
   { key: "instalacao", label: "Instalação / Frete", icon: Truck, enabled: false },
@@ -84,57 +84,58 @@ function calcAreaValue(prod: Produto | null, altura: number, largura: number) {
   return final;
 }
 
+function useCategoryProducts(categories: string[], enabled: boolean) {
+  return useQuery({
+    queryKey: ["products", ...categories],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(
+          "id, code, description, value_per_meter, profit_margin, waste_percentage, category",
+        )
+        .in("category", categories)
+        .order("code", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Produto[];
+    },
+  });
+}
+
 function NovoOrcamento() {
   const { session } = useAuth();
   const [active, setActive] = useState<StepKey>("tamanho");
   const [altura, setAltura] = useState<string>("");
   const [largura, setLargura] = useState<string>("");
+
+  // Paspatur margins (cm)
+  const [margemEsq, setMargemEsq] = useState<string>("");
+  const [margemDir, setMargemDir] = useState<string>("");
+  const [margemSup, setMargemSup] = useState<string>("");
+  const [margemInf, setMargemInf] = useState<string>("");
+  const [paspaturId, setPaspaturId] = useState<string>("");
+
   const [perfilId, setPerfilId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
   const [foamId, setFoamId] = useState<string>("");
 
-  const { data: perfis = [], isLoading: loadingPerfis } = useQuery({
-    queryKey: ["products", "Perfil"],
-    enabled: !!session,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, code, description, value_per_meter, profit_margin, waste_percentage, category")
-        .eq("category", "Perfil")
-        .order("code", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Produto[];
-    },
-  });
-
-  const { data: vidros = [], isLoading: loadingVidros } = useQuery({
-    queryKey: ["products", "Vidro"],
-    enabled: !!session,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, code, description, value_per_meter, profit_margin, waste_percentage, category")
-        .eq("category", "Vidro")
-        .order("code", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Produto[];
-    },
-  });
-
-  const { data: foams = [], isLoading: loadingFoams } = useQuery({
-    queryKey: ["products", "Foam-MDF"],
-    enabled: !!session,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, code, description, value_per_meter, profit_margin, waste_percentage, category")
-        .in("category", ["Foam", "MDF"])
-        .order("code", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Produto[];
-    },
-  });
+  const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
+    ["Perfil"],
+    !!session,
+  );
+  const { data: vidros = [], isLoading: loadingVidros } = useCategoryProducts(
+    ["Vidro"],
+    !!session,
+  );
+  const { data: foams = [], isLoading: loadingFoams } = useCategoryProducts(
+    ["Foam", "MDF"],
+    !!session,
+  );
+  const { data: paspaturs = [], isLoading: loadingPaspaturs } = useCategoryProducts(
+    ["Paspatur"],
+    !!session,
+  );
 
   const perfilSelecionado = useMemo(
     () => perfis.find((p) => p.id === perfilId) ?? null,
@@ -148,32 +149,58 @@ function NovoOrcamento() {
     () => foams.find((p) => p.id === foamId) ?? null,
     [foams, foamId],
   );
+  const paspaturSelecionado = useMemo(
+    () => paspaturs.find((p) => p.id === paspaturId) ?? null,
+    [paspaturs, paspaturId],
+  );
 
   const alturaNum = parseNum(altura);
   const larguraNum = parseNum(largura);
 
+  const mEsq = parseNum(margemEsq);
+  const mDir = parseNum(margemDir);
+  const mSup = parseNum(margemSup);
+  const mInf = parseNum(margemInf);
+
+  // Final dimensions including paspatur margins
+  const larguraFinal = larguraNum + mEsq + mDir;
+  const alturaFinal = alturaNum + mSup + mInf;
+
+  const valorPaspatur = useMemo(() => {
+    if (!paspaturSelecionado || larguraFinal <= 0 || alturaFinal <= 0) return 0;
+    const area = (larguraFinal * alturaFinal) / 10000;
+    const base = area * Number(paspaturSelecionado.value_per_meter);
+    const comPerda = base * (1 + Number(paspaturSelecionado.waste_percentage) / 100);
+    const final = comPerda * (1 + Number(paspaturSelecionado.profit_margin) / 100);
+    return final;
+  }, [paspaturSelecionado, larguraFinal, alturaFinal]);
+
   const valorPerfil = useMemo(() => {
-    if (!perfilSelecionado || alturaNum <= 0 || larguraNum <= 0) return 0;
-    const perimetro = ((alturaNum + larguraNum) * 2) / 100;
+    if (!perfilSelecionado || alturaFinal <= 0 || larguraFinal <= 0) return 0;
+    const perimetro = ((alturaFinal + larguraFinal) * 2) / 100;
     const base = perimetro * Number(perfilSelecionado.value_per_meter);
     const comPerda = base * (1 + Number(perfilSelecionado.waste_percentage) / 100);
     const final = comPerda * (1 + Number(perfilSelecionado.profit_margin) / 100);
     return final;
-  }, [perfilSelecionado, alturaNum, larguraNum]);
+  }, [perfilSelecionado, alturaFinal, larguraFinal]);
 
   const valorVidro = useMemo(
-    () => (vidroTipo === "sim" ? calcAreaValue(vidroSelecionado, alturaNum, larguraNum) : 0),
-    [vidroTipo, vidroSelecionado, alturaNum, larguraNum],
+    () =>
+      vidroTipo === "sim"
+        ? calcAreaValue(vidroSelecionado, alturaFinal, larguraFinal)
+        : 0,
+    [vidroTipo, vidroSelecionado, alturaFinal, larguraFinal],
   );
 
   const valorFoam = useMemo(
-    () => calcAreaValue(foamSelecionado, alturaNum, larguraNum),
-    [foamSelecionado, alturaNum, larguraNum],
+    () => calcAreaValue(foamSelecionado, alturaFinal, larguraFinal),
+    [foamSelecionado, alturaFinal, larguraFinal],
   );
 
-  const valorTotal = valorPerfil + valorVidro + valorFoam;
+  const valorTotal = valorPerfil + valorVidro + valorFoam + valorPaspatur;
 
-  const previewDims = useMemo(() => {
+  // Preview for Tamanho step (art only)
+  const previewArt = useMemo(() => {
     const maxW = 320;
     const maxH = 240;
     const a = alturaNum > 0 ? alturaNum : 0;
@@ -186,6 +213,24 @@ function NovoOrcamento() {
       empty: false,
     };
   }, [alturaNum, larguraNum]);
+
+  // Preview for Paspatur (outer = final, inner = art)
+  const previewPaspatur = useMemo(() => {
+    const maxW = 360;
+    const maxH = 280;
+    const lf = larguraFinal > 0 ? larguraFinal : Math.max(larguraNum, 1);
+    const af = alturaFinal > 0 ? alturaFinal : Math.max(alturaNum, 1);
+    const scale = Math.min(maxW / lf, maxH / af);
+    return {
+      outerW: Math.max(60, Math.round(lf * scale)),
+      outerH: Math.max(60, Math.round(af * scale)),
+      padLeft: Math.round(mEsq * scale),
+      padRight: Math.round(mDir * scale),
+      padTop: Math.round(mSup * scale),
+      padBottom: Math.round(mInf * scale),
+      scale,
+    };
+  }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf]);
 
   return (
     <AppShell title="Novo Orçamento" subtitle="Monte o orçamento por etapas">
@@ -231,6 +276,12 @@ function NovoOrcamento() {
             <div className="flex flex-wrap items-center justify-end gap-8">
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Paspatur
+                </div>
+                <div className="text-lg font-semibold">{fmtMoney(valorPaspatur)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Valor do perfil
                 </div>
                 <div className="text-lg font-semibold">{fmtMoney(valorPerfil)}</div>
@@ -256,6 +307,16 @@ function NovoOrcamento() {
                 </div>
               </div>
             </div>
+            {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) &&
+              alturaNum > 0 &&
+              larguraNum > 0 && (
+                <div className="mt-3 text-xs text-muted-foreground text-right">
+                  Medidas finais (com paspatur):{" "}
+                  <span className="font-medium text-foreground">
+                    {larguraFinal} × {alturaFinal} cm
+                  </span>
+                </div>
+              )}
           </Card>
 
           {active === "tamanho" && (
@@ -297,9 +358,9 @@ function NovoOrcamento() {
                     <div
                       className={cn(
                         "border-2 border-foreground/70 rounded-sm bg-muted/30 transition-all",
-                        previewDims.empty && "border-dashed opacity-50",
+                        previewArt.empty && "border-dashed opacity-50",
                       )}
-                      style={{ width: previewDims.w, height: previewDims.h }}
+                      style={{ width: previewArt.w, height: previewArt.h }}
                     />
                     <div className="mt-3 text-sm font-medium text-foreground">
                       {larguraNum > 0 ? `${larguraNum} CM` : "—"}
@@ -307,7 +368,7 @@ function NovoOrcamento() {
                   </div>
                   <div
                     className="flex items-center text-sm font-medium text-foreground"
-                    style={{ height: previewDims.h }}
+                    style={{ height: previewArt.h }}
                   >
                     {alturaNum > 0 ? `${alturaNum} CM` : "—"}
                   </div>
@@ -316,11 +377,180 @@ function NovoOrcamento() {
             </Card>
           )}
 
+          {active === "paspatur" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Paspatur</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Defina as margens do paspatur. As medidas finais serão utilizadas
+                pelo perfil, vidro e foam/MDF.
+              </p>
+
+              {(alturaNum <= 0 || larguraNum <= 0) && (
+                <p className="mt-4 text-xs text-amber-600">
+                  Informe altura e largura na etapa Tamanho antes de configurar o
+                  paspatur.
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
+                <div className="space-y-1.5">
+                  <Label htmlFor="m-esq">Esquerda (cm)</Label>
+                  <Input
+                    id="m-esq"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={margemEsq}
+                    onChange={(e) => setMargemEsq(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="m-dir">Direita (cm)</Label>
+                  <Input
+                    id="m-dir"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={margemDir}
+                    onChange={(e) => setMargemDir(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="m-sup">Superior (cm)</Label>
+                  <Input
+                    id="m-sup"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={margemSup}
+                    onChange={(e) => setMargemSup(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="m-inf">Inferior (cm)</Label>
+                  <Input
+                    id="m-inf"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={margemInf}
+                    onChange={(e) => setMargemInf(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 max-w-md space-y-1.5">
+                <Label htmlFor="paspatur">Produto Paspatur</Label>
+                <Select value={paspaturId} onValueChange={setPaspaturId}>
+                  <SelectTrigger id="paspatur">
+                    <SelectValue
+                      placeholder={
+                        loadingPaspaturs
+                          ? "Carregando..."
+                          : "Selecione um paspatur"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paspaturs.length === 0 && !loadingPaspaturs ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        Nenhum paspatur cadastrado.
+                      </div>
+                    ) : (
+                      paspaturs.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.code}
+                          {p.description ? ` — ${p.description}` : ""}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Preview: outer paspatur + inner art */}
+              {alturaNum > 0 && larguraNum > 0 && (
+                <div className="mt-10 flex justify-center">
+                  <div className="inline-flex items-start gap-4">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className="relative border-2 border-foreground/70 rounded-sm bg-muted/50 transition-all"
+                        style={{
+                          width: previewPaspatur.outerW,
+                          height: previewPaspatur.outerH,
+                          paddingLeft: previewPaspatur.padLeft,
+                          paddingRight: previewPaspatur.padRight,
+                          paddingTop: previewPaspatur.padTop,
+                          paddingBottom: previewPaspatur.padBottom,
+                        }}
+                      >
+                        <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Arte {larguraNum}×{alturaNum}
+                          </span>
+                        </div>
+                        {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) && (
+                          <span className="absolute top-1 left-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                            Paspatur
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-3 text-sm font-medium text-foreground">
+                        {larguraFinal} CM
+                      </div>
+                    </div>
+                    <div
+                      className="flex items-center text-sm font-medium text-foreground"
+                      style={{ height: previewPaspatur.outerH }}
+                    >
+                      {alturaFinal} CM
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {paspaturSelecionado && larguraFinal > 0 && alturaFinal > 0 && (
+                <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Check className="h-4 w-4 text-emerald-600" />
+                    Paspatur selecionado
+                  </div>
+                  <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
+                    <div>
+                      <span className="font-medium text-foreground">Código:</span>{" "}
+                      {paspaturSelecionado.code}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Valor/m²:</span>{" "}
+                      {fmtMoney(Number(paspaturSelecionado.value_per_meter))}
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Perda:</span>{" "}
+                      {Number(paspaturSelecionado.waste_percentage)}%
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">Margem:</span>{" "}
+                      {Number(paspaturSelecionado.profit_margin)}%
+                    </div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Medidas finais:
+                      </span>{" "}
+                      {larguraFinal} × {alturaFinal} cm
+                    </div>
+                    <div className="pt-2 border-t border-border mt-2">
+                      <span className="font-medium text-foreground">
+                        Valor do paspatur:
+                      </span>{" "}
+                      <span className="font-semibold">{fmtMoney(valorPaspatur)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
+
           {active === "perfil" && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Qual perfil será utilizado?</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Informe abaixo qual perfil será utilizado no pedido
+                O cálculo usa as medidas finais (com paspatur quando aplicado).
               </p>
 
               <div className="mt-6 max-w-md space-y-1.5">
@@ -373,6 +603,12 @@ function NovoOrcamento() {
                       <span className="font-medium text-foreground">Margem:</span>{" "}
                       {Number(perfilSelecionado.profit_margin)}%
                     </div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Medidas usadas:
+                      </span>{" "}
+                      {larguraFinal} × {alturaFinal} cm
+                    </div>
                     <div className="pt-2 border-t border-border mt-2">
                       <span className="font-medium text-foreground">
                         Valor do perfil:
@@ -383,7 +619,7 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {(alturaNum <= 0 || larguraNum <= 0) && (
+              {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
                   Informe altura e largura na etapa Tamanho para calcular o valor.
                 </p>
@@ -466,6 +702,12 @@ function NovoOrcamento() {
                       <span className="font-medium text-foreground">Margem:</span>{" "}
                       {Number(vidroSelecionado.profit_margin)}%
                     </div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Medidas usadas:
+                      </span>{" "}
+                      {larguraFinal} × {alturaFinal} cm
+                    </div>
                     <div className="pt-2 border-t border-border mt-2">
                       <span className="font-medium text-foreground">
                         Valor do vidro:
@@ -476,7 +718,7 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {vidroTipo === "sim" && (alturaNum <= 0 || larguraNum <= 0) && (
+              {vidroTipo === "sim" && (alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
                   Informe altura e largura na etapa Tamanho para calcular o valor.
                 </p>
@@ -545,6 +787,12 @@ function NovoOrcamento() {
                       <span className="font-medium text-foreground">Margem:</span>{" "}
                       {Number(foamSelecionado.profit_margin)}%
                     </div>
+                    <div>
+                      <span className="font-medium text-foreground">
+                        Medidas usadas:
+                      </span>{" "}
+                      {larguraFinal} × {alturaFinal} cm
+                    </div>
                     <div className="pt-2 border-t border-border mt-2">
                       <span className="font-medium text-foreground">
                         Valor Foam/MDF:
@@ -555,7 +803,7 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {foamSelecionado && (alturaNum <= 0 || larguraNum <= 0) && (
+              {foamSelecionado && (alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
                   Informe altura e largura na etapa Tamanho para calcular o valor.
                 </p>
