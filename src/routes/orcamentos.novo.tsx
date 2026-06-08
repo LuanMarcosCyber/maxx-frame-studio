@@ -105,10 +105,14 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
 }
 
 function NovoOrcamento() {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const [active, setActive] = useState<StepKey>("tamanho");
   const [altura, setAltura] = useState<string>("");
   const [largura, setLargura] = useState<string>("");
+
+  // Paspatur toggle
+  const [paspaturAtivo, setPaspaturAtivo] = useState<"sim" | "nao">("nao");
 
   // Paspatur margins (cm)
   const [margemEsq, setMargemEsq] = useState<string>("");
