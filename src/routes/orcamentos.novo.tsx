@@ -173,13 +173,14 @@ function NovoOrcamento() {
   const alturaFinal = alturaNum + mSup + mInf;
 
   const valorPaspatur = useMemo(() => {
+    if (paspaturAtivo === "nao") return 0;
     if (!paspaturSelecionado || larguraFinal <= 0 || alturaFinal <= 0) return 0;
     const area = (larguraFinal * alturaFinal) / 10000;
     const base = area * Number(paspaturSelecionado.value_per_meter);
     const comPerda = base * (1 + Number(paspaturSelecionado.waste_percentage) / 100);
     const final = comPerda * (1 + Number(paspaturSelecionado.profit_margin) / 100);
     return final;
-  }, [paspaturSelecionado, larguraFinal, alturaFinal]);
+  }, [paspaturAtivo, paspaturSelecionado, larguraFinal, alturaFinal]);
 
   const valorPerfil = useMemo(() => {
     if (!perfilSelecionado || alturaFinal <= 0 || larguraFinal <= 0) return 0;
