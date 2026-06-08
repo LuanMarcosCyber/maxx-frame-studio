@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
@@ -23,10 +23,12 @@ import {
   Truck,
   CheckCircle2,
   Check,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
@@ -103,10 +105,14 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
 }
 
 function NovoOrcamento() {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const [active, setActive] = useState<StepKey>("tamanho");
   const [altura, setAltura] = useState<string>("");
   const [largura, setLargura] = useState<string>("");
+
+  // Paspatur toggle
+  const [paspaturAtivo, setPaspaturAtivo] = useState<"sim" | "nao">("nao");
 
   // Paspatur margins (cm)
   const [margemEsq, setMargemEsq] = useState<string>("");
@@ -167,13 +173,14 @@ function NovoOrcamento() {
   const alturaFinal = alturaNum + mSup + mInf;
 
   const valorPaspatur = useMemo(() => {
+    if (paspaturAtivo === "nao") return 0;
     if (!paspaturSelecionado || larguraFinal <= 0 || alturaFinal <= 0) return 0;
     const area = (larguraFinal * alturaFinal) / 10000;
     const base = area * Number(paspaturSelecionado.value_per_meter);
     const comPerda = base * (1 + Number(paspaturSelecionado.waste_percentage) / 100);
     const final = comPerda * (1 + Number(paspaturSelecionado.profit_margin) / 100);
     return final;
-  }, [paspaturSelecionado, larguraFinal, alturaFinal]);
+  }, [paspaturAtivo, paspaturSelecionado, larguraFinal, alturaFinal]);
 
   const valorPerfil = useMemo(() => {
     if (!perfilSelecionado || alturaFinal <= 0 || larguraFinal <= 0) return 0;
@@ -234,6 +241,20 @@ function NovoOrcamento() {
 
   return (
     <AppShell title="Novo Orçamento" subtitle="Monte o orçamento por etapas">
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm("Ao sair você perderá este orçamento, deseja continuar?")) {
+              navigate({ to: "/orcamentos" });
+            }
+          }}
+          className="inline-flex items-center justify-center rounded-md h-8 w-8 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          aria-label="Sair"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
         {/* Stepper sidebar */}
         <Card className="p-3 h-fit">
@@ -381,8 +402,7 @@ function NovoOrcamento() {
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Paspatur</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Defina as margens do paspatur. As medidas finais serão utilizadas
-                pelo perfil, vidro e foam/MDF.
+                Defina as margens do paspatur. As medidas finais serão utilizadas pelos próximos campos.
               </p>
 
               {(alturaNum <= 0 || larguraNum <= 0) && (
@@ -392,77 +412,98 @@ function NovoOrcamento() {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-esq">Esquerda (cm)</Label>
-                  <Input
-                    id="m-esq"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemEsq}
-                    onChange={(e) => setMargemEsq(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-dir">Direita (cm)</Label>
-                  <Input
-                    id="m-dir"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemDir}
-                    onChange={(e) => setMargemDir(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-sup">Superior (cm)</Label>
-                  <Input
-                    id="m-sup"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemSup}
-                    onChange={(e) => setMargemSup(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-inf">Inferior (cm)</Label>
-                  <Input
-                    id="m-inf"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemInf}
-                    onChange={(e) => setMargemInf(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="paspatur">Produto Paspatur</Label>
-                <Select value={paspaturId} onValueChange={setPaspaturId}>
-                  <SelectTrigger id="paspatur">
-                    <SelectValue
-                      placeholder={
-                        loadingPaspaturs
-                          ? "Carregando..."
-                          : "Selecione um paspatur"
-                      }
-                    />
+                <Label htmlFor="paspatur-ativo">Paspatur</Label>
+                <Select
+                  value={paspaturAtivo}
+                  onValueChange={(v) => setPaspaturAtivo(v as "sim" | "nao")}
+                >
+                  <SelectTrigger id="paspatur-ativo">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {paspaturs.length === 0 && !loadingPaspaturs ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Nenhum paspatur cadastrado.
-                      </div>
-                    ) : (
-                      paspaturs.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.code}
-                          {p.description ? ` — ${p.description}` : ""}
-                        </SelectItem>
-                      ))
-                    )}
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {paspaturAtivo === "sim" && (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-esq">Esquerda (cm)</Label>
+                      <Input
+                        id="m-esq"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemEsq}
+                        onChange={(e) => setMargemEsq(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-dir">Direita (cm)</Label>
+                      <Input
+                        id="m-dir"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemDir}
+                        onChange={(e) => setMargemDir(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-sup">Superior (cm)</Label>
+                      <Input
+                        id="m-sup"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemSup}
+                        onChange={(e) => setMargemSup(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-inf">Inferior (cm)</Label>
+                      <Input
+                        id="m-inf"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemInf}
+                        onChange={(e) => setMargemInf(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 max-w-md space-y-1.5">
+                    <Label htmlFor="paspatur">Produto Paspatur</Label>
+                    <Select value={paspaturId} onValueChange={setPaspaturId}>
+                      <SelectTrigger id="paspatur">
+                        <SelectValue
+                          placeholder={
+                            loadingPaspaturs
+                              ? "Carregando..."
+                              : "Selecione um paspatur"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paspaturs.length === 0 && !loadingPaspaturs ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            Nenhum paspatur cadastrado.
+                          </div>
+                        ) : (
+                          paspaturs.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.code}
+                              {p.description ? ` — ${p.description}` : ""}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
 
               {/* Preview: outer paspatur + inner art */}
               {alturaNum > 0 && larguraNum > 0 && (
@@ -505,7 +546,7 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {paspaturSelecionado && larguraFinal > 0 && alturaFinal > 0 && (
+              {paspaturAtivo === "sim" && paspaturSelecionado && larguraFinal > 0 && alturaFinal > 0 && (
                 <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Check className="h-4 w-4 text-emerald-600" />
