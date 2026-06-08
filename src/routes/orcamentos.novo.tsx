@@ -402,8 +402,7 @@ function NovoOrcamento() {
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Paspatur</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Defina as margens do paspatur. As medidas finais serão utilizadas
-                pelo perfil, vidro e foam/MDF.
+                Defina as margens do paspatur. As medidas finais serão utilizadas pelos próximos campos.
               </p>
 
               {(alturaNum <= 0 || larguraNum <= 0) && (
@@ -413,77 +412,98 @@ function NovoOrcamento() {
                 </p>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-esq">Esquerda (cm)</Label>
-                  <Input
-                    id="m-esq"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemEsq}
-                    onChange={(e) => setMargemEsq(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-dir">Direita (cm)</Label>
-                  <Input
-                    id="m-dir"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemDir}
-                    onChange={(e) => setMargemDir(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-sup">Superior (cm)</Label>
-                  <Input
-                    id="m-sup"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemSup}
-                    onChange={(e) => setMargemSup(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="m-inf">Inferior (cm)</Label>
-                  <Input
-                    id="m-inf"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={margemInf}
-                    onChange={(e) => setMargemInf(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="paspatur">Produto Paspatur</Label>
-                <Select value={paspaturId} onValueChange={setPaspaturId}>
-                  <SelectTrigger id="paspatur">
-                    <SelectValue
-                      placeholder={
-                        loadingPaspaturs
-                          ? "Carregando..."
-                          : "Selecione um paspatur"
-                      }
-                    />
+                <Label htmlFor="paspatur-ativo">Paspatur</Label>
+                <Select
+                  value={paspaturAtivo}
+                  onValueChange={(v) => setPaspaturAtivo(v as "sim" | "nao")}
+                >
+                  <SelectTrigger id="paspatur-ativo">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {paspaturs.length === 0 && !loadingPaspaturs ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Nenhum paspatur cadastrado.
-                      </div>
-                    ) : (
-                      paspaturs.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.code}
-                          {p.description ? ` — ${p.description}` : ""}
-                        </SelectItem>
-                      ))
-                    )}
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {paspaturAtivo === "sim" && (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-esq">Esquerda (cm)</Label>
+                      <Input
+                        id="m-esq"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemEsq}
+                        onChange={(e) => setMargemEsq(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-dir">Direita (cm)</Label>
+                      <Input
+                        id="m-dir"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemDir}
+                        onChange={(e) => setMargemDir(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-sup">Superior (cm)</Label>
+                      <Input
+                        id="m-sup"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemSup}
+                        onChange={(e) => setMargemSup(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-inf">Inferior (cm)</Label>
+                      <Input
+                        id="m-inf"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={margemInf}
+                        onChange={(e) => setMargemInf(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 max-w-md space-y-1.5">
+                    <Label htmlFor="paspatur">Produto Paspatur</Label>
+                    <Select value={paspaturId} onValueChange={setPaspaturId}>
+                      <SelectTrigger id="paspatur">
+                        <SelectValue
+                          placeholder={
+                            loadingPaspaturs
+                              ? "Carregando..."
+                              : "Selecione um paspatur"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paspaturs.length === 0 && !loadingPaspaturs ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            Nenhum paspatur cadastrado.
+                          </div>
+                        ) : (
+                          paspaturs.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.code}
+                              {p.description ? ` — ${p.description}` : ""}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
 
               {/* Preview: outer paspatur + inner art */}
               {alturaNum > 0 && larguraNum > 0 && (
