@@ -511,7 +511,7 @@ function NovoOrcamento() {
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Paspatur</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Defina as margens do paspatur. As medidas finais serão utilizadas pelos próximos campos.
+                Defina as margens do paspatur. As medidas finais serão utilizadas pelos próximos campos do orçamento.
               </p>
 
               {(alturaNum <= 0 || larguraNum <= 0) && (
