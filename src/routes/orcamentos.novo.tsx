@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -24,11 +26,12 @@ import {
   CheckCircle2,
   Check,
   X,
+  Upload,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
@@ -46,16 +49,16 @@ type StepKey =
   | "instalacao"
   | "finalizacao";
 
-const steps: { key: StepKey; label: string; icon: typeof Ruler; enabled: boolean }[] = [
-  { key: "tamanho", label: "Tamanho", icon: Ruler, enabled: true },
-  { key: "paspatur", label: "Paspatur", icon: ImageIcon, enabled: true },
-  { key: "perfil", label: "Perfil", icon: Frame, enabled: true },
-  { key: "vidro", label: "Vidro / Espelho", icon: Square, enabled: true },
-  { key: "foam", label: "Foam / MDF", icon: Layers, enabled: true },
-  { key: "colagem", label: "Colagem", icon: Scissors, enabled: false },
-  { key: "impressao", label: "Impressão", icon: Printer, enabled: false },
-  { key: "instalacao", label: "Instalação / Frete", icon: Truck, enabled: false },
-  { key: "finalizacao", label: "Finalização", icon: CheckCircle2, enabled: false },
+const steps: { key: StepKey; label: string; icon: typeof Ruler }[] = [
+  { key: "tamanho", label: "Tamanho", icon: Ruler },
+  { key: "paspatur", label: "Paspatur", icon: ImageIcon },
+  { key: "perfil", label: "Perfil", icon: Frame },
+  { key: "vidro", label: "Vidro / Espelho", icon: Square },
+  { key: "foam", label: "Foam / MDF", icon: Layers },
+  { key: "colagem", label: "Colagem", icon: Scissors },
+  { key: "impressao", label: "Impressão", icon: Printer },
+  { key: "instalacao", label: "Instalação / Frete", icon: Truck },
+  { key: "finalizacao", label: "Finalização", icon: CheckCircle2 },
 ];
 
 type Produto = {
@@ -104,17 +107,25 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
   });
 }
 
+type TipoEntrega = "Retirada" | "Motoboy" | "Sedex" | "Transportadora" | "Outro";
+type FormaPagto =
+  | "Dinheiro"
+  | "Pix"
+  | "Cartão de crédito"
+  | "Cartão de débito"
+  | "Boleto"
+  | "A combinar";
+
 function NovoOrcamento() {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const queryClient = useQueryClient();
+
   const [active, setActive] = useState<StepKey>("tamanho");
   const [altura, setAltura] = useState<string>("");
   const [largura, setLargura] = useState<string>("");
 
-  // Paspatur toggle
   const [paspaturAtivo, setPaspaturAtivo] = useState<"sim" | "nao">("nao");
-
-  // Paspatur margins (cm)
   const [margemEsq, setMargemEsq] = useState<string>("");
   const [margemDir, setMargemDir] = useState<string>("");
   const [margemSup, setMargemSup] = useState<string>("");
@@ -125,6 +136,29 @@ function NovoOrcamento() {
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
   const [foamId, setFoamId] = useState<string>("");
+
+  // Colagem
+  const [colagemAtivo, setColagemAtivo] = useState<"sim" | "nao">("nao");
+  const [colagemId, setColagemId] = useState<string>("");
+
+  // Impressão
+  const [impressaoAtivo, setImpressaoAtivo] = useState<"sim" | "nao">("nao");
+  const [impressaoId, setImpressaoId] = useState<string>("");
+  const [impressaoArquivo, setImpressaoArquivo] = useState<File | null>(null);
+
+  // Instalação / Frete
+  const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
+  const [valorInstalacaoStr, setValorInstalacaoStr] = useState<string>("");
+  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
+  const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
+
+  // Finalização
+  const [clienteNome, setClienteNome] = useState<string>("");
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
+  const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
+  const [dataVencimento, setDataVencimento] = useState<string>("");
+  const [observacoes, setObservacoes] = useState<string>("");
+  const [salvando, setSalvando] = useState(false);
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
     ["Perfil"],
@@ -140,6 +174,14 @@ function NovoOrcamento() {
   );
   const { data: paspaturs = [], isLoading: loadingPaspaturs } = useCategoryProducts(
     ["Paspatur"],
+    !!session,
+  );
+  const { data: colagens = [], isLoading: loadingColagens } = useCategoryProducts(
+    ["Colagem"],
+    !!session,
+  );
+  const { data: impressoes = [], isLoading: loadingImpressoes } = useCategoryProducts(
+    ["Impressão", "Impressao"],
     !!session,
   );
 
@@ -159,6 +201,14 @@ function NovoOrcamento() {
     () => paspaturs.find((p) => p.id === paspaturId) ?? null,
     [paspaturs, paspaturId],
   );
+  const colagemSelecionada = useMemo(
+    () => colagens.find((p) => p.id === colagemId) ?? null,
+    [colagens, colagemId],
+  );
+  const impressaoSelecionada = useMemo(
+    () => impressoes.find((p) => p.id === impressaoId) ?? null,
+    [impressoes, impressaoId],
+  );
 
   const alturaNum = parseNum(altura);
   const larguraNum = parseNum(largura);
@@ -168,7 +218,6 @@ function NovoOrcamento() {
   const mSup = parseNum(margemSup);
   const mInf = parseNum(margemInf);
 
-  // Final dimensions including paspatur margins
   const larguraFinal = larguraNum + mEsq + mDir;
   const alturaFinal = alturaNum + mSup + mInf;
 
@@ -204,9 +253,40 @@ function NovoOrcamento() {
     [foamSelecionado, alturaFinal, larguraFinal],
   );
 
-  const valorTotal = valorPerfil + valorVidro + valorFoam + valorPaspatur;
+  const valorColagem = useMemo(
+    () =>
+      colagemAtivo === "sim"
+        ? calcAreaValue(colagemSelecionada, alturaFinal, larguraFinal)
+        : 0,
+    [colagemAtivo, colagemSelecionada, alturaFinal, larguraFinal],
+  );
 
-  // Preview for Tamanho step (art only)
+  const valorImpressao = useMemo(
+    () =>
+      impressaoAtivo === "sim"
+        ? calcAreaValue(impressaoSelecionada, alturaFinal, larguraFinal)
+        : 0,
+    [impressaoAtivo, impressaoSelecionada, alturaFinal, larguraFinal],
+  );
+
+  const valorInstalacao =
+    instalacaoAtivo === "sim" ? parseNum(valorInstalacaoStr) : 0;
+  const valorEntrega =
+    tipoEntrega === "Retirada" ? 0 : parseNum(valorEntregaStr);
+  const maoDeObraExtra = parseNum(maoDeObraExtraStr);
+
+  const valorTotal =
+    valorPerfil +
+    valorPaspatur +
+    valorVidro +
+    valorFoam +
+    valorColagem +
+    valorImpressao +
+    valorInstalacao +
+    valorEntrega +
+    maoDeObraExtra;
+
+  // Preview Tamanho
   const previewArt = useMemo(() => {
     const maxW = 320;
     const maxH = 240;
@@ -221,7 +301,6 @@ function NovoOrcamento() {
     };
   }, [alturaNum, larguraNum]);
 
-  // Preview for Paspatur (outer = final, inner = art)
   const previewPaspatur = useMemo(() => {
     const maxW = 360;
     const maxH = 280;
@@ -238,6 +317,62 @@ function NovoOrcamento() {
       scale,
     };
   }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf]);
+
+  function resetProduto() {
+    setAltura("");
+    setLargura("");
+    setPaspaturAtivo("nao");
+    setMargemEsq("");
+    setMargemDir("");
+    setMargemSup("");
+    setMargemInf("");
+    setPaspaturId("");
+    setPerfilId("");
+    setVidroTipo("nao");
+    setVidroId("");
+    setFoamId("");
+    setColagemAtivo("nao");
+    setColagemId("");
+    setImpressaoAtivo("nao");
+    setImpressaoId("");
+    setImpressaoArquivo(null);
+    setActive("tamanho");
+  }
+
+  async function handleSalvar() {
+    if (!session?.user?.id) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    if (!clienteNome.trim()) {
+      toast.error("Informe o nome do cliente.");
+      return;
+    }
+    if (valorTotal <= 0) {
+      toast.error("Valor total inválido. Verifique as etapas do orçamento.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      const number = `ORC-${Date.now().toString().slice(-8)}`;
+      const { error } = await supabase.from("budgets").insert({
+        user_id: session.user.id,
+        number,
+        client_name: clienteNome.trim(),
+        total_value: Number(valorTotal.toFixed(2)),
+        status: "Pendente",
+      });
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      toast.success("Orçamento salvo com sucesso!");
+      navigate({ to: "/orcamentos" });
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível salvar o orçamento.");
+    } finally {
+      setSalvando(false);
+    }
+  }
 
   return (
     <AppShell title="Novo Orçamento" subtitle="Monte o orçamento por etapas">
@@ -266,24 +401,16 @@ function NovoOrcamento() {
                 <button
                   key={s.key}
                   type="button"
-                  disabled={!s.enabled}
-                  onClick={() => s.enabled && setActive(s.key)}
+                  onClick={() => setActive(s.key)}
                   className={cn(
                     "w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all text-left",
                     isActive
                       ? "bg-gradient-brand text-brand-foreground shadow-brand"
-                      : s.enabled
-                        ? "text-foreground/80 hover:bg-accent hover:text-foreground"
-                        : "text-muted-foreground/60 cursor-not-allowed",
+                      : "text-foreground/80 hover:bg-accent hover:text-foreground",
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="flex-1">{s.label}</span>
-                  {!s.enabled && (
-                    <span className="text-[10px] uppercase tracking-wider opacity-70">
-                      em breve
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -294,31 +421,14 @@ function NovoOrcamento() {
         <div className="space-y-6">
           {/* Totals header */}
           <Card className="p-5">
-            <div className="flex flex-wrap items-center justify-end gap-8">
-              <div className="text-right">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Paspatur
-                </div>
-                <div className="text-lg font-semibold">{fmtMoney(valorPaspatur)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Valor do perfil
-                </div>
-                <div className="text-lg font-semibold">{fmtMoney(valorPerfil)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Valor do vidro
-                </div>
-                <div className="text-lg font-semibold">{fmtMoney(valorVidro)}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Valor Foam / MDF
-                </div>
-                <div className="text-lg font-semibold">{fmtMoney(valorFoam)}</div>
-              </div>
+            <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
+              <Total label="Paspatur" value={valorPaspatur} />
+              <Total label="Perfil" value={valorPerfil} />
+              <Total label="Vidro" value={valorVidro} />
+              <Total label="Foam/MDF" value={valorFoam} />
+              <Total label="Colagem" value={valorColagem} />
+              <Total label="Impressão" value={valorImpressao} />
+              <Total label="Inst./Frete" value={valorInstalacao + valorEntrega} />
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                   Valor total
@@ -372,7 +482,6 @@ function NovoOrcamento() {
                 </div>
               </div>
 
-              {/* Preview */}
               <div className="mt-10 flex justify-center">
                 <div className="inline-flex items-start gap-4">
                   <div className="flex flex-col items-center">
@@ -431,81 +540,27 @@ function NovoOrcamento() {
               {paspaturAtivo === "sim" && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="m-esq">Esquerda (cm)</Label>
-                      <Input
-                        id="m-esq"
-                        inputMode="decimal"
-                        placeholder="0"
-                        value={margemEsq}
-                        onChange={(e) => setMargemEsq(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="m-dir">Direita (cm)</Label>
-                      <Input
-                        id="m-dir"
-                        inputMode="decimal"
-                        placeholder="0"
-                        value={margemDir}
-                        onChange={(e) => setMargemDir(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="m-sup">Superior (cm)</Label>
-                      <Input
-                        id="m-sup"
-                        inputMode="decimal"
-                        placeholder="0"
-                        value={margemSup}
-                        onChange={(e) => setMargemSup(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="m-inf">Inferior (cm)</Label>
-                      <Input
-                        id="m-inf"
-                        inputMode="decimal"
-                        placeholder="0"
-                        value={margemInf}
-                        onChange={(e) => setMargemInf(e.target.value)}
-                      />
-                    </div>
+                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={setMargemEsq} />
+                    <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={setMargemDir} />
+                    <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={setMargemSup} />
+                    <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={setMargemInf} />
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
                     <Label htmlFor="paspatur">Produto Paspatur</Label>
-                    <Select value={paspaturId} onValueChange={setPaspaturId}>
-                      <SelectTrigger id="paspatur">
-                        <SelectValue
-                          placeholder={
-                            loadingPaspaturs
-                              ? "Carregando..."
-                              : "Selecione um paspatur"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paspaturs.length === 0 && !loadingPaspaturs ? (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            Nenhum paspatur cadastrado.
-                          </div>
-                        ) : (
-                          paspaturs.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.code}
-                              {p.description ? ` — ${p.description}` : ""}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <ProductSelect
+                      id="paspatur"
+                      value={paspaturId}
+                      onChange={setPaspaturId}
+                      products={paspaturs}
+                      loading={loadingPaspaturs}
+                      placeholder="Selecione um paspatur"
+                      emptyLabel="Nenhum paspatur cadastrado."
+                    />
                   </div>
                 </>
               )}
 
-
-              {/* Preview: outer paspatur + inner art */}
               {alturaNum > 0 && larguraNum > 0 && (
                 <div className="mt-10 flex justify-center">
                   <div className="inline-flex items-start gap-4">
@@ -526,11 +581,6 @@ function NovoOrcamento() {
                             Arte {larguraNum}×{alturaNum}
                           </span>
                         </div>
-                        {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) && (
-                          <span className="absolute top-1 left-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Paspatur
-                          </span>
-                        )}
                       </div>
                       <div className="mt-3 text-sm font-medium text-foreground">
                         {larguraFinal} CM
@@ -541,45 +591,6 @@ function NovoOrcamento() {
                       style={{ height: previewPaspatur.outerH }}
                     >
                       {alturaFinal} CM
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {paspaturAtivo === "sim" && paspaturSelecionado && larguraFinal > 0 && alturaFinal > 0 && (
-                <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    Paspatur selecionado
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
-                    <div>
-                      <span className="font-medium text-foreground">Código:</span>{" "}
-                      {paspaturSelecionado.code}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Valor/m²:</span>{" "}
-                      {fmtMoney(Number(paspaturSelecionado.value_per_meter))}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Perda:</span>{" "}
-                      {Number(paspaturSelecionado.waste_percentage)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Margem:</span>{" "}
-                      {Number(paspaturSelecionado.profit_margin)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">
-                        Medidas finais:
-                      </span>{" "}
-                      {larguraFinal} × {alturaFinal} cm
-                    </div>
-                    <div className="pt-2 border-t border-border mt-2">
-                      <span className="font-medium text-foreground">
-                        Valor do paspatur:
-                      </span>{" "}
-                      <span className="font-semibold">{fmtMoney(valorPaspatur)}</span>
                     </div>
                   </div>
                 </div>
@@ -596,68 +607,27 @@ function NovoOrcamento() {
 
               <div className="mt-6 max-w-md space-y-1.5">
                 <Label htmlFor="perfil">Código</Label>
-                <Select value={perfilId} onValueChange={setPerfilId}>
-                  <SelectTrigger id="perfil">
-                    <SelectValue
-                      placeholder={
-                        loadingPerfis ? "Carregando..." : "Selecione um perfil"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {perfis.length === 0 && !loadingPerfis ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Nenhum perfil cadastrado.
-                      </div>
-                    ) : (
-                      perfis.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.code}
-                          {p.description ? ` — ${p.description}` : ""}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <ProductSelect
+                  id="perfil"
+                  value={perfilId}
+                  onChange={setPerfilId}
+                  products={perfis}
+                  loading={loadingPerfis}
+                  placeholder="Selecione um perfil"
+                  emptyLabel="Nenhum perfil cadastrado."
+                />
               </div>
 
               {perfilSelecionado && (
-                <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    Perfil selecionado
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
-                    <div>
-                      <span className="font-medium text-foreground">Código:</span>{" "}
-                      {perfilSelecionado.code}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Valor/m:</span>{" "}
-                      {fmtMoney(Number(perfilSelecionado.value_per_meter))}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Perda:</span>{" "}
-                      {Number(perfilSelecionado.waste_percentage)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Margem:</span>{" "}
-                      {Number(perfilSelecionado.profit_margin)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">
-                        Medidas usadas:
-                      </span>{" "}
-                      {larguraFinal} × {alturaFinal} cm
-                    </div>
-                    <div className="pt-2 border-t border-border mt-2">
-                      <span className="font-medium text-foreground">
-                        Valor do perfil:
-                      </span>{" "}
-                      <span className="font-semibold">{fmtMoney(valorPerfil)}</span>
-                    </div>
-                  </div>
-                </div>
+                <SelectedInfo
+                  title="Perfil selecionado"
+                  product={perfilSelecionado}
+                  larguraFinal={larguraFinal}
+                  alturaFinal={alturaFinal}
+                  valor={valorPerfil}
+                  valorLabel="Valor do perfil"
+                  unitLabel="Valor/m:"
+                />
               )}
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
@@ -694,75 +664,27 @@ function NovoOrcamento() {
               {vidroTipo === "sim" && (
                 <div className="mt-6 max-w-md space-y-1.5">
                   <Label htmlFor="vidro">Espessura do Vidro</Label>
-                  <Select value={vidroId} onValueChange={setVidroId}>
-                    <SelectTrigger id="vidro">
-                      <SelectValue
-                        placeholder={
-                          loadingVidros ? "Carregando..." : "Selecione um vidro"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vidros.length === 0 && !loadingVidros ? (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">
-                          Nenhum vidro cadastrado.
-                        </div>
-                      ) : (
-                        vidros.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.code}
-                            {p.description ? ` - ${p.description}` : ""}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <ProductSelect
+                    id="vidro"
+                    value={vidroId}
+                    onChange={setVidroId}
+                    products={vidros}
+                    loading={loadingVidros}
+                    placeholder="Selecione um vidro"
+                    emptyLabel="Nenhum vidro cadastrado."
+                  />
                 </div>
               )}
 
               {vidroTipo === "sim" && vidroSelecionado && (
-                <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    Vidro selecionado
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
-                    <div>
-                      <span className="font-medium text-foreground">Código:</span>{" "}
-                      {vidroSelecionado.code}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Valor/m²:</span>{" "}
-                      {fmtMoney(Number(vidroSelecionado.value_per_meter))}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Perda:</span>{" "}
-                      {Number(vidroSelecionado.waste_percentage)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Margem:</span>{" "}
-                      {Number(vidroSelecionado.profit_margin)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">
-                        Medidas usadas:
-                      </span>{" "}
-                      {larguraFinal} × {alturaFinal} cm
-                    </div>
-                    <div className="pt-2 border-t border-border mt-2">
-                      <span className="font-medium text-foreground">
-                        Valor do vidro:
-                      </span>{" "}
-                      <span className="font-semibold">{fmtMoney(valorVidro)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {vidroTipo === "sim" && (alturaFinal <= 0 || larguraFinal <= 0) && (
-                <p className="mt-4 text-xs text-amber-600">
-                  Informe altura e largura na etapa Tamanho para calcular o valor.
-                </p>
+                <SelectedInfo
+                  title="Vidro selecionado"
+                  product={vidroSelecionado}
+                  larguraFinal={larguraFinal}
+                  alturaFinal={alturaFinal}
+                  valor={valorVidro}
+                  valorLabel="Valor do vidro"
+                />
               )}
             </Card>
           )}
@@ -776,83 +698,506 @@ function NovoOrcamento() {
 
               <div className="mt-6 max-w-md space-y-1.5">
                 <Label htmlFor="foam">Produto</Label>
-                <Select value={foamId} onValueChange={setFoamId}>
-                  <SelectTrigger id="foam">
-                    <SelectValue
-                      placeholder={
-                        loadingFoams ? "Carregando..." : "Selecione um produto"
-                      }
-                    />
+                <ProductSelect
+                  id="foam"
+                  value={foamId}
+                  onChange={setFoamId}
+                  products={foams}
+                  loading={loadingFoams}
+                  placeholder="Selecione um produto"
+                  emptyLabel="Nenhum produto cadastrado."
+                />
+              </div>
+
+              {foamSelecionado && (
+                <SelectedInfo
+                  title="Produto selecionado"
+                  product={foamSelecionado}
+                  larguraFinal={larguraFinal}
+                  alturaFinal={alturaFinal}
+                  valor={valorFoam}
+                  valorLabel="Valor Foam/MDF"
+                />
+              )}
+            </Card>
+          )}
+
+          {active === "colagem" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Colagem</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Informe se o orçamento incluirá colagem.
+              </p>
+
+              <div className="mt-6 max-w-md space-y-1.5">
+                <Label htmlFor="colagem-ativo">Colagem</Label>
+                <Select
+                  value={colagemAtivo}
+                  onValueChange={(v) => setColagemAtivo(v as "sim" | "nao")}
+                >
+                  <SelectTrigger id="colagem-ativo">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {foams.length === 0 && !loadingFoams ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Nenhum produto cadastrado.
-                      </div>
-                    ) : (
-                      foams.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.code}
-                          {p.description ? ` - ${p.description}` : ""}
-                        </SelectItem>
-                      ))
-                    )}
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {foamSelecionado && (
-                <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Check className="h-4 w-4 text-emerald-600" />
-                    Produto selecionado
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
-                    <div>
-                      <span className="font-medium text-foreground">Código:</span>{" "}
-                      {foamSelecionado.code}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Categoria:</span>{" "}
-                      {foamSelecionado.category}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Valor/m²:</span>{" "}
-                      {fmtMoney(Number(foamSelecionado.value_per_meter))}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Perda:</span>{" "}
-                      {Number(foamSelecionado.waste_percentage)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Margem:</span>{" "}
-                      {Number(foamSelecionado.profit_margin)}%
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">
-                        Medidas usadas:
-                      </span>{" "}
-                      {larguraFinal} × {alturaFinal} cm
-                    </div>
-                    <div className="pt-2 border-t border-border mt-2">
-                      <span className="font-medium text-foreground">
-                        Valor Foam/MDF:
-                      </span>{" "}
-                      <span className="font-semibold">{fmtMoney(valorFoam)}</span>
-                    </div>
-                  </div>
+              {colagemAtivo === "sim" && (
+                <div className="mt-6 max-w-md space-y-1.5">
+                  <Label htmlFor="colagem">Produto de colagem</Label>
+                  <ProductSelect
+                    id="colagem"
+                    value={colagemId}
+                    onChange={setColagemId}
+                    products={colagens}
+                    loading={loadingColagens}
+                    placeholder="Selecione um produto"
+                    emptyLabel="Nenhum produto de colagem cadastrado."
+                  />
                 </div>
               )}
 
-              {foamSelecionado && (alturaFinal <= 0 || larguraFinal <= 0) && (
-                <p className="mt-4 text-xs text-amber-600">
-                  Informe altura e largura na etapa Tamanho para calcular o valor.
-                </p>
+              {colagemAtivo === "sim" && colagemSelecionada && (
+                <SelectedInfo
+                  title="Colagem selecionada"
+                  product={colagemSelecionada}
+                  larguraFinal={larguraFinal}
+                  alturaFinal={alturaFinal}
+                  valor={valorColagem}
+                  valorLabel="Valor da colagem"
+                />
               )}
+            </Card>
+          )}
+
+          {active === "impressao" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Impressão</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure a impressão e envie o arquivo.
+              </p>
+
+              <div className="mt-6 max-w-md space-y-1.5">
+                <Label htmlFor="impressao-ativo">Impressão</Label>
+                <Select
+                  value={impressaoAtivo}
+                  onValueChange={(v) => setImpressaoAtivo(v as "sim" | "nao")}
+                >
+                  <SelectTrigger id="impressao-ativo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {impressaoAtivo === "sim" && (
+                <>
+                  <div className="mt-6 max-w-md space-y-1.5">
+                    <Label htmlFor="impressao">Tipo de impressão</Label>
+                    <ProductSelect
+                      id="impressao"
+                      value={impressaoId}
+                      onChange={setImpressaoId}
+                      products={impressoes}
+                      loading={loadingImpressoes}
+                      placeholder="Selecione um tipo"
+                      emptyLabel="Nenhum tipo de impressão cadastrado."
+                    />
+                  </div>
+
+                  <div className="mt-6 max-w-md">
+                    <Label>Arquivo da impressão</Label>
+                    <label
+                      htmlFor="impressao-arquivo"
+                      className="mt-1.5 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-input rounded-md px-6 py-8 text-center cursor-pointer hover:bg-accent/40 transition-colors"
+                    >
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">
+                        {impressaoArquivo ? impressaoArquivo.name : "Escolher arquivo"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Formatos aceitos: PDF, JPEG e PNG
+                      </span>
+                      <input
+                        id="impressao-arquivo"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                        className="hidden"
+                        onChange={(e) =>
+                          setImpressaoArquivo(e.target.files?.[0] ?? null)
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  {impressaoSelecionada && (
+                    <SelectedInfo
+                      title="Impressão selecionada"
+                      product={impressaoSelecionada}
+                      larguraFinal={larguraFinal}
+                      alturaFinal={alturaFinal}
+                      valor={valorImpressao}
+                      valorLabel="Valor da impressão"
+                    />
+                  )}
+                </>
+              )}
+            </Card>
+          )}
+
+          {active === "instalacao" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Instalação / Frete</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Defina valores manuais de instalação e entrega.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 max-w-2xl">
+                <div className="space-y-1.5">
+                  <Label htmlFor="inst-ativo">Necessita de instalação?</Label>
+                  <Select
+                    value={instalacaoAtivo}
+                    onValueChange={(v) => setInstalacaoAtivo(v as "sim" | "nao")}
+                  >
+                    <SelectTrigger id="inst-ativo">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nao">Não</SelectItem>
+                      <SelectItem value="sim">Sim</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {instalacaoAtivo === "sim" && (
+                  <FieldNum
+                    id="valor-inst"
+                    label="Valor da instalação (R$)"
+                    value={valorInstalacaoStr}
+                    onChange={setValorInstalacaoStr}
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 max-w-2xl">
+                <div className="space-y-1.5">
+                  <Label htmlFor="tipo-entrega">Tipo de entrega</Label>
+                  <Select
+                    value={tipoEntrega}
+                    onValueChange={(v) => setTipoEntrega(v as TipoEntrega)}
+                  >
+                    <SelectTrigger id="tipo-entrega">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Retirada">Retirada</SelectItem>
+                      <SelectItem value="Motoboy">Motoboy</SelectItem>
+                      <SelectItem value="Sedex">Sedex</SelectItem>
+                      <SelectItem value="Transportadora">Transportadora</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {tipoEntrega !== "Retirada" && (
+                  <FieldNum
+                    id="valor-entrega"
+                    label="Valor da entrega (R$)"
+                    value={valorEntregaStr}
+                    onChange={setValorEntregaStr}
+                  />
+                )}
+              </div>
+
+              <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Instalação:</span>
+                  <span className="font-semibold">{fmtMoney(valorInstalacao)}</span>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-muted-foreground">Entrega:</span>
+                  <span className="font-semibold">{fmtMoney(valorEntrega)}</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {active === "finalizacao" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Finalização</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Revise o resumo e finalize o orçamento.
+              </p>
+
+              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Resumo */}
+                <div className="rounded-md border border-border bg-muted/30 p-5 space-y-2 text-sm">
+                  <h3 className="font-semibold text-base text-foreground mb-2">
+                    Resumo do orçamento
+                  </h3>
+                  <Row label="Tamanho original" value={`${larguraNum || 0} × ${alturaNum || 0} cm`} />
+                  <Row
+                    label="Tamanho final (com paspatur)"
+                    value={`${larguraFinal || 0} × ${alturaFinal || 0} cm`}
+                  />
+                  <hr className="my-2 border-border" />
+                  <Row
+                    label={`Paspatur${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
+                    value={fmtMoney(valorPaspatur)}
+                  />
+                  <Row
+                    label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                    value={fmtMoney(valorPerfil)}
+                  />
+                  <Row
+                    label={`Vidro${vidroSelecionado && vidroTipo === "sim" ? ` (${vidroSelecionado.code})` : ""}`}
+                    value={fmtMoney(valorVidro)}
+                  />
+                  <Row
+                    label={`Foam/MDF${foamSelecionado ? ` (${foamSelecionado.code})` : ""}`}
+                    value={fmtMoney(valorFoam)}
+                  />
+                  <Row
+                    label={`Colagem${colagemSelecionada && colagemAtivo === "sim" ? ` (${colagemSelecionada.code})` : ""}`}
+                    value={fmtMoney(valorColagem)}
+                  />
+                  <Row
+                    label={`Impressão${impressaoSelecionada && impressaoAtivo === "sim" ? ` (${impressaoSelecionada.code})` : ""}`}
+                    value={fmtMoney(valorImpressao)}
+                  />
+                  <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
+                  <Row label={`Entrega (${tipoEntrega})`} value={fmtMoney(valorEntrega)} />
+                  <Row label="Mão de obra extra" value={fmtMoney(maoDeObraExtra)} />
+                  <hr className="my-2 border-border" />
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="font-semibold text-foreground">Valor total</span>
+                    <span className="text-xl font-bold bg-gradient-brand bg-clip-text text-transparent">
+                      {fmtMoney(valorTotal)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Campos finais */}
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cliente">Cliente</Label>
+                    <Input
+                      id="cliente"
+                      placeholder="Nome do cliente"
+                      value={clienteNome}
+                      onChange={(e) => setClienteNome(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="forma-pagto">Forma de pagamento</Label>
+                    <Select
+                      value={formaPagamento}
+                      onValueChange={(v) => setFormaPagamento(v as FormaPagto)}
+                    >
+                      <SelectTrigger id="forma-pagto">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        <SelectItem value="Pix">Pix</SelectItem>
+                        <SelectItem value="Cartão de crédito">Cartão de crédito</SelectItem>
+                        <SelectItem value="Cartão de débito">Cartão de débito</SelectItem>
+                        <SelectItem value="Boleto">Boleto</SelectItem>
+                        <SelectItem value="A combinar">A combinar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FieldNum
+                      id="mao-obra"
+                      label="Mão de obra extra (R$)"
+                      value={maoDeObraExtraStr}
+                      onChange={setMaoDeObraExtraStr}
+                    />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="venc">Data de vencimento</Label>
+                      <Input
+                        id="venc"
+                        type="date"
+                        value={dataVencimento}
+                        onChange={(e) => setDataVencimento(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="obs">Observações</Label>
+                    <Textarea
+                      id="obs"
+                      rows={4}
+                      value={observacoes}
+                      onChange={(e) => setObservacoes(e.target.value)}
+                      placeholder="Observações adicionais"
+                    />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <Button
+                      type="button"
+                      onClick={handleSalvar}
+                      disabled={salvando}
+                      className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+                    >
+                      {salvando ? "Salvando..." : "Salvar Orçamento"}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={resetProduto}>
+                      Orçar mais um produto
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </Card>
           )}
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function Total({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="text-right">
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div className="text-base font-semibold">{fmtMoney(value)}</div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function FieldNum({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        inputMode="decimal"
+        placeholder="0"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function ProductSelect({
+  id,
+  value,
+  onChange,
+  products,
+  loading,
+  placeholder,
+  emptyLabel,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  products: Produto[];
+  loading: boolean;
+  placeholder: string;
+  emptyLabel: string;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id}>
+        <SelectValue placeholder={loading ? "Carregando..." : placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {products.length === 0 && !loading ? (
+          <div className="px-3 py-2 text-sm text-muted-foreground">{emptyLabel}</div>
+        ) : (
+          products.map((p) => (
+            <SelectItem key={p.id} value={p.id}>
+              {p.code}
+              {p.description ? ` — ${p.description}` : ""}
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function SelectedInfo({
+  title,
+  product,
+  larguraFinal,
+  alturaFinal,
+  valor,
+  valorLabel,
+  unitLabel = "Valor/m²:",
+}: {
+  title: string;
+  product: Produto;
+  larguraFinal: number;
+  alturaFinal: number;
+  valor: number;
+  valorLabel: string;
+  unitLabel?: string;
+}) {
+  return (
+    <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
+      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <Check className="h-4 w-4 text-emerald-600" />
+        {title}
+      </div>
+      <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
+        <div>
+          <span className="font-medium text-foreground">Código:</span> {product.code}
+        </div>
+        <div>
+          <span className="font-medium text-foreground">{unitLabel}</span>{" "}
+          {fmtMoney(Number(product.value_per_meter))}
+        </div>
+        <div>
+          <span className="font-medium text-foreground">Perda:</span>{" "}
+          {Number(product.waste_percentage)}%
+        </div>
+        <div>
+          <span className="font-medium text-foreground">Margem:</span>{" "}
+          {Number(product.profit_margin)}%
+        </div>
+        <div>
+          <span className="font-medium text-foreground">Medidas usadas:</span>{" "}
+          {larguraFinal} × {alturaFinal} cm
+        </div>
+        <div className="pt-2 border-t border-border mt-2">
+          <span className="font-medium text-foreground">{valorLabel}:</span>{" "}
+          <span className="font-semibold">{fmtMoney(valor)}</span>
+        </div>
+      </div>
+    </div>
   );
 }
