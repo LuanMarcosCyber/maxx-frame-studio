@@ -509,7 +509,7 @@ function NovoOrcamento() {
   }
 
   return (
-    <AppShell title="Novo Orçamento" subtitle="Monte o orçamento por etapas">
+    <AppShell title={isEdit ? "Editar Orçamento" : "Novo Orçamento"} subtitle="Monte o orçamento por etapas">
       <div className="flex justify-end mb-2">
         <button
           type="button"
