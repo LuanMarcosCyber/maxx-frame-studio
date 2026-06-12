@@ -134,6 +134,8 @@ function NovoOrcamento() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const queryClient = useQueryClient();
+  const { id: editId } = Route.useSearch();
+  const isEdit = !!editId;
 
   const [active, setActive] = useState<StepKey>("tamanho");
   const [altura, setAltura] = useState<string>("");
