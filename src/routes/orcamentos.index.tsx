@@ -1,12 +1,36 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/orcamentos/")({
   head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
@@ -23,20 +47,49 @@ const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
+type BudgetRow = {
+  id: string;
+  number: string;
+  client_name: string;
+  total_value: number;
+  status: string;
+  created_at: string;
+  data_vencimento: string | null;
+  details: Record<string, unknown> | null;
+};
+
 function Orcamentos() {
   const { session } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [viewing, setViewing] = useState<BudgetRow | null>(null);
+  const [deleting, setDeleting] = useState<BudgetRow | null>(null);
+
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["budgets"],
     enabled: !!session,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budgets")
-        .select("id, number, client_name, total_value, status, created_at")
+        .select("id, number, client_name, total_value, status, created_at, data_vencimento, details")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as BudgetRow[];
     },
   });
+
+  async function handleDelete() {
+    if (!deleting) return;
+    const { error } = await supabase.from("budgets").delete().eq("id", deleting.id);
+    if (error) {
+      toast.error("Não foi possível excluir o orçamento.");
+      return;
+    }
+    toast.success("Orçamento excluído.");
+    setDeleting(null);
+    await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+  }
 
   return (
     <AppShell title="Orçamentos" subtitle="Gerencie todos os orçamentos da sua revenda">
@@ -101,9 +154,37 @@ function Orcamentos() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-right">
-                      <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
-                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                            aria-label="Ações"
+                          >
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setViewing(b)}>
+                            <Eye className="h-4 w-4 mr-2" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate({
+                                to: "/orcamentos/novo",
+                                search: { id: b.id },
+                              })
+                            }
+                          >
+                            <Pencil className="h-4 w-4 mr-2" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setDeleting(b)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))
@@ -112,6 +193,179 @@ function Orcamentos() {
           </table>
         </div>
       </Card>
+
+      <ResumoDialog budget={viewing} onClose={() => setViewing(null)} />
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir orçamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir este orçamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
+  );
+}
+
+function ResumoDialog({
+  budget,
+  onClose,
+}: {
+  budget: BudgetRow | null;
+  onClose: () => void;
+}) {
+  const d = (budget?.details ?? {}) as Record<string, unknown>;
+  const str = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+  const num = (k: string) => (typeof d[k] === "number" ? (d[k] as number) : 0);
+
+  const productLabel = (code: string, desc: string) => {
+    const c = str(code);
+    const dd = str(desc);
+    if (!c && !dd) return "Não aplicado";
+    return `${c}${c && dd ? " — " : ""}${dd}`;
+  };
+
+  const moneyOrNA = (active: boolean, value: number) =>
+    !active ? "Não aplicado" : fmtMoney(value);
+
+  const paspaturAtivo = d.paspaturAtivo === "sim";
+  const vidroAtivo = d.vidroTipo === "sim";
+  const colagemAtivo = d.colagemAtivo === "sim";
+  const impressaoAtivo = d.impressaoAtivo === "sim";
+  const instalacaoAtivo = d.instalacaoAtivo === "sim";
+  const tipoEntrega = str("tipoEntrega") || "Retirada";
+  const entregaAtiva = tipoEntrega !== "Retirada";
+
+  const rows: { label: string; value: string; sub?: string }[] = [
+    {
+      label: "Tamanho original",
+      value: `${num("larguraOriginal")} × ${num("alturaOriginal")} cm`,
+    },
+    {
+      label: "Tamanho final",
+      value: `${num("larguraFinal")} × ${num("alturaFinal")} cm`,
+    },
+    {
+      label: "Paspatur",
+      value: moneyOrNA(paspaturAtivo, num("valorPaspatur")),
+      sub: paspaturAtivo ? productLabel("paspaturCode", "paspaturDescription") : undefined,
+    },
+    {
+      label: "Perfil",
+      value: fmtMoney(num("valorPerfil")),
+      sub: productLabel("perfilCode", "perfilDescription"),
+    },
+    {
+      label: "Vidro / Espelho",
+      value: moneyOrNA(vidroAtivo, num("valorVidro")),
+      sub: vidroAtivo ? productLabel("vidroCode", "vidroDescription") : undefined,
+    },
+    {
+      label: "Foam / MDF",
+      value: fmtMoney(num("valorFoam")),
+      sub: productLabel("foamCode", "foamDescription"),
+    },
+    {
+      label: "Colagem",
+      value: moneyOrNA(colagemAtivo, num("valorColagem")),
+      sub: colagemAtivo ? productLabel("colagemCode", "colagemDescription") : undefined,
+    },
+    {
+      label: "Impressão",
+      value: moneyOrNA(impressaoAtivo, num("valorImpressao")),
+      sub: impressaoAtivo ? productLabel("impressaoCode", "impressaoDescription") : undefined,
+    },
+    {
+      label: "Instalação",
+      value: moneyOrNA(instalacaoAtivo, num("valorInstalacao")),
+    },
+    {
+      label: `Entrega / Frete${tipoEntrega ? ` (${tipoEntrega})` : ""}`,
+      value: moneyOrNA(entregaAtiva, num("valorEntrega")),
+    },
+    {
+      label: "Mão de obra extra",
+      value: fmtMoney(num("maoDeObraExtra")),
+    },
+  ];
+
+  return (
+    <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Resumo</DialogTitle>
+        </DialogHeader>
+        {budget && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <Info label="Número" value={budget.number} mono />
+              <Info label="Cliente" value={budget.client_name} />
+              <Info label="Data" value={fmtDate(budget.created_at)} />
+              <Info label="Status" value={budget.status} />
+              <Info
+                label="Forma de pagamento"
+                value={str("formaPagamento") || "—"}
+              />
+              <Info
+                label="Vencimento"
+                value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
+              />
+            </div>
+
+            <div className="rounded-lg border border-border divide-y divide-border">
+              {rows.map((r) => (
+                <div key={r.label} className="flex items-start justify-between px-4 py-3 text-sm">
+                  <div>
+                    <div className="font-medium text-foreground">{r.label}</div>
+                    {r.sub && (
+                      <div className="text-xs text-muted-foreground mt-0.5">{r.sub}</div>
+                    )}
+                  </div>
+                  <div className="font-semibold text-foreground whitespace-nowrap ml-4">
+                    {r.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {str("observacoes") && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                  Observações
+                </div>
+                <div className="text-sm text-foreground whitespace-pre-wrap rounded-md border border-border p-3 bg-muted/30">
+                  {str("observacoes")}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between rounded-lg bg-gradient-brand text-brand-foreground px-5 py-4 shadow-brand">
+              <span className="text-sm font-medium">Valor total</span>
+              <span className="text-xl font-bold">
+                {fmtMoney(Number(budget.total_value))}
+              </span>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Info({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`text-foreground font-medium ${mono ? "font-mono" : ""}`}>{value}</div>
+    </div>
   );
 }

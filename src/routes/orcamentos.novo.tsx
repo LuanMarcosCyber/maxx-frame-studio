@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -46,6 +46,9 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    id: typeof search.id === "string" ? search.id : undefined,
+  }),
   component: NovoOrcamento,
 });
 
@@ -131,6 +134,8 @@ function NovoOrcamento() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const queryClient = useQueryClient();
+  const { id: editId } = Route.useSearch();
+  const isEdit = !!editId;
 
   const [active, setActive] = useState<StepKey>("tamanho");
   const [altura, setAltura] = useState<string>("");
@@ -329,6 +334,57 @@ function NovoOrcamento() {
     };
   }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf]);
 
+  // Carregar orçamento existente para edição
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isEdit || !editId || !session?.user?.id) return;
+    if (loadedId === editId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("budgets")
+        .select("*")
+        .eq("id", editId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error("Não foi possível carregar o orçamento.");
+        return;
+      }
+      const d = (data.details ?? {}) as Record<string, unknown>;
+      const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+      setClienteNome(data.client_name ?? "");
+      setAltura(s("altura"));
+      setLargura(s("largura"));
+      setPaspaturAtivo(d.paspaturAtivo === "sim" ? "sim" : "nao");
+      setMargemEsq(s("margemEsq"));
+      setMargemDir(s("margemDir"));
+      setMargemSup(s("margemSup"));
+      setMargemInf(s("margemInf"));
+      setPaspaturId(s("paspaturId"));
+      setPerfilId(s("perfilId"));
+      setVidroTipo(d.vidroTipo === "sim" ? "sim" : "nao");
+      setVidroId(s("vidroId"));
+      setFoamId(s("foamId"));
+      setColagemAtivo(d.colagemAtivo === "sim" ? "sim" : "nao");
+      setColagemId(s("colagemId"));
+      setImpressaoAtivo(d.impressaoAtivo === "sim" ? "sim" : "nao");
+      setImpressaoId(s("impressaoId"));
+      setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
+      setValorInstalacaoStr(s("valorInstalacaoStr"));
+      setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
+      setValorEntregaStr(s("valorEntregaStr"));
+      setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
+      setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
+      setDataVencimento(data.data_vencimento ?? "");
+      setObservacoes(s("observacoes"));
+      setLoadedId(editId);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, editId, session?.user?.id, loadedId]);
+
   function resetProduto() {
     setAltura("");
     setLargura("");
@@ -350,6 +406,59 @@ function NovoOrcamento() {
     setActive("tamanho");
   }
 
+  function buildDetails() {
+    return {
+      altura,
+      largura,
+      alturaOriginal: alturaNum,
+      larguraOriginal: larguraNum,
+      alturaFinal,
+      larguraFinal,
+      paspaturAtivo,
+      paspaturId,
+      paspaturCode: paspaturSelecionado?.code ?? null,
+      paspaturDescription: paspaturSelecionado?.description ?? null,
+      valorPaspatur: Number(valorPaspatur.toFixed(2)),
+      margemEsq,
+      margemDir,
+      margemSup,
+      margemInf,
+      perfilId,
+      perfilCode: perfilSelecionado?.code ?? null,
+      perfilDescription: perfilSelecionado?.description ?? null,
+      valorPerfil: Number(valorPerfil.toFixed(2)),
+      vidroTipo,
+      vidroId,
+      vidroCode: vidroSelecionado?.code ?? null,
+      vidroDescription: vidroSelecionado?.description ?? null,
+      valorVidro: Number(valorVidro.toFixed(2)),
+      foamId,
+      foamCode: foamSelecionado?.code ?? null,
+      foamDescription: foamSelecionado?.description ?? null,
+      valorFoam: Number(valorFoam.toFixed(2)),
+      colagemAtivo,
+      colagemId,
+      colagemCode: colagemSelecionada?.code ?? null,
+      colagemDescription: colagemSelecionada?.description ?? null,
+      valorColagem: Number(valorColagem.toFixed(2)),
+      impressaoAtivo,
+      impressaoId,
+      impressaoCode: impressaoSelecionada?.code ?? null,
+      impressaoDescription: impressaoSelecionada?.description ?? null,
+      valorImpressao: Number(valorImpressao.toFixed(2)),
+      instalacaoAtivo,
+      valorInstalacaoStr,
+      valorInstalacao: Number(valorInstalacao.toFixed(2)),
+      tipoEntrega,
+      valorEntregaStr,
+      valorEntrega: Number(valorEntrega.toFixed(2)),
+      maoDeObraExtraStr,
+      maoDeObraExtra: Number(maoDeObraExtra.toFixed(2)),
+      formaPagamento,
+      observacoes,
+    };
+  }
+
   async function handleSalvar() {
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
@@ -365,17 +474,31 @@ function NovoOrcamento() {
     }
     setSalvando(true);
     try {
-      const number = `ORC-${Date.now().toString().slice(-8)}`;
-      const { error } = await supabase.from("budgets").insert({
-        user_id: session.user.id,
-        number,
+      const payload = {
         client_name: clienteNome.trim(),
         total_value: Number(valorTotal.toFixed(2)),
-        status: "Pendente",
-      });
-      if (error) throw error;
+        data_vencimento: dataVencimento || null,
+        details: buildDetails() as never,
+      };
+      if (isEdit && editId) {
+        const { error } = await supabase
+          .from("budgets")
+          .update(payload)
+          .eq("id", editId);
+        if (error) throw error;
+        toast.success("Orçamento atualizado com sucesso!");
+      } else {
+        const number = `ORC-${Date.now().toString().slice(-8)}`;
+        const { error } = await supabase.from("budgets").insert({
+          user_id: session.user.id,
+          number,
+          status: "Pendente",
+          ...payload,
+        });
+        if (error) throw error;
+        toast.success("Orçamento salvo com sucesso!");
+      }
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      toast.success("Orçamento salvo com sucesso!");
       navigate({ to: "/orcamentos" });
     } catch (e) {
       console.error(e);
@@ -386,7 +509,7 @@ function NovoOrcamento() {
   }
 
   return (
-    <AppShell title="Novo Orçamento" subtitle="Monte o orçamento por etapas">
+    <AppShell title={isEdit ? "Editar Orçamento" : "Novo Orçamento"} subtitle="Monte o orçamento por etapas">
       <div className="flex justify-end mb-2">
         <button
           type="button"
@@ -1062,7 +1185,7 @@ function NovoOrcamento() {
                       disabled={salvando}
                       className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                     >
-                      {salvando ? "Salvando..." : "Salvar Orçamento"}
+                      {salvando ? "Salvando..." : isEdit ? "Atualizar Orçamento" : "Salvar Orçamento"}
                     </Button>
                     <Button type="button" variant="outline" onClick={resetProduto}>
                       Orçar mais um produto

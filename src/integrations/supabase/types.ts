@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           client_name: string
           created_at: string
+          data_vencimento: string | null
+          details: Json
           id: string
           number: string
           status: string
@@ -28,6 +30,8 @@ export type Database = {
         Insert: {
           client_name: string
           created_at?: string
+          data_vencimento?: string | null
+          details?: Json
           id?: string
           number: string
           status?: string
@@ -38,6 +42,8 @@ export type Database = {
         Update: {
           client_name?: string
           created_at?: string
+          data_vencimento?: string | null
+          details?: Json
           id?: string
           number?: string
           status?: string
