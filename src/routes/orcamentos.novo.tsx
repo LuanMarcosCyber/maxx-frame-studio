@@ -1185,7 +1185,7 @@ function NovoOrcamento() {
                       disabled={salvando}
                       className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                     >
-                      {salvando ? "Salvando..." : "Salvar Orçamento"}
+                      {salvando ? "Salvando..." : isEdit ? "Atualizar Orçamento" : "Salvar Orçamento"}
                     </Button>
                     <Button type="button" variant="outline" onClick={resetProduto}>
                       Orçar mais um produto
