@@ -334,6 +334,57 @@ function NovoOrcamento() {
     };
   }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf]);
 
+  // Carregar orçamento existente para edição
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isEdit || !editId || !session?.user?.id) return;
+    if (loadedId === editId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("budgets")
+        .select("*")
+        .eq("id", editId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error("Não foi possível carregar o orçamento.");
+        return;
+      }
+      const d = (data.details ?? {}) as Record<string, unknown>;
+      const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+      setClienteNome(data.client_name ?? "");
+      setAltura(s("altura"));
+      setLargura(s("largura"));
+      setPaspaturAtivo(d.paspaturAtivo === "sim" ? "sim" : "nao");
+      setMargemEsq(s("margemEsq"));
+      setMargemDir(s("margemDir"));
+      setMargemSup(s("margemSup"));
+      setMargemInf(s("margemInf"));
+      setPaspaturId(s("paspaturId"));
+      setPerfilId(s("perfilId"));
+      setVidroTipo(d.vidroTipo === "sim" ? "sim" : "nao");
+      setVidroId(s("vidroId"));
+      setFoamId(s("foamId"));
+      setColagemAtivo(d.colagemAtivo === "sim" ? "sim" : "nao");
+      setColagemId(s("colagemId"));
+      setImpressaoAtivo(d.impressaoAtivo === "sim" ? "sim" : "nao");
+      setImpressaoId(s("impressaoId"));
+      setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
+      setValorInstalacaoStr(s("valorInstalacaoStr"));
+      setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
+      setValorEntregaStr(s("valorEntregaStr"));
+      setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
+      setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
+      setDataVencimento(data.data_vencimento ?? "");
+      setObservacoes(s("observacoes"));
+      setLoadedId(editId);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, editId, session?.user?.id, loadedId]);
+
   function resetProduto() {
     setAltura("");
     setLargura("");
