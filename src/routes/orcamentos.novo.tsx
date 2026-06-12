@@ -1140,26 +1140,71 @@ function ProductSelect({
   placeholder: string;
   emptyLabel: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const selected = products.find((p) => p.id === value);
+  const label = (p: Produto) => `${p.code}${p.description ? ` — ${p.description}` : ""}`;
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id}>
-        <SelectValue placeholder={loading ? "Carregando..." : placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {products.length === 0 && !loading ? (
-          <div className="px-3 py-2 text-sm text-muted-foreground">{emptyLabel}</div>
-        ) : (
-          products.map((p) => (
-            <SelectItem key={p.id} value={p.id}>
-              {p.code}
-              {p.description ? ` — ${p.description}` : ""}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={loading}
+          className="w-full justify-between font-normal"
+        >
+          <span className={cn("truncate", !selected && "text-muted-foreground")}>
+            {loading
+              ? "Carregando..."
+              : selected
+                ? label(selected)
+                : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+        align="start"
+      >
+        <Command
+          filter={(val, search) => {
+            if (!search) return 1;
+            return val.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+          }}
+        >
+          <CommandInput placeholder="Digite código ou descrição..." />
+          <CommandList>
+            <CommandEmpty>{emptyLabel}</CommandEmpty>
+            <CommandGroup>
+              {products.map((p) => (
+                <CommandItem
+                  key={p.id}
+                  value={label(p)}
+                  onSelect={() => {
+                    onChange(p.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === p.id ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate">{label(p)}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
+
 
 function SelectedInfo({
   title,
