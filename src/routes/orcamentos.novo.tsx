@@ -406,6 +406,59 @@ function NovoOrcamento() {
     setActive("tamanho");
   }
 
+  function buildDetails() {
+    return {
+      altura,
+      largura,
+      alturaOriginal: alturaNum,
+      larguraOriginal: larguraNum,
+      alturaFinal,
+      larguraFinal,
+      paspaturAtivo,
+      paspaturId,
+      paspaturCode: paspaturSelecionado?.code ?? null,
+      paspaturDescription: paspaturSelecionado?.description ?? null,
+      valorPaspatur: Number(valorPaspatur.toFixed(2)),
+      margemEsq,
+      margemDir,
+      margemSup,
+      margemInf,
+      perfilId,
+      perfilCode: perfilSelecionado?.code ?? null,
+      perfilDescription: perfilSelecionado?.description ?? null,
+      valorPerfil: Number(valorPerfil.toFixed(2)),
+      vidroTipo,
+      vidroId,
+      vidroCode: vidroSelecionado?.code ?? null,
+      vidroDescription: vidroSelecionado?.description ?? null,
+      valorVidro: Number(valorVidro.toFixed(2)),
+      foamId,
+      foamCode: foamSelecionado?.code ?? null,
+      foamDescription: foamSelecionado?.description ?? null,
+      valorFoam: Number(valorFoam.toFixed(2)),
+      colagemAtivo,
+      colagemId,
+      colagemCode: colagemSelecionada?.code ?? null,
+      colagemDescription: colagemSelecionada?.description ?? null,
+      valorColagem: Number(valorColagem.toFixed(2)),
+      impressaoAtivo,
+      impressaoId,
+      impressaoCode: impressaoSelecionada?.code ?? null,
+      impressaoDescription: impressaoSelecionada?.description ?? null,
+      valorImpressao: Number(valorImpressao.toFixed(2)),
+      instalacaoAtivo,
+      valorInstalacaoStr,
+      valorInstalacao: Number(valorInstalacao.toFixed(2)),
+      tipoEntrega,
+      valorEntregaStr,
+      valorEntrega: Number(valorEntrega.toFixed(2)),
+      maoDeObraExtraStr,
+      maoDeObraExtra: Number(maoDeObraExtra.toFixed(2)),
+      formaPagamento,
+      observacoes,
+    };
+  }
+
   async function handleSalvar() {
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
@@ -421,17 +474,31 @@ function NovoOrcamento() {
     }
     setSalvando(true);
     try {
-      const number = `ORC-${Date.now().toString().slice(-8)}`;
-      const { error } = await supabase.from("budgets").insert({
-        user_id: session.user.id,
-        number,
+      const payload = {
         client_name: clienteNome.trim(),
         total_value: Number(valorTotal.toFixed(2)),
-        status: "Pendente",
-      });
-      if (error) throw error;
+        data_vencimento: dataVencimento || null,
+        details: buildDetails() as never,
+      };
+      if (isEdit && editId) {
+        const { error } = await supabase
+          .from("budgets")
+          .update(payload)
+          .eq("id", editId);
+        if (error) throw error;
+        toast.success("Orçamento atualizado com sucesso!");
+      } else {
+        const number = `ORC-${Date.now().toString().slice(-8)}`;
+        const { error } = await supabase.from("budgets").insert({
+          user_id: session.user.id,
+          number,
+          status: "Pendente",
+          ...payload,
+        });
+        if (error) throw error;
+        toast.success("Orçamento salvo com sucesso!");
+      }
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      toast.success("Orçamento salvo com sucesso!");
       navigate({ to: "/orcamentos" });
     } catch (e) {
       console.error(e);
