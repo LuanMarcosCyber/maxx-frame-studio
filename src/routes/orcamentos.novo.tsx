@@ -1046,17 +1046,6 @@ function NovoOrcamento() {
                 />
               </div>
 
-              {perfilSelecionado && (
-                <SelectedInfo
-                  title="Perfil selecionado"
-                  product={perfilSelecionado}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorPerfil}
-                  valorLabel="Valor do perfil"
-                  unitLabel="Valor/m:"
-                />
-              )}
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
@@ -1104,16 +1093,6 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {vidroTipo === "sim" && vidroSelecionado && (
-                <SelectedInfo
-                  title="Vidro selecionado"
-                  product={vidroSelecionado}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorVidro}
-                  valorLabel="Valor do vidro"
-                />
-              )}
             </Card>
           )}
 
@@ -1137,16 +1116,6 @@ function NovoOrcamento() {
                 />
               </div>
 
-              {foamSelecionado && (
-                <SelectedInfo
-                  title="Produto selecionado"
-                  product={foamSelecionado}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorFoam}
-                  valorLabel="Valor Foam/MDF"
-                />
-              )}
             </Card>
           )}
 
@@ -1188,16 +1157,6 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {colagemAtivo === "sim" && colagemSelecionada && (
-                <SelectedInfo
-                  title="Colagem selecionada"
-                  product={colagemSelecionada}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorColagem}
-                  valorLabel="Valor da colagem"
-                />
-              )}
             </Card>
           )}
 
@@ -1264,16 +1223,6 @@ function NovoOrcamento() {
                     </label>
                   </div>
 
-                  {impressaoSelecionada && (
-                    <SelectedInfo
-                      title="Impressão selecionada"
-                      product={impressaoSelecionada}
-                      larguraFinal={larguraFinal}
-                      alturaFinal={alturaFinal}
-                      valor={valorImpressao}
-                      valorLabel="Valor da impressão"
-                    />
-                  )}
                 </>
               )}
             </Card>
@@ -1702,54 +1651,3 @@ function ProductSelect({
   );
 }
 
-function SelectedInfo({
-  title,
-  product,
-  larguraFinal,
-  alturaFinal,
-  valor,
-  valorLabel,
-  unitLabel = "Valor/m²:",
-}: {
-  title: string;
-  product: Produto;
-  larguraFinal: number;
-  alturaFinal: number;
-  valor: number;
-  valorLabel: string;
-  unitLabel?: string;
-}) {
-  return (
-    <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <Check className="h-4 w-4 text-emerald-600" />
-        {title}
-      </div>
-      <div className="mt-2 text-sm text-muted-foreground space-y-0.5">
-        <div>
-          <span className="font-medium text-foreground">Código:</span> {product.code}
-        </div>
-        <div>
-          <span className="font-medium text-foreground">{unitLabel}</span>{" "}
-          {fmtMoney(Number(product.value_per_meter))}
-        </div>
-        <div>
-          <span className="font-medium text-foreground">Perda:</span>{" "}
-          {Number(product.waste_percentage)}%
-        </div>
-        <div>
-          <span className="font-medium text-foreground">Margem:</span>{" "}
-          {Number(product.profit_margin)}%
-        </div>
-        <div>
-          <span className="font-medium text-foreground">Medidas usadas:</span>{" "}
-          {larguraFinal} × {alturaFinal} cm
-        </div>
-        <div className="pt-2 border-t border-border mt-2">
-          <span className="font-medium text-foreground">{valorLabel}:</span>{" "}
-          <span className="font-semibold">{fmtMoney(valor)}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
