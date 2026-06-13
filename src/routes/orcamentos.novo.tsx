@@ -619,6 +619,40 @@ function NovoOrcamento() {
     setActive("tamanho");
   }
 
+  function deleteItem(index: number) {
+    if (items.length <= 1) {
+      toast.warning("É necessário manter pelo menos um item no orçamento.");
+      return;
+    }
+    const captured = activeSnap;
+    const current = items.map((it, i) => (i === activeIndex ? captured : it));
+    const next = current.filter((_, i) => i !== index);
+    let newActive = activeIndex;
+    if (index === activeIndex) {
+      newActive = Math.max(0, index - 1);
+    } else if (index < activeIndex) {
+      newActive = activeIndex - 1;
+    }
+    setItems(next);
+    setActiveIndex(newActive);
+    loadSnapshotIntoState(next[newActive]);
+    toast.success("Item excluído.");
+  }
+
+  function cloneItem(sourceIndex: number) {
+    const captured = activeSnap;
+    const current = items.map((it, i) => (i === activeIndex ? captured : it));
+    const clone = { ...current[sourceIndex] };
+    const next = [...current, clone];
+    const newIndex = next.length - 1;
+    setItems(next);
+    setActiveIndex(newIndex);
+    loadSnapshotIntoState(clone);
+    setActive("tamanho");
+    toast.success(`Item ${sourceIndex + 1} clonado.`);
+  }
+
+
   // Carregar orçamento existente para edição
   const [loadedId, setLoadedId] = useState<string | null>(null);
   useEffect(() => {
