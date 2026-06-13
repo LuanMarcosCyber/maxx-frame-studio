@@ -79,11 +79,22 @@ export const createUser = createServerFn({ method: "POST" })
       user_metadata: {
         full_name: data.full_name,
         username: data.username.toLowerCase(),
-        role: data.role,
       },
     });
     if (error) throw new Error(error.message);
-    return { id: created.user?.id };
+
+    // The handle_new_user trigger always inserts the safe default role
+    // ('revendedor'). The admin explicitly sets the real role here using
+    // the service-role client so client-supplied metadata can never elevate.
+    const createdId = created.user?.id;
+    if (createdId && data.role !== "revendedor") {
+      const { error: roleErr } = await supabaseAdmin
+        .from("user_roles")
+        .update({ role: data.role })
+        .eq("user_id", createdId);
+      if (roleErr) throw new Error(roleErr.message);
+    }
+    return { id: createdId };
   });
 
 const resetSchema = z.object({

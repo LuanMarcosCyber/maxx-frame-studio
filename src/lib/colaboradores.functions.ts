@@ -75,12 +75,23 @@ export const createColaborador = createServerFn({ method: "POST" })
       user_metadata: {
         full_name: data.full_name,
         username,
-        role: "colaborador",
         parent_user_id: context.userId,
       },
     });
     if (error) throw new Error(error.message);
-    return { id: created.user?.id };
+
+    // Trigger inserts the safe default 'revendedor' role. Update it to
+    // 'colaborador' here using the service-role client. Client-supplied
+    // role metadata is ignored by the trigger.
+    const createdId = created.user?.id;
+    if (createdId) {
+      const { error: roleErr } = await supabaseAdmin
+        .from("user_roles")
+        .update({ role: "colaborador" })
+        .eq("user_id", createdId);
+      if (roleErr) throw new Error(roleErr.message);
+    }
+    return { id: createdId };
   });
 
 const resetSchema = z.object({
@@ -121,6 +132,12 @@ export const toggleColaboradorActive = createServerFn({ method: "POST" })
       .update({ active: data.active })
       .eq("id", data.user_id);
     if (error) throw new Error(error.message);
+
+    // When deactivating, revoke any active sessions so the JWT cannot be
+    // used to keep calling the API after the active flag flips.
+    if (!data.active) {
+      await supabaseAdmin.auth.admin.signOut(data.user_id, "global").catch(() => {});
+    }
     return { ok: true };
   });
 
