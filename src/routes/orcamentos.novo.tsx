@@ -373,6 +373,7 @@ function NovoOrcamento() {
   const [dataVencimento, setDataVencimento] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
     ["Perfil"],
