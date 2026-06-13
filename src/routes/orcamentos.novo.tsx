@@ -1045,17 +1045,6 @@ function NovoOrcamento() {
                 />
               </div>
 
-              {perfilSelecionado && (
-                <SelectedInfo
-                  title="Perfil selecionado"
-                  product={perfilSelecionado}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorPerfil}
-                  valorLabel="Valor do perfil"
-                  unitLabel="Valor/m:"
-                />
-              )}
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
