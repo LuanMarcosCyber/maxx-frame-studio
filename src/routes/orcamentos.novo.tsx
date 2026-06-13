@@ -26,6 +26,25 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from "@/components/ui/context-menu";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -48,7 +67,11 @@ import {
   Upload,
   ChevronsUpDown,
   Plus,
+  MoreVertical,
+  Trash2,
+  Copy,
 } from "lucide-react";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
