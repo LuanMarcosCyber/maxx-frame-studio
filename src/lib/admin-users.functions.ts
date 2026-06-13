@@ -45,13 +45,15 @@ export const listResellers = createServerFn({ method: "GET" })
     if (rErr) throw new Error(rErr.message);
 
     const roleMap = new Map(roles?.map((r) => [r.user_id, r.role]));
-    return (profiles ?? []).map((p) => ({
-      id: p.id,
-      full_name: p.full_name,
-      username: p.username,
-      created_at: p.created_at,
-      role: (roleMap.get(p.id) as "admin" | "revendedor") ?? "revendedor",
-    }));
+    return (profiles ?? [])
+      .map((p) => ({
+        id: p.id,
+        full_name: p.full_name,
+        username: p.username,
+        created_at: p.created_at,
+        role: (roleMap.get(p.id) as "admin" | "revendedor" | "colaborador") ?? "revendedor",
+      }))
+      .filter((u) => u.role !== "colaborador");
   });
 
 export const createUser = createServerFn({ method: "POST" })
