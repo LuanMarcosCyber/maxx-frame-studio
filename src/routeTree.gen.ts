@@ -73,9 +73,9 @@ const OrcamentosIndexRoute = OrcamentosIndexRouteImport.update({
   getParentRoute: () => OrcamentosRoute,
 } as any)
 const RevendedoresIdRoute = RevendedoresIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => RevendedoresRoute,
+  id: '/revendedores/$id',
+  path: '/revendedores/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const OrcamentosNovoRoute = OrcamentosNovoRouteImport.update({
   id: '/novo',
@@ -178,6 +178,7 @@ export interface RootRouteChildren {
   OrcamentosRoute: typeof OrcamentosRouteWithChildren
   PedidosRoute: typeof PedidosRoute
   ProdutosRoute: typeof ProdutosRoute
+  RevendedoresIdRoute: typeof RevendedoresIdRoute
   RevendedoresIndexRoute: typeof RevendedoresIndexRoute
 }
 
@@ -255,10 +256,10 @@ declare module '@tanstack/react-router' {
     }
     '/revendedores/$id': {
       id: '/revendedores/$id'
-      path: '/$id'
+      path: '/revendedores/$id'
       fullPath: '/revendedores/$id'
       preLoaderRoute: typeof RevendedoresIdRouteImport
-      parentRoute: typeof RevendedoresRoute
+      parentRoute: typeof rootRouteImport
     }
     '/orcamentos/novo': {
       id: '/orcamentos/novo'
@@ -293,18 +294,9 @@ const rootRouteChildren: RootRouteChildren = {
   OrcamentosRoute: OrcamentosRouteWithChildren,
   PedidosRoute: PedidosRoute,
   ProdutosRoute: ProdutosRoute,
+  RevendedoresIdRoute: RevendedoresIdRoute,
   RevendedoresIndexRoute: RevendedoresIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
