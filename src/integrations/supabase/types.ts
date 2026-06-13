@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_items: {
+        Row: {
+          budget_id: string
+          created_at: string
+          data: Json
+          id: string
+          position: number
+          subtotal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          data?: Json
+          id?: string
+          position?: number
+          subtotal?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          position?: number
+          subtotal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budgets: {
         Row: {
           client_name: string
