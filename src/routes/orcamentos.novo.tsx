@@ -43,6 +43,7 @@ import {
   Printer,
   Truck,
   CheckCircle2,
+  Check,
   X,
   Upload,
   ChevronsUpDown,
