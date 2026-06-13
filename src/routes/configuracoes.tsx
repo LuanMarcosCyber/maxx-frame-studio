@@ -49,7 +49,7 @@ function Configuracoes() {
             <p className="text-xs text-muted-foreground mb-5">
               Controle de permissões — administrado pelo ADMIN
             </p>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="p-5 rounded-lg border border-border bg-muted/30">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold">ADMIN</div>
@@ -75,6 +75,22 @@ function Configuracoes() {
                   <li>Visualiza apenas seus próprios dados</li>
                   <li>Cadastra produtos próprios</li>
                   <li>Cria orçamentos próprios</li>
+                  <li>Gerencia seus colaboradores</li>
+                </ul>
+              </div>
+              <div className="p-5 rounded-lg border border-border bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div className="font-semibold">COLABORADOR</div>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground font-medium">
+                    Limitado
+                  </span>
+                </div>
+                <ul className="mt-3 text-sm text-muted-foreground space-y-1.5 list-disc list-inside">
+                  <li>Visualiza produtos da loja do revendedor</li>
+                  <li>Cria orçamentos usando os produtos do revendedor</li>
+                  <li>Cria pedidos</li>
+                  <li>Não cadastra, edita ou exclui produtos</li>
+                  <li>Não visualiza margem, perda ou valores internos</li>
                 </ul>
               </div>
             </div>
