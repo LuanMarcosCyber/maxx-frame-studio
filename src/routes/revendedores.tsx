@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, KeyRound, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2 } from "lucide-react";
+import { UserPlus, KeyRound, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Eye } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,6 +204,11 @@ function Content() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to="/revendedores/$id" params={{ id: u.id }}>
+                            <Eye className="h-4 w-4 mr-2" /> Ver informações
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => setResetTarget({ id: u.id, username: u.username || "" })}
                         >
