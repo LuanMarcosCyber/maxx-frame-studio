@@ -204,6 +204,11 @@ function Content() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to="/revendedores/$id" params={{ id: u.id }}>
+                            <Eye className="h-4 w-4 mr-2" /> Ver informações
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => setResetTarget({ id: u.id, username: u.username || "" })}
                         >
