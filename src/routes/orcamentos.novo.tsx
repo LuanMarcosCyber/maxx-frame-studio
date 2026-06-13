@@ -1156,16 +1156,6 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {colagemAtivo === "sim" && colagemSelecionada && (
-                <SelectedInfo
-                  title="Colagem selecionada"
-                  product={colagemSelecionada}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorColagem}
-                  valorLabel="Valor da colagem"
-                />
-              )}
             </Card>
           )}
 
