@@ -26,6 +26,25 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+} from "@/components/ui/context-menu";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -48,7 +67,11 @@ import {
   Upload,
   ChevronsUpDown,
   Plus,
+  MoreVertical,
+  Trash2,
+  Copy,
 } from "lucide-react";
+
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -374,6 +397,9 @@ function NovoOrcamento() {
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+  const [cloneOpen, setCloneOpen] = useState(false);
+
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
     ["Perfil"],
@@ -593,6 +619,40 @@ function NovoOrcamento() {
     setActive("tamanho");
   }
 
+  function deleteItem(index: number) {
+    if (items.length <= 1) {
+      toast.warning("É necessário manter pelo menos um item no orçamento.");
+      return;
+    }
+    const captured = activeSnap;
+    const current = items.map((it, i) => (i === activeIndex ? captured : it));
+    const next = current.filter((_, i) => i !== index);
+    let newActive = activeIndex;
+    if (index === activeIndex) {
+      newActive = Math.max(0, index - 1);
+    } else if (index < activeIndex) {
+      newActive = activeIndex - 1;
+    }
+    setItems(next);
+    setActiveIndex(newActive);
+    loadSnapshotIntoState(next[newActive]);
+    toast.success("Item excluído.");
+  }
+
+  function cloneItem(sourceIndex: number) {
+    const captured = activeSnap;
+    const current = items.map((it, i) => (i === activeIndex ? captured : it));
+    const clone = { ...current[sourceIndex] };
+    const next = [...current, clone];
+    const newIndex = next.length - 1;
+    setItems(next);
+    setActiveIndex(newIndex);
+    loadSnapshotIntoState(clone);
+    setActive("tamanho");
+    toast.success(`Item ${sourceIndex + 1} clonado.`);
+  }
+
+
   // Carregar orçamento existente para edição
   const [loadedId, setLoadedId] = useState<string | null>(null);
   useEffect(() => {
@@ -781,25 +841,66 @@ function NovoOrcamento() {
             <div className="space-y-1">
               {items.map((_, i) => {
                 const isActive = i === activeIndex;
+                const canDelete = items.length > 1;
                 return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => selectItem(i)}
-                    className={cn(
-                      "w-full flex items-center justify-between rounded-md px-3 py-2 text-sm transition-all text-left",
-                      isActive
-                        ? "bg-accent text-foreground font-medium"
-                        : "hover:bg-accent/60 text-foreground/80",
-                    )}
-                  >
-                    <span>Item {i + 1}</span>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {fmtMoney(itemSubtotals[i] ?? 0)}
-                    </span>
-                  </button>
+                  <ContextMenu key={i}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className={cn(
+                          "group flex items-center rounded-md transition-all",
+                          isActive
+                            ? "bg-accent text-foreground font-medium"
+                            : "hover:bg-accent/60 text-foreground/80",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => selectItem(i)}
+                          className="flex-1 flex items-center justify-between px-3 py-2 text-sm text-left min-w-0"
+                        >
+                          <span>Item {i + 1}</span>
+                          <span className="text-xs font-medium text-muted-foreground ml-2">
+                            {fmtMoney(itemSubtotals[i] ?? 0)}
+                          </span>
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Ações do item"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-2 py-2 text-muted-foreground hover:text-foreground rounded-md"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              disabled={!canDelete}
+                              onClick={() => setDeleteIndex(i)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir item
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        disabled={!canDelete}
+                        onClick={() => setDeleteIndex(i)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir item
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
+
             </div>
             <button
               type="button"
@@ -1491,6 +1592,15 @@ function NovoOrcamento() {
                       <Plus className="h-4 w-4 mr-1.5" />
                       Orçar mais um produto
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCloneOpen(true)}
+                    >
+                      <Copy className="h-4 w-4 mr-1.5" />
+                      Clonar produto
+                    </Button>
+
                   </div>
                 </div>
               </div>
@@ -1520,7 +1630,64 @@ function NovoOrcamento() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={deleteIndex !== null}
+        onOpenChange={(o) => !o && setDeleteIndex(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir este item do orçamento?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteIndex !== null) deleteItem(deleteIndex);
+                setDeleteIndex(null);
+              }}
+            >
+              Excluir item
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={cloneOpen} onOpenChange={setCloneOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clonar produto</DialogTitle>
+            <DialogDescription>
+              Selecione um item para clonar. Um novo item idêntico será adicionado ao
+              final da lista.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2 max-h-[60vh] overflow-y-auto">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  cloneItem(i);
+                  setCloneOpen(false);
+                }}
+                className="w-full flex items-center justify-between rounded-md border border-border px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left"
+              >
+                <span className="font-medium">Item {i + 1}</span>
+                <span className="text-muted-foreground">
+                  {fmtMoney(itemSubtotals[i] ?? 0)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
+
   );
 }
 
