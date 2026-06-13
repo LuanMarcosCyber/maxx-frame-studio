@@ -1222,16 +1222,6 @@ function NovoOrcamento() {
                     </label>
                   </div>
 
-                  {impressaoSelecionada && (
-                    <SelectedInfo
-                      title="Impressão selecionada"
-                      product={impressaoSelecionada}
-                      larguraFinal={larguraFinal}
-                      alturaFinal={alturaFinal}
-                      valor={valorImpressao}
-                      valorLabel="Valor da impressão"
-                    />
-                  )}
                 </>
               )}
             </Card>
