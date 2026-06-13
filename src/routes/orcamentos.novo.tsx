@@ -1630,7 +1630,64 @@ function NovoOrcamento() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={deleteIndex !== null}
+        onOpenChange={(o) => !o && setDeleteIndex(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir este item do orçamento?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteIndex !== null) deleteItem(deleteIndex);
+                setDeleteIndex(null);
+              }}
+            >
+              Excluir item
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={cloneOpen} onOpenChange={setCloneOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clonar produto</DialogTitle>
+            <DialogDescription>
+              Selecione um item para clonar. Um novo item idêntico será adicionado ao
+              final da lista.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2 max-h-[60vh] overflow-y-auto">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  cloneItem(i);
+                  setCloneOpen(false);
+                }}
+                className="w-full flex items-center justify-between rounded-md border border-border px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left"
+              >
+                <span className="font-medium">Item {i + 1}</span>
+                <span className="text-muted-foreground">
+                  {fmtMoney(itemSubtotals[i] ?? 0)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
+
   );
 }
 
