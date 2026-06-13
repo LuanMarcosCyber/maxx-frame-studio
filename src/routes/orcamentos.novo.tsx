@@ -1092,16 +1092,6 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              {vidroTipo === "sim" && vidroSelecionado && (
-                <SelectedInfo
-                  title="Vidro selecionado"
-                  product={vidroSelecionado}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorVidro}
-                  valorLabel="Valor do vidro"
-                />
-              )}
             </Card>
           )}
 
