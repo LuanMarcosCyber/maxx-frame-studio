@@ -16,6 +16,16 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -363,6 +373,7 @@ function NovoOrcamento() {
   const [dataVencimento, setDataVencimento] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
     ["Perfil"],
@@ -753,13 +764,7 @@ function NovoOrcamento() {
       <div className="flex justify-end mb-2">
         <button
           type="button"
-          onClick={() => {
-            if (
-              window.confirm("Ao sair você perderá este orçamento, deseja continuar?")
-            ) {
-              navigate({ to: "/orcamentos" });
-            }
-          }}
+          onClick={() => setShowExitDialog(true)}
           className="inline-flex items-center justify-center rounded-md h-8 w-8 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           aria-label="Sair"
         >
@@ -1544,6 +1549,28 @@ function NovoOrcamento() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sair do orçamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ao sair, você perderá as alterações não salvas deste orçamento. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowExitDialog(false)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => navigate({ to: "/orcamentos" })}
+            >
+              Sair do orçamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
