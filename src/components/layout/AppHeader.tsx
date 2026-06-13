@@ -40,7 +40,11 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
             />
           </div>
 
-          <button className="relative h-10 w-10 grid place-items-center rounded-md bg-white/10 hover:bg-white/15 transition border border-white/10">
+          <button
+            type="button"
+            aria-label="Notificações"
+            className="relative h-10 w-10 grid place-items-center rounded-md bg-white/10 hover:bg-white/15 transition border border-white/10"
+          >
             <Bell className="h-4 w-4" />
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber-300" />
           </button>

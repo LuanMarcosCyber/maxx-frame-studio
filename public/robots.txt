@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /orcamentos
+Disallow: /pedidos
+Disallow: /produtos
+Disallow: /revendedores
+Disallow: /colaboradores
+Disallow: /configuracoes
+Disallow: /conta
+
+Sitemap: https://maxx-frame-studio.lovable.app/sitemap.xml

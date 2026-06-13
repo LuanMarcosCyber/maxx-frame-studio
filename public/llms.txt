@@ -1,0 +1,9 @@
+# Total Maxx ERP
+
+> Sistema web de gestão para revendedores criarem orçamentos e pedidos de componentes decorativos (foam, paspatur, impressão, perfil, vidro, colagem).
+
+Total Maxx ERP é uma aplicação privada de uso interno por revendedores autenticados. O acesso público é limitado às páginas listadas abaixo.
+
+## Pages
+
+- [Entrar](/login): Tela de login para revendedores e colaboradores.

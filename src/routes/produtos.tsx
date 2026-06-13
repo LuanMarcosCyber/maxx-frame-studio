@@ -30,7 +30,16 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/produtos")({
-  head: () => ({ meta: [{ title: "Produtos — Total Maxx ERP" }] }),
+  head: () => ({
+    meta: [
+      { title: "Produtos — Total Maxx ERP" },
+      { name: "description", content: "Catálogo de produtos do Total Maxx ERP: foam, paspatur, impressão, perfil, vidro e colagem com códigos, valores e margens." },
+      { property: "og:title", content: "Produtos — Total Maxx ERP" },
+      { property: "og:description", content: "Catálogo de produtos por categoria no Total Maxx ERP." },
+      { property: "og:url", content: "https://maxx-frame-studio.lovable.app/produtos" },
+    ],
+    links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/produtos" }],
+  }),
   component: Produtos,
 });
 
