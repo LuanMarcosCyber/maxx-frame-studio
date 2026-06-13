@@ -7,30 +7,42 @@ import {
   User,
   Settings,
   Users,
+  UserCog,
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
 
-const baseItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Orçamentos", url: "/orcamentos", icon: FileText },
-  { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
-  { title: "Produtos", url: "/produtos", icon: Package },
-];
+type Item = { title: string; url: string; icon: typeof LayoutDashboard };
 
-const adminItems = [{ title: "Revendedores", url: "/revendedores", icon: Users }];
+const dashboard: Item = { title: "Dashboard", url: "/", icon: LayoutDashboard };
+const orcamentos: Item = { title: "Orçamentos", url: "/orcamentos", icon: FileText };
+const pedidos: Item = { title: "Pedidos", url: "/pedidos", icon: ShoppingCart };
+const produtos: Item = { title: "Produtos", url: "/produtos", icon: Package };
+const revendedores: Item = { title: "Revendedores", url: "/revendedores", icon: Users };
+const colaboradores: Item = { title: "Colaboradores", url: "/colaboradores", icon: UserCog };
 
-const bottomItems = [
-  { title: "Conta", url: "/conta", icon: User },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
-];
+const conta: Item = { title: "Conta", url: "/conta", icon: User };
+const configuracoes: Item = { title: "Configurações", url: "/configuracoes", icon: Settings };
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
-  const items = role === "admin" ? [...baseItems, ...adminItems] : baseItems;
+
+  let items: Item[];
+  let bottomItems: Item[];
+  if (role === "admin") {
+    items = [dashboard, orcamentos, pedidos, produtos, revendedores];
+    bottomItems = [conta, configuracoes];
+  } else if (role === "colaborador") {
+    items = [dashboard, orcamentos, pedidos, produtos];
+    bottomItems = [conta];
+  } else {
+    items = [dashboard, orcamentos, pedidos, produtos, colaboradores];
+    bottomItems = [conta, configuracoes];
+  }
+
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
