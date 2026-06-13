@@ -18,6 +18,7 @@ import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ColaboradoresRouteImport } from './routes/colaboradores'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RevendedoresIndexRouteImport } from './routes/revendedores.index'
 import { Route as OrcamentosIndexRouteImport } from './routes/orcamentos.index'
 import { Route as RevendedoresIdRouteImport } from './routes/revendedores.$id'
 import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
@@ -67,6 +68,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RevendedoresIndexRoute = RevendedoresIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RevendedoresRoute,
+} as any)
 const OrcamentosIndexRoute = OrcamentosIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
+  '/revendedores/': typeof RevendedoresIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -105,10 +112,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
-  '/revendedores': typeof RevendedoresRouteWithChildren
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos': typeof OrcamentosIndexRoute
+  '/revendedores': typeof RevendedoresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,6 +131,7 @@ export interface FileRoutesById {
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
+  '/revendedores/': typeof RevendedoresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,6 +148,7 @@ export interface FileRouteTypes {
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
+    | '/revendedores/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -149,10 +158,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/pedidos'
     | '/produtos'
-    | '/revendedores'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos'
+    | '/revendedores'
   id:
     | '__root__'
     | '/'
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
+    | '/revendedores/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -246,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/revendedores/': {
+      id: '/revendedores/'
+      path: '/'
+      fullPath: '/revendedores/'
+      preLoaderRoute: typeof RevendedoresIndexRouteImport
+      parentRoute: typeof RevendedoresRoute
+    }
     '/orcamentos/': {
       id: '/orcamentos/'
       path: '/'
@@ -286,10 +303,12 @@ const OrcamentosRouteWithChildren = OrcamentosRoute._addFileChildren(
 
 interface RevendedoresRouteChildren {
   RevendedoresIdRoute: typeof RevendedoresIdRoute
+  RevendedoresIndexRoute: typeof RevendedoresIndexRoute
 }
 
 const RevendedoresRouteChildren: RevendedoresRouteChildren = {
   RevendedoresIdRoute: RevendedoresIdRoute,
+  RevendedoresIndexRoute: RevendedoresIndexRoute,
 }
 
 const RevendedoresRouteWithChildren = RevendedoresRoute._addFileChildren(
