@@ -841,25 +841,66 @@ function NovoOrcamento() {
             <div className="space-y-1">
               {items.map((_, i) => {
                 const isActive = i === activeIndex;
+                const canDelete = items.length > 1;
                 return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => selectItem(i)}
-                    className={cn(
-                      "w-full flex items-center justify-between rounded-md px-3 py-2 text-sm transition-all text-left",
-                      isActive
-                        ? "bg-accent text-foreground font-medium"
-                        : "hover:bg-accent/60 text-foreground/80",
-                    )}
-                  >
-                    <span>Item {i + 1}</span>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {fmtMoney(itemSubtotals[i] ?? 0)}
-                    </span>
-                  </button>
+                  <ContextMenu key={i}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className={cn(
+                          "group flex items-center rounded-md transition-all",
+                          isActive
+                            ? "bg-accent text-foreground font-medium"
+                            : "hover:bg-accent/60 text-foreground/80",
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => selectItem(i)}
+                          className="flex-1 flex items-center justify-between px-3 py-2 text-sm text-left min-w-0"
+                        >
+                          <span>Item {i + 1}</span>
+                          <span className="text-xs font-medium text-muted-foreground ml-2">
+                            {fmtMoney(itemSubtotals[i] ?? 0)}
+                          </span>
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Ações do item"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-2 py-2 text-muted-foreground hover:text-foreground rounded-md"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              disabled={!canDelete}
+                              onClick={() => setDeleteIndex(i)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir item
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        disabled={!canDelete}
+                        onClick={() => setDeleteIndex(i)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir item
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
+
             </div>
             <button
               type="button"
