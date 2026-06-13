@@ -87,7 +87,7 @@ function Conta() {
     <AppShell title="Minha Conta" subtitle="Dados do usuário e perfil">
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="p-6 lg:col-span-2">
-          <h3 className="text-base font-semibold mb-1">Informações pessoais</h3>
+          <h2 className="text-base font-semibold mb-1">Informações pessoais</h2>
           <p className="text-xs text-muted-foreground mb-6">
             Atualize seus dados de cadastro
           </p>
@@ -164,7 +164,7 @@ function Conta() {
           </Card>
 
           <Card className="p-6">
-            <h3 className="text-sm font-semibold mb-4">Minhas estatísticas</h3>
+            <h2 className="text-sm font-semibold mb-4">Minhas estatísticas</h2>
             <div className="space-y-3">
               <StatRow
                 icon={<FileText className="h-4 w-4" />}

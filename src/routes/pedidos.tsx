@@ -97,7 +97,11 @@ function Pedidos() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-right">
-                      <button className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition">
+                      <button
+                        type="button"
+                        aria-label="Ações"
+                        className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                      >
                         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                       </button>
                     </td>

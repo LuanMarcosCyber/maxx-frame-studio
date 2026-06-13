@@ -23,7 +23,7 @@ function Configuracoes() {
     <AppShell title="Configurações" subtitle="Ajustes do sistema e preferências">
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h3 className="text-base font-semibold mb-1">Preferências</h3>
+          <h2 className="text-base font-semibold mb-1">Preferências</h2>
           <p className="text-xs text-muted-foreground mb-5">
             Personalize o comportamento do sistema
           </p>
@@ -45,7 +45,7 @@ function Configuracoes() {
 
         {isAdmin && (
           <Card className="p-6 lg:col-span-2">
-            <h3 className="text-base font-semibold mb-1">Perfis de acesso</h3>
+            <h2 className="text-base font-semibold mb-1">Perfis de acesso</h2>
             <p className="text-xs text-muted-foreground mb-5">
               Controle de permissões — administrado pelo ADMIN
             </p>

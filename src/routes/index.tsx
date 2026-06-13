@@ -17,8 +17,23 @@ import { useAuth } from "@/hooks/useAuth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Total Maxx" },
-      { name: "description", content: "Painel da Total Maxx Import & Export." },
+      { title: "Dashboard — Total Maxx ERP" },
+      { name: "description", content: "Painel principal do Total Maxx ERP: acompanhe orçamentos, pedidos, faturamento do mês e atividade recente em um só lugar." },
+      { property: "og:title", content: "Dashboard — Total Maxx ERP" },
+      { property: "og:description", content: "Painel principal do Total Maxx ERP com orçamentos, pedidos e indicadores do mês." },
+      { property: "og:url", content: "https://maxx-frame-studio.lovable.app/" },
+    ],
+    links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Total Maxx ERP",
+          url: "https://maxx-frame-studio.lovable.app/",
+        }),
+      },
     ],
   }),
   component: Dashboard,
@@ -183,10 +198,10 @@ function Dashboard() {
         <section className="relative overflow-hidden rounded-2xl bg-gradient-brand text-brand-foreground shadow-elegant">
           <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_top_right,white,transparent_60%)]" />
           <div className="relative px-8 py-12 lg:px-12 lg:py-16">
-            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+            <p className="text-3xl lg:text-4xl font-bold tracking-tight">
               Bem-vindo de volta
               {profile?.full_name ? `, ${profile.full_name}` : displayName !== "de volta" ? `, ${displayName}` : ""}
-            </h1>
+            </p>
             <p className="mt-3 text-base lg:text-lg text-brand-foreground/85 max-w-2xl leading-relaxed">
               {subtitle}
             </p>
