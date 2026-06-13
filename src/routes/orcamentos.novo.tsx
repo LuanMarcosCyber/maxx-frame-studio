@@ -1115,16 +1115,6 @@ function NovoOrcamento() {
                 />
               </div>
 
-              {foamSelecionado && (
-                <SelectedInfo
-                  title="Produto selecionado"
-                  product={foamSelecionado}
-                  larguraFinal={larguraFinal}
-                  alturaFinal={alturaFinal}
-                  valor={valorFoam}
-                  valorLabel="Valor Foam/MDF"
-                />
-              )}
             </Card>
           )}
 
