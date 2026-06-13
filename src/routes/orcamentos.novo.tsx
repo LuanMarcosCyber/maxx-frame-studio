@@ -764,13 +764,7 @@ function NovoOrcamento() {
       <div className="flex justify-end mb-2">
         <button
           type="button"
-          onClick={() => {
-            if (
-              window.confirm("Ao sair você perderá este orçamento, deseja continuar?")
-            ) {
-              navigate({ to: "/orcamentos" });
-            }
-          }}
+          onClick={() => setShowExitDialog(true)}
           className="inline-flex items-center justify-center rounded-md h-8 w-8 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           aria-label="Sair"
         >
