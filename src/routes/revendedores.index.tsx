@@ -52,7 +52,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { listResellers, createUser, resetPassword, deleteUser } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/revendedores")({
+export const Route = createFileRoute("/revendedores/")({
   head: () => ({ meta: [{ title: "Revendedores — Total Maxx" }] }),
   component: RevendedoresPage,
 });

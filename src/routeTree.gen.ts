@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RevendedoresRouteImport } from './routes/revendedores'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
@@ -18,15 +17,11 @@ import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ColaboradoresRouteImport } from './routes/colaboradores'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RevendedoresIndexRouteImport } from './routes/revendedores.index'
 import { Route as OrcamentosIndexRouteImport } from './routes/orcamentos.index'
 import { Route as RevendedoresIdRouteImport } from './routes/revendedores.$id'
 import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
 
-const RevendedoresRoute = RevendedoresRouteImport.update({
-  id: '/revendedores',
-  path: '/revendedores',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProdutosRoute = ProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
@@ -67,6 +62,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RevendedoresIndexRoute = RevendedoresIndexRouteImport.update({
+  id: '/revendedores/',
+  path: '/revendedores/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrcamentosIndexRoute = OrcamentosIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -92,10 +92,10 @@ export interface FileRoutesByFullPath {
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
-  '/revendedores': typeof RevendedoresRouteWithChildren
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
+  '/revendedores/': typeof RevendedoresIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -105,10 +105,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
-  '/revendedores': typeof RevendedoresRouteWithChildren
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos': typeof OrcamentosIndexRoute
+  '/revendedores': typeof RevendedoresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -120,10 +120,10 @@ export interface FileRoutesById {
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
-  '/revendedores': typeof RevendedoresRouteWithChildren
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
+  '/revendedores/': typeof RevendedoresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -136,10 +136,10 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/pedidos'
     | '/produtos'
-    | '/revendedores'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
+    | '/revendedores/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -149,10 +149,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/pedidos'
     | '/produtos'
-    | '/revendedores'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos'
+    | '/revendedores'
   id:
     | '__root__'
     | '/'
@@ -163,10 +163,10 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/pedidos'
     | '/produtos'
-    | '/revendedores'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
+    | '/revendedores/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -178,18 +178,11 @@ export interface RootRouteChildren {
   OrcamentosRoute: typeof OrcamentosRouteWithChildren
   PedidosRoute: typeof PedidosRoute
   ProdutosRoute: typeof ProdutosRoute
-  RevendedoresRoute: typeof RevendedoresRouteWithChildren
+  RevendedoresIndexRoute: typeof RevendedoresIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/revendedores': {
-      id: '/revendedores'
-      path: '/revendedores'
-      fullPath: '/revendedores'
-      preLoaderRoute: typeof RevendedoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/produtos': {
       id: '/produtos'
       path: '/produtos'
@@ -246,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/revendedores/': {
+      id: '/revendedores/'
+      path: '/revendedores'
+      fullPath: '/revendedores/'
+      preLoaderRoute: typeof RevendedoresIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orcamentos/': {
       id: '/orcamentos/'
       path: '/'
@@ -284,18 +284,6 @@ const OrcamentosRouteWithChildren = OrcamentosRoute._addFileChildren(
   OrcamentosRouteChildren,
 )
 
-interface RevendedoresRouteChildren {
-  RevendedoresIdRoute: typeof RevendedoresIdRoute
-}
-
-const RevendedoresRouteChildren: RevendedoresRouteChildren = {
-  RevendedoresIdRoute: RevendedoresIdRoute,
-}
-
-const RevendedoresRouteWithChildren = RevendedoresRoute._addFileChildren(
-  RevendedoresRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ColaboradoresRoute: ColaboradoresRoute,
@@ -305,8 +293,18 @@ const rootRouteChildren: RootRouteChildren = {
   OrcamentosRoute: OrcamentosRouteWithChildren,
   PedidosRoute: PedidosRoute,
   ProdutosRoute: ProdutosRoute,
-  RevendedoresRoute: RevendedoresRouteWithChildren,
+  RevendedoresIndexRoute: RevendedoresIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
