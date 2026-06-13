@@ -1592,6 +1592,15 @@ function NovoOrcamento() {
                       <Plus className="h-4 w-4 mr-1.5" />
                       Orçar mais um produto
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCloneOpen(true)}
+                    >
+                      <Copy className="h-4 w-4 mr-1.5" />
+                      Clonar produto
+                    </Button>
+
                   </div>
                 </div>
               </div>
