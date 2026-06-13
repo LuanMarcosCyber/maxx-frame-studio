@@ -397,6 +397,9 @@ function NovoOrcamento() {
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+  const [cloneOpen, setCloneOpen] = useState(false);
+
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
     ["Perfil"],
