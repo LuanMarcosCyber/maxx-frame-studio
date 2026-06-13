@@ -84,6 +84,9 @@ function Produtos() {
   const { session, user, role } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin";
+  const isColaborador = role === "colaborador";
+  const canEdit = role === "admin" || role === "revendedor";
+  const showInternal = !isColaborador;
 
   const [activeCategory, setActiveCategory] = useState<Category>("Foam");
   const [search, setSearch] = useState("");
@@ -248,7 +251,7 @@ function Produtos() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            {isAdmin && (
+            {canEdit && (
               <Button
                 onClick={openCreate}
                 className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
@@ -265,10 +268,10 @@ function Produtos() {
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Código</th>
                 <th className="font-medium py-3 px-3">Descrição</th>
-                <th className="font-medium py-3 px-3">Valor/m</th>
-                <th className="font-medium py-3 px-3">Margem</th>
-                <th className="font-medium py-3 px-3">Perda</th>
-                <th className="font-medium py-3 px-6 text-right">Ações</th>
+                {showInternal && <th className="font-medium py-3 px-3">Valor/m</th>}
+                {showInternal && <th className="font-medium py-3 px-3">Margem</th>}
+                {showInternal && <th className="font-medium py-3 px-3">Perda</th>}
+                {canEdit && <th className="font-medium py-3 px-6 text-right">Ações</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -289,39 +292,41 @@ function Produtos() {
                   <tr key={p.id} className="hover:bg-muted/40 transition">
                     <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
                     <td className="py-3.5 px-3">{p.description}</td>
-                    <td className="py-3.5 px-3 font-semibold">
-                      {fmtMoney(Number(p.value_per_meter))}
-                    </td>
-                    <td className="py-3.5 px-3 text-muted-foreground">
-                      {fmtPct(Number(p.profit_margin))}
-                    </td>
-                    <td className="py-3.5 px-3 text-muted-foreground">
-                      {fmtPct(Number(p.waste_percentage))}
-                    </td>
-                    <td className="py-3.5 px-6">
-                      <div className="flex items-center justify-end gap-1">
-                        {isAdmin ? (
-                          <>
-                            <button
-                              onClick={() => openEdit(p)}
-                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                              aria-label="Editar produto"
-                            >
-                              <Pencil className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(p)}
-                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
-                              aria-label="Excluir produto"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </div>
-                    </td>
+                    {showInternal && (
+                      <td className="py-3.5 px-3 font-semibold">
+                        {fmtMoney(Number(p.value_per_meter))}
+                      </td>
+                    )}
+                    {showInternal && (
+                      <td className="py-3.5 px-3 text-muted-foreground">
+                        {fmtPct(Number(p.profit_margin))}
+                      </td>
+                    )}
+                    {showInternal && (
+                      <td className="py-3.5 px-3 text-muted-foreground">
+                        {fmtPct(Number(p.waste_percentage))}
+                      </td>
+                    )}
+                    {canEdit && (
+                      <td className="py-3.5 px-6">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEdit(p)}
+                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                            aria-label="Editar produto"
+                          >
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(p)}
+                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
+                            aria-label="Excluir produto"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
