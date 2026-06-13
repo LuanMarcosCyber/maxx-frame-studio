@@ -332,7 +332,7 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
 
 function NovoOrcamento() {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, ownerUserId } = useAuth();
   const queryClient = useQueryClient();
   const { id: editId } = Route.useSearch();
   const isEdit = !!editId;
@@ -715,7 +715,7 @@ function NovoOrcamento() {
         const { data: inserted, error } = await supabase
           .from("budgets")
           .insert({
-            user_id: session.user.id,
+            user_id: ownerUserId ?? session.user.id,
             number,
             status: "Pendente",
             ...budgetPayload,
@@ -735,7 +735,7 @@ function NovoOrcamento() {
 
       const insertRows = itemsPayload.map((it) => ({
         budget_id: budgetId,
-        user_id: session.user.id,
+        user_id: ownerUserId ?? session.user.id,
         position: it.position,
         subtotal: it.subtotal,
         data: it.data as never,

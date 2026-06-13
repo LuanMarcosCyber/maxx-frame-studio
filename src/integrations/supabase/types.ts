@@ -179,34 +179,40 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
           address: string | null
           created_at: string
           document: string | null
           email: string | null
           full_name: string | null
           id: string
+          parent_user_id: string | null
           phone: string | null
           updated_at: string
           username: string | null
         }
         Insert: {
+          active?: boolean
           address?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          parent_user_id?: string | null
           phone?: string | null
           updated_at?: string
           username?: string | null
         }
         Update: {
+          active?: boolean
           address?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          parent_user_id?: string | null
           phone?: string | null
           updated_at?: string
           username?: string | null
@@ -246,9 +252,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      owner_user_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "revendedor"
+      app_role: "admin" | "revendedor" | "colaborador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -376,7 +383,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "revendedor"],
+      app_role: ["admin", "revendedor", "colaborador"],
     },
   },
 } as const

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "revendedor";
+export type AppRole = "admin" | "revendedor" | "colaborador";
 export const EMAIL_DOMAIN = "totalmaxx.local";
 export const usernameToEmail = (username: string) =>
   `${username.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
@@ -14,6 +14,8 @@ interface Profile {
   phone: string | null;
   document: string | null;
   address: string | null;
+  parent_user_id: string | null;
+  active: boolean;
 }
 
 interface AuthContextValue {
@@ -21,6 +23,8 @@ interface AuthContextValue {
   user: User | null;
   role: AppRole | null;
   profile: Profile | null;
+  ownerUserId: string | null;
+  isActive: boolean;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -60,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, address")
+        .select("full_name, username, email, phone, document, address, parent_user_id, active")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -73,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: null,
         document: null,
         address: null,
+        parent_user_id: null,
+        active: true,
       },
     );
   };
@@ -96,9 +102,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const ownerUserId =
+    profile?.parent_user_id ?? session?.user?.id ?? null;
+  const isActive = profile?.active ?? true;
+
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, role, profile, loading, signIn, signOut, refreshProfile }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        role,
+        profile,
+        ownerUserId,
+        isActive,
+        loading,
+        signIn,
+        signOut,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
