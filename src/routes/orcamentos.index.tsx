@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -216,6 +217,13 @@ function Orcamentos() {
   );
 }
 
+type BudgetItemRow = {
+  id: string;
+  position: number;
+  subtotal: number;
+  data: Record<string, unknown>;
+};
+
 function ResumoDialog({
   budget,
   onClose,
@@ -223,80 +231,111 @@ function ResumoDialog({
   budget: BudgetRow | null;
   onClose: () => void;
 }) {
-  const d = (budget?.details ?? {}) as Record<string, unknown>;
-  const str = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
-  const num = (k: string) => (typeof d[k] === "number" ? (d[k] as number) : 0);
+  const general = (budget?.details ?? {}) as Record<string, unknown>;
+  const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
+  const gNum = (k: string) => (typeof general[k] === "number" ? (general[k] as number) : 0);
 
-  const productLabel = (code: string, desc: string) => {
-    const c = str(code);
-    const dd = str(desc);
-    if (!c && !dd) return "Não aplicado";
-    return `${c}${c && dd ? " — " : ""}${dd}`;
-  };
+  const [items, setItems] = useState<BudgetItemRow[]>([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    if (!budget) {
+      setItems([]);
+      setActiveIdx(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("budget_items")
+        .select("id, position, subtotal, data")
+        .eq("budget_id", budget.id)
+        .order("position", { ascending: true });
+      if (cancelled) return;
+      let rows = (data ?? []) as BudgetItemRow[];
+      if (rows.length === 0) {
+        // Legacy fallback: treat budget.details as Item 1
+        rows = [
+          {
+            id: budget.id,
+            position: 1,
+            subtotal: Number(budget.total_value),
+            data: general,
+          },
+        ];
+      }
+      setItems(rows);
+      setActiveIdx(0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budget?.id]);
+
+  const tipoEntrega = gStr("tipoEntrega") || "Retirada";
+  const instalacaoAtivo = general.instalacaoAtivo === "sim";
+  const entregaAtiva = tipoEntrega !== "Retirada";
 
   const moneyOrNA = (active: boolean, value: number) =>
     !active ? "Não aplicado" : fmtMoney(value);
+  const productLabel = (d: Record<string, unknown>, code: string, desc: string) => {
+    const c = typeof d[code] === "string" ? (d[code] as string) : "";
+    const dd = typeof d[desc] === "string" ? (d[desc] as string) : "";
+    if (!c && !dd) return "Não aplicado";
+    return `${c}${c && dd ? " — " : ""}${dd}`;
+  };
+  const dNum = (d: Record<string, unknown>, k: string) =>
+    typeof d[k] === "number" ? (d[k] as number) : 0;
 
+  const activeItem = items[activeIdx];
+  const d = (activeItem?.data ?? {}) as Record<string, unknown>;
   const paspaturAtivo = d.paspaturAtivo === "sim";
   const vidroAtivo = d.vidroTipo === "sim";
   const colagemAtivo = d.colagemAtivo === "sim";
   const impressaoAtivo = d.impressaoAtivo === "sim";
-  const instalacaoAtivo = d.instalacaoAtivo === "sim";
-  const tipoEntrega = str("tipoEntrega") || "Retirada";
-  const entregaAtiva = tipoEntrega !== "Retirada";
 
-  const rows: { label: string; value: string; sub?: string }[] = [
-    {
-      label: "Tamanho original",
-      value: `${num("larguraOriginal")} × ${num("alturaOriginal")} cm`,
-    },
-    {
-      label: "Tamanho final",
-      value: `${num("larguraFinal")} × ${num("alturaFinal")} cm`,
-    },
-    {
-      label: "Paspatur",
-      value: moneyOrNA(paspaturAtivo, num("valorPaspatur")),
-      sub: paspaturAtivo ? productLabel("paspaturCode", "paspaturDescription") : undefined,
-    },
-    {
-      label: "Perfil",
-      value: fmtMoney(num("valorPerfil")),
-      sub: productLabel("perfilCode", "perfilDescription"),
-    },
-    {
-      label: "Vidro / Espelho",
-      value: moneyOrNA(vidroAtivo, num("valorVidro")),
-      sub: vidroAtivo ? productLabel("vidroCode", "vidroDescription") : undefined,
-    },
-    {
-      label: "Foam / MDF",
-      value: fmtMoney(num("valorFoam")),
-      sub: productLabel("foamCode", "foamDescription"),
-    },
-    {
-      label: "Colagem",
-      value: moneyOrNA(colagemAtivo, num("valorColagem")),
-      sub: colagemAtivo ? productLabel("colagemCode", "colagemDescription") : undefined,
-    },
-    {
-      label: "Impressão",
-      value: moneyOrNA(impressaoAtivo, num("valorImpressao")),
-      sub: impressaoAtivo ? productLabel("impressaoCode", "impressaoDescription") : undefined,
-    },
-    {
-      label: "Instalação",
-      value: moneyOrNA(instalacaoAtivo, num("valorInstalacao")),
-    },
-    {
-      label: `Entrega / Frete${tipoEntrega ? ` (${tipoEntrega})` : ""}`,
-      value: moneyOrNA(entregaAtiva, num("valorEntrega")),
-    },
-    {
-      label: "Mão de obra extra",
-      value: fmtMoney(num("maoDeObraExtra")),
-    },
-  ];
+  const itemRows: { label: string; value: string; sub?: string }[] = activeItem
+    ? [
+        {
+          label: "Tamanho original",
+          value: `${dNum(d, "larguraOriginal")} × ${dNum(d, "alturaOriginal")} cm`,
+        },
+        {
+          label: "Tamanho final",
+          value: `${dNum(d, "larguraFinal")} × ${dNum(d, "alturaFinal")} cm`,
+        },
+        {
+          label: "Paspatur",
+          value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspatur")),
+          sub: paspaturAtivo ? productLabel(d, "paspaturCode", "paspaturDescription") : undefined,
+        },
+        {
+          label: "Perfil",
+          value: fmtMoney(dNum(d, "valorPerfil")),
+          sub: productLabel(d, "perfilCode", "perfilDescription"),
+        },
+        {
+          label: "Vidro / Espelho",
+          value: moneyOrNA(vidroAtivo, dNum(d, "valorVidro")),
+          sub: vidroAtivo ? productLabel(d, "vidroCode", "vidroDescription") : undefined,
+        },
+        {
+          label: "Foam / MDF",
+          value: fmtMoney(dNum(d, "valorFoam")),
+          sub: productLabel(d, "foamCode", "foamDescription"),
+        },
+        {
+          label: "Colagem",
+          value: moneyOrNA(colagemAtivo, dNum(d, "valorColagem")),
+          sub: colagemAtivo ? productLabel(d, "colagemCode", "colagemDescription") : undefined,
+        },
+        {
+          label: "Impressão",
+          value: moneyOrNA(impressaoAtivo, dNum(d, "valorImpressao")),
+          sub: impressaoAtivo ? productLabel(d, "impressaoCode", "impressaoDescription") : undefined,
+        },
+      ]
+    : [];
 
   return (
     <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
@@ -313,7 +352,7 @@ function ResumoDialog({
               <Info label="Status" value={budget.status} />
               <Info
                 label="Forma de pagamento"
-                value={str("formaPagamento") || "—"}
+                value={gStr("formaPagamento") || "—"}
               />
               <Info
                 label="Vencimento"
@@ -321,35 +360,114 @@ function ResumoDialog({
               />
             </div>
 
-            <div className="rounded-lg border border-border divide-y divide-border">
-              {rows.map((r) => (
-                <div key={r.label} className="flex items-start justify-between px-4 py-3 text-sm">
-                  <div>
-                    <div className="font-medium text-foreground">{r.label}</div>
-                    {r.sub && (
-                      <div className="text-xs text-muted-foreground mt-0.5">{r.sub}</div>
+            {/* Item chips */}
+            {items.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {items.map((it, i) => (
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={() => setActiveIdx(i)}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                      i === activeIdx
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-background hover:bg-accent",
                     )}
-                  </div>
-                  <div className="font-semibold text-foreground whitespace-nowrap ml-4">
-                    {r.value}
+                  >
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    Item {i + 1}
+                    <span className="text-muted-foreground font-normal">
+                      {fmtMoney(Number(it.subtotal))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeItem && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
+                  Item {activeIdx + 1}
+                </div>
+                <div className="rounded-lg border border-border divide-y divide-border">
+                  {itemRows.map((r) => (
+                    <div
+                      key={r.label}
+                      className="flex items-start justify-between px-4 py-3 text-sm"
+                    >
+                      <div>
+                        <div className="font-medium text-foreground">{r.label}</div>
+                        {r.sub && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {r.sub}
+                          </div>
+                        )}
+                      </div>
+                      <div className="font-semibold text-foreground whitespace-nowrap ml-4">
+                        {r.value}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
+                    <span className="font-semibold text-foreground">
+                      Subtotal Item {activeIdx + 1}
+                    </span>
+                    <span className="font-semibold">
+                      {fmtMoney(Number(activeItem.subtotal))}
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Outros itens + extras gerais */}
+            <div className="rounded-lg border border-border divide-y divide-border">
+              {items.length > 1 &&
+                items.map((it, i) =>
+                  i === activeIdx ? null : (
+                    <div
+                      key={it.id}
+                      className="flex items-center justify-between px-4 py-3 text-sm"
+                    >
+                      <span className="font-medium text-foreground">Item {i + 1}</span>
+                      <span className="font-semibold">{fmtMoney(Number(it.subtotal))}</span>
+                    </div>
+                  ),
+                )}
+              <div className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-muted-foreground">Instalação</span>
+                <span className="font-semibold">
+                  {moneyOrNA(instalacaoAtivo, gNum("valorInstalacao"))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-muted-foreground">
+                  Entrega / Frete ({tipoEntrega})
+                </span>
+                <span className="font-semibold">
+                  {moneyOrNA(entregaAtiva, gNum("valorEntrega"))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 text-sm">
+                <span className="text-muted-foreground">Mão de obra extra</span>
+                <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
+              </div>
             </div>
 
-            {str("observacoes") && (
+            {gStr("observacoes") && (
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
                   Observações
                 </div>
                 <div className="text-sm text-foreground whitespace-pre-wrap rounded-md border border-border p-3 bg-muted/30">
-                  {str("observacoes")}
+                  {gStr("observacoes")}
                 </div>
               </div>
             )}
 
             <div className="flex items-center justify-between rounded-lg bg-gradient-brand text-brand-foreground px-5 py-4 shadow-brand">
-              <span className="text-sm font-medium">Valor total</span>
+              <span className="text-sm font-medium">Total geral</span>
               <span className="text-xl font-bold">
                 {fmtMoney(Number(budget.total_value))}
               </span>
@@ -357,6 +475,7 @@ function ResumoDialog({
           </div>
         )}
       </DialogContent>
+
     </Dialog>
   );
 }

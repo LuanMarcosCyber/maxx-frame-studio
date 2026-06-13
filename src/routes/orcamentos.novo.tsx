@@ -37,6 +37,7 @@ import {
   X,
   Upload,
   ChevronsUpDown,
+  Plus,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -130,6 +131,195 @@ type FormaPagto =
   | "Boleto"
   | "A combinar";
 
+// Per-item state shape
+type ItemSnapshot = {
+  altura: string;
+  largura: string;
+  paspaturAtivo: "sim" | "nao";
+  margemEsq: string;
+  margemDir: string;
+  margemSup: string;
+  margemInf: string;
+  paspaturId: string;
+  perfilId: string;
+  vidroTipo: "sim" | "nao";
+  vidroId: string;
+  foamId: string;
+  colagemAtivo: "sim" | "nao";
+  colagemId: string;
+  impressaoAtivo: "sim" | "nao";
+  impressaoId: string;
+};
+
+const emptyItem: ItemSnapshot = {
+  altura: "",
+  largura: "",
+  paspaturAtivo: "nao",
+  margemEsq: "",
+  margemDir: "",
+  margemSup: "",
+  margemInf: "",
+  paspaturId: "",
+  perfilId: "",
+  vidroTipo: "nao",
+  vidroId: "",
+  foamId: "",
+  colagemAtivo: "nao",
+  colagemId: "",
+  impressaoAtivo: "nao",
+  impressaoId: "",
+};
+
+type ItemValues = ReturnType<typeof computeItemValues>;
+
+function computeItemValues(
+  snap: ItemSnapshot,
+  P: {
+    paspatur: Produto | null;
+    perfil: Produto | null;
+    vidro: Produto | null;
+    foam: Produto | null;
+    colagem: Produto | null;
+    impressao: Produto | null;
+  },
+) {
+  const alturaNum = parseNum(snap.altura);
+  const larguraNum = parseNum(snap.largura);
+  const mEsq = parseNum(snap.margemEsq);
+  const mDir = parseNum(snap.margemDir);
+  const mSup = parseNum(snap.margemSup);
+  const mInf = parseNum(snap.margemInf);
+  const larguraFinal = larguraNum + mEsq + mDir;
+  const alturaFinal = alturaNum + mSup + mInf;
+
+  let valorPaspatur = 0;
+  if (snap.paspaturAtivo === "sim" && P.paspatur && larguraFinal > 0 && alturaFinal > 0) {
+    const area = (larguraFinal * alturaFinal) / 10000;
+    const base = area * Number(P.paspatur.value_per_meter);
+    const cp = base * (1 + Number(P.paspatur.waste_percentage) / 100);
+    valorPaspatur = cp * (1 + Number(P.paspatur.profit_margin) / 100);
+  }
+
+  let valorPerfil = 0;
+  if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
+    const perim = ((alturaFinal + larguraFinal) * 2) / 100;
+    const base = perim * Number(P.perfil.value_per_meter);
+    const cp = base * (1 + Number(P.perfil.waste_percentage) / 100);
+    valorPerfil = cp * (1 + Number(P.perfil.profit_margin) / 100);
+  }
+
+  const valorVidro =
+    snap.vidroTipo === "sim" ? calcAreaValue(P.vidro, alturaFinal, larguraFinal) : 0;
+  const valorFoam = calcAreaValue(P.foam, alturaFinal, larguraFinal);
+  const valorColagem =
+    snap.colagemAtivo === "sim"
+      ? calcAreaValue(P.colagem, alturaFinal, larguraFinal)
+      : 0;
+  const valorImpressao =
+    snap.impressaoAtivo === "sim"
+      ? calcAreaValue(P.impressao, alturaFinal, larguraFinal)
+      : 0;
+
+  const subtotal =
+    valorPaspatur + valorPerfil + valorVidro + valorFoam + valorColagem + valorImpressao;
+
+  return {
+    alturaNum,
+    larguraNum,
+    mEsq,
+    mDir,
+    mSup,
+    mInf,
+    alturaFinal,
+    larguraFinal,
+    valorPaspatur,
+    valorPerfil,
+    valorVidro,
+    valorFoam,
+    valorColagem,
+    valorImpressao,
+    subtotal,
+  };
+}
+
+function buildItemDetails(
+  snap: ItemSnapshot,
+  v: ItemValues,
+  P: {
+    paspatur: Produto | null;
+    perfil: Produto | null;
+    vidro: Produto | null;
+    foam: Produto | null;
+    colagem: Produto | null;
+    impressao: Produto | null;
+  },
+) {
+  return {
+    altura: snap.altura,
+    largura: snap.largura,
+    alturaOriginal: v.alturaNum,
+    larguraOriginal: v.larguraNum,
+    alturaFinal: v.alturaFinal,
+    larguraFinal: v.larguraFinal,
+    paspaturAtivo: snap.paspaturAtivo,
+    paspaturId: snap.paspaturId,
+    paspaturCode: P.paspatur?.code ?? null,
+    paspaturDescription: P.paspatur?.description ?? null,
+    valorPaspatur: Number(v.valorPaspatur.toFixed(2)),
+    margemEsq: snap.margemEsq,
+    margemDir: snap.margemDir,
+    margemSup: snap.margemSup,
+    margemInf: snap.margemInf,
+    perfilId: snap.perfilId,
+    perfilCode: P.perfil?.code ?? null,
+    perfilDescription: P.perfil?.description ?? null,
+    valorPerfil: Number(v.valorPerfil.toFixed(2)),
+    vidroTipo: snap.vidroTipo,
+    vidroId: snap.vidroId,
+    vidroCode: P.vidro?.code ?? null,
+    vidroDescription: P.vidro?.description ?? null,
+    valorVidro: Number(v.valorVidro.toFixed(2)),
+    foamId: snap.foamId,
+    foamCode: P.foam?.code ?? null,
+    foamDescription: P.foam?.description ?? null,
+    valorFoam: Number(v.valorFoam.toFixed(2)),
+    colagemAtivo: snap.colagemAtivo,
+    colagemId: snap.colagemId,
+    colagemCode: P.colagem?.code ?? null,
+    colagemDescription: P.colagem?.description ?? null,
+    valorColagem: Number(v.valorColagem.toFixed(2)),
+    impressaoAtivo: snap.impressaoAtivo,
+    impressaoId: snap.impressaoId,
+    impressaoCode: P.impressao?.code ?? null,
+    impressaoDescription: P.impressao?.description ?? null,
+    valorImpressao: Number(v.valorImpressao.toFixed(2)),
+    subtotal: Number(v.subtotal.toFixed(2)),
+  };
+}
+
+// Hydrate an ItemSnapshot from a saved details jsonb (used for legacy details and budget_items.data)
+function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
+  const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+  return {
+    altura: s("altura"),
+    largura: s("largura"),
+    paspaturAtivo: d.paspaturAtivo === "sim" ? "sim" : "nao",
+    margemEsq: s("margemEsq"),
+    margemDir: s("margemDir"),
+    margemSup: s("margemSup"),
+    margemInf: s("margemInf"),
+    paspaturId: s("paspaturId"),
+    perfilId: s("perfilId"),
+    vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
+    vidroId: s("vidroId"),
+    foamId: s("foamId"),
+    colagemAtivo: d.colagemAtivo === "sim" ? "sim" : "nao",
+    colagemId: s("colagemId"),
+    impressaoAtivo: d.impressaoAtivo === "sim" ? "sim" : "nao",
+    impressaoId: s("impressaoId"),
+  };
+}
+
 function NovoOrcamento() {
   const navigate = useNavigate();
   const { session } = useAuth();
@@ -138,37 +328,35 @@ function NovoOrcamento() {
   const isEdit = !!editId;
 
   const [active, setActive] = useState<StepKey>("tamanho");
+
+  // Items list (persisted snapshots) and which one is active
+  const [items, setItems] = useState<ItemSnapshot[]>([{ ...emptyItem }]);
+  const [activeIndex, setActiveIndex] = useState<number>(0);
+
+  // Active item state (mirrors items[activeIndex] for editing)
   const [altura, setAltura] = useState<string>("");
   const [largura, setLargura] = useState<string>("");
-
   const [paspaturAtivo, setPaspaturAtivo] = useState<"sim" | "nao">("nao");
   const [margemEsq, setMargemEsq] = useState<string>("");
   const [margemDir, setMargemDir] = useState<string>("");
   const [margemSup, setMargemSup] = useState<string>("");
   const [margemInf, setMargemInf] = useState<string>("");
   const [paspaturId, setPaspaturId] = useState<string>("");
-
   const [perfilId, setPerfilId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
   const [foamId, setFoamId] = useState<string>("");
-
-  // Colagem
   const [colagemAtivo, setColagemAtivo] = useState<"sim" | "nao">("nao");
   const [colagemId, setColagemId] = useState<string>("");
-
-  // Impressão
   const [impressaoAtivo, setImpressaoAtivo] = useState<"sim" | "nao">("nao");
   const [impressaoId, setImpressaoId] = useState<string>("");
   const [impressaoArquivo, setImpressaoArquivo] = useState<File | null>(null);
 
-  // Instalação / Frete
+  // Budget-level (geral)
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
   const [valorInstalacaoStr, setValorInstalacaoStr] = useState<string>("");
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
-
-  // Finalização
   const [clienteNome, setClienteNome] = useState<string>("");
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
@@ -201,88 +389,99 @@ function NovoOrcamento() {
     !!session,
   );
 
-  const perfilSelecionado = useMemo(
-    () => perfis.find((p) => p.id === perfilId) ?? null,
-    [perfis, perfilId],
-  );
-  const vidroSelecionado = useMemo(
-    () => vidros.find((p) => p.id === vidroId) ?? null,
-    [vidros, vidroId],
-  );
-  const foamSelecionado = useMemo(
-    () => foams.find((p) => p.id === foamId) ?? null,
-    [foams, foamId],
-  );
-  const paspaturSelecionado = useMemo(
-    () => paspaturs.find((p) => p.id === paspaturId) ?? null,
-    [paspaturs, paspaturId],
-  );
-  const colagemSelecionada = useMemo(
-    () => colagens.find((p) => p.id === colagemId) ?? null,
-    [colagens, colagemId],
-  );
-  const impressaoSelecionada = useMemo(
-    () => impressoes.find((p) => p.id === impressaoId) ?? null,
-    [impressoes, impressaoId],
-  );
+  // Resolve products for an arbitrary snapshot (used for non-active items)
+  function resolveProducts(snap: ItemSnapshot) {
+    return {
+      paspatur: paspaturs.find((p) => p.id === snap.paspaturId) ?? null,
+      perfil: perfis.find((p) => p.id === snap.perfilId) ?? null,
+      vidro: vidros.find((p) => p.id === snap.vidroId) ?? null,
+      foam: foams.find((p) => p.id === snap.foamId) ?? null,
+      colagem: colagens.find((p) => p.id === snap.colagemId) ?? null,
+      impressao: impressoes.find((p) => p.id === snap.impressaoId) ?? null,
+    };
+  }
 
-  const alturaNum = parseNum(altura);
-  const larguraNum = parseNum(largura);
-
-  const mEsq = parseNum(margemEsq);
-  const mDir = parseNum(margemDir);
-  const mSup = parseNum(margemSup);
-  const mInf = parseNum(margemInf);
-
-  const larguraFinal = larguraNum + mEsq + mDir;
-  const alturaFinal = alturaNum + mSup + mInf;
-
-  const valorPaspatur = useMemo(() => {
-    if (paspaturAtivo === "nao") return 0;
-    if (!paspaturSelecionado || larguraFinal <= 0 || alturaFinal <= 0) return 0;
-    const area = (larguraFinal * alturaFinal) / 10000;
-    const base = area * Number(paspaturSelecionado.value_per_meter);
-    const comPerda = base * (1 + Number(paspaturSelecionado.waste_percentage) / 100);
-    const final = comPerda * (1 + Number(paspaturSelecionado.profit_margin) / 100);
-    return final;
-  }, [paspaturAtivo, paspaturSelecionado, larguraFinal, alturaFinal]);
-
-  const valorPerfil = useMemo(() => {
-    if (!perfilSelecionado || alturaFinal <= 0 || larguraFinal <= 0) return 0;
-    const perimetro = ((alturaFinal + larguraFinal) * 2) / 100;
-    const base = perimetro * Number(perfilSelecionado.value_per_meter);
-    const comPerda = base * (1 + Number(perfilSelecionado.waste_percentage) / 100);
-    const final = comPerda * (1 + Number(perfilSelecionado.profit_margin) / 100);
-    return final;
-  }, [perfilSelecionado, alturaFinal, larguraFinal]);
-
-  const valorVidro = useMemo(
-    () =>
-      vidroTipo === "sim"
-        ? calcAreaValue(vidroSelecionado, alturaFinal, larguraFinal)
-        : 0,
-    [vidroTipo, vidroSelecionado, alturaFinal, larguraFinal],
+  // Current active snapshot derived from state
+  const activeSnap: ItemSnapshot = useMemo(
+    () => ({
+      altura,
+      largura,
+      paspaturAtivo,
+      margemEsq,
+      margemDir,
+      margemSup,
+      margemInf,
+      paspaturId,
+      perfilId,
+      vidroTipo,
+      vidroId,
+      foamId,
+      colagemAtivo,
+      colagemId,
+      impressaoAtivo,
+      impressaoId,
+    }),
+    [
+      altura,
+      largura,
+      paspaturAtivo,
+      margemEsq,
+      margemDir,
+      margemSup,
+      margemInf,
+      paspaturId,
+      perfilId,
+      vidroTipo,
+      vidroId,
+      foamId,
+      colagemAtivo,
+      colagemId,
+      impressaoAtivo,
+      impressaoId,
+    ],
   );
 
-  const valorFoam = useMemo(
-    () => calcAreaValue(foamSelecionado, alturaFinal, larguraFinal),
-    [foamSelecionado, alturaFinal, larguraFinal],
+  const activeProducts = useMemo(
+    () => resolveProducts(activeSnap),
+    // products lists change rarely; recompute when ids change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeSnap, perfis, vidros, foams, paspaturs, colagens, impressoes],
   );
 
-  const valorColagem = useMemo(
-    () =>
-      colagemAtivo === "sim"
-        ? calcAreaValue(colagemSelecionada, alturaFinal, larguraFinal)
-        : 0,
-    [colagemAtivo, colagemSelecionada, alturaFinal, larguraFinal],
+  const activeValues = useMemo(
+    () => computeItemValues(activeSnap, activeProducts),
+    [activeSnap, activeProducts],
   );
 
-  const valorImpressao = useMemo(
-    () =>
-      impressaoAtivo === "sim"
-        ? calcAreaValue(impressaoSelecionada, alturaFinal, larguraFinal)
-        : 0,
-    [impressaoAtivo, impressaoSelecionada, alturaFinal, larguraFinal],
+  const {
+    alturaNum,
+    larguraNum,
+    mEsq,
+    mDir,
+    mSup,
+    mInf,
+    alturaFinal,
+    larguraFinal,
+    valorPaspatur,
+    valorPerfil,
+    valorVidro,
+    valorFoam,
+    valorColagem,
+    valorImpressao,
+  } = activeValues;
+
+  // Compute all items' subtotals (using active state for the active index)
+  const itemSubtotals = useMemo(() => {
+    return items.map((snap, i) => {
+      if (i === activeIndex) return activeValues.subtotal;
+      return computeItemValues(snap, resolveProducts(snap)).subtotal;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, activeIndex, activeValues, perfis, vidros, foams, paspaturs, colagens, impressoes]);
+
+  const subtotalItens = useMemo(
+    () => itemSubtotals.reduce((a, b) => a + b, 0),
+    [itemSubtotals],
   );
 
   const valorInstalacao =
@@ -291,16 +490,7 @@ function NovoOrcamento() {
     tipoEntrega === "Retirada" ? 0 : parseNum(valorEntregaStr);
   const maoDeObraExtra = parseNum(maoDeObraExtraStr);
 
-  const valorTotal =
-    valorPerfil +
-    valorPaspatur +
-    valorVidro +
-    valorFoam +
-    valorColagem +
-    valorImpressao +
-    valorInstalacao +
-    valorEntrega +
-    maoDeObraExtra;
+  const valorTotal = subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
 
   // Preview Tamanho
   const previewArt = useMemo(() => {
@@ -334,6 +524,64 @@ function NovoOrcamento() {
     };
   }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf]);
 
+  // Selected products (active item) for "selected info" cards
+  const perfilSelecionado = activeProducts.perfil;
+  const vidroSelecionado = activeProducts.vidro;
+  const foamSelecionado = activeProducts.foam;
+  const paspaturSelecionado = activeProducts.paspatur;
+  const colagemSelecionada = activeProducts.colagem;
+  const impressaoSelecionada = activeProducts.impressao;
+
+  // --- Item navigation helpers ---
+  function loadSnapshotIntoState(s: ItemSnapshot) {
+    setAltura(s.altura);
+    setLargura(s.largura);
+    setPaspaturAtivo(s.paspaturAtivo);
+    setMargemEsq(s.margemEsq);
+    setMargemDir(s.margemDir);
+    setMargemSup(s.margemSup);
+    setMargemInf(s.margemInf);
+    setPaspaturId(s.paspaturId);
+    setPerfilId(s.perfilId);
+    setVidroTipo(s.vidroTipo);
+    setVidroId(s.vidroId);
+    setFoamId(s.foamId);
+    setColagemAtivo(s.colagemAtivo);
+    setColagemId(s.colagemId);
+    setImpressaoAtivo(s.impressaoAtivo);
+    setImpressaoId(s.impressaoId);
+    setImpressaoArquivo(null);
+  }
+
+  function selectItem(index: number) {
+    if (index === activeIndex) return;
+    // Capture current active state into items, then load target
+    const captured = activeSnap;
+    setItems((prev) => {
+      const next = [...prev];
+      next[activeIndex] = captured;
+      return next;
+    });
+    setActiveIndex(index);
+    loadSnapshotIntoState(items[index]);
+    setActive("tamanho");
+  }
+
+  function addNewItem() {
+    // Save current as snapshot, append blank, switch to it
+    const captured = activeSnap;
+    setItems((prev) => {
+      const next = [...prev];
+      next[activeIndex] = captured;
+      next.push({ ...emptyItem });
+      return next;
+    });
+    const newIndex = items.length; // because we will push one
+    setActiveIndex(newIndex);
+    loadSnapshotIntoState({ ...emptyItem });
+    setActive("tamanho");
+  }
+
   // Carregar orçamento existente para edição
   const [loadedId, setLoadedId] = useState<string | null>(null);
   useEffect(() => {
@@ -341,123 +589,56 @@ function NovoOrcamento() {
     if (loadedId === editId) return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      const { data: budget, error } = await supabase
         .from("budgets")
         .select("*")
         .eq("id", editId)
         .maybeSingle();
       if (cancelled) return;
-      if (error || !data) {
+      if (error || !budget) {
         toast.error("Não foi possível carregar o orçamento.");
         return;
       }
-      const d = (data.details ?? {}) as Record<string, unknown>;
+      const d = (budget.details ?? {}) as Record<string, unknown>;
       const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
-      setClienteNome(data.client_name ?? "");
-      setAltura(s("altura"));
-      setLargura(s("largura"));
-      setPaspaturAtivo(d.paspaturAtivo === "sim" ? "sim" : "nao");
-      setMargemEsq(s("margemEsq"));
-      setMargemDir(s("margemDir"));
-      setMargemSup(s("margemSup"));
-      setMargemInf(s("margemInf"));
-      setPaspaturId(s("paspaturId"));
-      setPerfilId(s("perfilId"));
-      setVidroTipo(d.vidroTipo === "sim" ? "sim" : "nao");
-      setVidroId(s("vidroId"));
-      setFoamId(s("foamId"));
-      setColagemAtivo(d.colagemAtivo === "sim" ? "sim" : "nao");
-      setColagemId(s("colagemId"));
-      setImpressaoAtivo(d.impressaoAtivo === "sim" ? "sim" : "nao");
-      setImpressaoId(s("impressaoId"));
+
+      setClienteNome(budget.client_name ?? "");
+      setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
+      setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
+      setDataVencimento(budget.data_vencimento ?? "");
+      setObservacoes(s("observacoes"));
       setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
       setValorInstalacaoStr(s("valorInstalacaoStr"));
       setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
       setValorEntregaStr(s("valorEntregaStr"));
-      setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
-      setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
-      setDataVencimento(data.data_vencimento ?? "");
-      setObservacoes(s("observacoes"));
+
+      // Load items
+      const { data: itemRows } = await supabase
+        .from("budget_items")
+        .select("data, position")
+        .eq("budget_id", editId)
+        .order("position", { ascending: true });
+      if (cancelled) return;
+
+      let loaded: ItemSnapshot[] = [];
+      if (itemRows && itemRows.length > 0) {
+        loaded = itemRows.map((r) =>
+          snapshotFromDetails((r.data ?? {}) as Record<string, unknown>),
+        );
+      } else {
+        // Legacy: derive single item from budget.details
+        loaded = [snapshotFromDetails(d)];
+      }
+      if (loaded.length === 0) loaded = [{ ...emptyItem }];
+      setItems(loaded);
+      setActiveIndex(0);
+      loadSnapshotIntoState(loaded[0]);
       setLoadedId(editId);
     })();
     return () => {
       cancelled = true;
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
-
-  function resetProduto() {
-    setAltura("");
-    setLargura("");
-    setPaspaturAtivo("nao");
-    setMargemEsq("");
-    setMargemDir("");
-    setMargemSup("");
-    setMargemInf("");
-    setPaspaturId("");
-    setPerfilId("");
-    setVidroTipo("nao");
-    setVidroId("");
-    setFoamId("");
-    setColagemAtivo("nao");
-    setColagemId("");
-    setImpressaoAtivo("nao");
-    setImpressaoId("");
-    setImpressaoArquivo(null);
-    setActive("tamanho");
-  }
-
-  function buildDetails() {
-    return {
-      altura,
-      largura,
-      alturaOriginal: alturaNum,
-      larguraOriginal: larguraNum,
-      alturaFinal,
-      larguraFinal,
-      paspaturAtivo,
-      paspaturId,
-      paspaturCode: paspaturSelecionado?.code ?? null,
-      paspaturDescription: paspaturSelecionado?.description ?? null,
-      valorPaspatur: Number(valorPaspatur.toFixed(2)),
-      margemEsq,
-      margemDir,
-      margemSup,
-      margemInf,
-      perfilId,
-      perfilCode: perfilSelecionado?.code ?? null,
-      perfilDescription: perfilSelecionado?.description ?? null,
-      valorPerfil: Number(valorPerfil.toFixed(2)),
-      vidroTipo,
-      vidroId,
-      vidroCode: vidroSelecionado?.code ?? null,
-      vidroDescription: vidroSelecionado?.description ?? null,
-      valorVidro: Number(valorVidro.toFixed(2)),
-      foamId,
-      foamCode: foamSelecionado?.code ?? null,
-      foamDescription: foamSelecionado?.description ?? null,
-      valorFoam: Number(valorFoam.toFixed(2)),
-      colagemAtivo,
-      colagemId,
-      colagemCode: colagemSelecionada?.code ?? null,
-      colagemDescription: colagemSelecionada?.description ?? null,
-      valorColagem: Number(valorColagem.toFixed(2)),
-      impressaoAtivo,
-      impressaoId,
-      impressaoCode: impressaoSelecionada?.code ?? null,
-      impressaoDescription: impressaoSelecionada?.description ?? null,
-      valorImpressao: Number(valorImpressao.toFixed(2)),
-      instalacaoAtivo,
-      valorInstalacaoStr,
-      valorInstalacao: Number(valorInstalacao.toFixed(2)),
-      tipoEntrega,
-      valorEntregaStr,
-      valorEntrega: Number(valorEntrega.toFixed(2)),
-      maoDeObraExtraStr,
-      maoDeObraExtra: Number(maoDeObraExtra.toFixed(2)),
-      formaPagamento,
-      observacoes,
-    };
-  }
 
   async function handleSalvar() {
     if (!session?.user?.id) {
@@ -469,35 +650,91 @@ function NovoOrcamento() {
       return;
     }
     if (valorTotal <= 0) {
-      toast.error("Valor total inválido. Verifique as etapas do orçamento.");
+      toast.error("Valor total inválido. Verifique os itens do orçamento.");
       return;
     }
+
+    // Persist current state into items
+    const captured = activeSnap;
+    const allItems = items.map((it, i) => (i === activeIndex ? captured : it));
+
+    // Build items payload with values and details
+    const itemsPayload = allItems.map((snap, idx) => {
+      const P = resolveProducts(snap);
+      const v = computeItemValues(snap, P);
+      return {
+        position: idx + 1,
+        subtotal: Number(v.subtotal.toFixed(2)),
+        data: buildItemDetails(snap, v, P),
+      };
+    });
+
     setSalvando(true);
     try {
-      const payload = {
+      const generalDetails = {
+        formaPagamento,
+        observacoes,
+        maoDeObraExtraStr,
+        maoDeObraExtra: Number(maoDeObraExtra.toFixed(2)),
+        instalacaoAtivo,
+        valorInstalacaoStr,
+        valorInstalacao: Number(valorInstalacao.toFixed(2)),
+        tipoEntrega,
+        valorEntregaStr,
+        valorEntrega: Number(valorEntrega.toFixed(2)),
+      };
+
+      const budgetPayload = {
         client_name: clienteNome.trim(),
         total_value: Number(valorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
-        details: buildDetails() as never,
+        details: generalDetails as never,
       };
+
+      let budgetId: string;
       if (isEdit && editId) {
         const { error } = await supabase
           .from("budgets")
-          .update(payload)
+          .update(budgetPayload)
           .eq("id", editId);
         if (error) throw error;
-        toast.success("Orçamento atualizado com sucesso!");
+        budgetId = editId;
       } else {
         const number = `ORC-${Date.now().toString().slice(-8)}`;
-        const { error } = await supabase.from("budgets").insert({
-          user_id: session.user.id,
-          number,
-          status: "Pendente",
-          ...payload,
-        });
+        const { data: inserted, error } = await supabase
+          .from("budgets")
+          .insert({
+            user_id: session.user.id,
+            number,
+            status: "Pendente",
+            ...budgetPayload,
+          })
+          .select("id")
+          .single();
         if (error) throw error;
-        toast.success("Orçamento salvo com sucesso!");
+        budgetId = inserted.id;
       }
+
+      // Replace items: delete then insert
+      const { error: delErr } = await supabase
+        .from("budget_items")
+        .delete()
+        .eq("budget_id", budgetId);
+      if (delErr) throw delErr;
+
+      const insertRows = itemsPayload.map((it) => ({
+        budget_id: budgetId,
+        user_id: session.user.id,
+        position: it.position,
+        subtotal: it.subtotal,
+        data: it.data as never,
+      }));
+      const { error: insErr } = await supabase.from("budget_items").insert(insertRows);
+      if (insErr) throw insErr;
+
+      toast.success(
+        isEdit ? "Orçamento atualizado com sucesso!" : "Orçamento salvo com sucesso!",
+      );
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
       navigate({ to: "/orcamentos" });
     } catch (e) {
@@ -509,12 +746,17 @@ function NovoOrcamento() {
   }
 
   return (
-    <AppShell title={isEdit ? "Editar Orçamento" : "Novo Orçamento"} subtitle="Monte o orçamento por etapas">
+    <AppShell
+      title={isEdit ? "Editar Orçamento" : "Novo Orçamento"}
+      subtitle="Monte o orçamento por etapas"
+    >
       <div className="flex justify-end mb-2">
         <button
           type="button"
           onClick={() => {
-            if (window.confirm("Ao sair você perderá este orçamento, deseja continuar?")) {
+            if (
+              window.confirm("Ao sair você perderá este orçamento, deseja continuar?")
+            ) {
               navigate({ to: "/orcamentos" });
             }
           }}
@@ -525,36 +767,91 @@ function NovoOrcamento() {
         </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-        {/* Stepper sidebar */}
-        <Card className="p-3 h-fit">
-          <nav className="space-y-1">
-            {steps.map((s) => {
-              const isActive = active === s.key;
-              const Icon = s.icon;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  onClick={() => setActive(s.key)}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all text-left",
-                    isActive
-                      ? "bg-gradient-brand text-brand-foreground shadow-brand"
-                      : "text-foreground/80 hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1">{s.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </Card>
+        {/* Sidebar: Items + Stepper */}
+        <div className="space-y-4 h-fit">
+          <Card className="p-3">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground px-2 mb-2">
+              Itens do orçamento
+            </div>
+            <div className="space-y-1">
+              {items.map((_, i) => {
+                const isActive = i === activeIndex;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => selectItem(i)}
+                    className={cn(
+                      "w-full flex items-center justify-between rounded-md px-3 py-2 text-sm transition-all text-left",
+                      isActive
+                        ? "bg-accent text-foreground font-medium"
+                        : "hover:bg-accent/60 text-foreground/80",
+                    )}
+                  >
+                    <span>Item {i + 1}</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {fmtMoney(itemSubtotals[i] ?? 0)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={addNewItem}
+              className="mt-2 w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-accent transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Orçar mais um produto
+            </button>
+          </Card>
+
+          <Card className="p-3">
+            <nav className="space-y-1">
+              {steps.map((s) => {
+                const isActive = active === s.key;
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setActive(s.key)}
+                    className={cn(
+                      "w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all text-left",
+                      isActive
+                        ? "bg-gradient-brand text-brand-foreground shadow-brand"
+                        : "text-foreground/80 hover:bg-accent hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">{s.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </Card>
+        </div>
 
         {/* Content area */}
         <div className="space-y-6">
           {/* Totals header */}
           <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-medium text-foreground">
+                Item {activeIndex + 1}{" "}
+                <span className="text-muted-foreground font-normal">
+                  · Subtotal {fmtMoney(activeValues.subtotal)}
+                </span>
+              </div>
+              <div className="text-right">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Total geral
+                </div>
+                <div className="text-2xl font-bold bg-gradient-brand bg-clip-text text-transparent">
+                  {fmtMoney(valorTotal)}
+                </div>
+              </div>
+            </div>
             <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
               <Total label="Paspatur" value={valorPaspatur} />
               <Total label="Perfil" value={valorPerfil} />
@@ -562,15 +859,6 @@ function NovoOrcamento() {
               <Total label="Foam/MDF" value={valorFoam} />
               <Total label="Colagem" value={valorColagem} />
               <Total label="Impressão" value={valorImpressao} />
-              <Total label="Inst./Frete" value={valorInstalacao + valorEntrega} />
-              <div className="text-right">
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Valor total
-                </div>
-                <div className="text-2xl font-bold bg-gradient-brand bg-clip-text text-transparent">
-                  {fmtMoney(valorTotal)}
-                </div>
-              </div>
             </div>
             {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) &&
               alturaNum > 0 &&
@@ -645,7 +933,8 @@ function NovoOrcamento() {
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Paspatur</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Defina as margens do paspatur. As medidas finais serão utilizadas pelos próximos campos do orçamento.
+                Defina as margens do paspatur. As medidas finais serão utilizadas pelos
+                próximos campos do orçamento.
               </p>
 
               {(alturaNum <= 0 || larguraNum <= 0) && (
@@ -989,7 +1278,8 @@ function NovoOrcamento() {
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Instalação / Frete</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Defina valores manuais de instalação e entrega.
+                Defina valores manuais de instalação e entrega. Estes valores são gerais
+                do orçamento e somam ao total final.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 max-w-2xl">
@@ -1075,7 +1365,37 @@ function NovoOrcamento() {
                   <h3 className="font-semibold text-base text-foreground mb-2">
                     Resumo do orçamento
                   </h3>
-                  <Row label="Tamanho original" value={`${larguraNum || 0} × ${alturaNum || 0} cm`} />
+
+                  {/* Itens chips */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {items.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => selectItem(i)}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                          i === activeIndex
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-background hover:bg-accent",
+                        )}
+                      >
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        Item {i + 1}
+                        <span className="text-muted-foreground font-normal">
+                          {fmtMoney(itemSubtotals[i] ?? 0)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Item {activeIndex + 1}
+                  </div>
+                  <Row
+                    label="Tamanho original"
+                    value={`${larguraNum || 0} × ${alturaNum || 0} cm`}
+                  />
                   <Row
                     label="Tamanho final (com paspatur)"
                     value={`${larguraFinal || 0} × ${alturaFinal || 0} cm`}
@@ -1105,12 +1425,34 @@ function NovoOrcamento() {
                     label={`Impressão${impressaoSelecionada && impressaoAtivo === "sim" ? ` (${impressaoSelecionada.code})` : ""}`}
                     value={fmtMoney(valorImpressao)}
                   />
+                  <Row
+                    label={`Subtotal Item ${activeIndex + 1}`}
+                    value={fmtMoney(activeValues.subtotal)}
+                  />
+
+                  {/* Other items */}
+                  {items.length > 1 && (
+                    <>
+                      <hr className="my-2 border-border" />
+                      {items.map((_, i) =>
+                        i === activeIndex ? null : (
+                          <Row
+                            key={i}
+                            label={`Item ${i + 1}`}
+                            value={fmtMoney(itemSubtotals[i] ?? 0)}
+                          />
+                        ),
+                      )}
+                    </>
+                  )}
+
+                  <hr className="my-2 border-border" />
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
                   <Row label={`Entrega (${tipoEntrega})`} value={fmtMoney(valorEntrega)} />
                   <Row label="Mão de obra extra" value={fmtMoney(maoDeObraExtra)} />
                   <hr className="my-2 border-border" />
                   <div className="flex items-center justify-between pt-1">
-                    <span className="font-semibold text-foreground">Valor total</span>
+                    <span className="font-semibold text-foreground">Total geral</span>
                     <span className="text-xl font-bold bg-gradient-brand bg-clip-text text-transparent">
                       {fmtMoney(valorTotal)}
                     </span>
@@ -1185,9 +1527,14 @@ function NovoOrcamento() {
                       disabled={salvando}
                       className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                     >
-                      {salvando ? "Salvando..." : isEdit ? "Atualizar Orçamento" : "Salvar Orçamento"}
+                      {salvando
+                        ? "Salvando..."
+                        : isEdit
+                          ? "Atualizar Orçamento"
+                          : "Salvar Orçamento"}
                     </Button>
-                    <Button type="button" variant="outline" onClick={resetProduto}>
+                    <Button type="button" variant="outline" onClick={addNewItem}>
+                      <Plus className="h-4 w-4 mr-1.5" />
                       Orçar mais um produto
                     </Button>
                   </div>
@@ -1327,7 +1674,6 @@ function ProductSelect({
     </Popover>
   );
 }
-
 
 function SelectedInfo({
   title,
