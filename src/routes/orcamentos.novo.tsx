@@ -1607,12 +1607,12 @@ function NovoOrcamento() {
                     />
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <div className="flex flex-col sm:flex-wrap sm:flex-row gap-3 pt-2">
                     <Button
                       type="button"
                       onClick={handleSalvar}
                       disabled={salvando}
-                      className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+                      className="w-full sm:w-auto bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                     >
                       {salvando
                         ? "Salvando..."
@@ -1620,7 +1620,12 @@ function NovoOrcamento() {
                           ? "Atualizar Orçamento"
                           : "Salvar Orçamento"}
                     </Button>
-                    <Button type="button" variant="outline" onClick={addNewItem}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addNewItem}
+                      className="w-full sm:w-auto"
+                    >
                       <Plus className="h-4 w-4 mr-1.5" />
                       Orçar mais um produto
                     </Button>
@@ -1628,6 +1633,7 @@ function NovoOrcamento() {
                       type="button"
                       variant="outline"
                       onClick={() => setCloneOpen(true)}
+                      className="w-full sm:w-auto"
                     >
                       <Copy className="h-4 w-4 mr-1.5" />
                       Clonar produto
