@@ -71,6 +71,7 @@ type Product = {
   value_per_meter: number;
   profit_margin: number;
   waste_percentage: number;
+  frame_width_cm: number | null;
 };
 
 type FormState = {
@@ -79,6 +80,7 @@ type FormState = {
   value_per_meter: string;
   profit_margin: string;
   waste_percentage: string;
+  frame_width_cm: string;
 };
 
 const emptyForm: FormState = {
@@ -87,6 +89,7 @@ const emptyForm: FormState = {
   value_per_meter: "",
   profit_margin: "",
   waste_percentage: "",
+  frame_width_cm: "",
 };
 
 function Produtos() {
@@ -112,7 +115,7 @@ function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage",
+          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -146,6 +149,10 @@ function Produtos() {
       value_per_meter: String(p.value_per_meter).replace(".", ","),
       profit_margin: String(p.profit_margin).replace(".", ","),
       waste_percentage: String(p.waste_percentage).replace(".", ","),
+      frame_width_cm:
+        p.frame_width_cm == null
+          ? ""
+          : String(p.frame_width_cm).replace(".", ","),
     });
     setDialogOpen(true);
   };
@@ -163,6 +170,20 @@ function Produtos() {
       toast.error("Valores numéricos inválidos.");
       return;
     }
+    const isPerfil = activeCategory === "Perfil";
+    let frameWidth: number | null = null;
+    if (isPerfil) {
+      if (form.frame_width_cm.trim() === "") {
+        frameWidth = null;
+      } else {
+        const fw = parseNum(form.frame_width_cm);
+        if (Number.isNaN(fw)) {
+          toast.error("Largura da moldura inválida.");
+          return;
+        }
+        frameWidth = fw;
+      }
+    }
 
     setSaving(true);
     try {
@@ -176,6 +197,7 @@ function Produtos() {
             value_per_meter: value,
             profit_margin: margin,
             waste_percentage: waste,
+            frame_width_cm: isPerfil ? frameWidth : null,
           })
           .eq("id", editing.id);
         if (error) throw error;
@@ -189,6 +211,7 @@ function Produtos() {
           value_per_meter: value,
           profit_margin: margin,
           waste_percentage: waste,
+          frame_width_cm: isPerfil ? frameWidth : null,
         });
         if (error) throw error;
         toast.success("Produto cadastrado.");
@@ -277,6 +300,9 @@ function Produtos() {
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Código</th>
                 <th className="font-medium py-3 px-3">Descrição</th>
+                {activeCategory === "Perfil" && (
+                  <th className="font-medium py-3 px-3">Largura</th>
+                )}
                 {showInternal && <th className="font-medium py-3 px-3">Valor/m</th>}
                 {showInternal && <th className="font-medium py-3 px-3">Margem</th>}
                 {showInternal && <th className="font-medium py-3 px-3">Perda</th>}
@@ -286,13 +312,13 @@ function Produtos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhum produto em {activeCategory}.
                   </td>
                 </tr>
@@ -301,6 +327,13 @@ function Produtos() {
                   <tr key={p.id} className="hover:bg-muted/40 transition">
                     <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
                     <td className="py-3.5 px-3">{p.description}</td>
+                    {activeCategory === "Perfil" && (
+                      <td className="py-3.5 px-3 text-muted-foreground">
+                        {p.frame_width_cm == null
+                          ? "—"
+                          : `${Number(p.frame_width_cm).toLocaleString("pt-BR")} cm`}
+                      </td>
+                    )}
                     {showInternal && (
                       <td className="py-3.5 px-3 font-semibold">
                         {fmtMoney(Number(p.value_per_meter))}
@@ -408,6 +441,20 @@ function Produtos() {
                 />
               </div>
             </div>
+            {activeCategory === "Perfil" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fw">Largura da moldura (cm)</Label>
+                <Input
+                  id="fw"
+                  inputMode="decimal"
+                  placeholder="Ex: 3"
+                  value={form.frame_width_cm}
+                  onChange={(e) =>
+                    setForm({ ...form, frame_width_cm: e.target.value })
+                  }
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
