@@ -144,6 +144,7 @@ export type Database = {
           code: string
           created_at: string
           description: string
+          frame_width_cm: number | null
           id: string
           profit_margin: number
           updated_at: string
@@ -156,6 +157,7 @@ export type Database = {
           code: string
           created_at?: string
           description: string
+          frame_width_cm?: number | null
           id?: string
           profit_margin?: number
           updated_at?: string
@@ -168,6 +170,7 @@ export type Database = {
           code?: string
           created_at?: string
           description?: string
+          frame_width_cm?: number | null
           id?: string
           profit_margin?: number
           updated_at?: string
