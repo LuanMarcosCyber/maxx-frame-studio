@@ -170,6 +170,20 @@ function Produtos() {
       toast.error("Valores numéricos inválidos.");
       return;
     }
+    const isPerfil = activeCategory === "Perfil";
+    let frameWidth: number | null = null;
+    if (isPerfil) {
+      if (form.frame_width_cm.trim() === "") {
+        frameWidth = null;
+      } else {
+        const fw = parseNum(form.frame_width_cm);
+        if (Number.isNaN(fw)) {
+          toast.error("Largura da moldura inválida.");
+          return;
+        }
+        frameWidth = fw;
+      }
+    }
 
     setSaving(true);
     try {
@@ -183,6 +197,7 @@ function Produtos() {
             value_per_meter: value,
             profit_margin: margin,
             waste_percentage: waste,
+            frame_width_cm: isPerfil ? frameWidth : null,
           })
           .eq("id", editing.id);
         if (error) throw error;
@@ -196,6 +211,7 @@ function Produtos() {
           value_per_meter: value,
           profit_margin: margin,
           waste_percentage: waste,
+          frame_width_cm: isPerfil ? frameWidth : null,
         });
         if (error) throw error;
         toast.success("Produto cadastrado.");
