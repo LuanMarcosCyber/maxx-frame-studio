@@ -1040,12 +1040,12 @@ function NovoOrcamento() {
                 </div>
               </div>
 
-              <div className="mt-10 flex justify-center">
-                <div className="inline-flex items-start gap-4">
-                  <div className="flex flex-col items-center">
+              <div ref={previewArtRef} className="mt-10 w-full overflow-hidden flex justify-center">
+                <div className="inline-flex items-start gap-4 max-w-full">
+                  <div className="flex flex-col items-center min-w-0">
                     <div
                       className={cn(
-                        "border-2 border-foreground/70 rounded-sm bg-muted/30 transition-all",
+                        "border-2 border-foreground/70 rounded-sm bg-muted/30 transition-all max-w-full",
                         previewArt.empty && "border-dashed opacity-50",
                       )}
                       style={{ width: previewArt.w, height: previewArt.h }}
@@ -1055,13 +1055,14 @@ function NovoOrcamento() {
                     </div>
                   </div>
                   <div
-                    className="flex items-center text-sm font-medium text-foreground"
+                    className="flex items-center text-sm font-medium text-foreground shrink-0"
                     style={{ height: previewArt.h }}
                   >
                     {alturaNum > 0 ? `${alturaNum} CM` : "—"}
                   </div>
                 </div>
               </div>
+
             </Card>
           )}
 
