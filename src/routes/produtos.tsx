@@ -300,6 +300,9 @@ function Produtos() {
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Código</th>
                 <th className="font-medium py-3 px-3">Descrição</th>
+                {activeCategory === "Perfil" && (
+                  <th className="font-medium py-3 px-3">Largura</th>
+                )}
                 {showInternal && <th className="font-medium py-3 px-3">Valor/m</th>}
                 {showInternal && <th className="font-medium py-3 px-3">Margem</th>}
                 {showInternal && <th className="font-medium py-3 px-3">Perda</th>}
@@ -309,13 +312,13 @@ function Produtos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhum produto em {activeCategory}.
                   </td>
                 </tr>
@@ -324,6 +327,13 @@ function Produtos() {
                   <tr key={p.id} className="hover:bg-muted/40 transition">
                     <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
                     <td className="py-3.5 px-3">{p.description}</td>
+                    {activeCategory === "Perfil" && (
+                      <td className="py-3.5 px-3 text-muted-foreground">
+                        {p.frame_width_cm == null
+                          ? "—"
+                          : `${Number(p.frame_width_cm).toLocaleString("pt-BR")} cm`}
+                      </td>
+                    )}
                     {showInternal && (
                       <td className="py-3.5 px-3 font-semibold">
                         {fmtMoney(Number(p.value_per_meter))}
