@@ -1164,7 +1164,7 @@ function NovoOrcamento() {
               </p>
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="vidro-tipo">Tipo</Label>
+                <Label htmlFor="vidro-tipo">Vidro</Label>
                 <Select
                   value={vidroTipo}
                   onValueChange={(v) => setVidroTipo(v as "sim" | "nao")}
