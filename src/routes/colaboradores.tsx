@@ -162,8 +162,8 @@ function Content() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold">Colaboradores cadastrados</h2>
           <p className="text-sm text-muted-foreground">
             Os colaboradores usam os produtos da sua loja e criam orçamentos e pedidos em seu nome.
@@ -172,7 +172,7 @@ function Content() {
         <CreateDialog onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card -mx-4 sm:mx-0 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
