@@ -529,23 +529,53 @@ function NovoOrcamento() {
 
   const valorTotal = subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
 
+  // Container-aware preview sizing (mobile-safe).
+  // We measure the wrapper width and reserve room for the right-side "altura" label.
+  const previewArtRef = useRef<HTMLDivElement | null>(null);
+  const previewPaspaturRef = useRef<HTMLDivElement | null>(null);
+  const [previewArtCW, setPreviewArtCW] = useState(320);
+  const [previewPaspaturCW, setPreviewPaspaturCW] = useState(360);
+
+  useEffect(() => {
+    const targets: Array<[HTMLDivElement | null, (n: number) => void]> = [
+      [previewArtRef.current, setPreviewArtCW],
+      [previewPaspaturRef.current, setPreviewPaspaturCW],
+    ];
+    const observers: ResizeObserver[] = [];
+    targets.forEach(([el, setter]) => {
+      if (!el) return;
+      const ro = new ResizeObserver((entries) => {
+        for (const e of entries) setter(e.contentRect.width);
+      });
+      ro.observe(el);
+      observers.push(ro);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [active]);
+
+  // Reserve ~56px for the right-side "altura CM" label + gap.
+  const RIGHT_LABEL_RESERVE = 56;
+
   // Preview Tamanho
   const previewArt = useMemo(() => {
-    const maxW = 320;
+    const maxW = Math.max(80, Math.min(320, previewArtCW - RIGHT_LABEL_RESERVE));
     const maxH = 240;
     const a = alturaNum > 0 ? alturaNum : 0;
     const l = larguraNum > 0 ? larguraNum : 0;
-    if (a === 0 && l === 0) return { w: 200, h: 150, empty: true };
+    if (a === 0 && l === 0) {
+      const w = Math.min(200, maxW);
+      return { w, h: Math.round(w * 0.75), empty: true };
+    }
     const scale = Math.min(maxW / (l || 1), maxH / (a || 1));
     return {
       w: Math.max(40, Math.round((l || 1) * scale)),
       h: Math.max(40, Math.round((a || 1) * scale)),
       empty: false,
     };
-  }, [alturaNum, larguraNum]);
+  }, [alturaNum, larguraNum, previewArtCW]);
 
   const previewPaspatur = useMemo(() => {
-    const maxW = 360;
+    const maxW = Math.max(80, Math.min(360, previewPaspaturCW - RIGHT_LABEL_RESERVE));
     const maxH = 280;
     const lf = larguraFinal > 0 ? larguraFinal : Math.max(larguraNum, 1);
     const af = alturaFinal > 0 ? alturaFinal : Math.max(alturaNum, 1);
@@ -559,7 +589,7 @@ function NovoOrcamento() {
       padBottom: Math.round(mInf * scale),
       scale,
     };
-  }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf]);
+  }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf, previewPaspaturCW]);
 
   // Selected products (active item) for "selected info" cards
   const perfilSelecionado = activeProducts.perfil;
