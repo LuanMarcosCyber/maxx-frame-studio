@@ -441,6 +441,20 @@ function Produtos() {
                 />
               </div>
             </div>
+            {activeCategory === "Perfil" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fw">Largura da moldura (cm)</Label>
+                <Input
+                  id="fw"
+                  inputMode="decimal"
+                  placeholder="Ex: 3"
+                  value={form.frame_width_cm}
+                  onChange={(e) =>
+                    setForm({ ...form, frame_width_cm: e.target.value })
+                  }
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
