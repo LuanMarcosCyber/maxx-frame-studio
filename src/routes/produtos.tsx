@@ -149,6 +149,10 @@ function Produtos() {
       value_per_meter: String(p.value_per_meter).replace(".", ","),
       profit_margin: String(p.profit_margin).replace(".", ","),
       waste_percentage: String(p.waste_percentage).replace(".", ","),
+      frame_width_cm:
+        p.frame_width_cm == null
+          ? ""
+          : String(p.frame_width_cm).replace(".", ","),
     });
     setDialogOpen(true);
   };
