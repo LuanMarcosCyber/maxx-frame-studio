@@ -1122,11 +1122,11 @@ function NovoOrcamento() {
               )}
 
               {alturaNum > 0 && larguraNum > 0 && (
-                <div className="mt-10 flex justify-center">
-                  <div className="inline-flex items-start gap-4">
-                    <div className="flex flex-col items-center">
+                <div ref={previewPaspaturRef} className="mt-10 w-full overflow-hidden flex justify-center">
+                  <div className="inline-flex items-start gap-4 max-w-full">
+                    <div className="flex flex-col items-center min-w-0">
                       <div
-                        className="relative border-2 border-foreground/70 rounded-sm bg-muted/50 transition-all"
+                        className="relative border-2 border-foreground/70 rounded-sm bg-muted/50 transition-all max-w-full"
                         style={{
                           width: previewPaspatur.outerW,
                           height: previewPaspatur.outerH,
@@ -1147,13 +1147,14 @@ function NovoOrcamento() {
                       </div>
                     </div>
                     <div
-                      className="flex items-center text-sm font-medium text-foreground"
+                      className="flex items-center text-sm font-medium text-foreground shrink-0"
                       style={{ height: previewPaspatur.outerH }}
                     >
                       {alturaFinal} CM
                     </div>
                   </div>
                 </div>
+
               )}
             </Card>
           )}
