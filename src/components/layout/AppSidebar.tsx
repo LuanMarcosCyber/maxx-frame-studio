@@ -26,7 +26,9 @@ const colaboradores: Item = { title: "Colaboradores", url: "/colaboradores", ico
 const conta: Item = { title: "Conta", url: "/conta", icon: User };
 const configuracoes: Item = { title: "Configurações", url: "/configuracoes", icon: Settings };
 
-export function AppSidebar() {
+const sidebarBg = "#F8F9FB";
+
+function useSidebarData() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
 
@@ -46,21 +48,40 @@ export function AppSidebar() {
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  const logoSrc = logoTotalMaxx;
-  const sidebarBg = "#F8F9FB";
+  return { items, bottomItems, isActive, profile };
+}
+
+export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
+  const { items, bottomItems, isActive, profile } = useSidebarData();
+
+  const renderLink = (item: Item) => {
+    const active = isActive(item.url);
+    return (
+      <Link
+        key={item.url}
+        to={item.url}
+        onClick={onNavigate}
+        className={cn(
+          "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
+          active
+            ? "bg-gradient-brand text-brand-foreground shadow-brand"
+            : "text-foreground/75 hover:bg-accent hover:text-foreground",
+        )}
+      >
+        <item.icon className="h-4 w-4" />
+        {item.title}
+      </Link>
+    );
+  };
 
   return (
-    <aside
-      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)] sticky top-0 h-screen"
-      style={{ backgroundColor: sidebarBg }}
-    >
-      {/* Logo */}
+    <div className="flex h-full flex-col" style={{ backgroundColor: sidebarBg }}>
       <div
         className="flex items-center justify-center px-6 py-6"
         style={{ minHeight: "176px", backgroundColor: sidebarBg }}
       >
         <img
-          src={logoSrc}
+          src={logoTotalMaxx}
           alt="Total Maxx Import & Export"
           className="max-h-36 w-auto object-contain"
         />
@@ -70,51 +91,17 @@ export function AppSidebar() {
         <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Principal
         </div>
-        {items.map((item) => {
-          const active = isActive(item.url);
-          return (
-            <Link
-              key={item.url}
-              to={item.url}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-gradient-brand text-brand-foreground shadow-brand"
-                  : "text-foreground/75 hover:bg-accent hover:text-foreground",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.title}
-            </Link>
-          );
-        })}
+        {items.map(renderLink)}
 
         <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Sistema
         </div>
-        {bottomItems.map((item) => {
-          const active = isActive(item.url);
-          return (
-            <Link
-              key={item.url}
-              to={item.url}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-gradient-brand text-brand-foreground shadow-brand"
-                  : "text-foreground/75 hover:bg-accent hover:text-foreground",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.title}
-            </Link>
-          );
-        })}
+        {bottomItems.map(renderLink)}
       </nav>
 
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 rounded-md bg-card border border-border p-3">
-          <div className="h-9 w-9 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
             {getInitials(profile?.full_name || profile?.username)}
           </div>
           <div className="leading-tight min-w-0">
@@ -129,6 +116,17 @@ export function AppSidebar() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function AppSidebar() {
+  return (
+    <aside
+      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)] sticky top-0 h-screen"
+      style={{ backgroundColor: sidebarBg }}
+    >
+      <SidebarContents />
     </aside>
   );
 }

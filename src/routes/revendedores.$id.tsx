@@ -96,12 +96,14 @@ function ResellerDetailPage() {
       </div>
 
       <Tabs defaultValue="produtos" className="w-full">
-        <TabsList>
-          <TabsTrigger value="produtos">Produtos</TabsTrigger>
-          <TabsTrigger value="orcamentos">Orçamentos</TabsTrigger>
-          <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
-          <TabsTrigger value="colaboradores">Colaboradores</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 overflow-x-auto">
+          <TabsList className="w-max">
+            <TabsTrigger value="produtos" className="whitespace-nowrap">Produtos</TabsTrigger>
+            <TabsTrigger value="orcamentos" className="whitespace-nowrap">Orçamentos</TabsTrigger>
+            <TabsTrigger value="pedidos" className="whitespace-nowrap">Pedidos</TabsTrigger>
+            <TabsTrigger value="colaboradores" className="whitespace-nowrap">Colaboradores</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="produtos" className="mt-4">
           <ProdutosTab resellerId={id} />
@@ -556,7 +558,7 @@ function ResumoDialog({
         </DialogHeader>
         {budget && (
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <Info label="Número" value={budget.number} mono />
               <Info label="Cliente" value={budget.client_name} />
               <Info label="Data" value={fmtDate(budget.created_at)} />
