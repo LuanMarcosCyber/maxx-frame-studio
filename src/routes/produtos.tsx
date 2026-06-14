@@ -115,7 +115,7 @@ function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage",
+          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
