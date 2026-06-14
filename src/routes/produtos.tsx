@@ -71,6 +71,7 @@ type Product = {
   value_per_meter: number;
   profit_margin: number;
   waste_percentage: number;
+  frame_width_cm: number | null;
 };
 
 type FormState = {
@@ -79,6 +80,7 @@ type FormState = {
   value_per_meter: string;
   profit_margin: string;
   waste_percentage: string;
+  frame_width_cm: string;
 };
 
 const emptyForm: FormState = {
@@ -87,6 +89,7 @@ const emptyForm: FormState = {
   value_per_meter: "",
   profit_margin: "",
   waste_percentage: "",
+  frame_width_cm: "",
 };
 
 function Produtos() {
