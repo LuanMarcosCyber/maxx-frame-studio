@@ -25,14 +25,14 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
 
   return (
     <header className="bg-gradient-brand text-brand-foreground shadow-brand">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-6 px-4 sm:px-6 lg:px-10 h-16 sm:h-20">
+      <div className="flex items-center gap-3 sm:gap-6 px-4 sm:px-6 lg:px-10 h-16 sm:h-20">
         {/* Mobile menu */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <button
               type="button"
               aria-label="Abrir menu"
-              className="md:hidden h-10 w-10 grid place-items-center rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition"
+              className="md:hidden h-10 w-10 grid place-items-center rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition shrink-0"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -43,26 +43,30 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
           </SheetContent>
         </Sheet>
 
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="hidden sm:block text-xs lg:text-sm text-brand-foreground/70 mt-0.5 truncate">
-              {subtitle}
-            </p>
-          )}
-        </div>
+        {/* Title + search (flex-1 keeps the right block anchored) */}
+        <div className="flex items-center gap-3 sm:gap-6 min-w-0 flex-1">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="hidden sm:block text-xs lg:text-sm text-brand-foreground/70 mt-0.5 truncate">
+                {subtitle}
+              </p>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden lg:flex items-center gap-2 bg-white/10 backdrop-blur rounded-md px-3 py-2 w-72 border border-white/10">
+          <div className="hidden lg:flex items-center gap-2 bg-white/10 backdrop-blur rounded-md px-3 py-2 w-72 border border-white/10 shrink-0 ml-auto">
             <Search className="h-4 w-4 text-brand-foreground/70" />
             <input
               placeholder="Buscar no sistema..."
               className="bg-transparent text-sm placeholder:text-brand-foreground/50 focus:outline-none w-full"
             />
           </div>
+        </div>
 
+        {/* User / notifications — sempre alinhado à direita */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 border-l border-white/10 pl-3 sm:pl-4">
           <button
             type="button"
             aria-label="Notificações"
