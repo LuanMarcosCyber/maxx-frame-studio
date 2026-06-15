@@ -146,7 +146,7 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, value_per_meter, profit_margin, waste_percentage, category",
+          "id, code, description, value_per_meter, profit_margin, waste_percentage, category, frame_width_cm",
         )
         .in("category", categories)
         .order("code", { ascending: true });
