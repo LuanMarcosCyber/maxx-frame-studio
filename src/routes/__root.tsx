@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
+import logoUrl from "@/assets/totalmaxx-logo.png";
 
 function NotFoundComponent() {
   return (
@@ -147,12 +148,9 @@ function AuthLoadingScreen() {
     <div className="min-h-screen grid place-items-center bg-background px-4">
       <div className="flex flex-col items-center gap-4">
         <img
-          src="/totalmaxx-logo.png"
+          src={logoUrl}
           alt="Total Maxx"
           className="h-16 w-auto opacity-90"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
         />
         <p className="text-sm text-muted-foreground animate-pulse">Carregando...</p>
       </div>
