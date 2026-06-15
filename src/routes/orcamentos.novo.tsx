@@ -569,6 +569,8 @@ function NovoOrcamento() {
       paspaturAdicionalInf,
       paspaturAdicionalId,
       perfilId,
+      perfilAdicionalAtivo,
+      perfilAdicionalId,
       vidroTipo,
       vidroId,
       foamId,
