@@ -183,6 +183,8 @@ type ItemSnapshot = {
   paspaturAdicionalInf: string;
   paspaturAdicionalId: string;
   perfilId: string;
+  perfilAdicionalAtivo: "sim" | "nao";
+  perfilAdicionalId: string;
   vidroTipo: "sim" | "nao";
   vidroId: string;
   foamId: string;
