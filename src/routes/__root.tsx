@@ -77,11 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Total Maxx ERP — Gestão de Orçamentos e Pedidos" },
+      { title: "Total Maxx System— Gestão de Orçamentos e Pedidos" },
       { name: "description", content: "Total Maxx ERP — sistema web para revendedores criarem orçamentos e pedidos de componentes decorativos com agilidade e controle total." },
       { property: "og:site_name", content: "Total Maxx ERP" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { property: "og:title", content: "Total Maxx System— Gestão de Orçamentos e Pedidos" },
+      { name: "twitter:title", content: "Total Maxx System— Gestão de Orçamentos e Pedidos" },
+      { property: "og:description", content: "Total Maxx ERP — sistema web para revendedores criarem orçamentos e pedidos de componentes decorativos com agilidade e controle total." },
+      { name: "twitter:description", content: "Total Maxx ERP — sistema web para revendedores criarem orçamentos e pedidos de componentes decorativos com agilidade e controle total." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9126072c-5fd1-44b3-b1df-2873984aed30/id-preview-ff9007db--57e5c4b1-aaeb-49d3-a965-111b973ad91b.lovable.app-1781481245557.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9126072c-5fd1-44b3-b1df-2873984aed30/id-preview-ff9007db--57e5c4b1-aaeb-49d3-a965-111b973ad91b.lovable.app-1781481245557.png" },
     ],
     links: [
       {
