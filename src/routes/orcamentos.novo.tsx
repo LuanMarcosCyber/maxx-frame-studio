@@ -778,6 +778,7 @@ function NovoOrcamento() {
 
   // Selected products (active item) for "selected info" cards
   const perfilSelecionado = activeProducts.perfil;
+  const perfilAdicionalSelecionado = activeProducts.perfilAdicional;
   const vidroSelecionado = activeProducts.vidro;
   const foamSelecionado = activeProducts.foam;
   const paspaturSelecionado = activeProducts.paspatur;
