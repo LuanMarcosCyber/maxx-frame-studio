@@ -278,13 +278,31 @@ function computeItemValues(
 
   const valorPaspatur = valorPaspaturPrincipal + valorPaspaturAdicional;
 
-  let valorPerfil = 0;
+  let valorPerfilPrincipal = 0;
   if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
     const perim = ((alturaFinal + larguraFinal) * 2) / 100;
     const base = perim * Number(P.perfil.value_per_meter);
     const cp = base * (1 + Number(P.perfil.waste_percentage) / 100);
-    valorPerfil = cp * (1 + Number(P.perfil.profit_margin) / 100);
+    valorPerfilPrincipal = cp * (1 + Number(P.perfil.profit_margin) / 100);
   }
+
+  // Perfil adicional: usa medidas finais + largura da moldura do perfil principal nos 2 lados
+  const fwPrincipal = Number(P.perfil?.frame_width_cm ?? 0) || 0;
+  const larguraPerfilAdicional = larguraFinal + fwPrincipal * 2;
+  const alturaPerfilAdicional = alturaFinal + fwPrincipal * 2;
+  let valorPerfilAdicional = 0;
+  if (
+    snap.perfilAdicionalAtivo === "sim" &&
+    P.perfilAdicional &&
+    larguraPerfilAdicional > 0 &&
+    alturaPerfilAdicional > 0
+  ) {
+    const perim = ((alturaPerfilAdicional + larguraPerfilAdicional) * 2) / 100;
+    const base = perim * Number(P.perfilAdicional.value_per_meter);
+    const cp = base * (1 + Number(P.perfilAdicional.waste_percentage) / 100);
+    valorPerfilAdicional = cp * (1 + Number(P.perfilAdicional.profit_margin) / 100);
+  }
+  const valorPerfil = valorPerfilPrincipal + valorPerfilAdicional;
 
   const valorVidro =
     snap.vidroTipo === "sim" ? calcAreaValue(P.vidro, alturaFinal, larguraFinal) : 0;
