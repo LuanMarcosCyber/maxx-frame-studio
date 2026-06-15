@@ -416,6 +416,8 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     paspaturAdicionalInf: s("paspaturAdicionalInf"),
     paspaturAdicionalId: s("paspaturAdicionalId"),
     perfilId: s("perfilId"),
+    perfilAdicionalAtivo: d.perfilAdicionalAtivo === "sim" ? "sim" : "nao",
+    perfilAdicionalId: s("perfilAdicionalId"),
     vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
     vidroId: s("vidroId"),
     foamId: s("foamId"),
