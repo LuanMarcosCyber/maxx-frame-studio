@@ -174,6 +174,13 @@ type ItemSnapshot = {
   margemSup: string;
   margemInf: string;
   paspaturId: string;
+  paspaturAdicionalAtivo: "sim" | "nao";
+  paspaturAdicionalObs: string;
+  paspaturAdicionalEsq: string;
+  paspaturAdicionalDir: string;
+  paspaturAdicionalSup: string;
+  paspaturAdicionalInf: string;
+  paspaturAdicionalId: string;
   perfilId: string;
   vidroTipo: "sim" | "nao";
   vidroId: string;
@@ -193,6 +200,13 @@ const emptyItem: ItemSnapshot = {
   margemSup: "",
   margemInf: "",
   paspaturId: "",
+  paspaturAdicionalAtivo: "nao",
+  paspaturAdicionalObs: "",
+  paspaturAdicionalEsq: "",
+  paspaturAdicionalDir: "",
+  paspaturAdicionalSup: "",
+  paspaturAdicionalInf: "",
+  paspaturAdicionalId: "",
   perfilId: "",
   vidroTipo: "nao",
   vidroId: "",
