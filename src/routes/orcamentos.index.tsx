@@ -332,11 +332,30 @@ function ResumoDialog({
                 sub: paspaturAtivo ? productLabel(d, "paspaturCode", "paspaturDescription") : undefined,
               },
             ]),
-        {
-          label: "Perfil",
-          value: fmtMoney(dNum(d, "valorPerfil")),
-          sub: productLabel(d, "perfilCode", "perfilDescription"),
-        },
+        ...(d.perfilAdicionalAtivo === "sim"
+          ? [
+              {
+                label: "Perfil principal",
+                value: fmtMoney(dNum(d, "valorPerfilPrincipal")),
+                sub: productLabel(d, "perfilCode", "perfilDescription"),
+              },
+              {
+                label: "Perfil adicional",
+                value: fmtMoney(dNum(d, "valorPerfilAdicional")),
+                sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${dNum(d, "larguraPerfilAdicional")} × ${dNum(d, "alturaPerfilAdicional")} cm`,
+              },
+              {
+                label: "Total Perfil",
+                value: fmtMoney(dNum(d, "valorPerfil")),
+              },
+            ]
+          : [
+              {
+                label: "Perfil",
+                value: fmtMoney(dNum(d, "valorPerfil")),
+                sub: productLabel(d, "perfilCode", "perfilDescription"),
+              },
+            ]),
         {
           label: "Vidro / Espelho",
           value: moneyOrNA(vidroAtivo, dNum(d, "valorVidro")),

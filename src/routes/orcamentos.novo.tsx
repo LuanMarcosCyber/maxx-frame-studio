@@ -117,6 +117,7 @@ type Produto = {
   profit_margin: number;
   waste_percentage: number;
   category: string | null;
+  frame_width_cm: number | null;
 };
 
 const fmtMoney = (n: number) =>
@@ -145,7 +146,7 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, value_per_meter, profit_margin, waste_percentage, category",
+          "id, code, description, value_per_meter, profit_margin, waste_percentage, category, frame_width_cm",
         )
         .in("category", categories)
         .order("code", { ascending: true });
@@ -182,6 +183,8 @@ type ItemSnapshot = {
   paspaturAdicionalInf: string;
   paspaturAdicionalId: string;
   perfilId: string;
+  perfilAdicionalAtivo: "sim" | "nao";
+  perfilAdicionalId: string;
   vidroTipo: "sim" | "nao";
   vidroId: string;
   foamId: string;
@@ -208,6 +211,8 @@ const emptyItem: ItemSnapshot = {
   paspaturAdicionalInf: "",
   paspaturAdicionalId: "",
   perfilId: "",
+  perfilAdicionalAtivo: "nao",
+  perfilAdicionalId: "",
   vidroTipo: "nao",
   vidroId: "",
   foamId: "",
@@ -225,6 +230,7 @@ function computeItemValues(
     paspatur: Produto | null;
     paspaturAdicional: Produto | null;
     perfil: Produto | null;
+    perfilAdicional: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
     colagem: Produto | null;
@@ -272,13 +278,31 @@ function computeItemValues(
 
   const valorPaspatur = valorPaspaturPrincipal + valorPaspaturAdicional;
 
-  let valorPerfil = 0;
+  let valorPerfilPrincipal = 0;
   if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
     const perim = ((alturaFinal + larguraFinal) * 2) / 100;
     const base = perim * Number(P.perfil.value_per_meter);
     const cp = base * (1 + Number(P.perfil.waste_percentage) / 100);
-    valorPerfil = cp * (1 + Number(P.perfil.profit_margin) / 100);
+    valorPerfilPrincipal = cp * (1 + Number(P.perfil.profit_margin) / 100);
   }
+
+  // Perfil adicional: usa medidas finais + largura da moldura do perfil principal nos 2 lados
+  const fwPrincipal = Number(P.perfil?.frame_width_cm ?? 0) || 0;
+  const larguraPerfilAdicional = larguraFinal + fwPrincipal * 2;
+  const alturaPerfilAdicional = alturaFinal + fwPrincipal * 2;
+  let valorPerfilAdicional = 0;
+  if (
+    snap.perfilAdicionalAtivo === "sim" &&
+    P.perfilAdicional &&
+    larguraPerfilAdicional > 0 &&
+    alturaPerfilAdicional > 0
+  ) {
+    const perim = ((alturaPerfilAdicional + larguraPerfilAdicional) * 2) / 100;
+    const base = perim * Number(P.perfilAdicional.value_per_meter);
+    const cp = base * (1 + Number(P.perfilAdicional.waste_percentage) / 100);
+    valorPerfilAdicional = cp * (1 + Number(P.perfilAdicional.profit_margin) / 100);
+  }
+  const valorPerfil = valorPerfilPrincipal + valorPerfilAdicional;
 
   const valorVidro =
     snap.vidroTipo === "sim" ? calcAreaValue(P.vidro, alturaFinal, larguraFinal) : 0;
@@ -314,6 +338,10 @@ function computeItemValues(
     valorPaspaturAdicional,
     valorPaspatur,
     valorPerfil,
+    valorPerfilPrincipal,
+    valorPerfilAdicional,
+    larguraPerfilAdicional,
+    alturaPerfilAdicional,
     valorVidro,
     valorFoam,
     valorColagem,
@@ -329,6 +357,7 @@ function buildItemDetails(
     paspatur: Produto | null;
     paspaturAdicional: Produto | null;
     perfil: Produto | null;
+    perfilAdicional: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
     colagem: Produto | null;
@@ -367,7 +396,16 @@ function buildItemDetails(
     perfilId: snap.perfilId,
     perfilCode: P.perfil?.code ?? null,
     perfilDescription: P.perfil?.description ?? null,
+    perfilFrameWidthCm: P.perfil?.frame_width_cm ?? null,
     valorPerfil: Number(v.valorPerfil.toFixed(2)),
+    valorPerfilPrincipal: Number(v.valorPerfilPrincipal.toFixed(2)),
+    valorPerfilAdicional: Number(v.valorPerfilAdicional.toFixed(2)),
+    perfilAdicionalAtivo: snap.perfilAdicionalAtivo,
+    perfilAdicionalId: snap.perfilAdicionalId,
+    perfilAdicionalCode: P.perfilAdicional?.code ?? null,
+    perfilAdicionalDescription: P.perfilAdicional?.description ?? null,
+    larguraPerfilAdicional: v.larguraPerfilAdicional,
+    alturaPerfilAdicional: v.alturaPerfilAdicional,
     vidroTipo: snap.vidroTipo,
     vidroId: snap.vidroId,
     vidroCode: P.vidro?.code ?? null,
@@ -411,6 +449,8 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     paspaturAdicionalInf: s("paspaturAdicionalInf"),
     paspaturAdicionalId: s("paspaturAdicionalId"),
     perfilId: s("perfilId"),
+    perfilAdicionalAtivo: d.perfilAdicionalAtivo === "sim" ? "sim" : "nao",
+    perfilAdicionalId: s("perfilAdicionalId"),
     vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
     vidroId: s("vidroId"),
     foamId: s("foamId"),
@@ -451,6 +491,8 @@ function NovoOrcamento() {
   const [paspaturAdicionalInf, setPaspaturAdicionalInf] = useState<string>("");
   const [paspaturAdicionalId, setPaspaturAdicionalId] = useState<string>("");
   const [perfilId, setPerfilId] = useState<string>("");
+  const [perfilAdicionalAtivo, setPerfilAdicionalAtivo] = useState<"sim" | "nao">("nao");
+  const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
   const [foamId, setFoamId] = useState<string>("");
@@ -507,6 +549,7 @@ function NovoOrcamento() {
       paspatur: paspaturs.find((p) => p.id === snap.paspaturId) ?? null,
       paspaturAdicional: paspaturs.find((p) => p.id === snap.paspaturAdicionalId) ?? null,
       perfil: perfis.find((p) => p.id === snap.perfilId) ?? null,
+      perfilAdicional: perfis.find((p) => p.id === snap.perfilAdicionalId) ?? null,
       vidro: vidros.find((p) => p.id === snap.vidroId) ?? null,
       foam: foams.find((p) => p.id === snap.foamId) ?? null,
       colagem: colagens.find((p) => p.id === snap.colagemId) ?? null,
@@ -533,6 +576,8 @@ function NovoOrcamento() {
       paspaturAdicionalInf,
       paspaturAdicionalId,
       perfilId,
+      perfilAdicionalAtivo,
+      perfilAdicionalId,
       vidroTipo,
       vidroId,
       foamId,
@@ -558,6 +603,8 @@ function NovoOrcamento() {
       paspaturAdicionalInf,
       paspaturAdicionalId,
       perfilId,
+      perfilAdicionalAtivo,
+      perfilAdicionalId,
       vidroTipo,
       vidroId,
       foamId,
@@ -599,6 +646,10 @@ function NovoOrcamento() {
     valorPaspaturPrincipal,
     valorPaspaturAdicional,
     valorPerfil,
+    valorPerfilPrincipal,
+    valorPerfilAdicional,
+    larguraPerfilAdicional,
+    alturaPerfilAdicional,
     valorVidro,
     valorFoam,
     valorColagem,
@@ -727,6 +778,7 @@ function NovoOrcamento() {
 
   // Selected products (active item) for "selected info" cards
   const perfilSelecionado = activeProducts.perfil;
+  const perfilAdicionalSelecionado = activeProducts.perfilAdicional;
   const vidroSelecionado = activeProducts.vidro;
   const foamSelecionado = activeProducts.foam;
   const paspaturSelecionado = activeProducts.paspatur;
@@ -751,6 +803,8 @@ function NovoOrcamento() {
     setPaspaturAdicionalInf(s.paspaturAdicionalInf);
     setPaspaturAdicionalId(s.paspaturAdicionalId);
     setPerfilId(s.perfilId);
+    setPerfilAdicionalAtivo(s.perfilAdicionalAtivo);
+    setPerfilAdicionalId(s.perfilAdicionalId);
     setVidroTipo(s.vidroTipo);
     setVidroId(s.vidroId);
     setFoamId(s.foamId);
@@ -1438,6 +1492,48 @@ function NovoOrcamento() {
                 />
               </div>
 
+              <div className="mt-6 max-w-md space-y-1.5">
+                <Label htmlFor="perfil-adicional-ativo">Adicionar perfil adicional?</Label>
+                <Select
+                  value={perfilAdicionalAtivo}
+                  onValueChange={(v) => setPerfilAdicionalAtivo(v as "sim" | "nao")}
+                >
+                  <SelectTrigger id="perfil-adicional-ativo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {perfilAdicionalAtivo === "sim" && (
+                <div className="mt-4 max-w-md space-y-1.5">
+                  <Label htmlFor="perfil-adicional">Perfil adicional</Label>
+                  <ProductSelect
+                    id="perfil-adicional"
+                    value={perfilAdicionalId}
+                    onChange={setPerfilAdicionalId}
+                    products={perfis}
+                    loading={loadingPerfis}
+                    placeholder="Selecione um perfil"
+                    emptyLabel="Nenhum perfil cadastrado."
+                  />
+                  {perfilAdicionalSelecionado && perfilSelecionado && (
+                    <p className="mt-2 text-xs text-emerald-600">
+                      Perfil adicional aplicado. Medida usada no cálculo:{" "}
+                      {larguraPerfilAdicional} × {alturaPerfilAdicional} cm.
+                    </p>
+                  )}
+                  {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
+                    <p className="mt-2 text-xs text-amber-600">
+                      Selecione o perfil principal para calcular o perfil adicional.
+                    </p>
+                  )}
+                </div>
+              )}
+
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
@@ -1775,10 +1871,27 @@ function NovoOrcamento() {
                       value={fmtMoney(valorPaspatur)}
                     />
                   )}
-                  <Row
-                    label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
-                    value={fmtMoney(valorPerfil)}
-                  />
+                  {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
+                    <>
+                      <Row
+                        label={`Perfil principal${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPerfilPrincipal)}
+                      />
+                      <Row
+                        label={`Perfil adicional${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPerfilAdicional)}
+                      />
+                      <div className="text-xs text-muted-foreground pl-2">
+                        Medida usada no cálculo: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm
+                      </div>
+                      <Row label="Total Perfil" value={fmtMoney(valorPerfil)} />
+                    </>
+                  ) : (
+                    <Row
+                      label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                      value={fmtMoney(valorPerfil)}
+                    />
+                  )}
                   <Row
                     label={`Vidro${vidroSelecionado && vidroTipo === "sim" ? ` (${vidroSelecionado.code})` : ""}`}
                     value={fmtMoney(valorVidro)}
