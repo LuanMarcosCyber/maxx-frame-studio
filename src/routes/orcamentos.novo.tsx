@@ -211,6 +211,8 @@ const emptyItem: ItemSnapshot = {
   paspaturAdicionalInf: "",
   paspaturAdicionalId: "",
   perfilId: "",
+  perfilAdicionalAtivo: "nao",
+  perfilAdicionalId: "",
   vidroTipo: "nao",
   vidroId: "",
   foamId: "",
