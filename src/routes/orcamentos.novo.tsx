@@ -1871,10 +1871,27 @@ function NovoOrcamento() {
                       value={fmtMoney(valorPaspatur)}
                     />
                   )}
-                  <Row
-                    label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
-                    value={fmtMoney(valorPerfil)}
-                  />
+                  {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
+                    <>
+                      <Row
+                        label={`Perfil principal${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPerfilPrincipal)}
+                      />
+                      <Row
+                        label={`Perfil adicional${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPerfilAdicional)}
+                      />
+                      <div className="text-xs text-muted-foreground pl-2">
+                        Medida usada no cálculo: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm
+                      </div>
+                      <Row label="Total Perfil" value={fmtMoney(valorPerfil)} />
+                    </>
+                  ) : (
+                    <Row
+                      label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                      value={fmtMoney(valorPerfil)}
+                    />
+                  )}
                   <Row
                     label={`Vidro${vidroSelecionado && vidroTipo === "sim" ? ` (${vidroSelecionado.code})` : ""}`}
                     value={fmtMoney(valorVidro)}
