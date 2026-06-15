@@ -1739,10 +1739,34 @@ function NovoOrcamento() {
                     value={`${larguraFinal || 0} × ${alturaFinal || 0} cm`}
                   />
                   <hr className="my-2 border-border" />
-                  <Row
-                    label={`Paspatur${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
-                    value={fmtMoney(valorPaspatur)}
-                  />
+                  {paspaturAdicionalAtivo === "sim" && paspaturAtivo === "sim" ? (
+                    <>
+                      <Row
+                        label={`Paspatur principal${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPaspaturPrincipal)}
+                      />
+                      <div className="text-xs text-muted-foreground pl-2">
+                        Margens: E {mEsq} · D {mDir} · S {mSup} · I {mInf} cm
+                      </div>
+                      <Row
+                        label={`Paspatur adicional${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPaspaturAdicional)}
+                      />
+                      <div className="text-xs text-muted-foreground pl-2">
+                        Margens: E {mEsqA} · D {mDirA} · S {mSupA} · I {mInfA} cm
+                        {paspaturAdicionalObs ? ` · ${paspaturAdicionalObs}` : ""}
+                      </div>
+                      <Row
+                        label="Total Paspatur"
+                        value={fmtMoney(valorPaspatur)}
+                      />
+                    </>
+                  ) : (
+                    <Row
+                      label={`Paspatur${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
+                      value={fmtMoney(valorPaspatur)}
+                    />
+                  )}
                   <Row
                     label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
                     value={fmtMoney(valorPerfil)}
