@@ -587,15 +587,29 @@ function NovoOrcamento() {
     mDir,
     mSup,
     mInf,
+    mEsqA,
+    mDirA,
+    mSupA,
+    mInfA,
     alturaFinal,
     larguraFinal,
+    larguraAdicional,
+    alturaAdicional,
     valorPaspatur,
+    valorPaspaturPrincipal,
+    valorPaspaturAdicional,
     valorPerfil,
     valorVidro,
     valorFoam,
     valorColagem,
     valorImpressao,
   } = activeValues;
+
+  // Lado-a-lado: paspatur adicional não pode ter margem maior que o principal
+  const paspaturAdicionalInvalido =
+    paspaturAtivo === "sim" &&
+    paspaturAdicionalAtivo === "sim" &&
+    (mEsqA > mEsq || mDirA > mDir || mSupA > mSup || mInfA > mInf);
 
   // Compute all items' subtotals (using active state for the active index)
   const itemSubtotals = useMemo(() => {
