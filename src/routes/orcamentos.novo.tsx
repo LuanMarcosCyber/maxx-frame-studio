@@ -764,6 +764,8 @@ function NovoOrcamento() {
     setPaspaturAdicionalInf(s.paspaturAdicionalInf);
     setPaspaturAdicionalId(s.paspaturAdicionalId);
     setPerfilId(s.perfilId);
+    setPerfilAdicionalAtivo(s.perfilAdicionalAtivo);
+    setPerfilAdicionalId(s.perfilAdicionalId);
     setVidroTipo(s.vidroTipo);
     setVidroId(s.vidroId);
     setFoamId(s.foamId);
