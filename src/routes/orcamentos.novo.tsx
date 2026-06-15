@@ -685,18 +685,26 @@ function NovoOrcamento() {
     const af = alturaFinal > 0 ? alturaFinal : Math.max(alturaNum, 1);
     const scale = Math.min(maxW / lf, maxH / af);
     const adicionalOn = paspaturAdicionalAtivo === "sim";
+    // When adicional is active, the principal layer's visible band is the
+    // DIFFERENCE between principal and adicional margins (gap between the two
+    // frames), and the adicional layer itself accounts for the adicional margin
+    // down to the art. When inactive, the principal occupies the full margin.
+    const gapEsq = adicionalOn ? Math.max(0, mEsq - mEsqA) : mEsq;
+    const gapDir = adicionalOn ? Math.max(0, mDir - mDirA) : mDir;
+    const gapSup = adicionalOn ? Math.max(0, mSup - mSupA) : mSup;
+    const gapInf = adicionalOn ? Math.max(0, mInf - mInfA) : mInf;
     return {
       outerW: Math.max(60, Math.round(lf * scale)),
       outerH: Math.max(60, Math.round(af * scale)),
-      padLeft: Math.round(mEsq * scale),
-      padRight: Math.round(mDir * scale),
-      padTop: Math.round(mSup * scale),
-      padBottom: Math.round(mInf * scale),
+      padLeft: Math.round(gapEsq * scale),
+      padRight: Math.round(gapDir * scale),
+      padTop: Math.round(gapSup * scale),
+      padBottom: Math.round(gapInf * scale),
       adicionalOn,
-      adPadLeft: Math.round(Math.max(0, mEsq - mEsqA) * scale),
-      adPadRight: Math.round(Math.max(0, mDir - mDirA) * scale),
-      adPadTop: Math.round(Math.max(0, mSup - mSupA) * scale),
-      adPadBottom: Math.round(Math.max(0, mInf - mInfA) * scale),
+      adPadLeft: Math.round(Math.min(mEsqA, mEsq) * scale),
+      adPadRight: Math.round(Math.min(mDirA, mDir) * scale),
+      adPadTop: Math.round(Math.min(mSupA, mSup) * scale),
+      adPadBottom: Math.round(Math.min(mInfA, mInf) * scale),
       scale,
     };
   }, [
