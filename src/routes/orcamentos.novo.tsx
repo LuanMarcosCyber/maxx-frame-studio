@@ -1492,6 +1492,48 @@ function NovoOrcamento() {
                 />
               </div>
 
+              <div className="mt-6 max-w-md space-y-1.5">
+                <Label htmlFor="perfil-adicional-ativo">Adicionar perfil adicional?</Label>
+                <Select
+                  value={perfilAdicionalAtivo}
+                  onValueChange={(v) => setPerfilAdicionalAtivo(v as "sim" | "nao")}
+                >
+                  <SelectTrigger id="perfil-adicional-ativo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nao">Não</SelectItem>
+                    <SelectItem value="sim">Sim</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {perfilAdicionalAtivo === "sim" && (
+                <div className="mt-4 max-w-md space-y-1.5">
+                  <Label htmlFor="perfil-adicional">Perfil adicional</Label>
+                  <ProductSelect
+                    id="perfil-adicional"
+                    value={perfilAdicionalId}
+                    onChange={setPerfilAdicionalId}
+                    products={perfis}
+                    loading={loadingPerfis}
+                    placeholder="Selecione um perfil"
+                    emptyLabel="Nenhum perfil cadastrado."
+                  />
+                  {perfilAdicionalSelecionado && perfilSelecionado && (
+                    <p className="mt-2 text-xs text-emerald-600">
+                      Perfil adicional aplicado. Medida usada no cálculo:{" "}
+                      {larguraPerfilAdicional} × {alturaPerfilAdicional} cm.
+                    </p>
+                  )}
+                  {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
+                    <p className="mt-2 text-xs text-amber-600">
+                      Selecione o perfil principal para calcular o perfil adicional.
+                    </p>
+                  )}
+                </div>
+              )}
+
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
