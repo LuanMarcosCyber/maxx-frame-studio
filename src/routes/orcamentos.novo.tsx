@@ -335,6 +335,7 @@ function buildItemDetails(
     paspatur: Produto | null;
     paspaturAdicional: Produto | null;
     perfil: Produto | null;
+    perfilAdicional: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
     colagem: Produto | null;
