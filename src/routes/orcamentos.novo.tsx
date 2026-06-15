@@ -684,6 +684,7 @@ function NovoOrcamento() {
     const lf = larguraFinal > 0 ? larguraFinal : Math.max(larguraNum, 1);
     const af = alturaFinal > 0 ? alturaFinal : Math.max(alturaNum, 1);
     const scale = Math.min(maxW / lf, maxH / af);
+    const adicionalOn = paspaturAdicionalAtivo === "sim";
     return {
       outerW: Math.max(60, Math.round(lf * scale)),
       outerH: Math.max(60, Math.round(af * scale)),
@@ -691,9 +692,30 @@ function NovoOrcamento() {
       padRight: Math.round(mDir * scale),
       padTop: Math.round(mSup * scale),
       padBottom: Math.round(mInf * scale),
+      adicionalOn,
+      adPadLeft: Math.round(Math.max(0, mEsq - mEsqA) * scale),
+      adPadRight: Math.round(Math.max(0, mDir - mDirA) * scale),
+      adPadTop: Math.round(Math.max(0, mSup - mSupA) * scale),
+      adPadBottom: Math.round(Math.max(0, mInf - mInfA) * scale),
       scale,
     };
-  }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf, previewPaspaturCW]);
+  }, [
+    larguraFinal,
+    alturaFinal,
+    larguraNum,
+    alturaNum,
+    mEsq,
+    mDir,
+    mSup,
+    mInf,
+    mEsqA,
+    mDirA,
+    mSupA,
+    mInfA,
+    paspaturAdicionalAtivo,
+    previewPaspaturCW,
+  ]);
+  const paspaturAdicionalSelecionado = activeProducts.paspaturAdicional;
 
   // Selected products (active item) for "selected info" cards
   const perfilSelecionado = activeProducts.perfil;
