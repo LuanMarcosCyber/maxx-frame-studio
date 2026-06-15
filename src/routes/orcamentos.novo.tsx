@@ -518,6 +518,7 @@ function NovoOrcamento() {
       paspatur: paspaturs.find((p) => p.id === snap.paspaturId) ?? null,
       paspaturAdicional: paspaturs.find((p) => p.id === snap.paspaturAdicionalId) ?? null,
       perfil: perfis.find((p) => p.id === snap.perfilId) ?? null,
+      perfilAdicional: perfis.find((p) => p.id === snap.perfilAdicionalId) ?? null,
       vidro: vidros.find((p) => p.id === snap.vidroId) ?? null,
       foam: foams.find((p) => p.id === snap.foamId) ?? null,
       colagem: colagens.find((p) => p.id === snap.colagemId) ?? null,
