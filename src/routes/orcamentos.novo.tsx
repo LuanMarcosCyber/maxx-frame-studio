@@ -458,6 +458,8 @@ function NovoOrcamento() {
   const [paspaturAdicionalInf, setPaspaturAdicionalInf] = useState<string>("");
   const [paspaturAdicionalId, setPaspaturAdicionalId] = useState<string>("");
   const [perfilId, setPerfilId] = useState<string>("");
+  const [perfilAdicionalAtivo, setPerfilAdicionalAtivo] = useState<"sim" | "nao">("nao");
+  const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
   const [foamId, setFoamId] = useState<string>("");
