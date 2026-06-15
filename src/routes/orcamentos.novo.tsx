@@ -1267,6 +1267,88 @@ function NovoOrcamento() {
                       emptyLabel="Nenhum paspatur cadastrado."
                     />
                   </div>
+
+                  <div className="mt-6 max-w-md space-y-1.5">
+                    <Label htmlFor="paspatur-adic-ativo">Incluir paspatur adicional</Label>
+                    <Select
+                      value={paspaturAdicionalAtivo}
+                      onValueChange={(v) =>
+                        setPaspaturAdicionalAtivo(v as "sim" | "nao")
+                      }
+                    >
+                      <SelectTrigger id="paspatur-adic-ativo">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nao">Não</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {paspaturAdicionalAtivo === "sim" && (
+                    <div className="mt-6 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="paspatur-adic-obs">
+                          Observação do paspatur adicional
+                        </Label>
+                        <Textarea
+                          id="paspatur-adic-obs"
+                          rows={2}
+                          value={paspaturAdicionalObs}
+                          onChange={(e) => setPaspaturAdicionalObs(e.target.value)}
+                          placeholder="Ex: deixar apenas um filete aparente"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <FieldNum
+                          label="Esquerda (cm)"
+                          id="m-adic-esq"
+                          value={paspaturAdicionalEsq}
+                          onChange={setPaspaturAdicionalEsq}
+                        />
+                        <FieldNum
+                          label="Direita (cm)"
+                          id="m-adic-dir"
+                          value={paspaturAdicionalDir}
+                          onChange={setPaspaturAdicionalDir}
+                        />
+                        <FieldNum
+                          label="Superior (cm)"
+                          id="m-adic-sup"
+                          value={paspaturAdicionalSup}
+                          onChange={setPaspaturAdicionalSup}
+                        />
+                        <FieldNum
+                          label="Inferior (cm)"
+                          id="m-adic-inf"
+                          value={paspaturAdicionalInf}
+                          onChange={setPaspaturAdicionalInf}
+                        />
+                      </div>
+
+                      <div className="max-w-md space-y-1.5">
+                        <Label htmlFor="paspatur-adic">Produto Paspatur adicional</Label>
+                        <ProductSelect
+                          id="paspatur-adic"
+                          value={paspaturAdicionalId}
+                          onChange={setPaspaturAdicionalId}
+                          products={paspaturs}
+                          loading={loadingPaspaturs}
+                          placeholder="Selecione um paspatur"
+                          emptyLabel="Nenhum paspatur cadastrado."
+                        />
+                      </div>
+
+                      {paspaturAdicionalInvalido && (
+                        <p className="text-xs text-destructive">
+                          O paspatur adicional não pode ter margem maior que o paspatur
+                          principal.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1285,11 +1367,29 @@ function NovoOrcamento() {
                           paddingBottom: previewPaspatur.padBottom,
                         }}
                       >
-                        <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Arte {larguraNum}×{alturaNum}
-                          </span>
-                        </div>
+                        {previewPaspatur.adicionalOn ? (
+                          <div
+                            className="relative w-full h-full border-2 border-foreground/50 bg-muted/30"
+                            style={{
+                              paddingLeft: previewPaspatur.adPadLeft,
+                              paddingRight: previewPaspatur.adPadRight,
+                              paddingTop: previewPaspatur.adPadTop,
+                              paddingBottom: previewPaspatur.adPadBottom,
+                            }}
+                          >
+                            <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                Arte {larguraNum}×{alturaNum}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              Arte {larguraNum}×{alturaNum}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="mt-3 text-sm font-medium text-foreground">
                         {larguraFinal} CM
@@ -1307,6 +1407,8 @@ function NovoOrcamento() {
               )}
             </Card>
           )}
+
+
 
           {active === "perfil" && (
             <Card className="p-6">
