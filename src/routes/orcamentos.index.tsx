@@ -304,11 +304,34 @@ function ResumoDialog({
           label: "Tamanho final",
           value: `${dNum(d, "larguraFinal")} × ${dNum(d, "alturaFinal")} cm`,
         },
-        {
-          label: "Paspatur",
-          value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspatur")),
-          sub: paspaturAtivo ? productLabel(d, "paspaturCode", "paspaturDescription") : undefined,
-        },
+        ...(d.paspaturAdicionalAtivo === "sim" && paspaturAtivo
+          ? [
+              {
+                label: "Paspatur principal",
+                value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspaturPrincipal")),
+                sub: productLabel(d, "paspaturCode", "paspaturDescription"),
+              },
+              {
+                label: "Paspatur adicional",
+                value: fmtMoney(dNum(d, "valorPaspaturAdicional")),
+                sub: (() => {
+                  const code = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
+                  const obs = typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs : "";
+                  return obs ? `${code} · ${obs}` : code;
+                })(),
+              },
+              {
+                label: "Total Paspatur",
+                value: fmtMoney(dNum(d, "valorPaspatur")),
+              },
+            ]
+          : [
+              {
+                label: "Paspatur",
+                value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspatur")),
+                sub: paspaturAtivo ? productLabel(d, "paspaturCode", "paspaturDescription") : undefined,
+              },
+            ]),
         {
           label: "Perfil",
           value: fmtMoney(dNum(d, "valorPerfil")),

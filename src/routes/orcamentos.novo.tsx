@@ -174,6 +174,13 @@ type ItemSnapshot = {
   margemSup: string;
   margemInf: string;
   paspaturId: string;
+  paspaturAdicionalAtivo: "sim" | "nao";
+  paspaturAdicionalObs: string;
+  paspaturAdicionalEsq: string;
+  paspaturAdicionalDir: string;
+  paspaturAdicionalSup: string;
+  paspaturAdicionalInf: string;
+  paspaturAdicionalId: string;
   perfilId: string;
   vidroTipo: "sim" | "nao";
   vidroId: string;
@@ -193,6 +200,13 @@ const emptyItem: ItemSnapshot = {
   margemSup: "",
   margemInf: "",
   paspaturId: "",
+  paspaturAdicionalAtivo: "nao",
+  paspaturAdicionalObs: "",
+  paspaturAdicionalEsq: "",
+  paspaturAdicionalDir: "",
+  paspaturAdicionalSup: "",
+  paspaturAdicionalInf: "",
+  paspaturAdicionalId: "",
   perfilId: "",
   vidroTipo: "nao",
   vidroId: "",
@@ -209,6 +223,7 @@ function computeItemValues(
   snap: ItemSnapshot,
   P: {
     paspatur: Produto | null;
+    paspaturAdicional: Produto | null;
     perfil: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
@@ -225,13 +240,37 @@ function computeItemValues(
   const larguraFinal = larguraNum + mEsq + mDir;
   const alturaFinal = alturaNum + mSup + mInf;
 
-  let valorPaspatur = 0;
+  // Additional paspatur margins (do NOT affect frame final size)
+  const mEsqA = parseNum(snap.paspaturAdicionalEsq);
+  const mDirA = parseNum(snap.paspaturAdicionalDir);
+  const mSupA = parseNum(snap.paspaturAdicionalSup);
+  const mInfA = parseNum(snap.paspaturAdicionalInf);
+  const larguraAdicional = larguraNum + mEsqA + mDirA;
+  const alturaAdicional = alturaNum + mSupA + mInfA;
+
+  let valorPaspaturPrincipal = 0;
   if (snap.paspaturAtivo === "sim" && P.paspatur && larguraFinal > 0 && alturaFinal > 0) {
     const area = (larguraFinal * alturaFinal) / 10000;
     const base = area * Number(P.paspatur.value_per_meter);
     const cp = base * (1 + Number(P.paspatur.waste_percentage) / 100);
-    valorPaspatur = cp * (1 + Number(P.paspatur.profit_margin) / 100);
+    valorPaspaturPrincipal = cp * (1 + Number(P.paspatur.profit_margin) / 100);
   }
+
+  let valorPaspaturAdicional = 0;
+  if (
+    snap.paspaturAtivo === "sim" &&
+    snap.paspaturAdicionalAtivo === "sim" &&
+    P.paspaturAdicional &&
+    larguraAdicional > 0 &&
+    alturaAdicional > 0
+  ) {
+    const area = (larguraAdicional * alturaAdicional) / 10000;
+    const base = area * Number(P.paspaturAdicional.value_per_meter);
+    const cp = base * (1 + Number(P.paspaturAdicional.waste_percentage) / 100);
+    valorPaspaturAdicional = cp * (1 + Number(P.paspaturAdicional.profit_margin) / 100);
+  }
+
+  const valorPaspatur = valorPaspaturPrincipal + valorPaspaturAdicional;
 
   let valorPerfil = 0;
   if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
@@ -265,6 +304,14 @@ function computeItemValues(
     mInf,
     alturaFinal,
     larguraFinal,
+    mEsqA,
+    mDirA,
+    mSupA,
+    mInfA,
+    alturaAdicional,
+    larguraAdicional,
+    valorPaspaturPrincipal,
+    valorPaspaturAdicional,
     valorPaspatur,
     valorPerfil,
     valorVidro,
@@ -280,6 +327,7 @@ function buildItemDetails(
   v: ItemValues,
   P: {
     paspatur: Produto | null;
+    paspaturAdicional: Produto | null;
     perfil: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
@@ -299,10 +347,23 @@ function buildItemDetails(
     paspaturCode: P.paspatur?.code ?? null,
     paspaturDescription: P.paspatur?.description ?? null,
     valorPaspatur: Number(v.valorPaspatur.toFixed(2)),
+    valorPaspaturPrincipal: Number(v.valorPaspaturPrincipal.toFixed(2)),
+    valorPaspaturAdicional: Number(v.valorPaspaturAdicional.toFixed(2)),
     margemEsq: snap.margemEsq,
     margemDir: snap.margemDir,
     margemSup: snap.margemSup,
     margemInf: snap.margemInf,
+    paspaturAdicionalAtivo: snap.paspaturAdicionalAtivo,
+    paspaturAdicionalObs: snap.paspaturAdicionalObs,
+    paspaturAdicionalEsq: snap.paspaturAdicionalEsq,
+    paspaturAdicionalDir: snap.paspaturAdicionalDir,
+    paspaturAdicionalSup: snap.paspaturAdicionalSup,
+    paspaturAdicionalInf: snap.paspaturAdicionalInf,
+    paspaturAdicionalId: snap.paspaturAdicionalId,
+    paspaturAdicionalCode: P.paspaturAdicional?.code ?? null,
+    paspaturAdicionalDescription: P.paspaturAdicional?.description ?? null,
+    larguraAdicional: v.larguraAdicional,
+    alturaAdicional: v.alturaAdicional,
     perfilId: snap.perfilId,
     perfilCode: P.perfil?.code ?? null,
     perfilDescription: P.perfil?.description ?? null,
@@ -342,6 +403,13 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     margemSup: s("margemSup"),
     margemInf: s("margemInf"),
     paspaturId: s("paspaturId"),
+    paspaturAdicionalAtivo: d.paspaturAdicionalAtivo === "sim" ? "sim" : "nao",
+    paspaturAdicionalObs: s("paspaturAdicionalObs"),
+    paspaturAdicionalEsq: s("paspaturAdicionalEsq"),
+    paspaturAdicionalDir: s("paspaturAdicionalDir"),
+    paspaturAdicionalSup: s("paspaturAdicionalSup"),
+    paspaturAdicionalInf: s("paspaturAdicionalInf"),
+    paspaturAdicionalId: s("paspaturAdicionalId"),
     perfilId: s("perfilId"),
     vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
     vidroId: s("vidroId"),
@@ -375,6 +443,13 @@ function NovoOrcamento() {
   const [margemSup, setMargemSup] = useState<string>("");
   const [margemInf, setMargemInf] = useState<string>("");
   const [paspaturId, setPaspaturId] = useState<string>("");
+  const [paspaturAdicionalAtivo, setPaspaturAdicionalAtivo] = useState<"sim" | "nao">("nao");
+  const [paspaturAdicionalObs, setPaspaturAdicionalObs] = useState<string>("");
+  const [paspaturAdicionalEsq, setPaspaturAdicionalEsq] = useState<string>("");
+  const [paspaturAdicionalDir, setPaspaturAdicionalDir] = useState<string>("");
+  const [paspaturAdicionalSup, setPaspaturAdicionalSup] = useState<string>("");
+  const [paspaturAdicionalInf, setPaspaturAdicionalInf] = useState<string>("");
+  const [paspaturAdicionalId, setPaspaturAdicionalId] = useState<string>("");
   const [perfilId, setPerfilId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
@@ -430,6 +505,7 @@ function NovoOrcamento() {
   function resolveProducts(snap: ItemSnapshot) {
     return {
       paspatur: paspaturs.find((p) => p.id === snap.paspaturId) ?? null,
+      paspaturAdicional: paspaturs.find((p) => p.id === snap.paspaturAdicionalId) ?? null,
       perfil: perfis.find((p) => p.id === snap.perfilId) ?? null,
       vidro: vidros.find((p) => p.id === snap.vidroId) ?? null,
       foam: foams.find((p) => p.id === snap.foamId) ?? null,
@@ -449,6 +525,13 @@ function NovoOrcamento() {
       margemSup,
       margemInf,
       paspaturId,
+      paspaturAdicionalAtivo,
+      paspaturAdicionalObs,
+      paspaturAdicionalEsq,
+      paspaturAdicionalDir,
+      paspaturAdicionalSup,
+      paspaturAdicionalInf,
+      paspaturAdicionalId,
       perfilId,
       vidroTipo,
       vidroId,
@@ -467,6 +550,13 @@ function NovoOrcamento() {
       margemSup,
       margemInf,
       paspaturId,
+      paspaturAdicionalAtivo,
+      paspaturAdicionalObs,
+      paspaturAdicionalEsq,
+      paspaturAdicionalDir,
+      paspaturAdicionalSup,
+      paspaturAdicionalInf,
+      paspaturAdicionalId,
       perfilId,
       vidroTipo,
       vidroId,
@@ -497,15 +587,29 @@ function NovoOrcamento() {
     mDir,
     mSup,
     mInf,
+    mEsqA,
+    mDirA,
+    mSupA,
+    mInfA,
     alturaFinal,
     larguraFinal,
+    larguraAdicional,
+    alturaAdicional,
     valorPaspatur,
+    valorPaspaturPrincipal,
+    valorPaspaturAdicional,
     valorPerfil,
     valorVidro,
     valorFoam,
     valorColagem,
     valorImpressao,
   } = activeValues;
+
+  // Lado-a-lado: paspatur adicional não pode ter margem maior que o principal
+  const paspaturAdicionalInvalido =
+    paspaturAtivo === "sim" &&
+    paspaturAdicionalAtivo === "sim" &&
+    (mEsqA > mEsq || mDirA > mDir || mSupA > mSup || mInfA > mInf);
 
   // Compute all items' subtotals (using active state for the active index)
   const itemSubtotals = useMemo(() => {
@@ -580,6 +684,7 @@ function NovoOrcamento() {
     const lf = larguraFinal > 0 ? larguraFinal : Math.max(larguraNum, 1);
     const af = alturaFinal > 0 ? alturaFinal : Math.max(alturaNum, 1);
     const scale = Math.min(maxW / lf, maxH / af);
+    const adicionalOn = paspaturAdicionalAtivo === "sim";
     return {
       outerW: Math.max(60, Math.round(lf * scale)),
       outerH: Math.max(60, Math.round(af * scale)),
@@ -587,9 +692,30 @@ function NovoOrcamento() {
       padRight: Math.round(mDir * scale),
       padTop: Math.round(mSup * scale),
       padBottom: Math.round(mInf * scale),
+      adicionalOn,
+      adPadLeft: Math.round(Math.max(0, mEsq - mEsqA) * scale),
+      adPadRight: Math.round(Math.max(0, mDir - mDirA) * scale),
+      adPadTop: Math.round(Math.max(0, mSup - mSupA) * scale),
+      adPadBottom: Math.round(Math.max(0, mInf - mInfA) * scale),
       scale,
     };
-  }, [larguraFinal, alturaFinal, larguraNum, alturaNum, mEsq, mDir, mSup, mInf, previewPaspaturCW]);
+  }, [
+    larguraFinal,
+    alturaFinal,
+    larguraNum,
+    alturaNum,
+    mEsq,
+    mDir,
+    mSup,
+    mInf,
+    mEsqA,
+    mDirA,
+    mSupA,
+    mInfA,
+    paspaturAdicionalAtivo,
+    previewPaspaturCW,
+  ]);
+  const paspaturAdicionalSelecionado = activeProducts.paspaturAdicional;
 
   // Selected products (active item) for "selected info" cards
   const perfilSelecionado = activeProducts.perfil;
@@ -609,6 +735,13 @@ function NovoOrcamento() {
     setMargemSup(s.margemSup);
     setMargemInf(s.margemInf);
     setPaspaturId(s.paspaturId);
+    setPaspaturAdicionalAtivo(s.paspaturAdicionalAtivo);
+    setPaspaturAdicionalObs(s.paspaturAdicionalObs);
+    setPaspaturAdicionalEsq(s.paspaturAdicionalEsq);
+    setPaspaturAdicionalDir(s.paspaturAdicionalDir);
+    setPaspaturAdicionalSup(s.paspaturAdicionalSup);
+    setPaspaturAdicionalInf(s.paspaturAdicionalInf);
+    setPaspaturAdicionalId(s.paspaturAdicionalId);
     setPerfilId(s.perfilId);
     setVidroTipo(s.vidroTipo);
     setVidroId(s.vidroId);
@@ -758,6 +891,22 @@ function NovoOrcamento() {
     // Persist current state into items
     const captured = activeSnap;
     const allItems = items.map((it, i) => (i === activeIndex ? captured : it));
+
+    // Validate: paspatur adicional margens não podem ser maiores que o principal
+    for (let i = 0; i < allItems.length; i++) {
+      const it = allItems[i];
+      if (it.paspaturAtivo !== "sim" || it.paspaturAdicionalAtivo !== "sim") continue;
+      const me = parseNum(it.margemEsq), md = parseNum(it.margemDir);
+      const ms = parseNum(it.margemSup), mi = parseNum(it.margemInf);
+      const ae = parseNum(it.paspaturAdicionalEsq), ad = parseNum(it.paspaturAdicionalDir);
+      const as = parseNum(it.paspaturAdicionalSup), ai = parseNum(it.paspaturAdicionalInf);
+      if (ae > me || ad > md || as > ms || ai > mi) {
+        toast.error(
+          `Item ${i + 1}: o paspatur adicional não pode ter margem maior que o paspatur principal.`,
+        );
+        return;
+      }
+    }
 
     // Build items payload with values and details
     const itemsPayload = allItems.map((snap, idx) => {
@@ -1118,6 +1267,88 @@ function NovoOrcamento() {
                       emptyLabel="Nenhum paspatur cadastrado."
                     />
                   </div>
+
+                  <div className="mt-6 max-w-md space-y-1.5">
+                    <Label htmlFor="paspatur-adic-ativo">Incluir paspatur adicional</Label>
+                    <Select
+                      value={paspaturAdicionalAtivo}
+                      onValueChange={(v) =>
+                        setPaspaturAdicionalAtivo(v as "sim" | "nao")
+                      }
+                    >
+                      <SelectTrigger id="paspatur-adic-ativo">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nao">Não</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {paspaturAdicionalAtivo === "sim" && (
+                    <div className="mt-6 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="paspatur-adic-obs">
+                          Observação do paspatur adicional
+                        </Label>
+                        <Textarea
+                          id="paspatur-adic-obs"
+                          rows={2}
+                          value={paspaturAdicionalObs}
+                          onChange={(e) => setPaspaturAdicionalObs(e.target.value)}
+                          placeholder="Ex: deixar apenas um filete aparente"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <FieldNum
+                          label="Esquerda (cm)"
+                          id="m-adic-esq"
+                          value={paspaturAdicionalEsq}
+                          onChange={setPaspaturAdicionalEsq}
+                        />
+                        <FieldNum
+                          label="Direita (cm)"
+                          id="m-adic-dir"
+                          value={paspaturAdicionalDir}
+                          onChange={setPaspaturAdicionalDir}
+                        />
+                        <FieldNum
+                          label="Superior (cm)"
+                          id="m-adic-sup"
+                          value={paspaturAdicionalSup}
+                          onChange={setPaspaturAdicionalSup}
+                        />
+                        <FieldNum
+                          label="Inferior (cm)"
+                          id="m-adic-inf"
+                          value={paspaturAdicionalInf}
+                          onChange={setPaspaturAdicionalInf}
+                        />
+                      </div>
+
+                      <div className="max-w-md space-y-1.5">
+                        <Label htmlFor="paspatur-adic">Produto Paspatur adicional</Label>
+                        <ProductSelect
+                          id="paspatur-adic"
+                          value={paspaturAdicionalId}
+                          onChange={setPaspaturAdicionalId}
+                          products={paspaturs}
+                          loading={loadingPaspaturs}
+                          placeholder="Selecione um paspatur"
+                          emptyLabel="Nenhum paspatur cadastrado."
+                        />
+                      </div>
+
+                      {paspaturAdicionalInvalido && (
+                        <p className="text-xs text-destructive">
+                          O paspatur adicional não pode ter margem maior que o paspatur
+                          principal.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1136,11 +1367,29 @@ function NovoOrcamento() {
                           paddingBottom: previewPaspatur.padBottom,
                         }}
                       >
-                        <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
-                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            Arte {larguraNum}×{alturaNum}
-                          </span>
-                        </div>
+                        {previewPaspatur.adicionalOn ? (
+                          <div
+                            className="relative w-full h-full border-2 border-foreground/50 bg-muted/30"
+                            style={{
+                              paddingLeft: previewPaspatur.adPadLeft,
+                              paddingRight: previewPaspatur.adPadRight,
+                              paddingTop: previewPaspatur.adPadTop,
+                              paddingBottom: previewPaspatur.adPadBottom,
+                            }}
+                          >
+                            <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                Arte {larguraNum}×{alturaNum}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full border-2 border-foreground/70 bg-background flex items-center justify-center">
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              Arte {larguraNum}×{alturaNum}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="mt-3 text-sm font-medium text-foreground">
                         {larguraFinal} CM
@@ -1158,6 +1407,8 @@ function NovoOrcamento() {
               )}
             </Card>
           )}
+
+
 
           {active === "perfil" && (
             <Card className="p-6">
@@ -1488,10 +1739,34 @@ function NovoOrcamento() {
                     value={`${larguraFinal || 0} × ${alturaFinal || 0} cm`}
                   />
                   <hr className="my-2 border-border" />
-                  <Row
-                    label={`Paspatur${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
-                    value={fmtMoney(valorPaspatur)}
-                  />
+                  {paspaturAdicionalAtivo === "sim" && paspaturAtivo === "sim" ? (
+                    <>
+                      <Row
+                        label={`Paspatur principal${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPaspaturPrincipal)}
+                      />
+                      <div className="text-xs text-muted-foreground pl-2">
+                        Margens: E {mEsq} · D {mDir} · S {mSup} · I {mInf} cm
+                      </div>
+                      <Row
+                        label={`Paspatur adicional${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
+                        value={fmtMoney(valorPaspaturAdicional)}
+                      />
+                      <div className="text-xs text-muted-foreground pl-2">
+                        Margens: E {mEsqA} · D {mDirA} · S {mSupA} · I {mInfA} cm
+                        {paspaturAdicionalObs ? ` · ${paspaturAdicionalObs}` : ""}
+                      </div>
+                      <Row
+                        label="Total Paspatur"
+                        value={fmtMoney(valorPaspatur)}
+                      />
+                    </>
+                  ) : (
+                    <Row
+                      label={`Paspatur${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
+                      value={fmtMoney(valorPaspatur)}
+                    />
+                  )}
                   <Row
                     label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
                     value={fmtMoney(valorPerfil)}
