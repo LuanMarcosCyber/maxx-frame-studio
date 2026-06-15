@@ -699,6 +699,13 @@ function NovoOrcamento() {
     setMargemSup(s.margemSup);
     setMargemInf(s.margemInf);
     setPaspaturId(s.paspaturId);
+    setPaspaturAdicionalAtivo(s.paspaturAdicionalAtivo);
+    setPaspaturAdicionalObs(s.paspaturAdicionalObs);
+    setPaspaturAdicionalEsq(s.paspaturAdicionalEsq);
+    setPaspaturAdicionalDir(s.paspaturAdicionalDir);
+    setPaspaturAdicionalSup(s.paspaturAdicionalSup);
+    setPaspaturAdicionalInf(s.paspaturAdicionalInf);
+    setPaspaturAdicionalId(s.paspaturAdicionalId);
     setPerfilId(s.perfilId);
     setVidroTipo(s.vidroTipo);
     setVidroId(s.vidroId);
