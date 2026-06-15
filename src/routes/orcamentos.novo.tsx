@@ -892,6 +892,22 @@ function NovoOrcamento() {
     const captured = activeSnap;
     const allItems = items.map((it, i) => (i === activeIndex ? captured : it));
 
+    // Validate: paspatur adicional margens não podem ser maiores que o principal
+    for (let i = 0; i < allItems.length; i++) {
+      const it = allItems[i];
+      if (it.paspaturAtivo !== "sim" || it.paspaturAdicionalAtivo !== "sim") continue;
+      const me = parseNum(it.margemEsq), md = parseNum(it.margemDir);
+      const ms = parseNum(it.margemSup), mi = parseNum(it.margemInf);
+      const ae = parseNum(it.paspaturAdicionalEsq), ad = parseNum(it.paspaturAdicionalDir);
+      const as = parseNum(it.paspaturAdicionalSup), ai = parseNum(it.paspaturAdicionalInf);
+      if (ae > me || ad > md || as > ms || ai > mi) {
+        toast.error(
+          `Item ${i + 1}: o paspatur adicional não pode ter margem maior que o paspatur principal.`,
+        );
+        return;
+      }
+    }
+
     // Build items payload with values and details
     const itemsPayload = allItems.map((snap, idx) => {
       const P = resolveProducts(snap);
