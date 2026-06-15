@@ -327,6 +327,7 @@ function buildItemDetails(
   v: ItemValues,
   P: {
     paspatur: Produto | null;
+    paspaturAdicional: Produto | null;
     perfil: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
@@ -346,10 +347,23 @@ function buildItemDetails(
     paspaturCode: P.paspatur?.code ?? null,
     paspaturDescription: P.paspatur?.description ?? null,
     valorPaspatur: Number(v.valorPaspatur.toFixed(2)),
+    valorPaspaturPrincipal: Number(v.valorPaspaturPrincipal.toFixed(2)),
+    valorPaspaturAdicional: Number(v.valorPaspaturAdicional.toFixed(2)),
     margemEsq: snap.margemEsq,
     margemDir: snap.margemDir,
     margemSup: snap.margemSup,
     margemInf: snap.margemInf,
+    paspaturAdicionalAtivo: snap.paspaturAdicionalAtivo,
+    paspaturAdicionalObs: snap.paspaturAdicionalObs,
+    paspaturAdicionalEsq: snap.paspaturAdicionalEsq,
+    paspaturAdicionalDir: snap.paspaturAdicionalDir,
+    paspaturAdicionalSup: snap.paspaturAdicionalSup,
+    paspaturAdicionalInf: snap.paspaturAdicionalInf,
+    paspaturAdicionalId: snap.paspaturAdicionalId,
+    paspaturAdicionalCode: P.paspaturAdicional?.code ?? null,
+    paspaturAdicionalDescription: P.paspaturAdicional?.description ?? null,
+    larguraAdicional: v.larguraAdicional,
+    alturaAdicional: v.alturaAdicional,
     perfilId: snap.perfilId,
     perfilCode: P.perfil?.code ?? null,
     perfilDescription: P.perfil?.description ?? null,
@@ -389,6 +403,13 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     margemSup: s("margemSup"),
     margemInf: s("margemInf"),
     paspaturId: s("paspaturId"),
+    paspaturAdicionalAtivo: d.paspaturAdicionalAtivo === "sim" ? "sim" : "nao",
+    paspaturAdicionalObs: s("paspaturAdicionalObs"),
+    paspaturAdicionalEsq: s("paspaturAdicionalEsq"),
+    paspaturAdicionalDir: s("paspaturAdicionalDir"),
+    paspaturAdicionalSup: s("paspaturAdicionalSup"),
+    paspaturAdicionalInf: s("paspaturAdicionalInf"),
+    paspaturAdicionalId: s("paspaturAdicionalId"),
     perfilId: s("perfilId"),
     vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
     vidroId: s("vidroId"),
