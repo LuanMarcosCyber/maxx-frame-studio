@@ -223,6 +223,7 @@ function computeItemValues(
   snap: ItemSnapshot,
   P: {
     paspatur: Produto | null;
+    paspaturAdicional: Produto | null;
     perfil: Produto | null;
     vidro: Produto | null;
     foam: Produto | null;
@@ -239,13 +240,37 @@ function computeItemValues(
   const larguraFinal = larguraNum + mEsq + mDir;
   const alturaFinal = alturaNum + mSup + mInf;
 
-  let valorPaspatur = 0;
+  // Additional paspatur margins (do NOT affect frame final size)
+  const mEsqA = parseNum(snap.paspaturAdicionalEsq);
+  const mDirA = parseNum(snap.paspaturAdicionalDir);
+  const mSupA = parseNum(snap.paspaturAdicionalSup);
+  const mInfA = parseNum(snap.paspaturAdicionalInf);
+  const larguraAdicional = larguraNum + mEsqA + mDirA;
+  const alturaAdicional = alturaNum + mSupA + mInfA;
+
+  let valorPaspaturPrincipal = 0;
   if (snap.paspaturAtivo === "sim" && P.paspatur && larguraFinal > 0 && alturaFinal > 0) {
     const area = (larguraFinal * alturaFinal) / 10000;
     const base = area * Number(P.paspatur.value_per_meter);
     const cp = base * (1 + Number(P.paspatur.waste_percentage) / 100);
-    valorPaspatur = cp * (1 + Number(P.paspatur.profit_margin) / 100);
+    valorPaspaturPrincipal = cp * (1 + Number(P.paspatur.profit_margin) / 100);
   }
+
+  let valorPaspaturAdicional = 0;
+  if (
+    snap.paspaturAtivo === "sim" &&
+    snap.paspaturAdicionalAtivo === "sim" &&
+    P.paspaturAdicional &&
+    larguraAdicional > 0 &&
+    alturaAdicional > 0
+  ) {
+    const area = (larguraAdicional * alturaAdicional) / 10000;
+    const base = area * Number(P.paspaturAdicional.value_per_meter);
+    const cp = base * (1 + Number(P.paspaturAdicional.waste_percentage) / 100);
+    valorPaspaturAdicional = cp * (1 + Number(P.paspaturAdicional.profit_margin) / 100);
+  }
+
+  const valorPaspatur = valorPaspaturPrincipal + valorPaspaturAdicional;
 
   let valorPerfil = 0;
   if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
@@ -279,6 +304,14 @@ function computeItemValues(
     mInf,
     alturaFinal,
     larguraFinal,
+    mEsqA,
+    mDirA,
+    mSupA,
+    mInfA,
+    alturaAdicional,
+    larguraAdicional,
+    valorPaspaturPrincipal,
+    valorPaspaturAdicional,
     valorPaspatur,
     valorPerfil,
     valorVidro,
