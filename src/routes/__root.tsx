@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
+import logoUrl from "@/assets/totalmaxx-logo.png";
 
 function NotFoundComponent() {
   return (
@@ -142,24 +143,40 @@ function RootComponent() {
   );
 }
 
+function AuthLoadingScreen() {
+  return (
+    <div className="min-h-screen grid place-items-center bg-background px-4">
+      <div className="flex flex-col items-center gap-4">
+        <img
+          src={logoUrl}
+          alt="Total Maxx"
+          className="h-16 w-auto opacity-90"
+        />
+        <p className="text-sm text-muted-foreground animate-pulse">Carregando...</p>
+      </div>
+    </div>
+  );
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, role, loading } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const isLogin = pathname === "/login";
 
-  useEffect(() => {
-    if (loading) return;
-    if (!session && !isLogin) navigate({ to: "/login", replace: true });
-  }, [session, loading, isLogin, navigate]);
+  // Considered ready only once auth has resolved AND, if signed in, role/profile loaded.
+  const authReady = !loading && (!session || role !== null);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-background text-sm text-muted-foreground">
-        Carregando...
-      </div>
-    );
+  useEffect(() => {
+    if (!authReady) return;
+    if (!session && !isLogin) navigate({ to: "/login", replace: true });
+  }, [authReady, session, isLogin, navigate]);
+
+  // Block rendering protected content until auth fully resolved.
+  if (!authReady) {
+    if (isLogin && !session) return <>{children}</>;
+    return <AuthLoadingScreen />;
   }
-  if (!session && !isLogin) return null;
+  if (!session && !isLogin) return <AuthLoadingScreen />;
   return <>{children}</>;
 }
