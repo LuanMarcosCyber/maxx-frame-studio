@@ -70,6 +70,7 @@ import {
   MoreVertical,
   Trash2,
   Copy,
+  Package,
 } from "lucide-react";
 
 
@@ -94,6 +95,7 @@ type StepKey =
   | "foam"
   | "colagem"
   | "impressao"
+  | "diversos"
   | "instalacao"
   | "finalizacao";
 
@@ -105,6 +107,7 @@ const steps: { key: StepKey; label: string; icon: typeof Ruler }[] = [
   { key: "foam", label: "Foam / MDF", icon: Layers },
   { key: "colagem", label: "Colagem", icon: Scissors },
   { key: "impressao", label: "Impressão", icon: Printer },
+  { key: "diversos", label: "Produtos Diversos", icon: Package },
   { key: "instalacao", label: "Instalação / Frete", icon: Truck },
   { key: "finalizacao", label: "Finalização", icon: CheckCircle2 },
 ];
@@ -166,6 +169,15 @@ type FormaPagto =
   | "A combinar";
 
 // Per-item state shape
+type DiversoItem = {
+  uid: string;
+  productId: string;
+  code: string;
+  nome: string;
+  valorUnitario: number;
+  quantidade: number;
+};
+
 type ItemSnapshot = {
   altura: string;
   largura: string;
@@ -187,11 +199,13 @@ type ItemSnapshot = {
   perfilAdicionalId: string;
   vidroTipo: "sim" | "nao";
   vidroId: string;
+  vidroQuantidade: string;
   foamId: string;
   colagemAtivo: "sim" | "nao";
   colagemId: string;
   impressaoAtivo: "sim" | "nao";
   impressaoId: string;
+  produtosDiversos: DiversoItem[];
 };
 
 const emptyItem: ItemSnapshot = {
@@ -215,11 +229,13 @@ const emptyItem: ItemSnapshot = {
   perfilAdicionalId: "",
   vidroTipo: "nao",
   vidroId: "",
+  vidroQuantidade: "1",
   foamId: "",
   colagemAtivo: "nao",
   colagemId: "",
   impressaoAtivo: "nao",
   impressaoId: "",
+  produtosDiversos: [],
 };
 
 type ItemValues = ReturnType<typeof computeItemValues>;
@@ -304,8 +320,10 @@ function computeItemValues(
   }
   const valorPerfil = valorPerfilPrincipal + valorPerfilAdicional;
 
-  const valorVidro =
+  const vidroQuantidade = Math.max(1, Math.floor(parseNum(snap.vidroQuantidade || "1")) || 1);
+  const valorVidroUnit =
     snap.vidroTipo === "sim" ? calcAreaValue(P.vidro, alturaFinal, larguraFinal) : 0;
+  const valorVidro = valorVidroUnit * (snap.vidroTipo === "sim" ? vidroQuantidade : 0);
   const valorFoam = calcAreaValue(P.foam, alturaFinal, larguraFinal);
   const valorColagem =
     snap.colagemAtivo === "sim"
@@ -316,8 +334,15 @@ function computeItemValues(
       ? calcAreaValue(P.impressao, alturaFinal, larguraFinal)
       : 0;
 
+  const diversosItens = (snap.produtosDiversos ?? []).map((di) => {
+    const qtd = Math.max(1, Math.floor(Number(di.quantidade) || 1));
+    const unit = Number(di.valorUnitario) || 0;
+    return { ...di, quantidade: qtd, valorUnitario: unit, total: unit * qtd };
+  });
+  const valorDiversos = diversosItens.reduce((s, di) => s + di.total, 0);
+
   const subtotal =
-    valorPaspatur + valorPerfil + valorVidro + valorFoam + valorColagem + valorImpressao;
+    valorPaspatur + valorPerfil + valorVidro + valorFoam + valorColagem + valorImpressao + valorDiversos;
 
   return {
     alturaNum,
@@ -342,10 +367,14 @@ function computeItemValues(
     valorPerfilAdicional,
     larguraPerfilAdicional,
     alturaPerfilAdicional,
+    valorVidroUnit,
     valorVidro,
+    vidroQuantidade,
     valorFoam,
     valorColagem,
     valorImpressao,
+    diversosItens,
+    valorDiversos,
     subtotal,
   };
 }
@@ -410,6 +439,8 @@ function buildItemDetails(
     vidroId: snap.vidroId,
     vidroCode: P.vidro?.code ?? null,
     vidroDescription: P.vidro?.description ?? null,
+    vidroQuantidade: v.vidroQuantidade,
+    valorVidroUnit: Number(v.valorVidroUnit.toFixed(2)),
     valorVidro: Number(v.valorVidro.toFixed(2)),
     foamId: snap.foamId,
     foamCode: P.foam?.code ?? null,
@@ -425,6 +456,16 @@ function buildItemDetails(
     impressaoCode: P.impressao?.code ?? null,
     impressaoDescription: P.impressao?.description ?? null,
     valorImpressao: Number(v.valorImpressao.toFixed(2)),
+    produtosDiversos: v.diversosItens.map((di) => ({
+      uid: di.uid,
+      productId: di.productId,
+      code: di.code,
+      nome: di.nome,
+      valorUnitario: Number(di.valorUnitario.toFixed(2)),
+      quantidade: di.quantidade,
+      total: Number(di.total.toFixed(2)),
+    })),
+    valorDiversos: Number(v.valorDiversos.toFixed(2)),
     subtotal: Number(v.subtotal.toFixed(2)),
   };
 }
@@ -432,6 +473,24 @@ function buildItemDetails(
 // Hydrate an ItemSnapshot from a saved details jsonb (used for legacy details and budget_items.data)
 function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
   const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+  const rawDiv = Array.isArray(d.produtosDiversos) ? (d.produtosDiversos as unknown[]) : [];
+  const produtosDiversos: DiversoItem[] = rawDiv.map((raw, idx) => {
+    const r = (raw ?? {}) as Record<string, unknown>;
+    return {
+      uid: typeof r.uid === "string" ? (r.uid as string) : `d-${idx}-${Date.now()}`,
+      productId: typeof r.productId === "string" ? (r.productId as string) : "",
+      code: typeof r.code === "string" ? (r.code as string) : "",
+      nome: typeof r.nome === "string" ? (r.nome as string) : "",
+      valorUnitario: Number(r.valorUnitario) || 0,
+      quantidade: Math.max(1, Math.floor(Number(r.quantidade) || 1)),
+    };
+  });
+  const vq =
+    typeof d.vidroQuantidade === "number"
+      ? String(d.vidroQuantidade)
+      : typeof d.vidroQuantidade === "string"
+        ? (d.vidroQuantidade as string)
+        : "1";
   return {
     altura: s("altura"),
     largura: s("largura"),
@@ -453,11 +512,13 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     perfilAdicionalId: s("perfilAdicionalId"),
     vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
     vidroId: s("vidroId"),
+    vidroQuantidade: vq || "1",
     foamId: s("foamId"),
     colagemAtivo: d.colagemAtivo === "sim" ? "sim" : "nao",
     colagemId: s("colagemId"),
     impressaoAtivo: d.impressaoAtivo === "sim" ? "sim" : "nao",
     impressaoId: s("impressaoId"),
+    produtosDiversos,
   };
 }
 
@@ -495,12 +556,14 @@ function NovoOrcamento() {
   const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
+  const [vidroQuantidade, setVidroQuantidade] = useState<string>("1");
   const [foamId, setFoamId] = useState<string>("");
   const [colagemAtivo, setColagemAtivo] = useState<"sim" | "nao">("nao");
   const [colagemId, setColagemId] = useState<string>("");
   const [impressaoAtivo, setImpressaoAtivo] = useState<"sim" | "nao">("nao");
   const [impressaoId, setImpressaoId] = useState<string>("");
   const [impressaoArquivo, setImpressaoArquivo] = useState<File | null>(null);
+  const [produtosDiversos, setProdutosDiversos] = useState<DiversoItem[]>([]);
 
   // Budget-level (geral)
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
@@ -542,6 +605,10 @@ function NovoOrcamento() {
     ["Impressão", "Impressao"],
     !!session,
   );
+  const { data: diversosProdutos = [], isLoading: loadingDiversos } = useCategoryProducts(
+    ["produtos_diversos"],
+    !!session,
+  );
 
   // Resolve products for an arbitrary snapshot (used for non-active items)
   function resolveProducts(snap: ItemSnapshot) {
@@ -580,11 +647,13 @@ function NovoOrcamento() {
       perfilAdicionalId,
       vidroTipo,
       vidroId,
+      vidroQuantidade,
       foamId,
       colagemAtivo,
       colagemId,
       impressaoAtivo,
       impressaoId,
+      produtosDiversos,
     }),
     [
       altura,
@@ -607,11 +676,13 @@ function NovoOrcamento() {
       perfilAdicionalId,
       vidroTipo,
       vidroId,
+      vidroQuantidade,
       foamId,
       colagemAtivo,
       colagemId,
       impressaoAtivo,
       impressaoId,
+      produtosDiversos,
     ],
   );
 
@@ -651,9 +722,13 @@ function NovoOrcamento() {
     larguraPerfilAdicional,
     alturaPerfilAdicional,
     valorVidro,
+    valorVidroUnit,
+    vidroQuantidade: vidroQuantidadeNum,
     valorFoam,
     valorColagem,
     valorImpressao,
+    diversosItens,
+    valorDiversos,
   } = activeValues;
 
   // Lado-a-lado: paspatur adicional não pode ter margem maior que o principal
@@ -807,12 +882,14 @@ function NovoOrcamento() {
     setPerfilAdicionalId(s.perfilAdicionalId);
     setVidroTipo(s.vidroTipo);
     setVidroId(s.vidroId);
+    setVidroQuantidade(s.vidroQuantidade || "1");
     setFoamId(s.foamId);
     setColagemAtivo(s.colagemAtivo);
     setColagemId(s.colagemId);
     setImpressaoAtivo(s.impressaoAtivo);
     setImpressaoId(s.impressaoId);
     setImpressaoArquivo(null);
+    setProdutosDiversos(s.produtosDiversos ?? []);
   }
 
   function selectItem(index: number) {
@@ -1206,6 +1283,7 @@ function NovoOrcamento() {
               <Total label="Foam/MDF" value={valorFoam} />
               <Total label="Colagem" value={valorColagem} />
               <Total label="Impressão" value={valorImpressao} />
+              <Total label="Diversos" value={valorDiversos} />
             </div>
             {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) &&
               alturaNum > 0 &&
@@ -1467,6 +1545,50 @@ function NovoOrcamento() {
                 </div>
 
               )}
+
+              {paspaturAtivo === "sim" && (valorPaspaturPrincipal > 0 || valorPaspaturAdicional > 0) && (
+                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                  {paspaturAdicionalAtivo === "sim" ? (
+                    <>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Paspatur externo
+                          {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
+                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPaspaturPrincipal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Paspatur interno
+                          {paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}
+                          <span className="block text-xs">Medida usada: {larguraAdicional} × {alturaAdicional} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPaspaturAdicional)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                        <span className="font-semibold text-foreground">Total paspatur</span>
+                        <span className="font-semibold text-foreground">{fmtMoney(valorPaspatur)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        Paspatur
+                        {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
+                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                      </span>
+                      <span className="font-semibold text-foreground whitespace-nowrap">
+                        {fmtMoney(valorPaspaturPrincipal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           )}
 
@@ -1520,12 +1642,6 @@ function NovoOrcamento() {
                     placeholder="Selecione um perfil"
                     emptyLabel="Nenhum perfil cadastrado."
                   />
-                  {perfilAdicionalSelecionado && perfilSelecionado && (
-                    <p className="mt-2 text-xs text-emerald-600">
-                      Perfil adicional aplicado. Medida usada no cálculo:{" "}
-                      {larguraPerfilAdicional} × {alturaPerfilAdicional} cm.
-                    </p>
-                  )}
                   {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
                     <p className="mt-2 text-xs text-amber-600">
                       Selecione o perfil principal para calcular o perfil adicional.
@@ -1534,6 +1650,46 @@ function NovoOrcamento() {
                 </div>
               )}
 
+              {perfilSelecionado && valorPerfilPrincipal > 0 && (
+                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                  {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
+                    <>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Perfil externo ({perfilAdicionalSelecionado.code})
+                          <span className="block text-xs">Medida usada: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPerfilAdicional)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Perfil interno ({perfilSelecionado.code})
+                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPerfilPrincipal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                        <span className="font-semibold text-foreground">Total perfil</span>
+                        <span className="font-semibold text-foreground">{fmtMoney(valorPerfil)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        Perfil ({perfilSelecionado.code})
+                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                      </span>
+                      <span className="font-semibold text-foreground whitespace-nowrap">
+                        {fmtMoney(valorPerfilPrincipal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
@@ -1567,18 +1723,68 @@ function NovoOrcamento() {
               </div>
 
               {vidroTipo === "sim" && (
-                <div className="mt-6 max-w-md space-y-1.5">
-                  <Label htmlFor="vidro">Espessura do Vidro</Label>
-                  <ProductSelect
-                    id="vidro"
-                    value={vidroId}
-                    onChange={setVidroId}
-                    products={vidros}
-                    loading={loadingVidros}
-                    placeholder="Selecione um vidro"
-                    emptyLabel="Nenhum vidro cadastrado."
-                  />
-                </div>
+                <>
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="vidro">Espessura do Vidro</Label>
+                      <ProductSelect
+                        id="vidro"
+                        value={vidroId}
+                        onChange={setVidroId}
+                        products={vidros}
+                        loading={loadingVidros}
+                        placeholder="Selecione um vidro"
+                        emptyLabel="Nenhum vidro cadastrado."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="vidro-qtd">Quantidade</Label>
+                      <Input
+                        id="vidro-qtd"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={vidroQuantidade}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setVidroQuantidade("");
+                            return;
+                          }
+                          const n = Math.max(1, Math.floor(Number(raw) || 1));
+                          setVidroQuantidade(String(n));
+                        }}
+                        onBlur={() => {
+                          if (!vidroQuantidade || Number(vidroQuantidade) < 1) {
+                            setVidroQuantidade("1");
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {vidroSelecionado && valorVidroUnit > 0 && (
+                    <div className="mt-6 max-w-md rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1">
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Vidro ({vidroSelecionado.code})
+                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorVidroUnit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Quantidade</span>
+                        <span className="font-medium text-foreground">{vidroQuantidadeNum}</span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                        <span className="font-semibold text-foreground">Total vidro</span>
+                        <span className="font-semibold text-foreground">{fmtMoney(valorVidro)}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
             </Card>
@@ -1713,6 +1919,135 @@ function NovoOrcamento() {
 
                 </>
               )}
+            </Card>
+          )}
+
+          {active === "diversos" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Produtos Diversos</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Adicione produtos diversos vinculados a este item. Eles somam ao subtotal do item.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                {produtosDiversos.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum produto diverso adicionado.
+                  </p>
+                )}
+
+                {produtosDiversos.map((di, idx) => (
+                  <div
+                    key={di.uid}
+                    className="rounded-md border border-border bg-muted/20 p-4 space-y-3"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3 items-end">
+                      <div className="space-y-1.5 min-w-0">
+                        <Label>Produto</Label>
+                        <ProductSelect
+                          id={`diverso-${di.uid}`}
+                          value={di.productId}
+                          onChange={(pid) => {
+                            const prod = diversosProdutos.find((p) => p.id === pid);
+                            setProdutosDiversos((prev) =>
+                              prev.map((it, i) =>
+                                i === idx
+                                  ? {
+                                      ...it,
+                                      productId: pid,
+                                      code: prod?.code ?? "",
+                                      nome: prod?.description ?? "",
+                                      valorUnitario: Number(prod?.value_per_meter ?? 0),
+                                    }
+                                  : it,
+                              ),
+                            );
+                          }}
+                          products={diversosProdutos}
+                          loading={loadingDiversos}
+                          placeholder="Selecione um produto"
+                          emptyLabel="Nenhum produto diverso cadastrado."
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`qtd-${di.uid}`}>Quantidade</Label>
+                        <Input
+                          id={`qtd-${di.uid}`}
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={String(di.quantidade)}
+                          onChange={(e) => {
+                            const n = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                            setProdutosDiversos((prev) =>
+                              prev.map((it, i) =>
+                                i === idx ? { ...it, quantidade: n } : it,
+                              ),
+                            );
+                          }}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          setProdutosDiversos((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        aria-label="Remover produto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {di.productId && (
+                      <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4">
+                        <span>Valor unitário: <span className="font-medium text-foreground">{fmtMoney(di.valorUnitario)}</span></span>
+                        <span>Total: <span className="font-medium text-foreground">{fmtMoney(di.valorUnitario * di.quantidade)}</span></span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setProdutosDiversos((prev) => [
+                      ...prev,
+                      {
+                        uid: `d-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                        productId: "",
+                        code: "",
+                        nome: "",
+                        valorUnitario: 0,
+                        quantidade: 1,
+                      },
+                    ])
+                  }
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Adicionar produto diverso
+                </Button>
+
+                {diversosItens.length > 0 && (
+                  <div className="rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1 max-w-md">
+                    {diversosItens.map((di) => (
+                      <div key={di.uid} className="flex justify-between gap-3">
+                        <span className="text-muted-foreground truncate">
+                          {di.code ? `${di.code} ` : ""}{di.nome || "Produto"} · {di.quantidade}× {fmtMoney(di.valorUnitario)}
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(di.total)}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                      <span className="font-semibold text-foreground">Total Produtos Diversos</span>
+                      <span className="font-semibold text-foreground">{fmtMoney(valorDiversos)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </Card>
           )}
 
@@ -1896,6 +2231,11 @@ function NovoOrcamento() {
                     label={`Vidro${vidroSelecionado && vidroTipo === "sim" ? ` (${vidroSelecionado.code})` : ""}`}
                     value={fmtMoney(valorVidro)}
                   />
+                  {vidroTipo === "sim" && vidroSelecionado && vidroQuantidadeNum > 1 && (
+                    <div className="text-xs text-muted-foreground pl-2">
+                      {vidroQuantidadeNum}× {fmtMoney(valorVidroUnit)}
+                    </div>
+                  )}
                   <Row
                     label={`Foam/MDF${foamSelecionado ? ` (${foamSelecionado.code})` : ""}`}
                     value={fmtMoney(valorFoam)}
@@ -1908,6 +2248,25 @@ function NovoOrcamento() {
                     label={`Impressão${impressaoSelecionada && impressaoAtivo === "sim" ? ` (${impressaoSelecionada.code})` : ""}`}
                     value={fmtMoney(valorImpressao)}
                   />
+                  {diversosItens.length > 0 && (
+                    <>
+                      {diversosItens.map((di) => (
+                        <div key={di.uid}>
+                          <Row
+                            label={`${di.code ? `${di.code} · ` : ""}${di.nome || "Produto diverso"}`}
+                            value={fmtMoney(di.total)}
+                          />
+                          <div className="text-xs text-muted-foreground pl-2">
+                            {di.quantidade}× {fmtMoney(di.valorUnitario)}
+                          </div>
+                        </div>
+                      ))}
+                      <Row
+                        label="Total Produtos Diversos"
+                        value={fmtMoney(valorDiversos)}
+                      />
+                    </>
+                  )}
                   <Row
                     label={`Subtotal Item ${activeIndex + 1}`}
                     value={fmtMoney(activeValues.subtotal)}
