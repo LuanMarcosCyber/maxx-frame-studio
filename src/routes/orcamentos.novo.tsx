@@ -320,8 +320,10 @@ function computeItemValues(
   }
   const valorPerfil = valorPerfilPrincipal + valorPerfilAdicional;
 
-  const valorVidro =
+  const vidroQuantidade = Math.max(1, Math.floor(parseNum(snap.vidroQuantidade || "1")) || 1);
+  const valorVidroUnit =
     snap.vidroTipo === "sim" ? calcAreaValue(P.vidro, alturaFinal, larguraFinal) : 0;
+  const valorVidro = valorVidroUnit * (snap.vidroTipo === "sim" ? vidroQuantidade : 0);
   const valorFoam = calcAreaValue(P.foam, alturaFinal, larguraFinal);
   const valorColagem =
     snap.colagemAtivo === "sim"
@@ -332,8 +334,15 @@ function computeItemValues(
       ? calcAreaValue(P.impressao, alturaFinal, larguraFinal)
       : 0;
 
+  const diversosItens = (snap.produtosDiversos ?? []).map((di) => {
+    const qtd = Math.max(1, Math.floor(Number(di.quantidade) || 1));
+    const unit = Number(di.valorUnitario) || 0;
+    return { ...di, quantidade: qtd, valorUnitario: unit, total: unit * qtd };
+  });
+  const valorDiversos = diversosItens.reduce((s, di) => s + di.total, 0);
+
   const subtotal =
-    valorPaspatur + valorPerfil + valorVidro + valorFoam + valorColagem + valorImpressao;
+    valorPaspatur + valorPerfil + valorVidro + valorFoam + valorColagem + valorImpressao + valorDiversos;
 
   return {
     alturaNum,
@@ -358,10 +367,14 @@ function computeItemValues(
     valorPerfilAdicional,
     larguraPerfilAdicional,
     alturaPerfilAdicional,
+    valorVidroUnit,
     valorVidro,
+    vidroQuantidade,
     valorFoam,
     valorColagem,
     valorImpressao,
+    diversosItens,
+    valorDiversos,
     subtotal,
   };
 }
