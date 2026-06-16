@@ -1283,6 +1283,7 @@ function NovoOrcamento() {
               <Total label="Foam/MDF" value={valorFoam} />
               <Total label="Colagem" value={valorColagem} />
               <Total label="Impressão" value={valorImpressao} />
+              <Total label="Diversos" value={valorDiversos} />
             </div>
             {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) &&
               alturaNum > 0 &&
