@@ -1921,6 +1921,135 @@ function NovoOrcamento() {
             </Card>
           )}
 
+          {active === "diversos" && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold">Produtos Diversos</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Adicione produtos diversos vinculados a este item. Eles somam ao subtotal do item.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                {produtosDiversos.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum produto diverso adicionado.
+                  </p>
+                )}
+
+                {produtosDiversos.map((di, idx) => (
+                  <div
+                    key={di.uid}
+                    className="rounded-md border border-border bg-muted/20 p-4 space-y-3"
+                  >
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_auto] gap-3 items-end">
+                      <div className="space-y-1.5 min-w-0">
+                        <Label>Produto</Label>
+                        <ProductSelect
+                          id={`diverso-${di.uid}`}
+                          value={di.productId}
+                          onChange={(pid) => {
+                            const prod = diversosProdutos.find((p) => p.id === pid);
+                            setProdutosDiversos((prev) =>
+                              prev.map((it, i) =>
+                                i === idx
+                                  ? {
+                                      ...it,
+                                      productId: pid,
+                                      code: prod?.code ?? "",
+                                      nome: prod?.description ?? "",
+                                      valorUnitario: Number(prod?.value_per_meter ?? 0),
+                                    }
+                                  : it,
+                              ),
+                            );
+                          }}
+                          products={diversosProdutos}
+                          loading={loadingDiversos}
+                          placeholder="Selecione um produto"
+                          emptyLabel="Nenhum produto diverso cadastrado."
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`qtd-${di.uid}`}>Quantidade</Label>
+                        <Input
+                          id={`qtd-${di.uid}`}
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={String(di.quantidade)}
+                          onChange={(e) => {
+                            const n = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                            setProdutosDiversos((prev) =>
+                              prev.map((it, i) =>
+                                i === idx ? { ...it, quantidade: n } : it,
+                              ),
+                            );
+                          }}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          setProdutosDiversos((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        aria-label="Remover produto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {di.productId && (
+                      <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4">
+                        <span>Valor unitário: <span className="font-medium text-foreground">{fmtMoney(di.valorUnitario)}</span></span>
+                        <span>Total: <span className="font-medium text-foreground">{fmtMoney(di.valorUnitario * di.quantidade)}</span></span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setProdutosDiversos((prev) => [
+                      ...prev,
+                      {
+                        uid: `d-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                        productId: "",
+                        code: "",
+                        nome: "",
+                        valorUnitario: 0,
+                        quantidade: 1,
+                      },
+                    ])
+                  }
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Adicionar produto diverso
+                </Button>
+
+                {diversosItens.length > 0 && (
+                  <div className="rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1 max-w-md">
+                    {diversosItens.map((di) => (
+                      <div key={di.uid} className="flex justify-between gap-3">
+                        <span className="text-muted-foreground truncate">
+                          {di.code ? `${di.code} ` : ""}{di.nome || "Produto"} · {di.quantidade}× {fmtMoney(di.valorUnitario)}
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(di.total)}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                      <span className="font-semibold text-foreground">Total Produtos Diversos</span>
+                      <span className="font-semibold text-foreground">{fmtMoney(valorDiversos)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
           {active === "instalacao" && (
             <Card className="p-6">
               <h2 className="text-xl font-semibold">Instalação / Frete</h2>
