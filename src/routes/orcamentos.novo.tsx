@@ -882,12 +882,14 @@ function NovoOrcamento() {
     setPerfilAdicionalId(s.perfilAdicionalId);
     setVidroTipo(s.vidroTipo);
     setVidroId(s.vidroId);
+    setVidroQuantidade(s.vidroQuantidade || "1");
     setFoamId(s.foamId);
     setColagemAtivo(s.colagemAtivo);
     setColagemId(s.colagemId);
     setImpressaoAtivo(s.impressaoAtivo);
     setImpressaoId(s.impressaoId);
     setImpressaoArquivo(null);
+    setProdutosDiversos(s.produtosDiversos ?? []);
   }
 
   function selectItem(index: number) {
