@@ -1220,14 +1220,6 @@ function NovoOrcamento() {
               })}
 
             </div>
-            <button
-              type="button"
-              onClick={addNewItem}
-              className="mt-2 w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-accent transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Orçar mais um produto
-            </button>
           </Card>
 
           <Card className="p-3">
