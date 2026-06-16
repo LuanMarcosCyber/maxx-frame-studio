@@ -140,39 +140,48 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           category: string | null
           code: string
           created_at: string
           description: string
           frame_width_cm: number | null
           id: string
+          name: string | null
           profit_margin: number
+          supplier: string | null
           updated_at: string
           user_id: string
           value_per_meter: number
           waste_percentage: number
         }
         Insert: {
+          barcode?: string | null
           category?: string | null
           code: string
           created_at?: string
           description: string
           frame_width_cm?: number | null
           id?: string
+          name?: string | null
           profit_margin?: number
+          supplier?: string | null
           updated_at?: string
           user_id: string
           value_per_meter?: number
           waste_percentage?: number
         }
         Update: {
+          barcode?: string | null
           category?: string | null
           code?: string
           created_at?: string
           description?: string
           frame_width_cm?: number | null
           id?: string
+          name?: string | null
           profit_margin?: number
+          supplier?: string | null
           updated_at?: string
           user_id?: string
           value_per_meter?: number
