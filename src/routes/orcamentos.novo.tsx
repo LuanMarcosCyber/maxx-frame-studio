@@ -2488,8 +2488,8 @@ function NovoOrcamento() {
                   <div className="flex flex-col sm:flex-wrap sm:flex-row gap-3 pt-2">
                     <Button
                       type="button"
-                      onClick={handleSalvar}
-                      disabled={salvando}
+                      onClick={() => handleSalvar()}
+                      disabled={salvando || aprovando}
                       className="w-full sm:w-auto bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                     >
                       {salvando
@@ -2497,6 +2497,15 @@ function NovoOrcamento() {
                         : isEdit
                           ? "Atualizar Orçamento"
                           : "Salvar Orçamento"}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => handleSalvar({ approve: true })}
+                      disabled={salvando || aprovando}
+                      className="w-full sm:w-auto bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                      {aprovando ? "Aprovando..." : "Salvar e Aprovar"}
                     </Button>
                     <Button
                       type="button"
