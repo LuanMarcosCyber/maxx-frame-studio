@@ -1094,14 +1094,14 @@ function NovoOrcamento() {
         valorEntrega: Number(valorEntrega.toFixed(2)),
       };
 
-      const budgetPayload: Record<string, unknown> = {
+      const budgetPayload = {
         client_name: clienteNome.trim(),
         client_id: clienteId,
         total_value: Number(valorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
         details: generalDetails as never,
+        ...(approve ? { status: "Aprovado" } : {}),
       };
-      if (approve) budgetPayload.status = "Aprovado";
 
       let budgetId: string;
       let budgetNumber: string | null = null;
