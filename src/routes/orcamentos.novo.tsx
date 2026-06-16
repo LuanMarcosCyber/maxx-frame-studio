@@ -1641,12 +1641,6 @@ function NovoOrcamento() {
                     placeholder="Selecione um perfil"
                     emptyLabel="Nenhum perfil cadastrado."
                   />
-                  {perfilAdicionalSelecionado && perfilSelecionado && (
-                    <p className="mt-2 text-xs text-emerald-600">
-                      Perfil adicional aplicado. Medida usada no cálculo:{" "}
-                      {larguraPerfilAdicional} × {alturaPerfilAdicional} cm.
-                    </p>
-                  )}
                   {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
                     <p className="mt-2 text-xs text-amber-600">
                       Selecione o perfil principal para calcular o perfil adicional.
@@ -1655,6 +1649,46 @@ function NovoOrcamento() {
                 </div>
               )}
 
+              {perfilSelecionado && valorPerfilPrincipal > 0 && (
+                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                  {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
+                    <>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Perfil externo ({perfilAdicionalSelecionado.code})
+                          <span className="block text-xs">Medida usada: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPerfilAdicional)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Perfil interno ({perfilSelecionado.code})
+                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPerfilPrincipal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                        <span className="font-semibold text-foreground">Total perfil</span>
+                        <span className="font-semibold text-foreground">{fmtMoney(valorPerfil)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        Perfil ({perfilSelecionado.code})
+                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                      </span>
+                      <span className="font-semibold text-foreground whitespace-nowrap">
+                        {fmtMoney(valorPerfilPrincipal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {(alturaFinal <= 0 || larguraFinal <= 0) && (
                 <p className="mt-4 text-xs text-amber-600">
