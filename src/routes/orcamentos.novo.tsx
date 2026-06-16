@@ -1722,18 +1722,68 @@ function NovoOrcamento() {
               </div>
 
               {vidroTipo === "sim" && (
-                <div className="mt-6 max-w-md space-y-1.5">
-                  <Label htmlFor="vidro">Espessura do Vidro</Label>
-                  <ProductSelect
-                    id="vidro"
-                    value={vidroId}
-                    onChange={setVidroId}
-                    products={vidros}
-                    loading={loadingVidros}
-                    placeholder="Selecione um vidro"
-                    emptyLabel="Nenhum vidro cadastrado."
-                  />
-                </div>
+                <>
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="vidro">Espessura do Vidro</Label>
+                      <ProductSelect
+                        id="vidro"
+                        value={vidroId}
+                        onChange={setVidroId}
+                        products={vidros}
+                        loading={loadingVidros}
+                        placeholder="Selecione um vidro"
+                        emptyLabel="Nenhum vidro cadastrado."
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="vidro-qtd">Quantidade</Label>
+                      <Input
+                        id="vidro-qtd"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={vidroQuantidade}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setVidroQuantidade("");
+                            return;
+                          }
+                          const n = Math.max(1, Math.floor(Number(raw) || 1));
+                          setVidroQuantidade(String(n));
+                        }}
+                        onBlur={() => {
+                          if (!vidroQuantidade || Number(vidroQuantidade) < 1) {
+                            setVidroQuantidade("1");
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {vidroSelecionado && valorVidroUnit > 0 && (
+                    <div className="mt-6 max-w-md rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1">
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Vidro ({vidroSelecionado.code})
+                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorVidroUnit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Quantidade</span>
+                        <span className="font-medium text-foreground">{vidroQuantidadeNum}</span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                        <span className="font-semibold text-foreground">Total vidro</span>
+                        <span className="font-semibold text-foreground">{fmtMoney(valorVidro)}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
             </Card>
