@@ -8,6 +8,7 @@ import {
   Settings,
   Users,
   UserCog,
+  Contact,
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ type Item = { title: string; url: string; icon: typeof LayoutDashboard };
 const dashboard: Item = { title: "Dashboard", url: "/", icon: LayoutDashboard };
 const orcamentos: Item = { title: "Orçamentos", url: "/orcamentos", icon: FileText };
 const pedidos: Item = { title: "Pedidos", url: "/pedidos", icon: ShoppingCart };
+const clientes: Item = { title: "Clientes", url: "/clientes", icon: Contact };
 const produtos: Item = { title: "Produtos", url: "/produtos", icon: Package };
 const revendedores: Item = { title: "Revendedores", url: "/revendedores", icon: Users };
 const colaboradores: Item = { title: "Colaboradores", url: "/colaboradores", icon: UserCog };
