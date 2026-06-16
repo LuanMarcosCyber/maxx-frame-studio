@@ -647,11 +647,13 @@ function NovoOrcamento() {
       perfilAdicionalId,
       vidroTipo,
       vidroId,
+      vidroQuantidade,
       foamId,
       colagemAtivo,
       colagemId,
       impressaoAtivo,
       impressaoId,
+      produtosDiversos,
     }),
     [
       altura,
@@ -674,11 +676,13 @@ function NovoOrcamento() {
       perfilAdicionalId,
       vidroTipo,
       vidroId,
+      vidroQuantidade,
       foamId,
       colagemAtivo,
       colagemId,
       impressaoAtivo,
       impressaoId,
+      produtosDiversos,
     ],
   );
 
