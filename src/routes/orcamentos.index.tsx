@@ -294,7 +294,7 @@ function ResumoDialog({
   const colagemAtivo = d.colagemAtivo === "sim";
   const impressaoAtivo = d.impressaoAtivo === "sim";
 
-  const itemRows: { label: string; value: string; sub?: string }[] = activeItem
+  const itemRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
     ? [
         {
           label: "Tamanho original",
