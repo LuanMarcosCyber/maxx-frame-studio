@@ -722,9 +722,13 @@ function NovoOrcamento() {
     larguraPerfilAdicional,
     alturaPerfilAdicional,
     valorVidro,
+    valorVidroUnit,
+    vidroQuantidade: vidroQuantidadeNum,
     valorFoam,
     valorColagem,
     valorImpressao,
+    diversosItens,
+    valorDiversos,
   } = activeValues;
 
   // Lado-a-lado: paspatur adicional não pode ter margem maior que o principal
