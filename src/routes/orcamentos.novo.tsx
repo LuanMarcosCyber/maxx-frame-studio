@@ -2231,6 +2231,11 @@ function NovoOrcamento() {
                     label={`Vidro${vidroSelecionado && vidroTipo === "sim" ? ` (${vidroSelecionado.code})` : ""}`}
                     value={fmtMoney(valorVidro)}
                   />
+                  {vidroTipo === "sim" && vidroSelecionado && vidroQuantidadeNum > 1 && (
+                    <div className="text-xs text-muted-foreground pl-2">
+                      {vidroQuantidadeNum}× {fmtMoney(valorVidroUnit)}
+                    </div>
+                  )}
                   <Row
                     label={`Foam/MDF${foamSelecionado ? ` (${foamSelecionado.code})` : ""}`}
                     value={fmtMoney(valorFoam)}
@@ -2243,6 +2248,25 @@ function NovoOrcamento() {
                     label={`Impressão${impressaoSelecionada && impressaoAtivo === "sim" ? ` (${impressaoSelecionada.code})` : ""}`}
                     value={fmtMoney(valorImpressao)}
                   />
+                  {diversosItens.length > 0 && (
+                    <>
+                      {diversosItens.map((di) => (
+                        <div key={di.uid}>
+                          <Row
+                            label={`${di.code ? `${di.code} · ` : ""}${di.nome || "Produto diverso"}`}
+                            value={fmtMoney(di.total)}
+                          />
+                          <div className="text-xs text-muted-foreground pl-2">
+                            {di.quantidade}× {fmtMoney(di.valorUnitario)}
+                          </div>
+                        </div>
+                      ))}
+                      <Row
+                        label="Total Produtos Diversos"
+                        value={fmtMoney(valorDiversos)}
+                      />
+                    </>
+                  )}
                   <Row
                     label={`Subtotal Item ${activeIndex + 1}`}
                     value={fmtMoney(activeValues.subtotal)}
