@@ -605,6 +605,10 @@ function NovoOrcamento() {
     ["Impressão", "Impressao"],
     !!session,
   );
+  const { data: diversosProdutos = [], isLoading: loadingDiversos } = useCategoryProducts(
+    ["produtos_diversos"],
+    !!session,
+  );
 
   // Resolve products for an arbitrary snapshot (used for non-active items)
   function resolveProducts(snap: ItemSnapshot) {
