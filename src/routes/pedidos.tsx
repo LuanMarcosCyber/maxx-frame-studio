@@ -1,10 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Search, Plus, MoreHorizontal, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -14,6 +21,7 @@ export const Route = createFileRoute("/pedidos")({
 });
 
 const statusStyle: Record<string, string> = {
+  Aprovado: "bg-emerald-100 text-emerald-700",
   "Em produção": "bg-blue-100 text-blue-700",
   Entregue: "bg-emerald-100 text-emerald-700",
   Aguardando: "bg-amber-100 text-amber-700",
@@ -25,18 +33,29 @@ const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
 function Pedidos() {
   const { session } = useAuth();
+  const [search, setSearch] = useState("");
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["orders"],
     enabled: !!session,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, number, client_name, total_value, status, created_at")
+        .select("id, number, client_name, total_value, status, created_at, budget_id")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (o) =>
+        o.number.toLowerCase().includes(q) ||
+        (o.client_name ?? "").toLowerCase().includes(q),
+    );
+  }, [rows, search]);
 
   return (
     <AppShell title="Pedidos" subtitle="Acompanhe o status dos seus pedidos">
@@ -44,7 +63,12 @@ function Pedidos() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
           <div className="relative w-full sm:max-w-sm">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar pedido ou cliente..." className="pl-9" />
+            <Input
+              placeholder="Buscar pedido ou cliente..."
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
             <Plus className="h-4 w-4 mr-1.5" /> Novo Pedido
@@ -70,14 +94,14 @@ function Pedidos() {
                     Carregando...
                   </td>
                 </tr>
-              ) : rows.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted-foreground">
                     Nenhum pedido cadastrado.
                   </td>
                 </tr>
               ) : (
-                rows.map((o) => (
+                filtered.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/40 transition">
                     <td className="py-3.5 px-6 font-mono font-semibold">{o.number}</td>
                     <td className="py-3.5 px-3">{o.client_name}</td>
@@ -97,13 +121,35 @@ function Pedidos() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-right">
-                      <button
-                        type="button"
-                        aria-label="Ações"
-                        className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                      >
-                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Ações"
+                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          >
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {o.budget_id ? (
+                            <DropdownMenuItem asChild>
+                              <Link
+                                to="/orcamentos"
+                                search={{ view: o.budget_id }}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver orçamento
+                              </Link>
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem disabled>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Sem orçamento vinculado
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))
