@@ -169,6 +169,15 @@ type FormaPagto =
   | "A combinar";
 
 // Per-item state shape
+type DiversoItem = {
+  uid: string;
+  productId: string;
+  code: string;
+  nome: string;
+  valorUnitario: number;
+  quantidade: number;
+};
+
 type ItemSnapshot = {
   altura: string;
   largura: string;
@@ -190,11 +199,13 @@ type ItemSnapshot = {
   perfilAdicionalId: string;
   vidroTipo: "sim" | "nao";
   vidroId: string;
+  vidroQuantidade: string;
   foamId: string;
   colagemAtivo: "sim" | "nao";
   colagemId: string;
   impressaoAtivo: "sim" | "nao";
   impressaoId: string;
+  produtosDiversos: DiversoItem[];
 };
 
 const emptyItem: ItemSnapshot = {
@@ -218,11 +229,13 @@ const emptyItem: ItemSnapshot = {
   perfilAdicionalId: "",
   vidroTipo: "nao",
   vidroId: "",
+  vidroQuantidade: "1",
   foamId: "",
   colagemAtivo: "nao",
   colagemId: "",
   impressaoAtivo: "nao",
   impressaoId: "",
+  produtosDiversos: [],
 };
 
 type ItemValues = ReturnType<typeof computeItemValues>;
