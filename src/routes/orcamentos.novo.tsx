@@ -613,6 +613,21 @@ function NovoOrcamento() {
     !!session,
   );
 
+  // Lista de clientes (escopo: dono / colaboradores via RLS)
+  const { data: clientes = [] } = useQuery({
+    queryKey: ["clients", "picker"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, phone, document")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+
   // Resolve products for an arbitrary snapshot (used for non-active items)
   function resolveProducts(snap: ItemSnapshot) {
     return {
