@@ -571,6 +571,9 @@ function NovoOrcamento() {
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
   const [clienteNome, setClienteNome] = useState<string>("");
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clientePickerOpen, setClientePickerOpen] = useState(false);
+  const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
   const [dataVencimento, setDataVencimento] = useState<string>("");
@@ -609,6 +612,21 @@ function NovoOrcamento() {
     ["produtos_diversos"],
     !!session,
   );
+
+  // Lista de clientes (escopo: dono / colaboradores via RLS)
+  const { data: clientes = [] } = useQuery({
+    queryKey: ["clients", "picker"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, phone, document")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
   // Resolve products for an arbitrary snapshot (used for non-active items)
   function resolveProducts(snap: ItemSnapshot) {
@@ -976,6 +994,7 @@ function NovoOrcamento() {
       const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
 
       setClienteNome(budget.client_name ?? "");
+      setClienteId((budget as { client_id?: string | null }).client_id ?? null);
       setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
       setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
       setDataVencimento(budget.data_vencimento ?? "");
@@ -1013,7 +1032,8 @@ function NovoOrcamento() {
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
 
-  async function handleSalvar() {
+  async function handleSalvar(opts: { approve?: boolean } = {}) {
+    const approve = !!opts.approve;
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
       return;
@@ -1058,7 +1078,8 @@ function NovoOrcamento() {
       };
     });
 
-    setSalvando(true);
+    if (approve) setAprovando(true);
+    else setSalvando(true);
     try {
       const generalDetails = {
         formaPagamento,
@@ -1075,12 +1096,15 @@ function NovoOrcamento() {
 
       const budgetPayload = {
         client_name: clienteNome.trim(),
+        client_id: clienteId,
         total_value: Number(valorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
         details: generalDetails as never,
+        ...(approve ? { status: "Aprovado" } : {}),
       };
 
       let budgetId: string;
+      let budgetNumber: string | null = null;
       if (isEdit && editId) {
         const { error } = await supabase
           .from("budgets")
@@ -1088,6 +1112,12 @@ function NovoOrcamento() {
           .eq("id", editId);
         if (error) throw error;
         budgetId = editId;
+        const { data: b } = await supabase
+          .from("budgets")
+          .select("number")
+          .eq("id", editId)
+          .maybeSingle();
+        budgetNumber = b?.number ?? null;
       } else {
         const number = `ORC-${Date.now().toString().slice(-8)}`;
         const { data: inserted, error } = await supabase
@@ -1095,13 +1125,14 @@ function NovoOrcamento() {
           .insert({
             user_id: ownerUserId ?? session.user.id,
             number,
-            status: "Pendente",
+            status: approve ? "Aprovado" : "Pendente",
             ...budgetPayload,
           })
-          .select("id")
+          .select("id, number")
           .single();
         if (error) throw error;
         budgetId = inserted.id;
+        budgetNumber = inserted.number;
       }
 
       // Replace items: delete then insert
@@ -1121,18 +1152,61 @@ function NovoOrcamento() {
       const { error: insErr } = await supabase.from("budget_items").insert(insertRows);
       if (insErr) throw insErr;
 
+      // Pedido (somente quando aprovar)
+      if (approve) {
+        const { data: existingOrder } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("budget_id", budgetId)
+          .maybeSingle();
+        const orderPayload = {
+          client_name: clienteNome.trim(),
+          total_value: Number(valorTotal.toFixed(2)),
+          status: "Aprovado",
+        };
+        if (existingOrder?.id) {
+          const { error: updErr } = await supabase
+            .from("orders")
+            .update(orderPayload)
+            .eq("id", existingOrder.id);
+          if (updErr) throw updErr;
+        } else {
+          const orderNumber = budgetNumber
+            ? `PED-${budgetNumber.replace(/^ORC-/, "")}`
+            : `PED-${Date.now().toString().slice(-8)}`;
+          const { error: insOrdErr } = await supabase.from("orders").insert({
+            user_id: ownerUserId ?? session.user.id,
+            number: orderNumber,
+            budget_id: budgetId,
+            ...orderPayload,
+          });
+          if (insOrdErr) throw insOrdErr;
+        }
+      }
+
       toast.success(
-        isEdit ? "Orçamento atualizado com sucesso!" : "Orçamento salvo com sucesso!",
+        approve
+          ? "Orçamento aprovado e pedido gerado!"
+          : isEdit
+            ? "Orçamento atualizado com sucesso!"
+            : "Orçamento salvo com sucesso!",
       );
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      navigate({ to: "/orcamentos" });
+      if (approve) await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      navigate({ to: approve ? "/pedidos" : "/orcamentos" });
     } catch (e) {
       console.error(e);
-      toast.error("Não foi possível salvar o orçamento.");
+      toast.error(
+        approve
+          ? "Não foi possível aprovar o orçamento."
+          : "Não foi possível salvar o orçamento.",
+      );
     } finally {
       setSalvando(false);
+      setAprovando(false);
     }
   }
+
 
   return (
     <AppShell
@@ -1220,14 +1294,6 @@ function NovoOrcamento() {
               })}
 
             </div>
-            <button
-              type="button"
-              onClick={addNewItem}
-              className="mt-2 w-full flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-accent transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Orçar mais um produto
-            </button>
           </Card>
 
           <Card className="p-3">
@@ -2305,13 +2371,70 @@ function NovoOrcamento() {
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="cliente">Cliente</Label>
-                    <Input
-                      id="cliente"
-                      placeholder="Nome do cliente"
-                      value={clienteNome}
-                      onChange={(e) => setClienteNome(e.target.value)}
-                    />
+                    <div className="flex gap-2">
+                      <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="shrink-0"
+                            aria-label="Selecionar cliente cadastrado"
+                          >
+                            <ChevronsUpDown className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[320px]" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar cliente..." />
+                            <CommandList>
+                              <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                {clientes.map((c) => (
+                                  <CommandItem
+                                    key={c.id}
+                                    value={`${c.name} ${c.phone ?? ""} ${c.document ?? ""}`}
+                                    onSelect={() => {
+                                      setClienteId(c.id);
+                                      setClienteNome(c.name);
+                                      setClientePickerOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{c.name}</span>
+                                      {(c.phone || c.document) && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {[c.phone, c.document].filter(Boolean).join(" · ")}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {clienteId === c.id && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        id="cliente"
+                        placeholder="Nome do cliente"
+                        value={clienteNome}
+                        onChange={(e) => {
+                          setClienteNome(e.target.value);
+                          // se o usuário editar manualmente, desvincular do cadastro
+                          if (clienteId) setClienteId(null);
+                        }}
+                      />
+                    </div>
+                    {clienteId && (
+                      <p className="text-xs text-muted-foreground">
+                        Cliente cadastrado vinculado a este orçamento.
+                      </p>
+                    )}
                   </div>
+
 
                   <div className="space-y-1.5">
                     <Label htmlFor="forma-pagto">Forma de pagamento</Label>
@@ -2365,8 +2488,8 @@ function NovoOrcamento() {
                   <div className="flex flex-col sm:flex-wrap sm:flex-row gap-3 pt-2">
                     <Button
                       type="button"
-                      onClick={handleSalvar}
-                      disabled={salvando}
+                      onClick={() => handleSalvar()}
+                      disabled={salvando || aprovando}
                       className="w-full sm:w-auto bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                     >
                       {salvando
@@ -2374,6 +2497,15 @@ function NovoOrcamento() {
                         : isEdit
                           ? "Atualizar Orçamento"
                           : "Salvar Orçamento"}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => handleSalvar({ approve: true })}
+                      disabled={salvando || aprovando}
+                      className="w-full sm:w-auto bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                      {aprovando ? "Aprovando..." : "Salvar e Aprovar"}
                     </Button>
                     <Button
                       type="button"
