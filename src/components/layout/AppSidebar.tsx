@@ -37,13 +37,13 @@ function useSidebarData() {
   let items: Item[];
   let bottomItems: Item[];
   if (role === "admin") {
-    items = [dashboard, orcamentos, pedidos, produtos, revendedores];
+    items = [dashboard, orcamentos, pedidos, clientes, produtos, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
-    items = [dashboard, orcamentos, pedidos, produtos];
+    items = [dashboard, orcamentos, pedidos, clientes, produtos];
     bottomItems = [conta];
   } else {
-    items = [dashboard, orcamentos, pedidos, produtos, colaboradores];
+    items = [dashboard, orcamentos, pedidos, clientes, produtos, colaboradores];
     bottomItems = [conta, configuracoes];
   }
 
