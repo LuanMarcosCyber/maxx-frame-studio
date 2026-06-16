@@ -95,6 +95,7 @@ type StepKey =
   | "foam"
   | "colagem"
   | "impressao"
+  | "diversos"
   | "instalacao"
   | "finalizacao";
 
@@ -106,6 +107,7 @@ const steps: { key: StepKey; label: string; icon: typeof Ruler }[] = [
   { key: "foam", label: "Foam / MDF", icon: Layers },
   { key: "colagem", label: "Colagem", icon: Scissors },
   { key: "impressao", label: "Impressão", icon: Printer },
+  { key: "diversos", label: "Produtos Diversos", icon: Package },
   { key: "instalacao", label: "Instalação / Frete", icon: Truck },
   { key: "finalizacao", label: "Finalização", icon: CheckCircle2 },
 ];
