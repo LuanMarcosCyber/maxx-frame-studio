@@ -994,6 +994,7 @@ function NovoOrcamento() {
       const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
 
       setClienteNome(budget.client_name ?? "");
+      setClienteId((budget as { client_id?: string | null }).client_id ?? null);
       setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
       setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
       setDataVencimento(budget.data_vencimento ?? "");
