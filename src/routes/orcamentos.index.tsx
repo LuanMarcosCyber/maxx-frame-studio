@@ -359,7 +359,16 @@ function ResumoDialog({
         {
           label: "Vidro / Espelho",
           value: moneyOrNA(vidroAtivo, dNum(d, "valorVidro")),
-          sub: vidroAtivo ? productLabel(d, "vidroCode", "vidroDescription") : undefined,
+          sub: vidroAtivo
+            ? (() => {
+                const base = productLabel(d, "vidroCode", "vidroDescription");
+                const qtd = Number(d.vidroQuantidade) || 1;
+                const unit = Number(d.valorVidroUnit) || 0;
+                return qtd > 1
+                  ? `${base} · ${qtd}× ${fmtMoney(unit)}`
+                  : base;
+              })()
+            : undefined,
         },
         {
           label: "Foam / MDF",
@@ -376,6 +385,27 @@ function ResumoDialog({
           value: moneyOrNA(impressaoAtivo, dNum(d, "valorImpressao")),
           sub: impressaoAtivo ? productLabel(d, "impressaoCode", "impressaoDescription") : undefined,
         },
+        ...(Array.isArray(d.produtosDiversos) && (d.produtosDiversos as unknown[]).length > 0
+          ? [
+              ...(d.produtosDiversos as Array<Record<string, unknown>>).map((di, i) => {
+                const qtd = Number(di.quantidade) || 1;
+                const unit = Number(di.valorUnitario) || 0;
+                const total = Number(di.total) || unit * qtd;
+                const code = typeof di.code === "string" ? di.code : "";
+                const nome = typeof di.nome === "string" ? di.nome : "Produto";
+                return {
+                  label: `${code ? `${code} · ` : ""}${nome}`,
+                  value: fmtMoney(total),
+                  sub: `${qtd}× ${fmtMoney(unit)}`,
+                  key: `div-${i}`,
+                };
+              }),
+              {
+                label: "Total Produtos Diversos",
+                value: fmtMoney(dNum(d, "valorDiversos")),
+              },
+            ]
+          : []),
       ]
     : [];
 
