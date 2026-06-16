@@ -463,9 +463,9 @@ function ResumoDialog({
                   Item {activeIdx + 1}
                 </div>
                 <div className="rounded-lg border border-border divide-y divide-border">
-                  {itemRows.map((r) => (
+                  {itemRows.map((r, i) => (
                     <div
-                      key={r.label}
+                      key={r.key ?? `${r.label}-${i}`}
                       className="flex items-start justify-between px-4 py-3 text-sm"
                     >
                       <div>
