@@ -1032,7 +1032,8 @@ function NovoOrcamento() {
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
 
-  async function handleSalvar() {
+  async function handleSalvar(opts: { approve?: boolean } = {}) {
+    const approve = !!opts.approve;
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
       return;
@@ -1077,7 +1078,8 @@ function NovoOrcamento() {
       };
     });
 
-    setSalvando(true);
+    if (approve) setAprovando(true);
+    else setSalvando(true);
     try {
       const generalDetails = {
         formaPagamento,
@@ -1092,14 +1094,17 @@ function NovoOrcamento() {
         valorEntrega: Number(valorEntrega.toFixed(2)),
       };
 
-      const budgetPayload = {
+      const budgetPayload: Record<string, unknown> = {
         client_name: clienteNome.trim(),
+        client_id: clienteId,
         total_value: Number(valorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
         details: generalDetails as never,
       };
+      if (approve) budgetPayload.status = "Aprovado";
 
       let budgetId: string;
+      let budgetNumber: string | null = null;
       if (isEdit && editId) {
         const { error } = await supabase
           .from("budgets")
@@ -1107,6 +1112,12 @@ function NovoOrcamento() {
           .eq("id", editId);
         if (error) throw error;
         budgetId = editId;
+        const { data: b } = await supabase
+          .from("budgets")
+          .select("number")
+          .eq("id", editId)
+          .maybeSingle();
+        budgetNumber = b?.number ?? null;
       } else {
         const number = `ORC-${Date.now().toString().slice(-8)}`;
         const { data: inserted, error } = await supabase
@@ -1114,13 +1125,14 @@ function NovoOrcamento() {
           .insert({
             user_id: ownerUserId ?? session.user.id,
             number,
-            status: "Pendente",
+            status: approve ? "Aprovado" : "Pendente",
             ...budgetPayload,
           })
-          .select("id")
+          .select("id, number")
           .single();
         if (error) throw error;
         budgetId = inserted.id;
+        budgetNumber = inserted.number;
       }
 
       // Replace items: delete then insert
@@ -1140,18 +1152,61 @@ function NovoOrcamento() {
       const { error: insErr } = await supabase.from("budget_items").insert(insertRows);
       if (insErr) throw insErr;
 
+      // Pedido (somente quando aprovar)
+      if (approve) {
+        const { data: existingOrder } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("budget_id", budgetId)
+          .maybeSingle();
+        const orderPayload = {
+          client_name: clienteNome.trim(),
+          total_value: Number(valorTotal.toFixed(2)),
+          status: "Aprovado",
+        };
+        if (existingOrder?.id) {
+          const { error: updErr } = await supabase
+            .from("orders")
+            .update(orderPayload)
+            .eq("id", existingOrder.id);
+          if (updErr) throw updErr;
+        } else {
+          const orderNumber = budgetNumber
+            ? `PED-${budgetNumber.replace(/^ORC-/, "")}`
+            : `PED-${Date.now().toString().slice(-8)}`;
+          const { error: insOrdErr } = await supabase.from("orders").insert({
+            user_id: ownerUserId ?? session.user.id,
+            number: orderNumber,
+            budget_id: budgetId,
+            ...orderPayload,
+          });
+          if (insOrdErr) throw insOrdErr;
+        }
+      }
+
       toast.success(
-        isEdit ? "Orçamento atualizado com sucesso!" : "Orçamento salvo com sucesso!",
+        approve
+          ? "Orçamento aprovado e pedido gerado!"
+          : isEdit
+            ? "Orçamento atualizado com sucesso!"
+            : "Orçamento salvo com sucesso!",
       );
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      navigate({ to: "/orcamentos" });
+      if (approve) await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      navigate({ to: approve ? "/pedidos" : "/orcamentos" });
     } catch (e) {
       console.error(e);
-      toast.error("Não foi possível salvar o orçamento.");
+      toast.error(
+        approve
+          ? "Não foi possível aprovar o orçamento."
+          : "Não foi possível salvar o orçamento.",
+      );
     } finally {
       setSalvando(false);
+      setAprovando(false);
     }
   }
+
 
   return (
     <AppShell
