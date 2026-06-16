@@ -1544,6 +1544,50 @@ function NovoOrcamento() {
                 </div>
 
               )}
+
+              {paspaturAtivo === "sim" && (valorPaspaturPrincipal > 0 || valorPaspaturAdicional > 0) && (
+                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                  {paspaturAdicionalAtivo === "sim" ? (
+                    <>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Paspatur externo
+                          {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
+                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPaspaturPrincipal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Paspatur interno
+                          {paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}
+                          <span className="block text-xs">Medida usada: {larguraAdicional} × {alturaAdicional} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPaspaturAdicional)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
+                        <span className="font-semibold text-foreground">Total paspatur</span>
+                        <span className="font-semibold text-foreground">{fmtMoney(valorPaspatur)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-muted-foreground">
+                        Paspatur
+                        {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
+                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                      </span>
+                      <span className="font-semibold text-foreground whitespace-nowrap">
+                        {fmtMoney(valorPaspaturPrincipal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           )}
 
