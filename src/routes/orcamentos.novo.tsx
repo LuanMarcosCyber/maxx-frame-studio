@@ -571,6 +571,9 @@ function NovoOrcamento() {
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
   const [clienteNome, setClienteNome] = useState<string>("");
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clientePickerOpen, setClientePickerOpen] = useState(false);
+  const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
   const [dataVencimento, setDataVencimento] = useState<string>("");
