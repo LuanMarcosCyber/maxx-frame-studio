@@ -35,6 +35,9 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/orcamentos/")({
   head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    view: typeof search.view === "string" ? search.view : undefined,
+  }),
   component: Orcamentos,
 });
 
