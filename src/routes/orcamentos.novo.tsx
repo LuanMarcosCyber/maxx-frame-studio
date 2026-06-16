@@ -2371,13 +2371,70 @@ function NovoOrcamento() {
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="cliente">Cliente</Label>
-                    <Input
-                      id="cliente"
-                      placeholder="Nome do cliente"
-                      value={clienteNome}
-                      onChange={(e) => setClienteNome(e.target.value)}
-                    />
+                    <div className="flex gap-2">
+                      <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="shrink-0"
+                            aria-label="Selecionar cliente cadastrado"
+                          >
+                            <ChevronsUpDown className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[320px]" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar cliente..." />
+                            <CommandList>
+                              <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                {clientes.map((c) => (
+                                  <CommandItem
+                                    key={c.id}
+                                    value={`${c.name} ${c.phone ?? ""} ${c.document ?? ""}`}
+                                    onSelect={() => {
+                                      setClienteId(c.id);
+                                      setClienteNome(c.name);
+                                      setClientePickerOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{c.name}</span>
+                                      {(c.phone || c.document) && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {[c.phone, c.document].filter(Boolean).join(" · ")}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {clienteId === c.id && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        id="cliente"
+                        placeholder="Nome do cliente"
+                        value={clienteNome}
+                        onChange={(e) => {
+                          setClienteNome(e.target.value);
+                          // se o usuário editar manualmente, desvincular do cadastro
+                          if (clienteId) setClienteId(null);
+                        }}
+                      />
+                    </div>
+                    {clienteId && (
+                      <p className="text-xs text-muted-foreground">
+                        Cliente cadastrado vinculado a este orçamento.
+                      </p>
+                    )}
                   </div>
+
 
                   <div className="space-y-1.5">
                     <Label htmlFor="forma-pagto">Forma de pagamento</Label>
