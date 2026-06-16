@@ -556,12 +556,14 @@ function NovoOrcamento() {
   const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
   const [vidroTipo, setVidroTipo] = useState<"sim" | "nao">("nao");
   const [vidroId, setVidroId] = useState<string>("");
+  const [vidroQuantidade, setVidroQuantidade] = useState<string>("1");
   const [foamId, setFoamId] = useState<string>("");
   const [colagemAtivo, setColagemAtivo] = useState<"sim" | "nao">("nao");
   const [colagemId, setColagemId] = useState<string>("");
   const [impressaoAtivo, setImpressaoAtivo] = useState<"sim" | "nao">("nao");
   const [impressaoId, setImpressaoId] = useState<string>("");
   const [impressaoArquivo, setImpressaoArquivo] = useState<File | null>(null);
+  const [produtosDiversos, setProdutosDiversos] = useState<DiversoItem[]>([]);
 
   // Budget-level (geral)
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
