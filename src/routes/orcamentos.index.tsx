@@ -66,6 +66,7 @@ function Orcamentos() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { view: viewParam } = Route.useSearch();
 
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
@@ -82,6 +83,16 @@ function Orcamentos() {
       return (data ?? []) as BudgetRow[];
     },
   });
+
+  // Abrir automaticamente o resumo quando vindo de /pedidos?view=<id>
+  useEffect(() => {
+    if (!viewParam) return;
+    const found = rows.find((r) => r.id === viewParam);
+    if (found) {
+      setViewing(found);
+      navigate({ to: "/orcamentos", search: {}, replace: true });
+    }
+  }, [viewParam, rows, navigate]);
 
   async function handleDelete() {
     if (!deleting) return;
