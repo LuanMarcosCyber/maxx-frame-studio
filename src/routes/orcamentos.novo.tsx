@@ -439,6 +439,8 @@ function buildItemDetails(
     vidroId: snap.vidroId,
     vidroCode: P.vidro?.code ?? null,
     vidroDescription: P.vidro?.description ?? null,
+    vidroQuantidade: v.vidroQuantidade,
+    valorVidroUnit: Number(v.valorVidroUnit.toFixed(2)),
     valorVidro: Number(v.valorVidro.toFixed(2)),
     foamId: snap.foamId,
     foamCode: P.foam?.code ?? null,
@@ -454,6 +456,16 @@ function buildItemDetails(
     impressaoCode: P.impressao?.code ?? null,
     impressaoDescription: P.impressao?.description ?? null,
     valorImpressao: Number(v.valorImpressao.toFixed(2)),
+    produtosDiversos: v.diversosItens.map((di) => ({
+      uid: di.uid,
+      productId: di.productId,
+      code: di.code,
+      nome: di.nome,
+      valorUnitario: Number(di.valorUnitario.toFixed(2)),
+      quantidade: di.quantidade,
+      total: Number(di.total.toFixed(2)),
+    })),
+    valorDiversos: Number(v.valorDiversos.toFixed(2)),
     subtotal: Number(v.subtotal.toFixed(2)),
   };
 }
@@ -461,6 +473,24 @@ function buildItemDetails(
 // Hydrate an ItemSnapshot from a saved details jsonb (used for legacy details and budget_items.data)
 function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
   const s = (k: string) => (typeof d[k] === "string" ? (d[k] as string) : "");
+  const rawDiv = Array.isArray(d.produtosDiversos) ? (d.produtosDiversos as unknown[]) : [];
+  const produtosDiversos: DiversoItem[] = rawDiv.map((raw, idx) => {
+    const r = (raw ?? {}) as Record<string, unknown>;
+    return {
+      uid: typeof r.uid === "string" ? (r.uid as string) : `d-${idx}-${Date.now()}`,
+      productId: typeof r.productId === "string" ? (r.productId as string) : "",
+      code: typeof r.code === "string" ? (r.code as string) : "",
+      nome: typeof r.nome === "string" ? (r.nome as string) : "",
+      valorUnitario: Number(r.valorUnitario) || 0,
+      quantidade: Math.max(1, Math.floor(Number(r.quantidade) || 1)),
+    };
+  });
+  const vq =
+    typeof d.vidroQuantidade === "number"
+      ? String(d.vidroQuantidade)
+      : typeof d.vidroQuantidade === "string"
+        ? (d.vidroQuantidade as string)
+        : "1";
   return {
     altura: s("altura"),
     largura: s("largura"),
@@ -482,11 +512,13 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     perfilAdicionalId: s("perfilAdicionalId"),
     vidroTipo: d.vidroTipo === "sim" ? "sim" : "nao",
     vidroId: s("vidroId"),
+    vidroQuantidade: vq || "1",
     foamId: s("foamId"),
     colagemAtivo: d.colagemAtivo === "sim" ? "sim" : "nao",
     colagemId: s("colagemId"),
     impressaoAtivo: d.impressaoAtivo === "sim" ? "sim" : "nao",
     impressaoId: s("impressaoId"),
+    produtosDiversos,
   };
 }
 
