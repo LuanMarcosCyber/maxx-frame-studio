@@ -2603,6 +2603,29 @@ function NovoOrcamento() {
       </AlertDialog>
 
       <AlertDialog
+        open={clientWarning !== null}
+        onOpenChange={(o) => !o && setClientWarning(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {clientWarning === "unlinked" ? "Cliente não vinculado" : "Cliente obrigatório"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {clientWarning === "unlinked"
+                ? "Para aprovar este orçamento e gerar um pedido, selecione ou cadastre um cliente."
+                : "Informe o nome do cliente para salvar o orçamento."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setClientWarning(null)}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
         open={deleteIndex !== null}
         onOpenChange={(o) => !o && setDeleteIndex(null)}
       >
