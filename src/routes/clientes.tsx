@@ -32,7 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -54,7 +54,9 @@ type ClientRow = {
   whatsapp: string | null;
   email: string | null;
   document: string | null;
+  cep: string | null;
   address: string | null;
+  address_number: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -67,7 +69,9 @@ type FormState = {
   mobile_phone: string;
   email: string;
   document: string;
+  cep: string;
   address: string;
+  address_number: string;
   notes: string;
 };
 
@@ -78,12 +82,16 @@ const emptyForm: FormState = {
   mobile_phone: "",
   email: "",
   document: "",
+  cep: "",
   address: "",
+  address_number: "",
   notes: "",
 };
 
 const customerTypeLabel = (t: string) =>
   t === "pessoa_juridica" ? "Pessoa Jurídica" : "Pessoa Física";
+
+const onlyDigits = (s: string) => (s || "").replace(/\D+/g, "");
 
 function Clientes() {
   const { session, ownerUserId } = useAuth();
@@ -94,6 +102,8 @@ function Clientes() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -102,7 +112,7 @@ function Clientes() {
       const { data, error } = await supabase
         .from("clients")
         .select(
-          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, address, notes, created_at",
+          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, notes, created_at",
         )
         .order("name", { ascending: true });
       if (error) throw error;
@@ -137,10 +147,73 @@ function Clientes() {
       mobile_phone: c.mobile_phone ?? c.whatsapp ?? "",
       email: c.email ?? "",
       document: c.document ?? "",
+      cep: c.cep ?? "",
       address: c.address ?? "",
+      address_number: c.address_number ?? "",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
+  }
+
+  async function lookupCep(rawCep: string) {
+    const cep = onlyDigits(rawCep);
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data?.erro) {
+        toast.warning("CEP não encontrado.");
+        return;
+      }
+      const parts = [data.logradouro, data.bairro, data.localidade, data.uf]
+        .filter(Boolean)
+        .join(", ");
+      setForm((f) => ({ ...f, address: parts || f.address }));
+    } catch {
+      toast.error("Não foi possível buscar o CEP.");
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
+  async function lookupCnpj(rawCnpj: string) {
+    const cnpj = onlyDigits(rawCnpj);
+    if (cnpj.length !== 14) {
+      toast.warning("Informe um CNPJ válido (14 dígitos).");
+      return;
+    }
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+      if (!res.ok) {
+        toast.warning("CNPJ não encontrado.");
+        return;
+      }
+      const data = await res.json();
+      const name =
+        data.nome_fantasia?.trim() || data.razao_social?.trim() || "";
+      const addrParts = [
+        data.logradouro,
+        data.bairro,
+        data.municipio,
+        data.uf,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      setForm((f) => ({
+        ...f,
+        name: name || f.name,
+        cep: data.cep ? String(data.cep) : f.cep,
+        address: addrParts || f.address,
+        address_number: data.numero ? String(data.numero) : f.address_number,
+      }));
+      toast.success("Dados do CNPJ preenchidos.");
+    } catch {
+      toast.error("Não foi possível buscar o CNPJ.");
+    } finally {
+      setCnpjLoading(false);
+    }
   }
 
   async function handleSave() {
@@ -166,7 +239,9 @@ function Clientes() {
         whatsapp: mobile,
         email: form.email.trim() || null,
         document: form.document.trim() || null,
+        cep: form.cep.trim() || null,
         address: form.address.trim() || null,
+        address_number: form.address_number.trim() || null,
         notes: form.notes.trim() || null,
       };
       if (form.id) {
@@ -208,6 +283,8 @@ function Clientes() {
     }
     setDeleting(null);
   }
+
+  const isPJ = form.customer_type === "pessoa_juridica";
 
   return (
     <AppShell title="Clientes" subtitle="Cadastro e gestão de clientes">
@@ -310,15 +387,15 @@ function Clientes() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
             <DialogDescription>
               Preencha as informações do cliente.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5 sm:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+            <div className="space-y-1.5 sm:col-span-6">
               <Label>Tipo de cliente *</Label>
               <RadioGroup
                 value={form.customer_type}
@@ -337,16 +414,48 @@ function Clientes() {
                 </label>
               </RadioGroup>
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+
+            {isPJ && (
+              <div className="space-y-1.5 sm:col-span-6">
+                <Label htmlFor="cli-cnpj">CNPJ</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cli-cnpj"
+                    value={form.document}
+                    onChange={(e) => setForm({ ...form, document: e.target.value })}
+                    onBlur={(e) => {
+                      const v = onlyDigits(e.target.value);
+                      if (v.length === 14) lookupCnpj(v);
+                    }}
+                    placeholder="00.000.000/0000-00"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => lookupCnpj(form.document)}
+                    disabled={cnpjLoading}
+                  >
+                    {cnpjLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Buscar"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="cli-name">Nome *</Label>
               <Input
                 id="cli-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Nome do cliente"
+                placeholder={isPJ ? "Razão social / nome fantasia" : "Nome do cliente"}
               />
             </div>
-            <div className="space-y-1.5">
+
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="cli-comm">Telefone comercial</Label>
               <Input
                 id="cli-comm"
@@ -357,7 +466,7 @@ function Clientes() {
                 placeholder="(00) 0000-0000"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="cli-mob">Telefone celular</Label>
               <Input
                 id="cli-mob"
@@ -366,7 +475,7 @@ function Clientes() {
                 placeholder="(00) 90000-0000"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="cli-email">E-mail</Label>
               <Input
                 id="cli-email"
@@ -376,31 +485,55 @@ function Clientes() {
                 placeholder="email@exemplo.com"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cli-doc">
-                {form.customer_type === "pessoa_juridica" ? "CNPJ" : "CPF"}
-              </Label>
-              <Input
-                id="cli-doc"
-                value={form.document}
-                onChange={(e) => setForm({ ...form, document: e.target.value })}
-                placeholder={
-                  form.customer_type === "pessoa_juridica"
-                    ? "00.000.000/0000-00"
-                    : "000.000.000-00"
-                }
-              />
-            </div>
+            {!isPJ && (
+              <div className="space-y-1.5 sm:col-span-3">
+                <Label htmlFor="cli-doc">CPF</Label>
+                <Input
+                  id="cli-doc"
+                  value={form.document}
+                  onChange={(e) => setForm({ ...form, document: e.target.value })}
+                  placeholder="000.000.000-00"
+                />
+              </div>
+            )}
+
             <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="cli-cep">CEP</Label>
+              <div className="relative">
+                <Input
+                  id="cli-cep"
+                  value={form.cep}
+                  onChange={(e) => setForm({ ...form, cep: e.target.value })}
+                  onBlur={(e) => lookupCep(e.target.value)}
+                  placeholder="00000-000"
+                />
+                {cepLoading && (
+                  <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="cli-addr">Endereço</Label>
               <Input
                 id="cli-addr"
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Rua, número, bairro, cidade"
+                placeholder="Rua, bairro, cidade, UF"
               />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5 sm:col-span-1">
+              <Label htmlFor="cli-num">Número</Label>
+              <Input
+                id="cli-num"
+                value={form.address_number}
+                onChange={(e) =>
+                  setForm({ ...form, address_number: e.target.value })
+                }
+                placeholder="123"
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="cli-notes">Observações</Label>
               <Textarea
                 id="cli-notes"
