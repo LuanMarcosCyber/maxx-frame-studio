@@ -311,9 +311,67 @@ function Orcamentos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!approving} onOpenChange={(o) => !o && !approveLoading && setApproving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar orçamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Quer aprovar este orçamento? Ele será movido para Pedidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleApprove();
+              }}
+              disabled={approveLoading}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {approveLoading ? "Aprovando..." : "Aprovar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
+
+export function BudgetSummaryById({
+  budgetId,
+  onClose,
+}: {
+  budgetId: string | null;
+  onClose: () => void;
+}) {
+  const [budget, setBudget] = useState<BudgetRow | null>(null);
+
+  useEffect(() => {
+    if (!budgetId) {
+      setBudget(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("budgets")
+        .select(
+          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details",
+        )
+        .eq("id", budgetId)
+        .maybeSingle();
+      if (!cancelled) setBudget((data as BudgetRow | null) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budgetId]);
+
+  return <ResumoDialog budget={budget} onClose={onClose} />;
+}
+
 
 type BudgetItemRow = {
   id: string;
