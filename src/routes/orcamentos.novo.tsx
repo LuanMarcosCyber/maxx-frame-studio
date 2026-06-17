@@ -2224,7 +2224,7 @@ function NovoOrcamento() {
                       <button
                         key={i}
                         type="button"
-                        onClick={() => selectItem(i)}
+                        onClick={() => selectItem(i, { keepStep: true })}
                         className={cn(
                           "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
                           i === activeIndex
