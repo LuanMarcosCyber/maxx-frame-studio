@@ -137,14 +137,9 @@ function Pedidos() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {o.budget_id ? (
-                            <DropdownMenuItem asChild>
-                              <Link
-                                to="/orcamentos"
-                                search={{ view: o.budget_id }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Ver orçamento
-                              </Link>
+                            <DropdownMenuItem onClick={() => setViewingBudgetId(o.budget_id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver orçamento
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem disabled>
@@ -162,6 +157,12 @@ function Pedidos() {
           </table>
         </div>
       </Card>
+
+      <BudgetSummaryById
+        budgetId={viewingBudgetId}
+        onClose={() => setViewingBudgetId(null)}
+      />
     </AppShell>
+
   );
 }
