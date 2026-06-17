@@ -52,6 +52,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Ruler,
   Frame,
