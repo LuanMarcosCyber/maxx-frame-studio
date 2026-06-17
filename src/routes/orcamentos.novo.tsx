@@ -2412,7 +2412,7 @@ function NovoOrcamento() {
                         </div>
                       </PopoverAnchor>
                       <PopoverContent
-                        className="p-0 w-full min-w-[240px]"
+                        className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
                         align="start"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                       >
