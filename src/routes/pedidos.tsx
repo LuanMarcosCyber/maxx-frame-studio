@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
@@ -14,6 +14,8 @@ import {
 import { Search, Plus, MoreHorizontal, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { BudgetSummaryById } from "./orcamentos.index";
+
 
 export const Route = createFileRoute("/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Total Maxx ERP" }] }),
@@ -33,6 +35,8 @@ const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
 function Pedidos() {
   const { session } = useAuth();
+  const [viewingBudgetId, setViewingBudgetId] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["orders"],
@@ -133,14 +137,9 @@ function Pedidos() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {o.budget_id ? (
-                            <DropdownMenuItem asChild>
-                              <Link
-                                to="/orcamentos"
-                                search={{ view: o.budget_id }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Ver orçamento
-                              </Link>
+                            <DropdownMenuItem onClick={() => setViewingBudgetId(o.budget_id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver orçamento
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem disabled>
@@ -158,6 +157,12 @@ function Pedidos() {
           </table>
         </div>
       </Card>
+
+      <BudgetSummaryById
+        budgetId={viewingBudgetId}
+        onClose={() => setViewingBudgetId(null)}
+      />
     </AppShell>
+
   );
 }

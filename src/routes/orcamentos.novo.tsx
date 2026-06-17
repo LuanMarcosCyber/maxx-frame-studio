@@ -1042,10 +1042,15 @@ function NovoOrcamento() {
       toast.error("Informe o nome do cliente.");
       return;
     }
+    if (approve && !clienteId) {
+      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      return;
+    }
     if (valorTotal <= 0) {
       toast.error("Valor total inválido. Verifique os itens do orçamento.");
       return;
     }
+
 
     // Persist current state into items
     const captured = activeSnap;

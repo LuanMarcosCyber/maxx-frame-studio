@@ -5,8 +5,9 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,7 @@ type BudgetRow = {
   id: string;
   number: string;
   client_name: string;
+  client_id: string | null;
   total_value: number;
   status: string;
   created_at: string;
@@ -63,21 +65,24 @@ type BudgetRow = {
 };
 
 function Orcamentos() {
-  const { session } = useAuth();
+  const { session, ownerUserId } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { view: viewParam } = Route.useSearch();
 
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
+  const [approving, setApproving] = useState<BudgetRow | null>(null);
+  const [approveLoading, setApproveLoading] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["budgets"],
+    queryKey: ["budgets", "pending"],
     enabled: !!session,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budgets")
-        .select("id, number, client_name, total_value, status, created_at, data_vencimento, details")
+        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details")
+        .neq("status", "Aprovado")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as BudgetRow[];
@@ -104,7 +109,70 @@ function Orcamentos() {
     toast.success("Orçamento excluído.");
     setDeleting(null);
     await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+    await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
   }
+
+  async function handleApprove() {
+    if (!approving || !session?.user?.id) return;
+    setApproveLoading(true);
+    try {
+      const { error: updErr } = await supabase
+        .from("budgets")
+        .update({ status: "Aprovado" })
+        .eq("id", approving.id);
+      if (updErr) throw updErr;
+
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("budget_id", approving.id)
+        .maybeSingle();
+
+      const orderPayload = {
+        client_name: approving.client_name,
+        total_value: Number(approving.total_value),
+        status: "Aprovado",
+      };
+      if (existingOrder?.id) {
+        const { error: upoErr } = await supabase
+          .from("orders")
+          .update(orderPayload)
+          .eq("id", existingOrder.id);
+        if (upoErr) throw upoErr;
+      } else {
+        const orderNumber = approving.number
+          ? `PED-${approving.number.replace(/^ORC-/, "")}`
+          : `PED-${Date.now().toString().slice(-8)}`;
+        const { error: insErr } = await supabase.from("orders").insert({
+          user_id: ownerUserId ?? session.user.id,
+          number: orderNumber,
+          budget_id: approving.id,
+          ...orderPayload,
+        });
+        if (insErr) throw insErr;
+      }
+
+      toast.success("Orçamento aprovado e movido para Pedidos.");
+      setApproving(null);
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível aprovar o orçamento.");
+    } finally {
+      setApproveLoading(false);
+    }
+  }
+
+  function tryApprove(b: BudgetRow) {
+    if (!b.client_id) {
+      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      return;
+    }
+    setApproving(b);
+  }
+
 
   return (
     <AppShell title="Orçamentos" subtitle="Gerencie todos os orçamentos da sua revenda">
@@ -169,38 +237,54 @@ function Orcamentos() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                            aria-label="Ações"
-                          >
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setViewing(b)}>
-                            <Eye className="h-4 w-4 mr-2" /> Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigate({
-                                to: "/orcamentos/novo",
-                                search: { id: b.id },
-                              })
-                            }
-                          >
-                            <Pencil className="h-4 w-4 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleting(b)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => tryApprove(b)}
+                          title={
+                            b.client_id
+                              ? "Aprovar orçamento"
+                              : "Selecione um cliente cadastrado para aprovar"
+                          }
+                          aria-label="Aprovar orçamento"
+                          className="h-8 w-8 grid place-items-center rounded-md bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700 transition"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                              aria-label="Ações"
+                            >
+                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setViewing(b)}>
+                              <Eye className="h-4 w-4 mr-2" /> Visualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate({
+                                  to: "/orcamentos/novo",
+                                  search: { id: b.id },
+                                })
+                              }
+                            >
+                              <Pencil className="h-4 w-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleting(b)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </td>
+
                   </tr>
                 ))
               )}
@@ -227,9 +311,67 @@ function Orcamentos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!approving} onOpenChange={(o) => !o && !approveLoading && setApproving(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar orçamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Quer aprovar este orçamento? Ele será movido para Pedidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleApprove();
+              }}
+              disabled={approveLoading}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {approveLoading ? "Aprovando..." : "Aprovar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
+
+export function BudgetSummaryById({
+  budgetId,
+  onClose,
+}: {
+  budgetId: string | null;
+  onClose: () => void;
+}) {
+  const [budget, setBudget] = useState<BudgetRow | null>(null);
+
+  useEffect(() => {
+    if (!budgetId) {
+      setBudget(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("budgets")
+        .select(
+          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details",
+        )
+        .eq("id", budgetId)
+        .maybeSingle();
+      if (!cancelled) setBudget((data as BudgetRow | null) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budgetId]);
+
+  return <ResumoDialog budget={budget} onClose={onClose} />;
+}
+
 
 type BudgetItemRow = {
   id: string;

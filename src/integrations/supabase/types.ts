@@ -108,10 +108,13 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          commercial_phone: string | null
           created_at: string
+          customer_type: string
           document: string | null
           email: string | null
           id: string
+          mobile_phone: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -121,10 +124,13 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          commercial_phone?: string | null
           created_at?: string
+          customer_type?: string
           document?: string | null
           email?: string | null
           id?: string
+          mobile_phone?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -134,10 +140,13 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          commercial_phone?: string | null
           created_at?: string
+          customer_type?: string
           document?: string | null
           email?: string | null
           id?: string
+          mobile_phone?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
