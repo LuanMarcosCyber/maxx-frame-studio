@@ -72,6 +72,8 @@ import {
   Trash2,
   Copy,
   Package,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 
 
@@ -2581,7 +2583,47 @@ function NovoOrcamento() {
               </div>
             </Card>
           )}
+
+          {active !== "finalizacao" && (() => {
+            const idx = steps.findIndex((s) => s.key === active);
+            const prev = idx > 0 ? steps[idx - 1] : null;
+            const next = idx < steps.length - 1 ? steps[idx + 1] : null;
+            const goTo = (key: StepKey) => {
+              setActive(key);
+              if (typeof window !== "undefined") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            };
+            return (
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-between">
+                {prev ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => goTo(prev.key)}
+                    className="w-full sm:w-auto"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1.5" />
+                    Voltar: {prev.label}
+                  </Button>
+                ) : (
+                  <span className="hidden sm:block" />
+                )}
+                {next && (
+                  <Button
+                    type="button"
+                    onClick={() => goTo(next.key)}
+                    className="w-full sm:w-auto bg-gradient-brand text-brand-foreground shadow-brand hover:opacity-90"
+                  >
+                    Próximo: {next.label}
+                    <ArrowRight className="h-4 w-4 ml-1.5" />
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
         </div>
+
       </div>
 
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
