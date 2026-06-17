@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -41,9 +42,14 @@ export const Route = createFileRoute("/clientes")({
   component: Clientes,
 });
 
+type CustomerType = "pessoa_fisica" | "pessoa_juridica";
+
 type ClientRow = {
   id: string;
   name: string;
+  customer_type: string;
+  commercial_phone: string | null;
+  mobile_phone: string | null;
   phone: string | null;
   whatsapp: string | null;
   email: string | null;
@@ -56,8 +62,9 @@ type ClientRow = {
 type FormState = {
   id?: string;
   name: string;
-  phone: string;
-  whatsapp: string;
+  customer_type: CustomerType;
+  commercial_phone: string;
+  mobile_phone: string;
   email: string;
   document: string;
   address: string;
@@ -66,13 +73,17 @@ type FormState = {
 
 const emptyForm: FormState = {
   name: "",
-  phone: "",
-  whatsapp: "",
+  customer_type: "pessoa_fisica",
+  commercial_phone: "",
+  mobile_phone: "",
   email: "",
   document: "",
   address: "",
   notes: "",
 };
+
+const customerTypeLabel = (t: string) =>
+  t === "pessoa_juridica" ? "Pessoa Jurídica" : "Pessoa Física";
 
 function Clientes() {
   const { session, ownerUserId } = useAuth();
@@ -91,7 +102,7 @@ function Clientes() {
       const { data, error } = await supabase
         .from("clients")
         .select(
-          "id, name, phone, whatsapp, email, document, address, notes, created_at",
+          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, address, notes, created_at",
         )
         .order("name", { ascending: true });
       if (error) throw error;
@@ -105,8 +116,8 @@ function Clientes() {
     return rows.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        (c.phone ?? "").toLowerCase().includes(q) ||
-        (c.whatsapp ?? "").toLowerCase().includes(q) ||
+        (c.commercial_phone ?? c.phone ?? "").toLowerCase().includes(q) ||
+        (c.mobile_phone ?? c.whatsapp ?? "").toLowerCase().includes(q) ||
         (c.document ?? "").toLowerCase().includes(q),
     );
   }, [rows, search]);
@@ -120,8 +131,10 @@ function Clientes() {
     setForm({
       id: c.id,
       name: c.name ?? "",
-      phone: c.phone ?? "",
-      whatsapp: c.whatsapp ?? "",
+      customer_type:
+        c.customer_type === "pessoa_juridica" ? "pessoa_juridica" : "pessoa_fisica",
+      commercial_phone: c.commercial_phone ?? c.phone ?? "",
+      mobile_phone: c.mobile_phone ?? c.whatsapp ?? "",
       email: c.email ?? "",
       document: c.document ?? "",
       address: c.address ?? "",
@@ -141,10 +154,16 @@ function Clientes() {
     }
     setSaving(true);
     try {
+      const commercial = form.commercial_phone.trim() || null;
+      const mobile = form.mobile_phone.trim() || null;
       const payload = {
         name: form.name.trim(),
-        phone: form.phone.trim() || null,
-        whatsapp: form.whatsapp.trim() || null,
+        customer_type: form.customer_type,
+        commercial_phone: commercial,
+        mobile_phone: mobile,
+        // mantém compatibilidade com campos antigos
+        phone: commercial,
+        whatsapp: mobile,
         email: form.email.trim() || null,
         document: form.document.trim() || null,
         address: form.address.trim() || null,
@@ -216,8 +235,9 @@ function Clientes() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Nome</th>
-                <th className="font-medium py-3 px-3">Telefone</th>
-                <th className="font-medium py-3 px-3">WhatsApp</th>
+                <th className="font-medium py-3 px-3">Tipo</th>
+                <th className="font-medium py-3 px-3">Telefone comercial</th>
+                <th className="font-medium py-3 px-3">Telefone celular</th>
                 <th className="font-medium py-3 px-3">CPF/CNPJ</th>
                 <th className="font-medium py-3 px-3">E-mail</th>
                 <th className="font-medium py-3 px-6 text-right">Ações</th>
@@ -226,13 +246,13 @@ function Clientes() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhum cliente cadastrado.
                   </td>
                 </tr>
@@ -241,10 +261,13 @@ function Clientes() {
                   <tr key={c.id} className="hover:bg-muted/40 transition">
                     <td className="py-3.5 px-6 font-medium">{c.name}</td>
                     <td className="py-3.5 px-3 text-muted-foreground">
-                      {c.phone || "—"}
+                      {customerTypeLabel(c.customer_type)}
                     </td>
                     <td className="py-3.5 px-3 text-muted-foreground">
-                      {c.whatsapp || "—"}
+                      {c.commercial_phone || c.phone || "—"}
+                    </td>
+                    <td className="py-3.5 px-3 text-muted-foreground">
+                      {c.mobile_phone || c.whatsapp || "—"}
                     </td>
                     <td className="py-3.5 px-3 text-muted-foreground">
                       {c.document || "—"}
@@ -296,6 +319,25 @@ function Clientes() {
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
+              <Label>Tipo de cliente *</Label>
+              <RadioGroup
+                value={form.customer_type}
+                onValueChange={(v) =>
+                  setForm({ ...form, customer_type: v as CustomerType })
+                }
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
+                  <RadioGroupItem value="pessoa_fisica" id="ct-pf" />
+                  <span className="text-sm">Pessoa Física</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
+                  <RadioGroupItem value="pessoa_juridica" id="ct-pj" />
+                  <span className="text-sm">Pessoa Jurídica</span>
+                </label>
+              </RadioGroup>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="cli-name">Nome *</Label>
               <Input
                 id="cli-name"
@@ -305,20 +347,22 @@ function Clientes() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="cli-phone">Telefone</Label>
+              <Label htmlFor="cli-comm">Telefone comercial</Label>
               <Input
-                id="cli-phone"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                id="cli-comm"
+                value={form.commercial_phone}
+                onChange={(e) =>
+                  setForm({ ...form, commercial_phone: e.target.value })
+                }
                 placeholder="(00) 0000-0000"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="cli-wa">WhatsApp</Label>
+              <Label htmlFor="cli-mob">Telefone celular</Label>
               <Input
-                id="cli-wa"
-                value={form.whatsapp}
-                onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                id="cli-mob"
+                value={form.mobile_phone}
+                onChange={(e) => setForm({ ...form, mobile_phone: e.target.value })}
                 placeholder="(00) 90000-0000"
               />
             </div>
@@ -333,12 +377,18 @@ function Clientes() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="cli-doc">CPF/CNPJ</Label>
+              <Label htmlFor="cli-doc">
+                {form.customer_type === "pessoa_juridica" ? "CNPJ" : "CPF"}
+              </Label>
               <Input
                 id="cli-doc"
                 value={form.document}
                 onChange={(e) => setForm({ ...form, document: e.target.value })}
-                placeholder="000.000.000-00"
+                placeholder={
+                  form.customer_type === "pessoa_juridica"
+                    ? "00.000.000/0000-00"
+                    : "000.000.000-00"
+                }
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
