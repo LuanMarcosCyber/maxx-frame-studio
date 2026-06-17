@@ -2380,32 +2380,57 @@ function NovoOrcamento() {
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="cliente">Cliente</Label>
-                    <div className="flex gap-2">
-                      <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="shrink-0"
-                            aria-label="Selecionar cliente cadastrado"
-                          >
-                            <ChevronsUpDown className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[320px]" align="start">
-                          <Command>
-                            <CommandInput placeholder="Buscar cliente..." />
-                            <CommandList>
-                              <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                              <CommandGroup>
-                                {clientes.map((c) => (
+                    <Popover
+                      open={
+                        clienteSugestoesOpen &&
+                        !naoVincularCliente &&
+                        clienteNome.trim().length > 0 &&
+                        clientes.some((c) =>
+                          c.name.toLowerCase().includes(clienteNome.trim().toLowerCase()),
+                        )
+                      }
+                      onOpenChange={setClienteSugestoesOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Input
+                          id="cliente"
+                          placeholder="Nome do cliente"
+                          value={clienteNome}
+                          autoComplete="off"
+                          onFocus={() => {
+                            if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                          }}
+                          onChange={(e) => {
+                            setClienteNome(e.target.value);
+                            if (clienteId) setClienteId(null);
+                            if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                          }}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="p-0 w-[--radix-popover-trigger-width]"
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <Command shouldFilter={false}>
+                          <CommandList>
+                            <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {clientes
+                                .filter((c) =>
+                                  c.name
+                                    .toLowerCase()
+                                    .includes(clienteNome.trim().toLowerCase()),
+                                )
+                                .slice(0, 8)
+                                .map((c) => (
                                   <CommandItem
                                     key={c.id}
-                                    value={`${c.name} ${c.phone ?? ""} ${c.document ?? ""}`}
+                                    value={c.id}
                                     onSelect={() => {
                                       setClienteId(c.id);
                                       setClienteNome(c.name);
-                                      setClientePickerOpen(false);
+                                      setClienteSugestoesOpen(false);
                                     }}
                                   >
                                     <div className="flex flex-col">
@@ -2421,28 +2446,40 @@ function NovoOrcamento() {
                                     )}
                                   </CommandItem>
                                 ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <Input
-                        id="cliente"
-                        placeholder="Nome do cliente"
-                        value={clienteNome}
-                        onChange={(e) => {
-                          setClienteNome(e.target.value);
-                          // se o usuário editar manualmente, desvincular do cadastro
-                          if (clienteId) setClienteId(null);
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Checkbox
+                        id="nao-vincular-cliente"
+                        checked={naoVincularCliente}
+                        onCheckedChange={(v) => {
+                          const checked = v === true;
+                          setNaoVincularCliente(checked);
+                          if (checked) {
+                            setClienteId(null);
+                            setClienteSugestoesOpen(false);
+                          }
                         }}
                       />
+                      <Label
+                        htmlFor="nao-vincular-cliente"
+                        className="text-xs font-normal text-muted-foreground cursor-pointer"
+                      >
+                        Não vincular a nenhum cliente cadastrado
+                      </Label>
                     </div>
-                    {clienteId && (
+
+                    {clienteId && !naoVincularCliente && (
                       <p className="text-xs text-muted-foreground">
                         Cliente cadastrado vinculado a este orçamento.
                       </p>
                     )}
                   </div>
+
 
 
                   <div className="space-y-1.5">
