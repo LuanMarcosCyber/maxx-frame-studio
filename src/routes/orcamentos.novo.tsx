@@ -574,6 +574,9 @@ function NovoOrcamento() {
   const [clienteNome, setClienteNome] = useState<string>("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [clientePickerOpen, setClientePickerOpen] = useState(false);
+  const [naoVincularCliente, setNaoVincularCliente] = useState(false);
+  const [clienteSugestoesOpen, setClienteSugestoesOpen] = useState(false);
+  const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
   const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
