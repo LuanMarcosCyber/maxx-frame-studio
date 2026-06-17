@@ -35,6 +35,8 @@ const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
 function Pedidos() {
   const { session } = useAuth();
+  const [viewingBudgetId, setViewingBudgetId] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["orders"],
