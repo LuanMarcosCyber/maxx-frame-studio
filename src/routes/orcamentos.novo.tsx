@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -2391,24 +2391,28 @@ function NovoOrcamento() {
                       }
                       onOpenChange={setClienteSugestoesOpen}
                     >
-                      <PopoverTrigger asChild>
-                        <Input
-                          id="cliente"
-                          placeholder="Nome do cliente"
-                          value={clienteNome}
-                          autoComplete="off"
-                          onFocus={() => {
-                            if (!naoVincularCliente) setClienteSugestoesOpen(true);
-                          }}
-                          onChange={(e) => {
-                            setClienteNome(e.target.value);
-                            if (clienteId) setClienteId(null);
-                            if (!naoVincularCliente) setClienteSugestoesOpen(true);
-                          }}
-                        />
-                      </PopoverTrigger>
+                      <PopoverAnchor asChild>
+                        <div className="w-full">
+                          <Input
+                            id="cliente"
+                            placeholder="Nome do cliente"
+                            value={clienteNome}
+                            autoComplete="off"
+                            onFocus={() => {
+                              if (!naoVincularCliente && clienteNome.trim().length > 0) {
+                                setClienteSugestoesOpen(true);
+                              }
+                            }}
+                            onChange={(e) => {
+                              setClienteNome(e.target.value);
+                              if (clienteId) setClienteId(null);
+                              if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                            }}
+                          />
+                        </div>
+                      </PopoverAnchor>
                       <PopoverContent
-                        className="p-0 w-[--radix-popover-trigger-width]"
+                        className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
                         align="start"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                       >
