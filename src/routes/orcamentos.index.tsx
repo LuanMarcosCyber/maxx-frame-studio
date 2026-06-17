@@ -56,6 +56,7 @@ type BudgetRow = {
   id: string;
   number: string;
   client_name: string;
+  client_id: string | null;
   total_value: number;
   status: string;
   created_at: string;
@@ -64,21 +65,24 @@ type BudgetRow = {
 };
 
 function Orcamentos() {
-  const { session } = useAuth();
+  const { session, ownerUserId } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { view: viewParam } = Route.useSearch();
 
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
+  const [approving, setApproving] = useState<BudgetRow | null>(null);
+  const [approveLoading, setApproveLoading] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["budgets"],
+    queryKey: ["budgets", "pending"],
     enabled: !!session,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budgets")
-        .select("id, number, client_name, total_value, status, created_at, data_vencimento, details")
+        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details")
+        .neq("status", "Aprovado")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as BudgetRow[];
@@ -105,7 +109,70 @@ function Orcamentos() {
     toast.success("Orçamento excluído.");
     setDeleting(null);
     await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+    await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
   }
+
+  async function handleApprove() {
+    if (!approving || !session?.user?.id) return;
+    setApproveLoading(true);
+    try {
+      const { error: updErr } = await supabase
+        .from("budgets")
+        .update({ status: "Aprovado" })
+        .eq("id", approving.id);
+      if (updErr) throw updErr;
+
+      const { data: existingOrder } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("budget_id", approving.id)
+        .maybeSingle();
+
+      const orderPayload = {
+        client_name: approving.client_name,
+        total_value: Number(approving.total_value),
+        status: "Aprovado",
+      };
+      if (existingOrder?.id) {
+        const { error: upoErr } = await supabase
+          .from("orders")
+          .update(orderPayload)
+          .eq("id", existingOrder.id);
+        if (upoErr) throw upoErr;
+      } else {
+        const orderNumber = approving.number
+          ? `PED-${approving.number.replace(/^ORC-/, "")}`
+          : `PED-${Date.now().toString().slice(-8)}`;
+        const { error: insErr } = await supabase.from("orders").insert({
+          user_id: ownerUserId ?? session.user.id,
+          number: orderNumber,
+          budget_id: approving.id,
+          ...orderPayload,
+        });
+        if (insErr) throw insErr;
+      }
+
+      toast.success("Orçamento aprovado e movido para Pedidos.");
+      setApproving(null);
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível aprovar o orçamento.");
+    } finally {
+      setApproveLoading(false);
+    }
+  }
+
+  function tryApprove(b: BudgetRow) {
+    if (!b.client_id) {
+      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      return;
+    }
+    setApproving(b);
+  }
+
 
   return (
     <AppShell title="Orçamentos" subtitle="Gerencie todos os orçamentos da sua revenda">
