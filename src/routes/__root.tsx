@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useMobileKeyboardScroll } from "@/hooks/use-mobile-keyboard-scroll";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -130,6 +131,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useMobileKeyboardScroll();
 
   return (
     <QueryClientProvider client={queryClient}>
