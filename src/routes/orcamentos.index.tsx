@@ -237,38 +237,54 @@ function Orcamentos() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                            aria-label="Ações"
-                          >
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setViewing(b)}>
-                            <Eye className="h-4 w-4 mr-2" /> Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigate({
-                                to: "/orcamentos/novo",
-                                search: { id: b.id },
-                              })
-                            }
-                          >
-                            <Pencil className="h-4 w-4 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleting(b)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => tryApprove(b)}
+                          title={
+                            b.client_id
+                              ? "Aprovar orçamento"
+                              : "Selecione um cliente cadastrado para aprovar"
+                          }
+                          aria-label="Aprovar orçamento"
+                          className="h-8 w-8 grid place-items-center rounded-md bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700 transition"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                              aria-label="Ações"
+                            >
+                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setViewing(b)}>
+                              <Eye className="h-4 w-4 mr-2" /> Visualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate({
+                                  to: "/orcamentos/novo",
+                                  search: { id: b.id },
+                                })
+                              }
+                            >
+                              <Pencil className="h-4 w-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleting(b)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </td>
+
                   </tr>
                 ))
               )}
