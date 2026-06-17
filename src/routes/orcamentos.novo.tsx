@@ -573,7 +573,7 @@ function NovoOrcamento() {
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
   const [clienteNome, setClienteNome] = useState<string>("");
   const [clienteId, setClienteId] = useState<string | null>(null);
-  const [clientePickerOpen, setClientePickerOpen] = useState(false);
+  
   const [naoVincularCliente, setNaoVincularCliente] = useState(false);
   const [clienteSugestoesOpen, setClienteSugestoesOpen] = useState(false);
   const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
