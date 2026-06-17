@@ -52,6 +52,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Ruler,
   Frame,
@@ -572,7 +573,10 @@ function NovoOrcamento() {
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
   const [clienteNome, setClienteNome] = useState<string>("");
   const [clienteId, setClienteId] = useState<string | null>(null);
-  const [clientePickerOpen, setClientePickerOpen] = useState(false);
+  
+  const [naoVincularCliente, setNaoVincularCliente] = useState(false);
+  const [clienteSugestoesOpen, setClienteSugestoesOpen] = useState(false);
+  const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
   const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
@@ -910,7 +914,7 @@ function NovoOrcamento() {
     setProdutosDiversos(s.produtosDiversos ?? []);
   }
 
-  function selectItem(index: number) {
+  function selectItem(index: number, opts: { keepStep?: boolean } = {}) {
     if (index === activeIndex) return;
     // Capture current active state into items, then load target
     const captured = activeSnap;
@@ -921,7 +925,7 @@ function NovoOrcamento() {
     });
     setActiveIndex(index);
     loadSnapshotIntoState(items[index]);
-    setActive("tamanho");
+    if (!opts.keepStep) setActive("tamanho");
   }
 
   function addNewItem() {
@@ -1039,11 +1043,11 @@ function NovoOrcamento() {
       return;
     }
     if (!clienteNome.trim()) {
-      toast.error("Informe o nome do cliente.");
+      setClientWarning("required");
       return;
     }
     if (approve && !clienteId) {
-      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      setClientWarning("unlinked");
       return;
     }
     if (valorTotal <= 0) {
@@ -2220,7 +2224,7 @@ function NovoOrcamento() {
                       <button
                         key={i}
                         type="button"
-                        onClick={() => selectItem(i)}
+                        onClick={() => selectItem(i, { keepStep: true })}
                         className={cn(
                           "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
                           i === activeIndex
@@ -2376,32 +2380,57 @@ function NovoOrcamento() {
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="cliente">Cliente</Label>
-                    <div className="flex gap-2">
-                      <Popover open={clientePickerOpen} onOpenChange={setClientePickerOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="shrink-0"
-                            aria-label="Selecionar cliente cadastrado"
-                          >
-                            <ChevronsUpDown className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="p-0 w-[320px]" align="start">
-                          <Command>
-                            <CommandInput placeholder="Buscar cliente..." />
-                            <CommandList>
-                              <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                              <CommandGroup>
-                                {clientes.map((c) => (
+                    <Popover
+                      open={
+                        clienteSugestoesOpen &&
+                        !naoVincularCliente &&
+                        clienteNome.trim().length > 0 &&
+                        clientes.some((c) =>
+                          c.name.toLowerCase().includes(clienteNome.trim().toLowerCase()),
+                        )
+                      }
+                      onOpenChange={setClienteSugestoesOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Input
+                          id="cliente"
+                          placeholder="Nome do cliente"
+                          value={clienteNome}
+                          autoComplete="off"
+                          onFocus={() => {
+                            if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                          }}
+                          onChange={(e) => {
+                            setClienteNome(e.target.value);
+                            if (clienteId) setClienteId(null);
+                            if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                          }}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="p-0 w-[--radix-popover-trigger-width]"
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <Command shouldFilter={false}>
+                          <CommandList>
+                            <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {clientes
+                                .filter((c) =>
+                                  c.name
+                                    .toLowerCase()
+                                    .includes(clienteNome.trim().toLowerCase()),
+                                )
+                                .slice(0, 8)
+                                .map((c) => (
                                   <CommandItem
                                     key={c.id}
-                                    value={`${c.name} ${c.phone ?? ""} ${c.document ?? ""}`}
+                                    value={c.id}
                                     onSelect={() => {
                                       setClienteId(c.id);
                                       setClienteNome(c.name);
-                                      setClientePickerOpen(false);
+                                      setClienteSugestoesOpen(false);
                                     }}
                                   >
                                     <div className="flex flex-col">
@@ -2417,28 +2446,40 @@ function NovoOrcamento() {
                                     )}
                                   </CommandItem>
                                 ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <Input
-                        id="cliente"
-                        placeholder="Nome do cliente"
-                        value={clienteNome}
-                        onChange={(e) => {
-                          setClienteNome(e.target.value);
-                          // se o usuário editar manualmente, desvincular do cadastro
-                          if (clienteId) setClienteId(null);
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Checkbox
+                        id="nao-vincular-cliente"
+                        checked={naoVincularCliente}
+                        onCheckedChange={(v) => {
+                          const checked = v === true;
+                          setNaoVincularCliente(checked);
+                          if (checked) {
+                            setClienteId(null);
+                            setClienteSugestoesOpen(false);
+                          }
                         }}
                       />
+                      <Label
+                        htmlFor="nao-vincular-cliente"
+                        className="text-xs font-normal text-muted-foreground cursor-pointer"
+                      >
+                        Não vincular a nenhum cliente cadastrado
+                      </Label>
                     </div>
-                    {clienteId && (
+
+                    {clienteId && !naoVincularCliente && (
                       <p className="text-xs text-muted-foreground">
                         Cliente cadastrado vinculado a este orçamento.
                       </p>
                     )}
                   </div>
+
 
 
                   <div className="space-y-1.5">
@@ -2556,6 +2597,29 @@ function NovoOrcamento() {
               onClick={() => navigate({ to: "/orcamentos" })}
             >
               Sair do orçamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={clientWarning !== null}
+        onOpenChange={(o) => !o && setClientWarning(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {clientWarning === "unlinked" ? "Cliente não vinculado" : "Cliente obrigatório"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {clientWarning === "unlinked"
+                ? "Para aprovar este orçamento e gerar um pedido, selecione ou cadastre um cliente."
+                : "Informe o nome do cliente para salvar o orçamento."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setClientWarning(null)}>
+              Entendi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
