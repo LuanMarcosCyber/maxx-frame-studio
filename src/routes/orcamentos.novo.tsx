@@ -72,6 +72,8 @@ import {
   Trash2,
   Copy,
   Package,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 
 
