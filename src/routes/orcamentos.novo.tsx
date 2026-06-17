@@ -914,7 +914,7 @@ function NovoOrcamento() {
     setProdutosDiversos(s.produtosDiversos ?? []);
   }
 
-  function selectItem(index: number) {
+  function selectItem(index: number, opts: { keepStep?: boolean } = {}) {
     if (index === activeIndex) return;
     // Capture current active state into items, then load target
     const captured = activeSnap;
@@ -925,7 +925,7 @@ function NovoOrcamento() {
     });
     setActiveIndex(index);
     loadSnapshotIntoState(items[index]);
-    setActive("tamanho");
+    if (!opts.keepStep) setActive("tamanho");
   }
 
   function addNewItem() {
