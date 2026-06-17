@@ -1043,11 +1043,11 @@ function NovoOrcamento() {
       return;
     }
     if (!clienteNome.trim()) {
-      toast.error("Informe o nome do cliente.");
+      setClientWarning("required");
       return;
     }
     if (approve && !clienteId) {
-      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      setClientWarning("unlinked");
       return;
     }
     if (valorTotal <= 0) {
