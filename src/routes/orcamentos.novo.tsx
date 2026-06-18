@@ -2647,7 +2647,15 @@ function NovoOrcamento() {
             const goTo = (key: StepKey) => {
               setActive(key);
               if (typeof window !== "undefined") {
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                requestAnimationFrame(() => {
+                  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+                  const el = document.getElementById("step-content");
+                  if (isMobile && el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                });
               }
             };
             return (
