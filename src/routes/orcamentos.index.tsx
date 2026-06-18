@@ -604,6 +604,10 @@ function ResumoDialog({
                 value={gStr("formaPagamento") || "—"}
               />
               <Info
+                label="Entrega"
+                value={gStr("dataEntrega") ? fmtDate(gStr("dataEntrega")) : "—"}
+              />
+              <Info
                 label="Vencimento"
                 value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
               />
