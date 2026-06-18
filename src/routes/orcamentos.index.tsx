@@ -706,6 +706,30 @@ function ResumoDialog({
                 <span className="text-muted-foreground">Mão de obra extra</span>
                 <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
               </div>
+              {gNum("descontoPercentual") > 0 && (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3 text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-semibold">
+                      {fmtMoney(gNum("subtotalSemDesconto"))}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 text-sm">
+                    <span className="text-muted-foreground">
+                      Desconto aplicado ({gNum("descontoPercentual")}%)
+                    </span>
+                    <span className="font-semibold text-rose-600">
+                      - {fmtMoney(gNum("descontoValor"))}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 text-sm">
+                    <span className="text-muted-foreground">Subtotal com desconto</span>
+                    <span className="font-semibold">
+                      {fmtMoney(gNum("subtotalComDesconto"))}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {gStr("observacoes") && (
@@ -725,6 +749,21 @@ function ResumoDialog({
                 {fmtMoney(Number(budget.total_value))}
               </span>
             </div>
+
+            {general.sinalAtivo === "sim" && gNum("valorSinal") > 0 && (
+              <div className="rounded-lg border border-border divide-y divide-border">
+                <div className="flex items-center justify-between px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">Sinal aplicado</span>
+                  <span className="font-semibold">{fmtMoney(gNum("valorSinal"))}</span>
+                </div>
+                <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
+                  <span className="font-semibold text-foreground">Valor a receber</span>
+                  <span className="font-bold text-emerald-600">
+                    {fmtMoney(gNum("valorAReceber"))}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {extraActions}
           </div>
