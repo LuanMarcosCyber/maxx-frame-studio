@@ -1596,7 +1596,7 @@ function NovoOrcamento() {
                     <Select
                       value={paspaturAdicionalAtivo}
                       onValueChange={(v) =>
-                        setPaspaturAdicionalAtivo(v as "sim" | "nao")
+                        handlePaspaturAdicionalAtivoChange(v as "sim" | "nao")
                       }
                     >
                       <SelectTrigger id="paspatur-adic-ativo">
