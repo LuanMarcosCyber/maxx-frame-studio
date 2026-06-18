@@ -359,9 +359,11 @@ function Orcamentos() {
 export function BudgetSummaryById({
   budgetId,
   onClose,
+  extraActions,
 }: {
   budgetId: string | null;
   onClose: () => void;
+  extraActions?: ReactNode;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
 
@@ -386,7 +388,7 @@ export function BudgetSummaryById({
     };
   }, [budgetId]);
 
-  return <ResumoDialog budget={budget} onClose={onClose} />;
+  return <ResumoDialog budget={budget} onClose={onClose} extraActions={extraActions} />;
 }
 
 
@@ -400,9 +402,11 @@ type BudgetItemRow = {
 function ResumoDialog({
   budget,
   onClose,
+  extraActions,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
+  extraActions?: ReactNode;
 }) {
   const general = (budget?.details ?? {}) as Record<string, unknown>;
   const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
