@@ -74,6 +74,7 @@ function Orcamentos() {
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
   const [approving, setApproving] = useState<BudgetRow | null>(null);
   const [approveLoading, setApproveLoading] = useState(false);
+  const [clientMissingOpen, setClientMissingOpen] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["budgets", "pending"],
