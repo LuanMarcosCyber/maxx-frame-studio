@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ function Orcamentos() {
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
   const [approving, setApproving] = useState<BudgetRow | null>(null);
   const [approveLoading, setApproveLoading] = useState(false);
+  const [clientMissingOpen, setClientMissingOpen] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["budgets", "pending"],
@@ -167,7 +168,7 @@ function Orcamentos() {
 
   function tryApprove(b: BudgetRow) {
     if (!b.client_id) {
-      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      setClientMissingOpen(true);
       return;
     }
     setApproving(b);
@@ -335,6 +336,22 @@ function Orcamentos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={clientMissingOpen} onOpenChange={setClientMissingOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cliente não vinculado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Para aprovar este orçamento e gerar um pedido, selecione ou cadastre um cliente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setClientMissingOpen(false)}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
@@ -342,9 +359,11 @@ function Orcamentos() {
 export function BudgetSummaryById({
   budgetId,
   onClose,
+  extraActions,
 }: {
   budgetId: string | null;
   onClose: () => void;
+  extraActions?: ReactNode;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
 
@@ -369,7 +388,7 @@ export function BudgetSummaryById({
     };
   }, [budgetId]);
 
-  return <ResumoDialog budget={budget} onClose={onClose} />;
+  return <ResumoDialog budget={budget} onClose={onClose} extraActions={extraActions} />;
 }
 
 
@@ -383,9 +402,11 @@ type BudgetItemRow = {
 function ResumoDialog({
   budget,
   onClose,
+  extraActions,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
+  extraActions?: ReactNode;
 }) {
   const general = (budget?.details ?? {}) as Record<string, unknown>;
   const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
@@ -700,6 +721,8 @@ function ResumoDialog({
                 {fmtMoney(Number(budget.total_value))}
               </span>
             </div>
+
+            {extraActions}
           </div>
         )}
       </DialogContent>

@@ -9,19 +9,26 @@ import {
   Users,
   UserCog,
   Contact,
+  BarChart3,
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
 
-type Item = { title: string; url: string; icon: typeof LayoutDashboard };
+type Item = {
+  title: string;
+  url: string;
+  icon: typeof LayoutDashboard;
+  badge?: string;
+};
 
 const dashboard: Item = { title: "Dashboard", url: "/", icon: LayoutDashboard };
 const orcamentos: Item = { title: "Orçamentos", url: "/orcamentos", icon: FileText };
 const pedidos: Item = { title: "Pedidos", url: "/pedidos", icon: ShoppingCart };
 const clientes: Item = { title: "Clientes", url: "/clientes", icon: Contact };
 const produtos: Item = { title: "Produtos", url: "/produtos", icon: Package };
+const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3, badge: "Em breve" };
 const revendedores: Item = { title: "Revendedores", url: "/revendedores", icon: Users };
 const colaboradores: Item = { title: "Colaboradores", url: "/colaboradores", icon: UserCog };
 
@@ -37,13 +44,13 @@ function useSidebarData() {
   let items: Item[];
   let bottomItems: Item[];
   if (role === "admin") {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, revendedores];
+    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
     items = [dashboard, orcamentos, pedidos, clientes, produtos];
     bottomItems = [conta];
   } else {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, colaboradores];
+    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, colaboradores];
     bottomItems = [conta, configuracoes];
   }
 
@@ -71,7 +78,19 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
         )}
       >
         <item.icon className="h-4 w-4" />
-        {item.title}
+        <span className="flex-1">{item.title}</span>
+        {item.badge && (
+          <span
+            className={cn(
+              "text-[9px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-full",
+              active
+                ? "bg-white/20 text-brand-foreground"
+                : "bg-amber-100 text-amber-700",
+            )}
+          >
+            {item.badge}
+          </span>
+        )}
       </Link>
     );
   };

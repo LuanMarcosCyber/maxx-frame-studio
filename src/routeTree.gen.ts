@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RevendedoresRouteImport } from './routes/revendedores'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
@@ -33,6 +34,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const RevendedoresRoute = RevendedoresRouteImport.update({
   id: '/revendedores',
   path: '/revendedores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutosRoute = ProdutosRouteImport.update({
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
+  '/relatorios': typeof RelatoriosRoute
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
+  '/relatorios': typeof RelatoriosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
+  '/relatorios': typeof RelatoriosRoute
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/pedidos'
     | '/produtos'
+    | '/relatorios'
     | '/revendedores'
     | '/sitemap.xml'
     | '/orcamentos/novo'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pedidos'
     | '/produtos'
+    | '/relatorios'
     | '/sitemap.xml'
     | '/orcamentos/novo'
     | '/revendedores/$id'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/orcamentos'
     | '/pedidos'
     | '/produtos'
+    | '/relatorios'
     | '/revendedores'
     | '/sitemap.xml'
     | '/orcamentos/novo'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   OrcamentosRoute: typeof OrcamentosRouteWithChildren
   PedidosRoute: typeof PedidosRoute
   ProdutosRoute: typeof ProdutosRoute
+  RelatoriosRoute: typeof RelatoriosRoute
   RevendedoresRoute: typeof RevendedoresRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       path: '/revendedores'
       fullPath: '/revendedores'
       preLoaderRoute: typeof RevendedoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produtos': {
@@ -365,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrcamentosRoute: OrcamentosRouteWithChildren,
   PedidosRoute: PedidosRoute,
   ProdutosRoute: ProdutosRoute,
+  RelatoriosRoute: RelatoriosRoute,
   RevendedoresRoute: RevendedoresRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }

@@ -1389,7 +1389,8 @@ function NovoOrcamento() {
         </div>
 
         {/* Content area */}
-        <div className="space-y-6">
+        <div id="step-content" className="space-y-6 scroll-mt-4">
+
           {/* Totals header */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
@@ -2646,7 +2647,15 @@ function NovoOrcamento() {
             const goTo = (key: StepKey) => {
               setActive(key);
               if (typeof window !== "undefined") {
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                requestAnimationFrame(() => {
+                  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+                  const el = document.getElementById("step-content");
+                  if (isMobile && el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  } else {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                });
               }
             };
             return (
