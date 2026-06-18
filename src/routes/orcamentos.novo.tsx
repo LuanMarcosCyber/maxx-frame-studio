@@ -554,6 +554,61 @@ function NovoOrcamento() {
   const [paspaturAdicionalSup, setPaspaturAdicionalSup] = useState<string>("");
   const [paspaturAdicionalInf, setPaspaturAdicionalInf] = useState<string>("");
   const [paspaturAdicionalId, setPaspaturAdicionalId] = useState<string>("");
+
+  // Auto-fill all 4 margins with the same value when the user types in one
+  // field and the others are still empty/zero. Manually edited values are
+  // never overwritten.
+  const isEmptyOrZero = (v: string) => {
+    if (!v) return true;
+    const n = parseFloat(v.replace(",", "."));
+    return !Number.isFinite(n) || n === 0;
+  };
+  const makeMargemHandler = (
+    field: "esq" | "dir" | "sup" | "inf",
+    values: { esq: string; dir: string; sup: string; inf: string },
+    setters: {
+      esq: (v: string) => void;
+      dir: (v: string) => void;
+      sup: (v: string) => void;
+      inf: (v: string) => void;
+    }
+  ) => (val: string) => {
+    setters[field](val);
+    const num = parseFloat(val.replace(",", "."));
+    if (!Number.isFinite(num) || num <= 0) return;
+    (["esq", "dir", "sup", "inf"] as const).forEach((k) => {
+      if (k === field) return;
+      if (isEmptyOrZero(values[k])) setters[k](val);
+    });
+  };
+  const margemValues = { esq: margemEsq, dir: margemDir, sup: margemSup, inf: margemInf };
+  const margemSetters = {
+    esq: setMargemEsq,
+    dir: setMargemDir,
+    sup: setMargemSup,
+    inf: setMargemInf,
+  };
+  const onMargemEsqChange = makeMargemHandler("esq", margemValues, margemSetters);
+  const onMargemDirChange = makeMargemHandler("dir", margemValues, margemSetters);
+  const onMargemSupChange = makeMargemHandler("sup", margemValues, margemSetters);
+  const onMargemInfChange = makeMargemHandler("inf", margemValues, margemSetters);
+
+  const paspaturAdicValues = {
+    esq: paspaturAdicionalEsq,
+    dir: paspaturAdicionalDir,
+    sup: paspaturAdicionalSup,
+    inf: paspaturAdicionalInf,
+  };
+  const paspaturAdicSetters = {
+    esq: setPaspaturAdicionalEsq,
+    dir: setPaspaturAdicionalDir,
+    sup: setPaspaturAdicionalSup,
+    inf: setPaspaturAdicionalInf,
+  };
+  const onPaspaturAdicEsqChange = makeMargemHandler("esq", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicDirChange = makeMargemHandler("dir", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicSupChange = makeMargemHandler("sup", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicInfChange = makeMargemHandler("inf", paspaturAdicValues, paspaturAdicSetters);
   const [perfilId, setPerfilId] = useState<string>("");
   const [perfilAdicionalAtivo, setPerfilAdicionalAtivo] = useState<"sim" | "nao">("nao");
   const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
@@ -1466,10 +1521,10 @@ function NovoOrcamento() {
               {paspaturAtivo === "sim" && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={setMargemEsq} />
-                    <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={setMargemDir} />
-                    <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={setMargemSup} />
-                    <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={setMargemInf} />
+                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} />
+                    <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={onMargemDirChange} />
+                    <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={onMargemSupChange} />
+                    <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={onMargemInfChange} />
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
@@ -1523,25 +1578,25 @@ function NovoOrcamento() {
                           label="Esquerda (cm)"
                           id="m-adic-esq"
                           value={paspaturAdicionalEsq}
-                          onChange={setPaspaturAdicionalEsq}
+                          onChange={onPaspaturAdicEsqChange}
                         />
                         <FieldNum
                           label="Direita (cm)"
                           id="m-adic-dir"
                           value={paspaturAdicionalDir}
-                          onChange={setPaspaturAdicionalDir}
+                          onChange={onPaspaturAdicDirChange}
                         />
                         <FieldNum
                           label="Superior (cm)"
                           id="m-adic-sup"
                           value={paspaturAdicionalSup}
-                          onChange={setPaspaturAdicionalSup}
+                          onChange={onPaspaturAdicSupChange}
                         />
                         <FieldNum
                           label="Inferior (cm)"
                           id="m-adic-inf"
                           value={paspaturAdicionalInf}
-                          onChange={setPaspaturAdicionalInf}
+                          onChange={onPaspaturAdicInfChange}
                         />
                       </div>
 
