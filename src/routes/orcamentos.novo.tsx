@@ -2489,6 +2489,22 @@ function NovoOrcamento() {
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
                   <Row label={`Entrega (${tipoEntrega})`} value={fmtMoney(valorEntrega)} />
                   <Row label="Mão de obra extra" value={fmtMoney(maoDeObraExtra)} />
+                  {descontoPercNum > 0 && (
+                    <>
+                      <hr className="my-2 border-border" />
+                      <Row label="Subtotal" value={fmtMoney(subtotalSemDesconto)} />
+                      <Row
+                        label={`Desconto aplicado (${descontoPercNum
+                          .toFixed(2)
+                          .replace(/\.?0+$/, "")}%)`}
+                        value={`- ${fmtMoney(descontoValor)}`}
+                      />
+                      <Row
+                        label="Subtotal com desconto"
+                        value={fmtMoney(subtotalComDesconto)}
+                      />
+                    </>
+                  )}
                   <hr className="my-2 border-border" />
                   <div className="flex items-center justify-between pt-1">
                     <span className="font-semibold text-foreground">Total geral</span>
@@ -2496,6 +2512,20 @@ function NovoOrcamento() {
                       {fmtMoney(valorTotal)}
                     </span>
                   </div>
+                  {sinalAtivo === "sim" && valorSinal > 0 && (
+                    <>
+                      <hr className="my-2 border-border" />
+                      <Row label="Sinal aplicado" value={fmtMoney(valorSinal)} />
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="font-semibold text-foreground">
+                          Valor a receber
+                        </span>
+                        <span className="text-base font-bold text-emerald-600">
+                          {fmtMoney(valorAReceber)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Campos finais */}
