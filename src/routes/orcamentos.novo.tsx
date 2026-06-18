@@ -554,6 +554,61 @@ function NovoOrcamento() {
   const [paspaturAdicionalSup, setPaspaturAdicionalSup] = useState<string>("");
   const [paspaturAdicionalInf, setPaspaturAdicionalInf] = useState<string>("");
   const [paspaturAdicionalId, setPaspaturAdicionalId] = useState<string>("");
+
+  // Auto-fill all 4 margins with the same value when the user types in one
+  // field and the others are still empty/zero. Manually edited values are
+  // never overwritten.
+  const isEmptyOrZero = (v: string) => {
+    if (!v) return true;
+    const n = parseFloat(v.replace(",", "."));
+    return !Number.isFinite(n) || n === 0;
+  };
+  const makeMargemHandler = (
+    field: "esq" | "dir" | "sup" | "inf",
+    values: { esq: string; dir: string; sup: string; inf: string },
+    setters: {
+      esq: (v: string) => void;
+      dir: (v: string) => void;
+      sup: (v: string) => void;
+      inf: (v: string) => void;
+    }
+  ) => (val: string) => {
+    setters[field](val);
+    const num = parseFloat(val.replace(",", "."));
+    if (!Number.isFinite(num) || num <= 0) return;
+    (["esq", "dir", "sup", "inf"] as const).forEach((k) => {
+      if (k === field) return;
+      if (isEmptyOrZero(values[k])) setters[k](val);
+    });
+  };
+  const margemValues = { esq: margemEsq, dir: margemDir, sup: margemSup, inf: margemInf };
+  const margemSetters = {
+    esq: setMargemEsq,
+    dir: setMargemDir,
+    sup: setMargemSup,
+    inf: setMargemInf,
+  };
+  const onMargemEsqChange = makeMargemHandler("esq", margemValues, margemSetters);
+  const onMargemDirChange = makeMargemHandler("dir", margemValues, margemSetters);
+  const onMargemSupChange = makeMargemHandler("sup", margemValues, margemSetters);
+  const onMargemInfChange = makeMargemHandler("inf", margemValues, margemSetters);
+
+  const paspaturAdicValues = {
+    esq: paspaturAdicionalEsq,
+    dir: paspaturAdicionalDir,
+    sup: paspaturAdicionalSup,
+    inf: paspaturAdicionalInf,
+  };
+  const paspaturAdicSetters = {
+    esq: setPaspaturAdicionalEsq,
+    dir: setPaspaturAdicionalDir,
+    sup: setPaspaturAdicionalSup,
+    inf: setPaspaturAdicionalInf,
+  };
+  const onPaspaturAdicEsqChange = makeMargemHandler("esq", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicDirChange = makeMargemHandler("dir", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicSupChange = makeMargemHandler("sup", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicInfChange = makeMargemHandler("inf", paspaturAdicValues, paspaturAdicSetters);
   const [perfilId, setPerfilId] = useState<string>("");
   const [perfilAdicionalAtivo, setPerfilAdicionalAtivo] = useState<"sim" | "nao">("nao");
   const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
