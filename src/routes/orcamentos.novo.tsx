@@ -1389,7 +1389,8 @@ function NovoOrcamento() {
         </div>
 
         {/* Content area */}
-        <div className="space-y-6">
+        <div id="step-content" className="space-y-6 scroll-mt-4">
+
           {/* Totals header */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
