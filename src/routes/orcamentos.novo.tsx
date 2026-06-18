@@ -1578,25 +1578,25 @@ function NovoOrcamento() {
                           label="Esquerda (cm)"
                           id="m-adic-esq"
                           value={paspaturAdicionalEsq}
-                          onChange={setPaspaturAdicionalEsq}
+                          onChange={onPaspaturAdicEsqChange}
                         />
                         <FieldNum
                           label="Direita (cm)"
                           id="m-adic-dir"
                           value={paspaturAdicionalDir}
-                          onChange={setPaspaturAdicionalDir}
+                          onChange={onPaspaturAdicDirChange}
                         />
                         <FieldNum
                           label="Superior (cm)"
                           id="m-adic-sup"
                           value={paspaturAdicionalSup}
-                          onChange={setPaspaturAdicionalSup}
+                          onChange={onPaspaturAdicSupChange}
                         />
                         <FieldNum
                           label="Inferior (cm)"
                           id="m-adic-inf"
                           value={paspaturAdicionalInf}
-                          onChange={setPaspaturAdicionalInf}
+                          onChange={onPaspaturAdicInfChange}
                         />
                       </div>
 
