@@ -840,7 +840,17 @@ function NovoOrcamento() {
     tipoEntrega === "Retirada" ? 0 : parseNum(valorEntregaStr);
   const maoDeObraExtra = parseNum(maoDeObraExtraStr);
 
-  const valorTotal = subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
+  const subtotalSemDesconto =
+    subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
+  const descontoPercNum = Math.min(100, Math.max(0, parseNum(descontoPercStr)));
+  const descontoValor = subtotalSemDesconto * (descontoPercNum / 100);
+  const subtotalComDesconto = Math.max(0, subtotalSemDesconto - descontoValor);
+  const valorTotal = subtotalComDesconto;
+  const valorSinal =
+    sinalAtivo === "sim"
+      ? Math.min(valorTotal, Math.max(0, parseNum(valorSinalStr)))
+      : 0;
+  const valorAReceber = Math.max(0, valorTotal - valorSinal);
 
   // Container-aware preview sizing (mobile-safe).
   // We measure the wrapper width and reserve room for the right-side "altura" label.
