@@ -609,6 +609,42 @@ function NovoOrcamento() {
   const onPaspaturAdicDirChange = makeMargemHandler("dir", paspaturAdicValues, paspaturAdicSetters);
   const onPaspaturAdicSupChange = makeMargemHandler("sup", paspaturAdicValues, paspaturAdicSetters);
   const onPaspaturAdicInfChange = makeMargemHandler("inf", paspaturAdicValues, paspaturAdicSetters);
+
+  // Toggling Paspatur off clears margins and selection; toggling back on
+  // keeps them cleared (user starts fresh from 0/0/0/0).
+  const handlePaspaturAtivoChange = (v: "sim" | "nao") => {
+    setPaspaturAtivo(v);
+    setMargemEsq("");
+    setMargemDir("");
+    setMargemSup("");
+    setMargemInf("");
+    if (v === "nao") {
+      setPaspaturId("");
+      setPaspaturAdicionalAtivo("nao");
+      setPaspaturAdicionalObs("");
+      setPaspaturAdicionalEsq("");
+      setPaspaturAdicionalDir("");
+      setPaspaturAdicionalSup("");
+      setPaspaturAdicionalInf("");
+      setPaspaturAdicionalId("");
+    } else {
+      setPaspaturAdicionalEsq("");
+      setPaspaturAdicionalDir("");
+      setPaspaturAdicionalSup("");
+      setPaspaturAdicionalInf("");
+    }
+  };
+  const handlePaspaturAdicionalAtivoChange = (v: "sim" | "nao") => {
+    setPaspaturAdicionalAtivo(v);
+    setPaspaturAdicionalEsq("");
+    setPaspaturAdicionalDir("");
+    setPaspaturAdicionalSup("");
+    setPaspaturAdicionalInf("");
+    if (v === "nao") {
+      setPaspaturAdicionalObs("");
+      setPaspaturAdicionalId("");
+    }
+  };
   const [perfilId, setPerfilId] = useState<string>("");
   const [perfilAdicionalAtivo, setPerfilAdicionalAtivo] = useState<"sim" | "nao">("nao");
   const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
@@ -637,6 +673,10 @@ function NovoOrcamento() {
   const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
+  const [descontoPercStr, setDescontoPercStr] = useState<string>("");
+  const [sinalAtivo, setSinalAtivo] = useState<"sim" | "nao">("nao");
+  const [valorSinalStr, setValorSinalStr] = useState<string>("");
+  const [dataEntrega, setDataEntrega] = useState<string>("");
   const [dataVencimento, setDataVencimento] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
@@ -836,7 +876,17 @@ function NovoOrcamento() {
     tipoEntrega === "Retirada" ? 0 : parseNum(valorEntregaStr);
   const maoDeObraExtra = parseNum(maoDeObraExtraStr);
 
-  const valorTotal = subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
+  const subtotalSemDesconto =
+    subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
+  const descontoPercNum = Math.min(100, Math.max(0, parseNum(descontoPercStr)));
+  const descontoValor = subtotalSemDesconto * (descontoPercNum / 100);
+  const subtotalComDesconto = Math.max(0, subtotalSemDesconto - descontoValor);
+  const valorTotal = subtotalComDesconto;
+  const valorSinal =
+    sinalAtivo === "sim"
+      ? Math.min(valorTotal, Math.max(0, parseNum(valorSinalStr)))
+      : 0;
+  const valorAReceber = Math.max(0, valorTotal - valorSinal);
 
   // Container-aware preview sizing (mobile-safe).
   // We measure the wrapper width and reserve room for the right-side "altura" label.
@@ -1058,6 +1108,10 @@ function NovoOrcamento() {
       setClienteId((budget as { client_id?: string | null }).client_id ?? null);
       setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
       setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
+      setDescontoPercStr(s("descontoPercStr"));
+      setSinalAtivo(d.sinalAtivo === "sim" ? "sim" : "nao");
+      setValorSinalStr(s("valorSinalStr"));
+      setDataEntrega(s("dataEntrega"));
       setDataVencimento(budget.data_vencimento ?? "");
       setObservacoes(s("observacoes"));
       setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
@@ -1158,6 +1212,16 @@ function NovoOrcamento() {
         tipoEntrega,
         valorEntregaStr,
         valorEntrega: Number(valorEntrega.toFixed(2)),
+        dataEntrega: dataEntrega || "",
+        descontoPercStr,
+        descontoPercentual: Number(descontoPercNum.toFixed(2)),
+        descontoValor: Number(descontoValor.toFixed(2)),
+        subtotalSemDesconto: Number(subtotalSemDesconto.toFixed(2)),
+        subtotalComDesconto: Number(subtotalComDesconto.toFixed(2)),
+        sinalAtivo,
+        valorSinalStr,
+        valorSinal: Number(valorSinal.toFixed(2)),
+        valorAReceber: Number(valorAReceber.toFixed(2)),
       };
 
       const budgetPayload = {
@@ -1507,7 +1571,7 @@ function NovoOrcamento() {
                 <Label htmlFor="paspatur-ativo">Paspatur</Label>
                 <Select
                   value={paspaturAtivo}
-                  onValueChange={(v) => setPaspaturAtivo(v as "sim" | "nao")}
+                  onValueChange={(v) => handlePaspaturAtivoChange(v as "sim" | "nao")}
                 >
                   <SelectTrigger id="paspatur-ativo">
                     <SelectValue />
@@ -1546,7 +1610,7 @@ function NovoOrcamento() {
                     <Select
                       value={paspaturAdicionalAtivo}
                       onValueChange={(v) =>
-                        setPaspaturAdicionalAtivo(v as "sim" | "nao")
+                        handlePaspaturAdicionalAtivoChange(v as "sim" | "nao")
                       }
                     >
                       <SelectTrigger id="paspatur-adic-ativo">
@@ -2425,6 +2489,22 @@ function NovoOrcamento() {
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
                   <Row label={`Entrega (${tipoEntrega})`} value={fmtMoney(valorEntrega)} />
                   <Row label="Mão de obra extra" value={fmtMoney(maoDeObraExtra)} />
+                  {descontoPercNum > 0 && (
+                    <>
+                      <hr className="my-2 border-border" />
+                      <Row label="Subtotal" value={fmtMoney(subtotalSemDesconto)} />
+                      <Row
+                        label={`Desconto aplicado (${descontoPercNum
+                          .toFixed(2)
+                          .replace(/\.?0+$/, "")}%)`}
+                        value={`- ${fmtMoney(descontoValor)}`}
+                      />
+                      <Row
+                        label="Subtotal com desconto"
+                        value={fmtMoney(subtotalComDesconto)}
+                      />
+                    </>
+                  )}
                   <hr className="my-2 border-border" />
                   <div className="flex items-center justify-between pt-1">
                     <span className="font-semibold text-foreground">Total geral</span>
@@ -2432,6 +2512,20 @@ function NovoOrcamento() {
                       {fmtMoney(valorTotal)}
                     </span>
                   </div>
+                  {sinalAtivo === "sim" && valorSinal > 0 && (
+                    <>
+                      <hr className="my-2 border-border" />
+                      <Row label="Sinal aplicado" value={fmtMoney(valorSinal)} />
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="font-semibold text-foreground">
+                          Valor a receber
+                        </span>
+                        <span className="text-base font-bold text-emerald-600">
+                          {fmtMoney(valorAReceber)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Campos finais */}
@@ -2571,6 +2665,101 @@ function NovoOrcamento() {
                       value={maoDeObraExtraStr}
                       onChange={setMaoDeObraExtraStr}
                     />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="desconto">Desconto (%)</Label>
+                      <Input
+                        id="desconto"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={descontoPercStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setDescontoPercStr("");
+                            return;
+                          }
+                          const n = parseFloat(raw.replace(",", "."));
+                          if (!Number.isFinite(n)) {
+                            setDescontoPercStr(raw);
+                            return;
+                          }
+                          if (n < 0) {
+                            setDescontoPercStr("0");
+                            return;
+                          }
+                          if (n > 100) {
+                            setDescontoPercStr("100");
+                            return;
+                          }
+                          setDescontoPercStr(raw);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sinal-ativo">O cliente vai mandar um sinal?</Label>
+                    <Select
+                      value={sinalAtivo}
+                      onValueChange={(v) => {
+                        const nv = v as "sim" | "nao";
+                        setSinalAtivo(nv);
+                        if (nv === "nao") setValorSinalStr("");
+                      }}
+                    >
+                      <SelectTrigger id="sinal-ativo">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nao">Não</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {sinalAtivo === "sim" && (
+                    <div className="space-y-1.5 max-w-xs">
+                      <Label htmlFor="valor-sinal">Valor do sinal (R$)</Label>
+                      <Input
+                        id="valor-sinal"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        value={valorSinalStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setValorSinalStr("");
+                            return;
+                          }
+                          const n = parseFloat(raw.replace(",", "."));
+                          if (!Number.isFinite(n)) {
+                            setValorSinalStr(raw);
+                            return;
+                          }
+                          if (n < 0) {
+                            setValorSinalStr("0");
+                            return;
+                          }
+                          if (n > valorTotal) {
+                            setValorSinalStr(valorTotal.toFixed(2));
+                            return;
+                          }
+                          setValorSinalStr(raw);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="data-entrega">Data de entrega</Label>
+                      <Input
+                        id="data-entrega"
+                        type="date"
+                        value={dataEntrega}
+                        onChange={(e) => setDataEntrega(e.target.value)}
+                      />
+                    </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="venc">Data de vencimento</Label>
                       <Input
