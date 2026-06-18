@@ -609,6 +609,42 @@ function NovoOrcamento() {
   const onPaspaturAdicDirChange = makeMargemHandler("dir", paspaturAdicValues, paspaturAdicSetters);
   const onPaspaturAdicSupChange = makeMargemHandler("sup", paspaturAdicValues, paspaturAdicSetters);
   const onPaspaturAdicInfChange = makeMargemHandler("inf", paspaturAdicValues, paspaturAdicSetters);
+
+  // Toggling Paspatur off clears margins and selection; toggling back on
+  // keeps them cleared (user starts fresh from 0/0/0/0).
+  const handlePaspaturAtivoChange = (v: "sim" | "nao") => {
+    setPaspaturAtivo(v);
+    setMargemEsq("");
+    setMargemDir("");
+    setMargemSup("");
+    setMargemInf("");
+    if (v === "nao") {
+      setPaspaturId("");
+      setPaspaturAdicionalAtivo("nao");
+      setPaspaturAdicionalObs("");
+      setPaspaturAdicionalEsq("");
+      setPaspaturAdicionalDir("");
+      setPaspaturAdicionalSup("");
+      setPaspaturAdicionalInf("");
+      setPaspaturAdicionalId("");
+    } else {
+      setPaspaturAdicionalEsq("");
+      setPaspaturAdicionalDir("");
+      setPaspaturAdicionalSup("");
+      setPaspaturAdicionalInf("");
+    }
+  };
+  const handlePaspaturAdicionalAtivoChange = (v: "sim" | "nao") => {
+    setPaspaturAdicionalAtivo(v);
+    setPaspaturAdicionalEsq("");
+    setPaspaturAdicionalDir("");
+    setPaspaturAdicionalSup("");
+    setPaspaturAdicionalInf("");
+    if (v === "nao") {
+      setPaspaturAdicionalObs("");
+      setPaspaturAdicionalId("");
+    }
+  };
   const [perfilId, setPerfilId] = useState<string>("");
   const [perfilAdicionalAtivo, setPerfilAdicionalAtivo] = useState<"sim" | "nao">("nao");
   const [perfilAdicionalId, setPerfilAdicionalId] = useState<string>("");
