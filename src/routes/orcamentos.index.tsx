@@ -721,6 +721,8 @@ function ResumoDialog({
                 {fmtMoney(Number(budget.total_value))}
               </span>
             </div>
+
+            {extraActions}
           </div>
         )}
       </DialogContent>
