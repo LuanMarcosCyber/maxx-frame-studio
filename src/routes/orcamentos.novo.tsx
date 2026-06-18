@@ -637,6 +637,10 @@ function NovoOrcamento() {
   const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
+  const [descontoPercStr, setDescontoPercStr] = useState<string>("");
+  const [sinalAtivo, setSinalAtivo] = useState<"sim" | "nao">("nao");
+  const [valorSinalStr, setValorSinalStr] = useState<string>("");
+  const [dataEntrega, setDataEntrega] = useState<string>("");
   const [dataVencimento, setDataVencimento] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
