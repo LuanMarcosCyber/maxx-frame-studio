@@ -1108,6 +1108,10 @@ function NovoOrcamento() {
       setClienteId((budget as { client_id?: string | null }).client_id ?? null);
       setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
       setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
+      setDescontoPercStr(s("descontoPercStr"));
+      setSinalAtivo(d.sinalAtivo === "sim" ? "sim" : "nao");
+      setValorSinalStr(s("valorSinalStr"));
+      setDataEntrega(s("dataEntrega"));
       setDataVencimento(budget.data_vencimento ?? "");
       setObservacoes(s("observacoes"));
       setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
