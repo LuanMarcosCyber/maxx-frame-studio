@@ -2666,6 +2666,101 @@ function NovoOrcamento() {
                       onChange={setMaoDeObraExtraStr}
                     />
                     <div className="space-y-1.5">
+                      <Label htmlFor="desconto">Desconto (%)</Label>
+                      <Input
+                        id="desconto"
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={descontoPercStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setDescontoPercStr("");
+                            return;
+                          }
+                          const n = parseFloat(raw.replace(",", "."));
+                          if (!Number.isFinite(n)) {
+                            setDescontoPercStr(raw);
+                            return;
+                          }
+                          if (n < 0) {
+                            setDescontoPercStr("0");
+                            return;
+                          }
+                          if (n > 100) {
+                            setDescontoPercStr("100");
+                            return;
+                          }
+                          setDescontoPercStr(raw);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="sinal-ativo">O cliente vai mandar um sinal?</Label>
+                    <Select
+                      value={sinalAtivo}
+                      onValueChange={(v) => {
+                        const nv = v as "sim" | "nao";
+                        setSinalAtivo(nv);
+                        if (nv === "nao") setValorSinalStr("");
+                      }}
+                    >
+                      <SelectTrigger id="sinal-ativo">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nao">Não</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {sinalAtivo === "sim" && (
+                    <div className="space-y-1.5 max-w-xs">
+                      <Label htmlFor="valor-sinal">Valor do sinal (R$)</Label>
+                      <Input
+                        id="valor-sinal"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        value={valorSinalStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") {
+                            setValorSinalStr("");
+                            return;
+                          }
+                          const n = parseFloat(raw.replace(",", "."));
+                          if (!Number.isFinite(n)) {
+                            setValorSinalStr(raw);
+                            return;
+                          }
+                          if (n < 0) {
+                            setValorSinalStr("0");
+                            return;
+                          }
+                          if (n > valorTotal) {
+                            setValorSinalStr(valorTotal.toFixed(2));
+                            return;
+                          }
+                          setValorSinalStr(raw);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="data-entrega">Data de entrega</Label>
+                      <Input
+                        id="data-entrega"
+                        type="date"
+                        value={dataEntrega}
+                        onChange={(e) => setDataEntrega(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
                       <Label htmlFor="venc">Data de vencimento</Label>
                       <Input
                         id="venc"
