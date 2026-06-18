@@ -168,7 +168,7 @@ function Orcamentos() {
 
   function tryApprove(b: BudgetRow) {
     if (!b.client_id) {
-      toast.warning("Para aprovar este orçamento, selecione ou cadastre um cliente.");
+      setClientMissingOpen(true);
       return;
     }
     setApproving(b);
