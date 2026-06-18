@@ -1557,7 +1557,7 @@ function NovoOrcamento() {
                 <Label htmlFor="paspatur-ativo">Paspatur</Label>
                 <Select
                   value={paspaturAtivo}
-                  onValueChange={(v) => setPaspaturAtivo(v as "sim" | "nao")}
+                  onValueChange={(v) => handlePaspaturAtivoChange(v as "sim" | "nao")}
                 >
                   <SelectTrigger id="paspatur-ativo">
                     <SelectValue />
