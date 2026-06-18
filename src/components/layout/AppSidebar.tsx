@@ -9,6 +9,7 @@ import {
   Users,
   UserCog,
   Contact,
+  BarChart3,
 } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { cn } from "@/lib/utils";
