@@ -1212,6 +1212,16 @@ function NovoOrcamento() {
         tipoEntrega,
         valorEntregaStr,
         valorEntrega: Number(valorEntrega.toFixed(2)),
+        dataEntrega: dataEntrega || "",
+        descontoPercStr,
+        descontoPercentual: Number(descontoPercNum.toFixed(2)),
+        descontoValor: Number(descontoValor.toFixed(2)),
+        subtotalSemDesconto: Number(subtotalSemDesconto.toFixed(2)),
+        subtotalComDesconto: Number(subtotalComDesconto.toFixed(2)),
+        sinalAtivo,
+        valorSinalStr,
+        valorSinal: Number(valorSinal.toFixed(2)),
+        valorAReceber: Number(valorAReceber.toFixed(2)),
       };
 
       const budgetPayload = {
