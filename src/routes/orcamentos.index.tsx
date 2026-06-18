@@ -336,6 +336,22 @@ function Orcamentos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={clientMissingOpen} onOpenChange={setClientMissingOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cliente não vinculado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Para aprovar este orçamento e gerar um pedido, selecione ou cadastre um cliente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setClientMissingOpen(false)}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
