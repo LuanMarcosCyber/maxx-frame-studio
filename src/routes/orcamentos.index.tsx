@@ -414,6 +414,27 @@ function ResumoDialog({
 
   const [items, setItems] = useState<BudgetItemRow[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [verParcelasOpen, setVerParcelasOpen] = useState(false);
+
+  type Parcela = { numero: number; valor: number; vencimento: string };
+  const parcelasList: Parcela[] = Array.isArray(general.parcelas)
+    ? (general.parcelas as unknown[])
+        .map((p, i) => {
+          if (!p || typeof p !== "object") return null;
+          const o = p as Record<string, unknown>;
+          return {
+            numero: typeof o.numero === "number" ? o.numero : i + 1,
+            valor: typeof o.valor === "number" ? o.valor : Number(o.valor) || 0,
+            vencimento: typeof o.vencimento === "string" ? o.vencimento : "",
+          } as Parcela;
+        })
+        .filter((p): p is Parcela => !!p)
+    : [];
+  const condicaoPagamento =
+    typeof general.condicaoPagamento === "string"
+      ? (general.condicaoPagamento as string)
+      : "À vista";
+  const isParcelado = condicaoPagamento === "Parcelado" && parcelasList.length > 0;
 
   useEffect(() => {
     if (!budget) {
@@ -604,14 +625,59 @@ function ResumoDialog({
                 value={gStr("formaPagamento") || "—"}
               />
               <Info
+                label="Condição"
+                value={
+                  isParcelado ? `Parcelado · ${parcelasList.length}x` : "À vista"
+                }
+              />
+              <Info
                 label="Entrega"
                 value={gStr("dataEntrega") ? fmtDate(gStr("dataEntrega")) : "—"}
               />
-              <Info
-                label="Vencimento"
-                value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
-              />
+              {!isParcelado && (
+                <Info
+                  label="Vencimento"
+                  value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
+                />
+              )}
             </div>
+
+            {isParcelado && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    Parcelas ({parcelasList.length}x)
+                  </span>
+                  {parcelasList.length > 3 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVerParcelasOpen(true)}
+                    >
+                      Ver parcelas
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  {parcelasList.slice(0, 3).map((p) => (
+                    <div
+                      key={p.numero}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <span className="text-muted-foreground">
+                        {p.numero}/{parcelasList.length} ·{" "}
+                        {p.vencimento
+                          ? fmtDate(p.vencimento)
+                          : "—"}
+                      </span>
+                      <span className="font-medium">{fmtMoney(p.valor)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
 
             {/* Item chips */}
             {items.length > 0 && (
@@ -770,6 +836,27 @@ function ResumoDialog({
         )}
       </DialogContent>
 
+      <Dialog open={verParcelasOpen} onOpenChange={setVerParcelasOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Parcelas ({parcelasList.length}x)</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto pr-1 mt-2 space-y-1 flex-1">
+            {parcelasList.map((p) => (
+              <div
+                key={p.numero}
+                className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0"
+              >
+                <span className="text-muted-foreground">
+                  {p.numero}/{parcelasList.length} ·{" "}
+                  {p.vencimento ? fmtDate(p.vencimento) : "—"}
+                </span>
+                <span className="font-semibold">{fmtMoney(p.valor)}</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

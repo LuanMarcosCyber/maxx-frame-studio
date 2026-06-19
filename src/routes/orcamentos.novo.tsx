@@ -169,7 +169,103 @@ type FormaPagto =
   | "Cartão de crédito"
   | "Cartão de débito"
   | "Boleto"
-  | "A combinar";
+  | "Transferência"
+  | "Outro";
+
+type CondicaoPagamento = "À vista" | "Parcelado";
+
+type Parcela = {
+  numero: number;
+  valor: number;
+  vencimento: string; // ISO yyyy-mm-dd
+};
+
+const FORMAS_PARCELAVEIS: ReadonlyArray<FormaPagto> = [
+  "Pix",
+  "Cartão de crédito",
+  "Boleto",
+];
+
+function isFormaParcelavel(f: FormaPagto): boolean {
+  return FORMAS_PARCELAVEIS.includes(f);
+}
+
+function coerceFormaPagto(v: unknown): FormaPagto {
+  const allowed: ReadonlyArray<FormaPagto> = [
+    "Dinheiro",
+    "Pix",
+    "Cartão de crédito",
+    "Cartão de débito",
+    "Boleto",
+    "Transferência",
+    "Outro",
+  ];
+  if (typeof v === "string" && (allowed as ReadonlyArray<string>).includes(v)) {
+    return v as FormaPagto;
+  }
+  // Legacy: "A combinar" → "Outro"
+  if (v === "A combinar") return "Outro";
+  return "Dinheiro";
+}
+
+function lastDayOfMonth(year: number, monthIndex0: number): number {
+  return new Date(year, monthIndex0 + 1, 0).getDate();
+}
+
+function toIsoLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildParcelaDate(diaPref: number, monthsAhead: number, base: Date = new Date()): string {
+  const target = new Date(base.getFullYear(), base.getMonth(), 1);
+  // first parcel: if today's day <= diaPref, current month; otherwise next month
+  const startOffset = base.getDate() <= diaPref ? 0 : 1;
+  target.setMonth(target.getMonth() + startOffset + monthsAhead);
+  const y = target.getFullYear();
+  const m = target.getMonth();
+  const dia = Math.min(diaPref, lastDayOfMonth(y, m));
+  return toIsoLocal(new Date(y, m, dia));
+}
+
+function generateParcelas(
+  valorTotal: number,
+  qtd: number,
+  diaPref: number,
+): Parcela[] {
+  const safeQtd = Math.max(1, Math.min(24, Math.floor(qtd)));
+  const safeDia = Math.max(1, Math.min(31, Math.floor(diaPref)));
+  const safeValor = Math.max(0, valorTotal);
+  const totalCents = Math.round(safeValor * 100);
+  const baseCents = Math.floor(totalCents / safeQtd);
+  const remainder = totalCents - baseCents * safeQtd;
+  const out: Parcela[] = [];
+  for (let i = 0; i < safeQtd; i++) {
+    const cents = baseCents + (i === safeQtd - 1 ? remainder : 0);
+    out.push({
+      numero: i + 1,
+      valor: cents / 100,
+      vencimento: buildParcelaDate(safeDia, i),
+    });
+  }
+  return out;
+}
+
+function parseParcelasFromDetails(raw: unknown): Parcela[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p, i) => {
+      if (!p || typeof p !== "object") return null;
+      const o = p as Record<string, unknown>;
+      const numero = typeof o.numero === "number" ? o.numero : i + 1;
+      const valor = typeof o.valor === "number" ? o.valor : Number(o.valor) || 0;
+      const vencimento = typeof o.vencimento === "string" ? o.vencimento : "";
+      return { numero, valor, vencimento } as Parcela;
+    })
+    .filter((p): p is Parcela => !!p);
+}
 
 // Per-item state shape
 type DiversoItem = {
@@ -672,6 +768,13 @@ function NovoOrcamento() {
   const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
   const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
+  const [condicaoPagamento, setCondicaoPagamento] =
+    useState<CondicaoPagamento>("À vista");
+  const [quantidadeParcelas, setQuantidadeParcelas] = useState<number>(1);
+  const [diaPreferencialVencimento, setDiaPreferencialVencimento] =
+    useState<number>(15);
+  const [parcelas, setParcelas] = useState<Parcela[]>([]);
+  const [verParcelasOpen, setVerParcelasOpen] = useState(false);
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
   const [descontoPercStr, setDescontoPercStr] = useState<string>("");
   const [sinalAtivo, setSinalAtivo] = useState<"sim" | "nao">("nao");
@@ -887,6 +990,42 @@ function NovoOrcamento() {
       ? Math.min(valorTotal, Math.max(0, parseNum(valorSinalStr)))
       : 0;
   const valorAReceber = Math.max(0, valorTotal - valorSinal);
+
+  // Auto-regenerate parcelas when relevant inputs change.
+  // Uses a signature ref so user edits to individual parcelas are preserved
+  // until one of the inputs (forma, condição, qtd, dia, valor) changes again.
+  const lastParcelasSigRef = useRef<string>("");
+  useEffect(() => {
+    const parcelavel =
+      isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
+    if (!parcelavel) {
+      lastParcelasSigRef.current = "";
+      if (parcelas.length > 0) setParcelas([]);
+      return;
+    }
+    const sig = `${formaPagamento}|${quantidadeParcelas}|${diaPreferencialVencimento}|${valorAReceber.toFixed(2)}`;
+    if (sig === lastParcelasSigRef.current) return;
+    lastParcelasSigRef.current = sig;
+    setParcelas(
+      generateParcelas(valorAReceber, quantidadeParcelas, diaPreferencialVencimento),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    formaPagamento,
+    condicaoPagamento,
+    quantidadeParcelas,
+    diaPreferencialVencimento,
+    valorAReceber,
+  ]);
+
+  // Enforce that non-parcelable forms always reset condição to "À vista"
+  useEffect(() => {
+    if (!isFormaParcelavel(formaPagamento) && condicaoPagamento !== "À vista") {
+      setCondicaoPagamento("À vista");
+    }
+  }, [formaPagamento, condicaoPagamento]);
+
+
 
   // Container-aware preview sizing (mobile-safe).
   // We measure the wrapper width and reserve room for the right-side "altura" label.
@@ -1106,7 +1245,35 @@ function NovoOrcamento() {
 
       setClienteNome(budget.client_name ?? "");
       setClienteId((budget as { client_id?: string | null }).client_id ?? null);
-      setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
+      const loadedForma = coerceFormaPagto(d.formaPagamento);
+      setFormaPagamento(loadedForma);
+      const loadedCondicao: CondicaoPagamento =
+        d.condicaoPagamento === "Parcelado" && isFormaParcelavel(loadedForma)
+          ? "Parcelado"
+          : "À vista";
+      setCondicaoPagamento(loadedCondicao);
+      const loadedQtd =
+        typeof d.quantidadeParcelas === "number" && d.quantidadeParcelas >= 1
+          ? Math.min(24, Math.floor(d.quantidadeParcelas as number))
+          : 1;
+      setQuantidadeParcelas(loadedQtd);
+      const loadedDia =
+        typeof d.diaPreferencialVencimento === "number"
+          ? Math.min(31, Math.max(1, Math.floor(d.diaPreferencialVencimento as number)))
+          : 15;
+      setDiaPreferencialVencimento(loadedDia);
+      const loadedParcelas = parseParcelasFromDetails(d.parcelas);
+      setParcelas(loadedParcelas);
+      // Prevent auto-regen from wiping loaded parcelas on first render
+      if (loadedCondicao === "Parcelado") {
+        const valorRec =
+          typeof d.valorAReceber === "number"
+            ? (d.valorAReceber as number)
+            : loadedParcelas.reduce((s, p) => s + p.valor, 0);
+        lastParcelasSigRef.current = `${loadedForma}|${loadedQtd}|${loadedDia}|${valorRec.toFixed(2)}`;
+      } else {
+        lastParcelasSigRef.current = "";
+      }
       setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
       setDescontoPercStr(s("descontoPercStr"));
       setSinalAtivo(d.sinalAtivo === "sim" ? "sim" : "nao");
@@ -1166,6 +1333,28 @@ function NovoOrcamento() {
       return;
     }
 
+    // Validate parcelas sum if forma parcelável + condição parcelado
+    const isParcelado =
+      isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
+    if (isParcelado) {
+      if (parcelas.length === 0) {
+        toast.error("Gere as parcelas antes de salvar.");
+        return;
+      }
+      const soma = parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+      if (Math.abs(soma - valorAReceber) > 0.01) {
+        toast.error("A soma das parcelas deve ser igual ao valor a receber.");
+        return;
+      }
+      for (const p of parcelas) {
+        if (!p.vencimento) {
+          toast.error("Todas as parcelas precisam de uma data de vencimento.");
+          return;
+        }
+      }
+    }
+
+
 
     // Persist current state into items
     const captured = activeSnap;
@@ -1203,6 +1392,18 @@ function NovoOrcamento() {
     try {
       const generalDetails = {
         formaPagamento,
+        condicaoPagamento: isFormaParcelavel(formaPagamento)
+          ? condicaoPagamento
+          : "À vista",
+        quantidadeParcelas: isParcelado ? quantidadeParcelas : 1,
+        diaPreferencialVencimento: isParcelado ? diaPreferencialVencimento : null,
+        parcelas: isParcelado
+          ? parcelas.map((p) => ({
+              numero: p.numero,
+              valor: Number(p.valor.toFixed(2)),
+              vencimento: p.vencimento,
+            }))
+          : [],
         observacoes,
         maoDeObraExtraStr,
         maoDeObraExtra: Number(maoDeObraExtra.toFixed(2)),
@@ -2526,7 +2727,47 @@ function NovoOrcamento() {
                       </div>
                     </>
                   )}
+                  {isFormaParcelavel(formaPagamento) &&
+                    condicaoPagamento === "Parcelado" &&
+                    parcelas.length > 0 && (
+                      <>
+                        <hr className="my-2 border-border" />
+                        <Row label="Forma" value={formaPagamento} />
+                        <Row label="Condição" value="Parcelado" />
+                        <Row label="Parcelas" value={`${parcelas.length}x`} />
+                        <div className="space-y-1 pt-1">
+                          {parcelas.slice(0, 3).map((p) => (
+                            <div
+                              key={p.numero}
+                              className="flex items-center justify-between text-xs text-muted-foreground"
+                            >
+                              <span>
+                                {p.numero}/{parcelas.length} ·{" "}
+                                {p.vencimento
+                                  ? new Date(p.vencimento + "T00:00:00").toLocaleDateString(
+                                      "pt-BR",
+                                    )
+                                  : "—"}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                {fmtMoney(p.valor)}
+                              </span>
+                            </div>
+                          ))}
+                          {parcelas.length > 3 && (
+                            <button
+                              type="button"
+                              onClick={() => setVerParcelasOpen(true)}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              + Ver todas as parcelas ({parcelas.length})
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                 </div>
+
 
                 {/* Campos finais */}
                 <div className="space-y-4">
@@ -2650,13 +2891,132 @@ function NovoOrcamento() {
                       <SelectContent>
                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                         <SelectItem value="Pix">Pix</SelectItem>
-                        <SelectItem value="Cartão de crédito">Cartão de crédito</SelectItem>
                         <SelectItem value="Cartão de débito">Cartão de débito</SelectItem>
+                        <SelectItem value="Cartão de crédito">Cartão de crédito</SelectItem>
                         <SelectItem value="Boleto">Boleto</SelectItem>
-                        <SelectItem value="A combinar">A combinar</SelectItem>
+                        <SelectItem value="Transferência">Transferência</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {isFormaParcelavel(formaPagamento) && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="condicao-pagto">Condição de pagamento</Label>
+                      <Select
+                        value={condicaoPagamento}
+                        onValueChange={(v) =>
+                          setCondicaoPagamento(v as CondicaoPagamento)
+                        }
+                      >
+                        <SelectTrigger id="condicao-pagto">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="À vista">À vista</SelectItem>
+                          <SelectItem value="Parcelado">Parcelado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {isFormaParcelavel(formaPagamento) &&
+                    condicaoPagamento === "Parcelado" && (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="qtd-parcelas">Quantidade de parcelas</Label>
+                            <Select
+                              value={String(quantidadeParcelas)}
+                              onValueChange={(v) =>
+                                setQuantidadeParcelas(parseInt(v, 10) || 1)
+                              }
+                            >
+                              <SelectTrigger id="qtd-parcelas">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[60vh]">
+                                {Array.from({ length: 24 }, (_, i) => i + 1).map((n) => (
+                                  <SelectItem key={n} value={String(n)}>
+                                    {n}x
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="dia-pref">Dia preferencial de vencimento</Label>
+                            <Input
+                              id="dia-pref"
+                              type="number"
+                              min={1}
+                              max={31}
+                              inputMode="numeric"
+                              value={String(diaPreferencialVencimento)}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10);
+                                if (!Number.isFinite(n)) return;
+                                setDiaPreferencialVencimento(
+                                  Math.min(31, Math.max(1, n)),
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {parcelas.length > 0 && (
+                          <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium text-foreground">
+                                Parcelas geradas
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Total: {fmtMoney(
+                                  parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0),
+                                )}
+                                {" / "}
+                                Valor a receber: {fmtMoney(valorAReceber)}
+                              </div>
+                            </div>
+                            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                              {parcelas.slice(0, 3).map((p, idx) => (
+                                <ParcelaRow
+                                  key={p.numero}
+                                  parcela={p}
+                                  total={parcelas.length}
+                                  onChange={(np) => {
+                                    setParcelas((prev) =>
+                                      prev.map((x, i) => (i === idx ? np : x)),
+                                    );
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            {parcelas.length > 3 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setVerParcelasOpen(true)}
+                                className="w-full sm:w-auto"
+                              >
+                                Ver todas as parcelas ({parcelas.length})
+                              </Button>
+                            )}
+                            {Math.abs(
+                              parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0) -
+                                valorAReceber,
+                            ) > 0.01 && (
+                              <div className="text-xs text-rose-600">
+                                A soma das parcelas deve ser igual ao valor a receber.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FieldNum
@@ -2760,16 +3120,22 @@ function NovoOrcamento() {
                         onChange={(e) => setDataEntrega(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="venc">Data de vencimento</Label>
-                      <Input
-                        id="venc"
-                        type="date"
-                        value={dataVencimento}
-                        onChange={(e) => setDataVencimento(e.target.value)}
-                      />
-                    </div>
+                    {!(
+                      isFormaParcelavel(formaPagamento) &&
+                      condicaoPagamento === "Parcelado"
+                    ) && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="venc">Data de vencimento</Label>
+                        <Input
+                          id="venc"
+                          type="date"
+                          value={dataVencimento}
+                          onChange={(e) => setDataVencimento(e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
+
 
                   <div className="space-y-1.5">
                     <Label htmlFor="obs">Observações</Label>
@@ -2979,6 +3345,37 @@ function NovoOrcamento() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={verParcelasOpen} onOpenChange={setVerParcelasOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Parcelas</DialogTitle>
+            <DialogDescription>
+              {parcelas.length}x · Valor a receber: {fmtMoney(valorAReceber)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2 overflow-y-auto pr-1 flex-1">
+            {parcelas.map((p, idx) => (
+              <ParcelaRow
+                key={p.numero}
+                parcela={p}
+                total={parcelas.length}
+                onChange={(np) => {
+                  setParcelas((prev) =>
+                    prev.map((x, i) => (i === idx ? np : x)),
+                  );
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t text-sm">
+            <span className="text-muted-foreground">Soma</span>
+            <span className="font-semibold">
+              {fmtMoney(parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0))}
+            </span>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
 
   );
@@ -3003,6 +3400,47 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function ParcelaRow({
+  parcela,
+  total,
+  onChange,
+}: {
+  parcela: Parcela;
+  total: number;
+  onChange: (p: Parcela) => void;
+}) {
+  const [valorStr, setValorStr] = useState<string>(parcela.valor.toFixed(2));
+  useEffect(() => {
+    setValorStr(parcela.valor.toFixed(2));
+  }, [parcela.valor]);
+  return (
+    <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-2 text-sm">
+      <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+        {parcela.numero}/{total}
+      </span>
+      <Input
+        inputMode="decimal"
+        value={valorStr}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setValorStr(raw);
+          const n = parseFloat(raw.replace(",", "."));
+          if (Number.isFinite(n)) {
+            onChange({ ...parcela, valor: Math.max(0, n) });
+          }
+        }}
+        onBlur={() => setValorStr(parcela.valor.toFixed(2))}
+      />
+      <Input
+        type="date"
+        value={parcela.vencimento}
+        onChange={(e) => onChange({ ...parcela, vencimento: e.target.value })}
+      />
+    </div>
+  );
+}
+
 
 function FieldNum({
   id,
