@@ -768,6 +768,13 @@ function NovoOrcamento() {
   const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
   const [aprovando, setAprovando] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagto>("Dinheiro");
+  const [condicaoPagamento, setCondicaoPagamento] =
+    useState<CondicaoPagamento>("À vista");
+  const [quantidadeParcelas, setQuantidadeParcelas] = useState<number>(1);
+  const [diaPreferencialVencimento, setDiaPreferencialVencimento] =
+    useState<number>(15);
+  const [parcelas, setParcelas] = useState<Parcela[]>([]);
+  const [verParcelasOpen, setVerParcelasOpen] = useState(false);
   const [maoDeObraExtraStr, setMaoDeObraExtraStr] = useState<string>("");
   const [descontoPercStr, setDescontoPercStr] = useState<string>("");
   const [sinalAtivo, setSinalAtivo] = useState<"sim" | "nao">("nao");
