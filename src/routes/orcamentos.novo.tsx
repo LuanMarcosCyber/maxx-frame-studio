@@ -1245,7 +1245,35 @@ function NovoOrcamento() {
 
       setClienteNome(budget.client_name ?? "");
       setClienteId((budget as { client_id?: string | null }).client_id ?? null);
-      setFormaPagamento((d.formaPagamento as FormaPagto) ?? "Dinheiro");
+      const loadedForma = coerceFormaPagto(d.formaPagamento);
+      setFormaPagamento(loadedForma);
+      const loadedCondicao: CondicaoPagamento =
+        d.condicaoPagamento === "Parcelado" && isFormaParcelavel(loadedForma)
+          ? "Parcelado"
+          : "À vista";
+      setCondicaoPagamento(loadedCondicao);
+      const loadedQtd =
+        typeof d.quantidadeParcelas === "number" && d.quantidadeParcelas >= 1
+          ? Math.min(24, Math.floor(d.quantidadeParcelas as number))
+          : 1;
+      setQuantidadeParcelas(loadedQtd);
+      const loadedDia =
+        typeof d.diaPreferencialVencimento === "number"
+          ? Math.min(31, Math.max(1, Math.floor(d.diaPreferencialVencimento as number)))
+          : 15;
+      setDiaPreferencialVencimento(loadedDia);
+      const loadedParcelas = parseParcelasFromDetails(d.parcelas);
+      setParcelas(loadedParcelas);
+      // Prevent auto-regen from wiping loaded parcelas on first render
+      if (loadedCondicao === "Parcelado") {
+        const valorRec =
+          typeof d.valorAReceber === "number"
+            ? (d.valorAReceber as number)
+            : loadedParcelas.reduce((s, p) => s + p.valor, 0);
+        lastParcelasSigRef.current = `${loadedForma}|${loadedQtd}|${loadedDia}|${valorRec.toFixed(2)}`;
+      } else {
+        lastParcelasSigRef.current = "";
+      }
       setMaoDeObraExtraStr(s("maoDeObraExtraStr"));
       setDescontoPercStr(s("descontoPercStr"));
       setSinalAtivo(d.sinalAtivo === "sim" ? "sim" : "nao");
