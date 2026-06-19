@@ -169,7 +169,103 @@ type FormaPagto =
   | "Cartão de crédito"
   | "Cartão de débito"
   | "Boleto"
-  | "A combinar";
+  | "Transferência"
+  | "Outro";
+
+type CondicaoPagamento = "À vista" | "Parcelado";
+
+type Parcela = {
+  numero: number;
+  valor: number;
+  vencimento: string; // ISO yyyy-mm-dd
+};
+
+const FORMAS_PARCELAVEIS: ReadonlyArray<FormaPagto> = [
+  "Pix",
+  "Cartão de crédito",
+  "Boleto",
+];
+
+function isFormaParcelavel(f: FormaPagto): boolean {
+  return FORMAS_PARCELAVEIS.includes(f);
+}
+
+function coerceFormaPagto(v: unknown): FormaPagto {
+  const allowed: ReadonlyArray<FormaPagto> = [
+    "Dinheiro",
+    "Pix",
+    "Cartão de crédito",
+    "Cartão de débito",
+    "Boleto",
+    "Transferência",
+    "Outro",
+  ];
+  if (typeof v === "string" && (allowed as ReadonlyArray<string>).includes(v)) {
+    return v as FormaPagto;
+  }
+  // Legacy: "A combinar" → "Outro"
+  if (v === "A combinar") return "Outro";
+  return "Dinheiro";
+}
+
+function lastDayOfMonth(year: number, monthIndex0: number): number {
+  return new Date(year, monthIndex0 + 1, 0).getDate();
+}
+
+function toIsoLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildParcelaDate(diaPref: number, monthsAhead: number, base: Date = new Date()): string {
+  const target = new Date(base.getFullYear(), base.getMonth(), 1);
+  // first parcel: if today's day <= diaPref, current month; otherwise next month
+  const startOffset = base.getDate() <= diaPref ? 0 : 1;
+  target.setMonth(target.getMonth() + startOffset + monthsAhead);
+  const y = target.getFullYear();
+  const m = target.getMonth();
+  const dia = Math.min(diaPref, lastDayOfMonth(y, m));
+  return toIsoLocal(new Date(y, m, dia));
+}
+
+function generateParcelas(
+  valorTotal: number,
+  qtd: number,
+  diaPref: number,
+): Parcela[] {
+  const safeQtd = Math.max(1, Math.min(24, Math.floor(qtd)));
+  const safeDia = Math.max(1, Math.min(31, Math.floor(diaPref)));
+  const safeValor = Math.max(0, valorTotal);
+  const totalCents = Math.round(safeValor * 100);
+  const baseCents = Math.floor(totalCents / safeQtd);
+  const remainder = totalCents - baseCents * safeQtd;
+  const out: Parcela[] = [];
+  for (let i = 0; i < safeQtd; i++) {
+    const cents = baseCents + (i === safeQtd - 1 ? remainder : 0);
+    out.push({
+      numero: i + 1,
+      valor: cents / 100,
+      vencimento: buildParcelaDate(safeDia, i),
+    });
+  }
+  return out;
+}
+
+function parseParcelasFromDetails(raw: unknown): Parcela[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p, i) => {
+      if (!p || typeof p !== "object") return null;
+      const o = p as Record<string, unknown>;
+      const numero = typeof o.numero === "number" ? o.numero : i + 1;
+      const valor = typeof o.valor === "number" ? o.valor : Number(o.valor) || 0;
+      const vencimento = typeof o.vencimento === "string" ? o.vencimento : "";
+      return { numero, valor, vencimento } as Parcela;
+    })
+    .filter((p): p is Parcela => !!p);
+}
 
 // Per-item state shape
 type DiversoItem = {
