@@ -991,6 +991,42 @@ function NovoOrcamento() {
       : 0;
   const valorAReceber = Math.max(0, valorTotal - valorSinal);
 
+  // Auto-regenerate parcelas when relevant inputs change.
+  // Uses a signature ref so user edits to individual parcelas are preserved
+  // until one of the inputs (forma, condição, qtd, dia, valor) changes again.
+  const lastParcelasSigRef = useRef<string>("");
+  useEffect(() => {
+    const parcelavel =
+      isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
+    if (!parcelavel) {
+      lastParcelasSigRef.current = "";
+      if (parcelas.length > 0) setParcelas([]);
+      return;
+    }
+    const sig = `${formaPagamento}|${quantidadeParcelas}|${diaPreferencialVencimento}|${valorAReceber.toFixed(2)}`;
+    if (sig === lastParcelasSigRef.current) return;
+    lastParcelasSigRef.current = sig;
+    setParcelas(
+      generateParcelas(valorAReceber, quantidadeParcelas, diaPreferencialVencimento),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    formaPagamento,
+    condicaoPagamento,
+    quantidadeParcelas,
+    diaPreferencialVencimento,
+    valorAReceber,
+  ]);
+
+  // Enforce that non-parcelable forms always reset condição to "À vista"
+  useEffect(() => {
+    if (!isFormaParcelavel(formaPagamento) && condicaoPagamento !== "À vista") {
+      setCondicaoPagamento("À vista");
+    }
+  }, [formaPagamento, condicaoPagamento]);
+
+
+
   // Container-aware preview sizing (mobile-safe).
   // We measure the wrapper width and reserve room for the right-side "altura" label.
   const previewArtRef = useRef<HTMLDivElement | null>(null);
