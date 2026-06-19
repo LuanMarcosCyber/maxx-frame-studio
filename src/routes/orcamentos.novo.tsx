@@ -3305,6 +3305,37 @@ function NovoOrcamento() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={verParcelasOpen} onOpenChange={setVerParcelasOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Parcelas</DialogTitle>
+            <DialogDescription>
+              {parcelas.length}x · Valor a receber: {fmtMoney(valorAReceber)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2 overflow-y-auto pr-1 flex-1">
+            {parcelas.map((p, idx) => (
+              <ParcelaRow
+                key={p.numero}
+                parcela={p}
+                total={parcelas.length}
+                onChange={(np) => {
+                  setParcelas((prev) =>
+                    prev.map((x, i) => (i === idx ? np : x)),
+                  );
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t text-sm">
+            <span className="text-muted-foreground">Soma</span>
+            <span className="font-semibold">
+              {fmtMoney(parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0))}
+            </span>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
 
   );
