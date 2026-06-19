@@ -414,6 +414,27 @@ function ResumoDialog({
 
   const [items, setItems] = useState<BudgetItemRow[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [verParcelasOpen, setVerParcelasOpen] = useState(false);
+
+  type Parcela = { numero: number; valor: number; vencimento: string };
+  const parcelasList: Parcela[] = Array.isArray(general.parcelas)
+    ? (general.parcelas as unknown[])
+        .map((p, i) => {
+          if (!p || typeof p !== "object") return null;
+          const o = p as Record<string, unknown>;
+          return {
+            numero: typeof o.numero === "number" ? o.numero : i + 1,
+            valor: typeof o.valor === "number" ? o.valor : Number(o.valor) || 0,
+            vencimento: typeof o.vencimento === "string" ? o.vencimento : "",
+          } as Parcela;
+        })
+        .filter((p): p is Parcela => !!p)
+    : [];
+  const condicaoPagamento =
+    typeof general.condicaoPagamento === "string"
+      ? (general.condicaoPagamento as string)
+      : "À vista";
+  const isParcelado = condicaoPagamento === "Parcelado" && parcelasList.length > 0;
 
   useEffect(() => {
     if (!budget) {
