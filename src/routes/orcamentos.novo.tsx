@@ -2851,13 +2851,132 @@ function NovoOrcamento() {
                       <SelectContent>
                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                         <SelectItem value="Pix">Pix</SelectItem>
-                        <SelectItem value="Cartão de crédito">Cartão de crédito</SelectItem>
                         <SelectItem value="Cartão de débito">Cartão de débito</SelectItem>
+                        <SelectItem value="Cartão de crédito">Cartão de crédito</SelectItem>
                         <SelectItem value="Boleto">Boleto</SelectItem>
-                        <SelectItem value="A combinar">A combinar</SelectItem>
+                        <SelectItem value="Transferência">Transferência</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {isFormaParcelavel(formaPagamento) && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="condicao-pagto">Condição de pagamento</Label>
+                      <Select
+                        value={condicaoPagamento}
+                        onValueChange={(v) =>
+                          setCondicaoPagamento(v as CondicaoPagamento)
+                        }
+                      >
+                        <SelectTrigger id="condicao-pagto">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="À vista">À vista</SelectItem>
+                          <SelectItem value="Parcelado">Parcelado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {isFormaParcelavel(formaPagamento) &&
+                    condicaoPagamento === "Parcelado" && (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="qtd-parcelas">Quantidade de parcelas</Label>
+                            <Select
+                              value={String(quantidadeParcelas)}
+                              onValueChange={(v) =>
+                                setQuantidadeParcelas(parseInt(v, 10) || 1)
+                              }
+                            >
+                              <SelectTrigger id="qtd-parcelas">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-[60vh]">
+                                {Array.from({ length: 24 }, (_, i) => i + 1).map((n) => (
+                                  <SelectItem key={n} value={String(n)}>
+                                    {n}x
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="dia-pref">Dia preferencial de vencimento</Label>
+                            <Input
+                              id="dia-pref"
+                              type="number"
+                              min={1}
+                              max={31}
+                              inputMode="numeric"
+                              value={String(diaPreferencialVencimento)}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10);
+                                if (!Number.isFinite(n)) return;
+                                setDiaPreferencialVencimento(
+                                  Math.min(31, Math.max(1, n)),
+                                );
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {parcelas.length > 0 && (
+                          <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-medium text-foreground">
+                                Parcelas geradas
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Total: {fmtMoney(
+                                  parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0),
+                                )}
+                                {" / "}
+                                Valor a receber: {fmtMoney(valorAReceber)}
+                              </div>
+                            </div>
+                            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                              {parcelas.slice(0, 3).map((p, idx) => (
+                                <ParcelaRow
+                                  key={p.numero}
+                                  parcela={p}
+                                  total={parcelas.length}
+                                  onChange={(np) => {
+                                    setParcelas((prev) =>
+                                      prev.map((x, i) => (i === idx ? np : x)),
+                                    );
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            {parcelas.length > 3 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setVerParcelasOpen(true)}
+                                className="w-full sm:w-auto"
+                              >
+                                Ver todas as parcelas ({parcelas.length})
+                              </Button>
+                            )}
+                            {Math.abs(
+                              parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0) -
+                                valorAReceber,
+                            ) > 0.01 && (
+                              <div className="text-xs text-rose-600">
+                                A soma das parcelas deve ser igual ao valor a receber.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FieldNum
