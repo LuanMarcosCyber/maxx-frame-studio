@@ -1392,6 +1392,18 @@ function NovoOrcamento() {
     try {
       const generalDetails = {
         formaPagamento,
+        condicaoPagamento: isFormaParcelavel(formaPagamento)
+          ? condicaoPagamento
+          : "À vista",
+        quantidadeParcelas: isParcelado ? quantidadeParcelas : 1,
+        diaPreferencialVencimento: isParcelado ? diaPreferencialVencimento : null,
+        parcelas: isParcelado
+          ? parcelas.map((p) => ({
+              numero: p.numero,
+              valor: Number(p.valor.toFixed(2)),
+              vencimento: p.vencimento,
+            }))
+          : [],
         observacoes,
         maoDeObraExtraStr,
         maoDeObraExtra: Number(maoDeObraExtra.toFixed(2)),
