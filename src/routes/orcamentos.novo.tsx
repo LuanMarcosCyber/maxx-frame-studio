@@ -2727,7 +2727,47 @@ function NovoOrcamento() {
                       </div>
                     </>
                   )}
+                  {isFormaParcelavel(formaPagamento) &&
+                    condicaoPagamento === "Parcelado" &&
+                    parcelas.length > 0 && (
+                      <>
+                        <hr className="my-2 border-border" />
+                        <Row label="Forma" value={formaPagamento} />
+                        <Row label="Condição" value="Parcelado" />
+                        <Row label="Parcelas" value={`${parcelas.length}x`} />
+                        <div className="space-y-1 pt-1">
+                          {parcelas.slice(0, 3).map((p) => (
+                            <div
+                              key={p.numero}
+                              className="flex items-center justify-between text-xs text-muted-foreground"
+                            >
+                              <span>
+                                {p.numero}/{parcelas.length} ·{" "}
+                                {p.vencimento
+                                  ? new Date(p.vencimento + "T00:00:00").toLocaleDateString(
+                                      "pt-BR",
+                                    )
+                                  : "—"}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                {fmtMoney(p.valor)}
+                              </span>
+                            </div>
+                          ))}
+                          {parcelas.length > 3 && (
+                            <button
+                              type="button"
+                              onClick={() => setVerParcelasOpen(true)}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              + Ver todas as parcelas ({parcelas.length})
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
                 </div>
+
 
                 {/* Campos finais */}
                 <div className="space-y-4">
