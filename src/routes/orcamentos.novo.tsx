@@ -3324,6 +3324,47 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ParcelaRow({
+  parcela,
+  total,
+  onChange,
+}: {
+  parcela: Parcela;
+  total: number;
+  onChange: (p: Parcela) => void;
+}) {
+  const [valorStr, setValorStr] = useState<string>(parcela.valor.toFixed(2));
+  useEffect(() => {
+    setValorStr(parcela.valor.toFixed(2));
+  }, [parcela.valor]);
+  return (
+    <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-2 text-sm">
+      <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+        {parcela.numero}/{total}
+      </span>
+      <Input
+        inputMode="decimal"
+        value={valorStr}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setValorStr(raw);
+          const n = parseFloat(raw.replace(",", "."));
+          if (Number.isFinite(n)) {
+            onChange({ ...parcela, valor: Math.max(0, n) });
+          }
+        }}
+        onBlur={() => setValorStr(parcela.valor.toFixed(2))}
+      />
+      <Input
+        type="date"
+        value={parcela.vencimento}
+        onChange={(e) => onChange({ ...parcela, vencimento: e.target.value })}
+      />
+    </div>
+  );
+}
+
+
 function FieldNum({
   id,
   label,
