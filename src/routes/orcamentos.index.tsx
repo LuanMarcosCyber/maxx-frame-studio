@@ -836,6 +836,27 @@ function ResumoDialog({
         )}
       </DialogContent>
 
+      <Dialog open={verParcelasOpen} onOpenChange={setVerParcelasOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Parcelas ({parcelasList.length}x)</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto pr-1 mt-2 space-y-1 flex-1">
+            {parcelasList.map((p) => (
+              <div
+                key={p.numero}
+                className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0"
+              >
+                <span className="text-muted-foreground">
+                  {p.numero}/{parcelasList.length} ·{" "}
+                  {p.vencimento ? fmtDate(p.vencimento) : "—"}
+                </span>
+                <span className="font-semibold">{fmtMoney(p.valor)}</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
