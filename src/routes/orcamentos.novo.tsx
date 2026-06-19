@@ -1333,6 +1333,28 @@ function NovoOrcamento() {
       return;
     }
 
+    // Validate parcelas sum if forma parcelável + condição parcelado
+    const isParcelado =
+      isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
+    if (isParcelado) {
+      if (parcelas.length === 0) {
+        toast.error("Gere as parcelas antes de salvar.");
+        return;
+      }
+      const soma = parcelas.reduce((s, p) => s + (Number(p.valor) || 0), 0);
+      if (Math.abs(soma - valorAReceber) > 0.01) {
+        toast.error("A soma das parcelas deve ser igual ao valor a receber.");
+        return;
+      }
+      for (const p of parcelas) {
+        if (!p.vencimento) {
+          toast.error("Todas as parcelas precisam de uma data de vencimento.");
+          return;
+        }
+      }
+    }
+
+
 
     // Persist current state into items
     const captured = activeSnap;
