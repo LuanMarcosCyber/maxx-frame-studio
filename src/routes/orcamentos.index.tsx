@@ -625,14 +625,59 @@ function ResumoDialog({
                 value={gStr("formaPagamento") || "—"}
               />
               <Info
+                label="Condição"
+                value={
+                  isParcelado ? `Parcelado · ${parcelasList.length}x` : "À vista"
+                }
+              />
+              <Info
                 label="Entrega"
                 value={gStr("dataEntrega") ? fmtDate(gStr("dataEntrega")) : "—"}
               />
-              <Info
-                label="Vencimento"
-                value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
-              />
+              {!isParcelado && (
+                <Info
+                  label="Vencimento"
+                  value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
+                />
+              )}
             </div>
+
+            {isParcelado && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    Parcelas ({parcelasList.length}x)
+                  </span>
+                  {parcelasList.length > 3 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVerParcelasOpen(true)}
+                    >
+                      Ver parcelas
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  {parcelasList.slice(0, 3).map((p) => (
+                    <div
+                      key={p.numero}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <span className="text-muted-foreground">
+                        {p.numero}/{parcelasList.length} ·{" "}
+                        {p.vencimento
+                          ? fmtDate(p.vencimento)
+                          : "—"}
+                      </span>
+                      <span className="font-medium">{fmtMoney(p.valor)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
 
             {/* Item chips */}
             {items.length > 0 && (
