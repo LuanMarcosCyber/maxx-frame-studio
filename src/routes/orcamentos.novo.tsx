@@ -3080,16 +3080,22 @@ function NovoOrcamento() {
                         onChange={(e) => setDataEntrega(e.target.value)}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="venc">Data de vencimento</Label>
-                      <Input
-                        id="venc"
-                        type="date"
-                        value={dataVencimento}
-                        onChange={(e) => setDataVencimento(e.target.value)}
-                      />
-                    </div>
+                    {!(
+                      isFormaParcelavel(formaPagamento) &&
+                      condicaoPagamento === "Parcelado"
+                    ) && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="venc">Data de vencimento</Label>
+                        <Input
+                          id="venc"
+                          type="date"
+                          value={dataVencimento}
+                          onChange={(e) => setDataVencimento(e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
+
 
                   <div className="space-y-1.5">
                     <Label htmlFor="obs">Observações</Label>
