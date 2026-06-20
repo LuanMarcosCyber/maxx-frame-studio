@@ -1370,7 +1370,7 @@ function NovoOrcamento() {
       const as = parseNum(it.paspaturAdicionalSup), ai = parseNum(it.paspaturAdicionalInf);
       if (ae > me || ad > md || as > ms || ai > mi) {
         toast.error(
-          `Item ${i + 1}: o paspatur adicional não pode ter margem maior que o paspatur principal.`,
+          `Item ${i + 1}: o paspatur interno não pode ter margem maior que o paspatur externo.`,
         );
         return;
       }
