@@ -16,6 +16,7 @@ interface Profile {
   address: string | null;
   parent_user_id: string | null;
   active: boolean;
+  avatar_url: string | null;
 }
 
 interface AuthContextValue {
@@ -64,13 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, address, parent_user_id, active")
+        .select("full_name, username, email, phone, document, address, parent_user_id, active, avatar_url")
         .eq("id", userId)
         .maybeSingle(),
     ]);
     setRole((roleRow?.role as AppRole) ?? "revendedor");
     setProfile(
-      profileRow ?? {
+      (profileRow as Profile | null) ?? {
         full_name: null,
         username: null,
         email: null,
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         address: null,
         parent_user_id: null,
         active: true,
+        avatar_url: null,
       },
     );
   };
