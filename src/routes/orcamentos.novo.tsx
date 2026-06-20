@@ -1807,7 +1807,7 @@ function NovoOrcamento() {
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
-                    <Label htmlFor="paspatur-adic-ativo">Incluir paspatur adicional</Label>
+                    <Label htmlFor="paspatur-adic-ativo">Incluir paspatur interno</Label>
                     <Select
                       value={paspaturAdicionalAtivo}
                       onValueChange={(v) =>
@@ -1828,7 +1828,7 @@ function NovoOrcamento() {
                     <div className="mt-6 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
                       <div className="space-y-1.5">
                         <Label htmlFor="paspatur-adic-obs">
-                          Observação do paspatur adicional
+                          Observação do paspatur interno
                         </Label>
                         <Textarea
                           id="paspatur-adic-obs"
@@ -1867,7 +1867,7 @@ function NovoOrcamento() {
                       </div>
 
                       <div className="max-w-md space-y-1.5">
-                        <Label htmlFor="paspatur-adic">Produto Paspatur adicional</Label>
+                        <Label htmlFor="paspatur-adic">Produto Paspatur interno</Label>
                         <ProductSelect
                           id="paspatur-adic"
                           value={paspaturAdicionalId}
@@ -1881,8 +1881,8 @@ function NovoOrcamento() {
 
                       {paspaturAdicionalInvalido && (
                         <p className="text-xs text-destructive">
-                          O paspatur adicional não pode ter margem maior que o paspatur
-                          principal.
+                          O paspatur interno não pode ter margem maior que o paspatur
+                          externo.
                         </p>
                       )}
                     </div>
@@ -2579,14 +2579,14 @@ function NovoOrcamento() {
                   {paspaturAdicionalAtivo === "sim" && paspaturAtivo === "sim" ? (
                     <>
                       <Row
-                        label={`Paspatur principal${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
+                        label={`Paspatur externo${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPaspaturPrincipal)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
                         Margens: E {mEsq} · D {mDir} · S {mSup} · I {mInf} cm
                       </div>
                       <Row
-                        label={`Paspatur adicional${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
+                        label={`Paspatur interno${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPaspaturAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
