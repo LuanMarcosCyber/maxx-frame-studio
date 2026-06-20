@@ -261,6 +261,7 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          avatar_url: string | null
           created_at: string
           document: string | null
           email: string | null
@@ -274,6 +275,7 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string | null
+          avatar_url?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
@@ -287,6 +289,7 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string | null
+          avatar_url?: string | null
           created_at?: string
           document?: string | null
           email?: string | null
