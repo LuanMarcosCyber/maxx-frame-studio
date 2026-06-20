@@ -18,6 +18,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -91,6 +98,7 @@ function Pedidos() {
   const [savingStatus, setSavingStatus] = useState(false);
 
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["orders"],
     enabled: !!session,
@@ -106,13 +114,15 @@ function Pedidos() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (o) =>
+    return rows.filter((o) => {
+      if (statusFilter !== "all" && o.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
         o.number.toLowerCase().includes(q) ||
-        (o.client_name ?? "").toLowerCase().includes(q),
-    );
-  }, [rows, search]);
+        (o.client_name ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, search, statusFilter]);
 
   async function changeStatus(newStatus: string) {
     if (!viewing) return;
@@ -182,14 +192,29 @@ function Pedidos() {
     <AppShell title="Pedidos" subtitle="Acompanhe o status dos seus pedidos">
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar pedido ou cliente..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:flex-1">
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar pedido ou cliente..."
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-52" aria-label="Filtrar por status">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {ORDER_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
             <Plus className="h-4 w-4 mr-1.5" /> Novo Pedido
