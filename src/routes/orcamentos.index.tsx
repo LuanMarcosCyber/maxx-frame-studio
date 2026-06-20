@@ -505,12 +505,12 @@ function ResumoDialog({
         ...(d.paspaturAdicionalAtivo === "sim" && paspaturAtivo
           ? [
               {
-                label: "Paspatur principal",
+                label: "Paspatur externo",
                 value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspaturPrincipal")),
                 sub: productLabel(d, "paspaturCode", "paspaturDescription"),
               },
               {
-                label: "Paspatur adicional",
+                label: "Paspatur interno",
                 value: fmtMoney(dNum(d, "valorPaspaturAdicional")),
                 sub: (() => {
                   const code = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
