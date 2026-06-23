@@ -1450,7 +1450,12 @@ function NovoOrcamento() {
           .maybeSingle();
         budgetNumber = b?.number ?? null;
       } else {
-        const number = `ORC-${Date.now().toString().slice(-8)}`;
+        const { data: nextNum, error: nErr } = await supabase.rpc(
+          "next_document_number",
+          { _kind: "budget" },
+        );
+        if (nErr) throw nErr;
+        const number = String(nextNum);
         const { data: inserted, error } = await supabase
           .from("budgets")
           .insert({
