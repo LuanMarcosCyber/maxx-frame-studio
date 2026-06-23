@@ -362,6 +362,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_collaborator: { Args: { _user_id: string }; Returns: boolean }
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
     }
