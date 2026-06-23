@@ -60,6 +60,7 @@ export type Database = {
           client_id: string | null
           client_name: string
           created_at: string
+          created_by: string | null
           data_vencimento: string | null
           details: Json
           id: string
@@ -73,6 +74,7 @@ export type Database = {
           client_id?: string | null
           client_name: string
           created_at?: string
+          created_by?: string | null
           data_vencimento?: string | null
           details?: Json
           id?: string
@@ -86,6 +88,7 @@ export type Database = {
           client_id?: string | null
           client_name?: string
           created_at?: string
+          created_by?: string | null
           data_vencimento?: string | null
           details?: Json
           id?: string
@@ -167,6 +170,7 @@ export type Database = {
           budget_id: string | null
           client_name: string
           created_at: string
+          created_by: string | null
           id: string
           number: string
           status: string
@@ -178,6 +182,7 @@ export type Database = {
           budget_id?: string | null
           client_name: string
           created_at?: string
+          created_by?: string | null
           id?: string
           number: string
           status?: string
@@ -189,6 +194,7 @@ export type Database = {
           budget_id?: string | null
           client_name?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           number?: string
           status?: string
