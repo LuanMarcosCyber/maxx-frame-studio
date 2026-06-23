@@ -451,11 +451,32 @@ function ResumoDialog({
   budget,
   onClose,
   extraActions,
+  orderNumber,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
   extraActions?: ReactNode;
+  orderNumber?: string | null;
 }) {
+  const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
+  useEffect(() => {
+    if (!budget?.id || orderNumber) {
+      setLinkedOrderNumber(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("number")
+        .eq("budget_id", budget.id)
+        .maybeSingle();
+      if (!cancelled) setLinkedOrderNumber((data as { number: string } | null)?.number ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budget?.id, orderNumber]);
   const general = (budget?.details ?? {}) as Record<string, unknown>;
   const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
   const gNum = (k: string) => (typeof general[k] === "number" ? (general[k] as number) : 0);
