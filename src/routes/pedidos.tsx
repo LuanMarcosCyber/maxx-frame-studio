@@ -275,7 +275,6 @@ function Pedidos() {
                   <th className="font-medium py-3 px-6">Colaborador</th>
                 )}
                 <th className="font-medium py-3 px-3">Pedido</th>
-                <th className="hidden md:table-cell font-medium py-3 px-3">Orçamento origem</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
                 <th className="font-medium py-3 px-3">Data</th>
                 <th className="font-medium py-3 px-3">Valor total</th>
@@ -286,16 +285,17 @@ function Pedidos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={showCollaborator ? 8 : 7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={showCollaborator ? 8 : 7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Nenhum pedido cadastrado.
                   </td>
                 </tr>
+
               ) : (
                 filtered.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/40 transition">
