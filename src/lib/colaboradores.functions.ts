@@ -10,10 +10,10 @@ async function ensureManager(supabase: any, userId: string) {
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .eq("role", "revendedor")
-    .maybeSingle();
+    .in("role", ["admin", "revendedor"]);
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Acesso negado: apenas administradores e revendedores podem gerenciar colaboradores.");
+  if (!data || data.length === 0)
+    throw new Error("Acesso negado: apenas administradores e revendedores podem gerenciar colaboradores.");
 }
 
 async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, parentUserId: string) {
