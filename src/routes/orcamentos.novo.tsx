@@ -1455,6 +1455,7 @@ function NovoOrcamento() {
           .from("budgets")
           .insert({
             user_id: ownerUserId ?? session.user.id,
+            created_by: session.user.id,
             number,
             status: approve ? "Aprovado" : "Pendente",
             ...budgetPayload,
