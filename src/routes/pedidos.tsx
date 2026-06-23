@@ -313,9 +313,8 @@ function Pedidos() {
                         {o.number}
                       </button>
                     </td>
-                    <td className="hidden md:table-cell py-3.5 px-3 font-mono text-muted-foreground">
-                      {o.budget_id ? budgetNumberMap.get(o.budget_id) ?? "—" : "—"}
-                    </td>
+
+
                     <td className="py-3.5 px-3">
                       <button
                         type="button"
