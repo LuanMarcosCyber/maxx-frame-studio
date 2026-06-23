@@ -399,10 +399,12 @@ export function BudgetSummaryById({
   budgetId,
   onClose,
   extraActions,
+  orderNumber,
 }: {
   budgetId: string | null;
   onClose: () => void;
   extraActions?: ReactNode;
+  orderNumber?: string | null;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
 
@@ -427,7 +429,14 @@ export function BudgetSummaryById({
     };
   }, [budgetId]);
 
-  return <ResumoDialog budget={budget} onClose={onClose} extraActions={extraActions} />;
+  return (
+    <ResumoDialog
+      budget={budget}
+      onClose={onClose}
+      extraActions={extraActions}
+      orderNumber={orderNumber ?? null}
+    />
+  );
 }
 
 
