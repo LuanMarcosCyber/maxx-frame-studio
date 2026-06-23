@@ -62,7 +62,14 @@ type BudgetRow = {
   created_at: string;
   data_vencimento: string | null;
   details: Record<string, unknown> | null;
+  user_id: string;
+  created_by: string | null;
 };
+
+function collaboratorLabel(row: { user_id: string; created_by: string | null }, names: Map<string, string>) {
+  if (!row.created_by || row.created_by === row.user_id) return "—";
+  return names.get(row.created_by) || "—";
+}
 
 function Orcamentos() {
   const { session, ownerUserId } = useAuth();
@@ -82,13 +89,32 @@ function Orcamentos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budgets")
-        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details")
+        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by")
         .neq("status", "Aprovado")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as BudgetRow[];
     },
   });
+
+  const creatorIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))),
+    [rows],
+  );
+  const { data: creatorNames } = useQuery({
+    queryKey: ["profiles", "names", creatorIds],
+    enabled: creatorIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, username")
+        .in("id", creatorIds);
+      const map = new Map<string, string>();
+      (data ?? []).forEach((p: any) => map.set(p.id, p.full_name || p.username || "—"));
+      return map;
+    },
+  });
+  const namesMap = creatorNames ?? new Map<string, string>();
 
   // Abrir automaticamente o resumo quando vindo de /pedidos?view=<id>
   useEffect(() => {
