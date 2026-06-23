@@ -72,7 +72,8 @@ function collaboratorLabel(row: { user_id: string; created_by: string | null }, 
 }
 
 function Orcamentos() {
-  const { session, ownerUserId } = useAuth();
+  const { session, ownerUserId, role } = useAuth();
+  const showCollaborator = role !== "colaborador";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { view: viewParam } = Route.useSearch();
