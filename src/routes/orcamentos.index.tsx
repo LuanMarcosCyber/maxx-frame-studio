@@ -461,6 +461,25 @@ function ResumoDialog({
         })
         .filter((p): p is Parcela => !!p)
     : [];
+
+  const [creatorName, setCreatorName] = useState<string>("—");
+  useEffect(() => {
+    if (!budget || !budget.created_by || budget.created_by === budget.user_id) {
+      setCreatorName("—");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, username")
+        .eq("id", budget.created_by!)
+        .maybeSingle();
+      if (cancelled) return;
+      setCreatorName((data as any)?.full_name || (data as any)?.username || "—");
+    })();
+    return () => { cancelled = true; };
+  }, [budget?.created_by, budget?.user_id]);
   const condicaoPagamento =
     typeof general.condicaoPagamento === "string"
       ? (general.condicaoPagamento as string)
