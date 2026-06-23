@@ -221,7 +221,8 @@ function Orcamentos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
-                <th className="font-medium py-3 px-6">Número</th>
+                <th className="font-medium py-3 px-6">Colaborador</th>
+                <th className="font-medium py-3 px-3">Número</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
                 <th className="font-medium py-3 px-3">Data</th>
                 <th className="font-medium py-3 px-3">Valor total</th>
@@ -232,20 +233,23 @@ function Orcamentos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhum orçamento cadastrado.
                   </td>
                 </tr>
               ) : (
                 rows.map((b) => (
                   <tr key={b.id} className="hover:bg-muted/40 transition">
-                    <td className="py-3.5 px-6 font-mono font-semibold text-foreground">
+                    <td className="py-3.5 px-6 text-muted-foreground">
+                      {collaboratorLabel(b, namesMap)}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono font-semibold text-foreground">
                       {b.number}
                     </td>
                     <td className="py-3.5 px-3">{b.client_name}</td>
