@@ -408,7 +408,7 @@ export function BudgetSummaryById({
       const { data } = await supabase
         .from("budgets")
         .select(
-          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details",
+          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by",
         )
         .eq("id", budgetId)
         .maybeSingle();
