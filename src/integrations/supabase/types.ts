@@ -165,6 +165,27 @@ export type Database = {
         }
         Relationships: []
       }
+      number_counters: {
+        Row: {
+          kind: string
+          last_value: number
+          owner_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          kind: string
+          last_value?: number
+          owner_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          kind?: string
+          last_value?: number
+          owner_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           budget_id: string | null
@@ -341,6 +362,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
