@@ -96,7 +96,8 @@ function collaboratorLabel(row: { user_id: string; created_by: string | null }, 
 }
 
 function Pedidos() {
-  const { session } = useAuth();
+  const { session, role } = useAuth();
+  const showCollaborator = role !== "colaborador";
   const queryClient = useQueryClient();
   const [viewing, setViewing] = useState<OrderRow | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -118,6 +119,25 @@ function Pedidos() {
       return (data ?? []) as OrderRow[];
     },
   });
+
+  const budgetIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.budget_id).filter((id): id is string => !!id))),
+    [rows],
+  );
+  const { data: budgetNumbers } = useQuery({
+    queryKey: ["budgets", "numbers", budgetIds],
+    enabled: budgetIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("budgets")
+        .select("id, number")
+        .in("id", budgetIds);
+      const map = new Map<string, string>();
+      (data ?? []).forEach((b: any) => map.set(b.id, b.number));
+      return map;
+    },
+  });
+  const budgetNumberMap = budgetNumbers ?? new Map<string, string>();
 
   const creatorIds = useMemo(
     () => Array.from(new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))),
