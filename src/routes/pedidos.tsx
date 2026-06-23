@@ -389,6 +389,7 @@ function Pedidos() {
 
       <BudgetSummaryById
         budgetId={viewing?.budget_id ?? null}
+        orderNumber={viewing?.number ?? null}
         onClose={() => {
           if (!statusOpen && !deleteOpen && !printOpen) setViewing(null);
         }}
