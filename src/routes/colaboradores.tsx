@@ -62,11 +62,13 @@ function ColaboradoresPage() {
   const { role, loading } = useAuth();
   const navigate = useNavigate();
 
+  const canManage = role === "revendedor" || role === "admin";
+
   useEffect(() => {
-    if (!loading && role && role !== "revendedor") {
+    if (!loading && role && !canManage) {
       navigate({ to: "/", replace: true });
     }
-  }, [role, loading, navigate]);
+  }, [role, loading, navigate, canManage]);
 
   if (loading || !role) {
     return (
@@ -75,7 +77,7 @@ function ColaboradoresPage() {
       </AppShell>
     );
   }
-  if (role !== "revendedor") return null;
+  if (!canManage) return null;
 
   return (
     <AppShell title="Colaboradores" subtitle="Gerencie os colaboradores da sua loja">
