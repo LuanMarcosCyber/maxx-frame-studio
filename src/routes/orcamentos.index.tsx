@@ -72,7 +72,8 @@ function collaboratorLabel(row: { user_id: string; created_by: string | null }, 
 }
 
 function Orcamentos() {
-  const { session, ownerUserId } = useAuth();
+  const { session, ownerUserId, role } = useAuth();
+  const showCollaborator = role !== "colaborador";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { view: viewParam } = Route.useSearch();
@@ -167,9 +168,12 @@ function Orcamentos() {
           .eq("id", existingOrder.id);
         if (upoErr) throw upoErr;
       } else {
-        const orderNumber = approving.number
-          ? `PED-${approving.number.replace(/^ORC-/, "")}`
-          : `PED-${Date.now().toString().slice(-8)}`;
+        const { data: nextOrd, error: nErr } = await supabase.rpc(
+          "next_document_number",
+          { _kind: "order" },
+        );
+        if (nErr) throw nErr;
+        const orderNumber = String(nextOrd);
         const { error: insErr } = await supabase.from("orders").insert({
           user_id: ownerUserId ?? session.user.id,
           created_by: approving.created_by ?? session.user.id,
@@ -221,7 +225,9 @@ function Orcamentos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
-                <th className="font-medium py-3 px-6">Colaborador</th>
+                {showCollaborator && (
+                  <th className="font-medium py-3 px-6">Colaborador</th>
+                )}
                 <th className="font-medium py-3 px-3">Número</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
                 <th className="font-medium py-3 px-3">Data</th>
@@ -233,22 +239,24 @@ function Orcamentos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Nenhum orçamento cadastrado.
                   </td>
                 </tr>
               ) : (
                 rows.map((b) => (
                   <tr key={b.id} className="hover:bg-muted/40 transition">
-                    <td className="py-3.5 px-6 text-muted-foreground">
-                      {collaboratorLabel(b, namesMap)}
-                    </td>
+                    {showCollaborator && (
+                      <td className="py-3.5 px-6 text-muted-foreground">
+                        {collaboratorLabel(b, namesMap)}
+                      </td>
+                    )}
                     <td className="py-3.5 px-3 font-mono font-semibold text-foreground">
                       {b.number}
                     </td>
@@ -391,10 +399,12 @@ export function BudgetSummaryById({
   budgetId,
   onClose,
   extraActions,
+  orderNumber,
 }: {
   budgetId: string | null;
   onClose: () => void;
   extraActions?: ReactNode;
+  orderNumber?: string | null;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
 
@@ -419,7 +429,14 @@ export function BudgetSummaryById({
     };
   }, [budgetId]);
 
-  return <ResumoDialog budget={budget} onClose={onClose} extraActions={extraActions} />;
+  return (
+    <ResumoDialog
+      budget={budget}
+      onClose={onClose}
+      extraActions={extraActions}
+      orderNumber={orderNumber ?? null}
+    />
+  );
 }
 
 
@@ -434,11 +451,32 @@ function ResumoDialog({
   budget,
   onClose,
   extraActions,
+  orderNumber,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
   extraActions?: ReactNode;
+  orderNumber?: string | null;
 }) {
+  const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
+  useEffect(() => {
+    if (!budget?.id || orderNumber) {
+      setLinkedOrderNumber(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("number")
+        .eq("budget_id", budget.id)
+        .maybeSingle();
+      if (!cancelled) setLinkedOrderNumber((data as { number: string } | null)?.number ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budget?.id, orderNumber]);
   const general = (budget?.details ?? {}) as Record<string, unknown>;
   const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
   const gNum = (k: string) => (typeof general[k] === "number" ? (general[k] as number) : 0);
@@ -666,7 +704,19 @@ function ResumoDialog({
         {budget && (
           <div className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <Info label="Número" value={budget.number} mono />
+              {orderNumber ? (
+                <>
+                  <Info label="Pedido" value={orderNumber} mono />
+                  <Info label="Originado do orçamento" value={budget.number} mono />
+                </>
+              ) : (
+                <>
+                  <Info label="Número" value={budget.number} mono />
+                  {linkedOrderNumber && (
+                    <Info label="Pedido gerado" value={linkedOrderNumber} mono />
+                  )}
+                </>
+              )}
               <Info label="Cliente" value={budget.client_name} />
               <Info label="Data" value={fmtDate(budget.created_at)} />
               <Info label="Status" value={budget.status} />

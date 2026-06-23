@@ -1450,7 +1450,12 @@ function NovoOrcamento() {
           .maybeSingle();
         budgetNumber = b?.number ?? null;
       } else {
-        const number = `ORC-${Date.now().toString().slice(-8)}`;
+        const { data: nextNum, error: nErr } = await supabase.rpc(
+          "next_document_number",
+          { _kind: "budget" },
+        );
+        if (nErr) throw nErr;
+        const number = String(nextNum);
         const { data: inserted, error } = await supabase
           .from("budgets")
           .insert({
@@ -1503,9 +1508,12 @@ function NovoOrcamento() {
             .eq("id", existingOrder.id);
           if (updErr) throw updErr;
         } else {
-          const orderNumber = budgetNumber
-            ? `PED-${budgetNumber.replace(/^ORC-/, "")}`
-            : `PED-${Date.now().toString().slice(-8)}`;
+          const { data: nextOrd, error: nOrdErr } = await supabase.rpc(
+            "next_document_number",
+            { _kind: "order" },
+          );
+          if (nOrdErr) throw nOrdErr;
+          const orderNumber = String(nextOrd);
           const { error: insOrdErr } = await supabase.from("orders").insert({
             user_id: ownerUserId ?? session.user.id,
             created_by: session.user.id,
