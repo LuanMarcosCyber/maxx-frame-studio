@@ -239,22 +239,24 @@ function Orcamentos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Nenhum orçamento cadastrado.
                   </td>
                 </tr>
               ) : (
                 rows.map((b) => (
                   <tr key={b.id} className="hover:bg-muted/40 transition">
-                    <td className="py-3.5 px-6 text-muted-foreground">
-                      {collaboratorLabel(b, namesMap)}
-                    </td>
+                    {showCollaborator && (
+                      <td className="py-3.5 px-6 text-muted-foreground">
+                        {collaboratorLabel(b, namesMap)}
+                      </td>
+                    )}
                     <td className="py-3.5 px-3 font-mono font-semibold text-foreground">
                       {b.number}
                     </td>
