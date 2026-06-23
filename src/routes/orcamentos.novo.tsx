@@ -1508,9 +1508,12 @@ function NovoOrcamento() {
             .eq("id", existingOrder.id);
           if (updErr) throw updErr;
         } else {
-          const orderNumber = budgetNumber
-            ? `PED-${budgetNumber.replace(/^ORC-/, "")}`
-            : `PED-${Date.now().toString().slice(-8)}`;
+          const { data: nextOrd, error: nOrdErr } = await supabase.rpc(
+            "next_document_number",
+            { _kind: "order" },
+          );
+          if (nOrdErr) throw nOrdErr;
+          const orderNumber = String(nextOrd);
           const { error: insOrdErr } = await supabase.from("orders").insert({
             user_id: ownerUserId ?? session.user.id,
             created_by: session.user.id,
