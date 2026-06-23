@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const EMAIL_DOMAIN = "totalmaxx.local";
 const usernameToEmail = (u: string) => `${u.trim().toLowerCase()}@${EMAIL_DOMAIN}`;
 
-async function ensureRevendedor(supabase: any, userId: string) {
+async function ensureManager(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
@@ -13,7 +13,7 @@ async function ensureRevendedor(supabase: any, userId: string) {
     .eq("role", "revendedor")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Acesso negado: apenas revendedores podem gerenciar colaboradores.");
+  if (!data) throw new Error("Acesso negado: apenas administradores e revendedores podem gerenciar colaboradores.");
 }
 
 async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, parentUserId: string) {
@@ -31,7 +31,7 @@ async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, parent
 export const listColaboradores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureRevendedor(context.supabase, context.userId);
+    await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: profiles, error } = await supabaseAdmin
@@ -57,7 +57,7 @@ export const createColaborador = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ context, data }) => {
-    await ensureRevendedor(context.supabase, context.userId);
+    await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const username = data.username.toLowerCase();
@@ -103,7 +103,7 @@ export const resetColaboradorPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => resetSchema.parse(input))
   .handler(async ({ context, data }) => {
-    await ensureRevendedor(context.supabase, context.userId);
+    await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureOwnership(supabaseAdmin, data.user_id, context.userId);
 
@@ -123,7 +123,7 @@ export const toggleColaboradorActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => toggleSchema.parse(input))
   .handler(async ({ context, data }) => {
-    await ensureRevendedor(context.supabase, context.userId);
+    await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureOwnership(supabaseAdmin, data.user_id, context.userId);
 
@@ -150,7 +150,7 @@ export const updateColaborador = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => updateSchema.parse(input))
   .handler(async ({ context, data }) => {
-    await ensureRevendedor(context.supabase, context.userId);
+    await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureOwnership(supabaseAdmin, data.user_id, context.userId);
 
@@ -168,7 +168,7 @@ export const deleteColaborador = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => deleteSchema.parse(input))
   .handler(async ({ context, data }) => {
-    await ensureRevendedor(context.supabase, context.userId);
+    await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureOwnership(supabaseAdmin, data.user_id, context.userId);
 
