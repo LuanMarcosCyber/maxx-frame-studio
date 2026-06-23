@@ -167,9 +167,12 @@ function Orcamentos() {
           .eq("id", existingOrder.id);
         if (upoErr) throw upoErr;
       } else {
-        const orderNumber = approving.number
-          ? `PED-${approving.number.replace(/^ORC-/, "")}`
-          : `PED-${Date.now().toString().slice(-8)}`;
+        const { data: nextOrd, error: nErr } = await supabase.rpc(
+          "next_document_number",
+          { _kind: "order" },
+        );
+        if (nErr) throw nErr;
+        const orderNumber = String(nextOrd);
         const { error: insErr } = await supabase.from("orders").insert({
           user_id: ownerUserId ?? session.user.id,
           created_by: approving.created_by ?? session.user.id,
