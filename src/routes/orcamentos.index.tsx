@@ -704,7 +704,19 @@ function ResumoDialog({
         {budget && (
           <div className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <Info label="Número" value={budget.number} mono />
+              {orderNumber ? (
+                <>
+                  <Info label="Pedido" value={orderNumber} mono />
+                  <Info label="Originado do orçamento" value={budget.number} mono />
+                </>
+              ) : (
+                <>
+                  <Info label="Número" value={budget.number} mono />
+                  {linkedOrderNumber && (
+                    <Info label="Pedido gerado" value={linkedOrderNumber} mono />
+                  )}
+                </>
+              )}
               <Info label="Cliente" value={budget.client_name} />
               <Info label="Data" value={fmtDate(budget.created_at)} />
               <Info label="Status" value={budget.status} />
