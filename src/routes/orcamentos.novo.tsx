@@ -1455,6 +1455,7 @@ function NovoOrcamento() {
           .from("budgets")
           .insert({
             user_id: ownerUserId ?? session.user.id,
+            created_by: session.user.id,
             number,
             status: approve ? "Aprovado" : "Pendente",
             ...budgetPayload,
@@ -1507,6 +1508,7 @@ function NovoOrcamento() {
             : `PED-${Date.now().toString().slice(-8)}`;
           const { error: insOrdErr } = await supabase.from("orders").insert({
             user_id: ownerUserId ?? session.user.id,
+            created_by: session.user.id,
             number: orderNumber,
             budget_id: budgetId,
             ...orderPayload,

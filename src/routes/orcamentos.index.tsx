@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,14 @@ type BudgetRow = {
   created_at: string;
   data_vencimento: string | null;
   details: Record<string, unknown> | null;
+  user_id: string;
+  created_by: string | null;
 };
+
+function collaboratorLabel(row: { user_id: string; created_by: string | null }, names: Map<string, string>) {
+  if (!row.created_by || row.created_by === row.user_id) return "—";
+  return names.get(row.created_by) || "—";
+}
 
 function Orcamentos() {
   const { session, ownerUserId } = useAuth();
@@ -82,13 +89,32 @@ function Orcamentos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budgets")
-        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details")
+        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by")
         .neq("status", "Aprovado")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as BudgetRow[];
     },
   });
+
+  const creatorIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))),
+    [rows],
+  );
+  const { data: creatorNames } = useQuery({
+    queryKey: ["profiles", "names", creatorIds],
+    enabled: creatorIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, username")
+        .in("id", creatorIds);
+      const map = new Map<string, string>();
+      (data ?? []).forEach((p: any) => map.set(p.id, p.full_name || p.username || "—"));
+      return map;
+    },
+  });
+  const namesMap = creatorNames ?? new Map<string, string>();
 
   // Abrir automaticamente o resumo quando vindo de /pedidos?view=<id>
   useEffect(() => {
@@ -146,6 +172,7 @@ function Orcamentos() {
           : `PED-${Date.now().toString().slice(-8)}`;
         const { error: insErr } = await supabase.from("orders").insert({
           user_id: ownerUserId ?? session.user.id,
+          created_by: approving.created_by ?? session.user.id,
           number: orderNumber,
           budget_id: approving.id,
           ...orderPayload,
@@ -194,7 +221,8 @@ function Orcamentos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
-                <th className="font-medium py-3 px-6">Número</th>
+                <th className="font-medium py-3 px-6">Colaborador</th>
+                <th className="font-medium py-3 px-3">Número</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
                 <th className="font-medium py-3 px-3">Data</th>
                 <th className="font-medium py-3 px-3">Valor total</th>
@@ -205,20 +233,23 @@ function Orcamentos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhum orçamento cadastrado.
                   </td>
                 </tr>
               ) : (
                 rows.map((b) => (
                   <tr key={b.id} className="hover:bg-muted/40 transition">
-                    <td className="py-3.5 px-6 font-mono font-semibold text-foreground">
+                    <td className="py-3.5 px-6 text-muted-foreground">
+                      {collaboratorLabel(b, namesMap)}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono font-semibold text-foreground">
                       {b.number}
                     </td>
                     <td className="py-3.5 px-3">{b.client_name}</td>
@@ -377,7 +408,7 @@ export function BudgetSummaryById({
       const { data } = await supabase
         .from("budgets")
         .select(
-          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details",
+          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by",
         )
         .eq("id", budgetId)
         .maybeSingle();
@@ -430,6 +461,25 @@ function ResumoDialog({
         })
         .filter((p): p is Parcela => !!p)
     : [];
+
+  const [creatorName, setCreatorName] = useState<string>("—");
+  useEffect(() => {
+    if (!budget || !budget.created_by || budget.created_by === budget.user_id) {
+      setCreatorName("—");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, username")
+        .eq("id", budget.created_by!)
+        .maybeSingle();
+      if (cancelled) return;
+      setCreatorName((data as any)?.full_name || (data as any)?.username || "—");
+    })();
+    return () => { cancelled = true; };
+  }, [budget?.created_by, budget?.user_id]);
   const condicaoPagamento =
     typeof general.condicaoPagamento === "string"
       ? (general.condicaoPagamento as string)
@@ -620,6 +670,7 @@ function ResumoDialog({
               <Info label="Cliente" value={budget.client_name} />
               <Info label="Data" value={fmtDate(budget.created_at)} />
               <Info label="Status" value={budget.status} />
+              <Info label="Colaborador" value={creatorName} />
               <Info
                 label="Forma de pagamento"
                 value={gStr("formaPagamento") || "—"}

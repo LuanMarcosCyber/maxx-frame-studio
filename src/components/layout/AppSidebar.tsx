@@ -48,7 +48,7 @@ function useSidebarData() {
   let items: Item[];
   let bottomItems: Item[];
   if (role === "admin") {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, revendedores];
+    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, revendedores, colaboradores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
     items = [dashboard, orcamentos, pedidos, clientes, produtos];
@@ -100,26 +100,35 @@ function ProfileAvatar() {
   const name = profile?.full_name || profile?.username || "";
 
   return (
-    <div className="relative">
-      <div
-        className="h-28 w-28 rounded-full overflow-hidden bg-muted border-2 border-white shadow-md grid place-items-center"
-        aria-label="Foto de perfil"
-      >
-        {avatar ? (
-          <img src={avatar} alt={name || "Foto de perfil"} className="h-full w-full object-cover" />
-        ) : (
-          <User className="h-12 w-12 text-muted-foreground/60" strokeWidth={1.5} />
-        )}
-      </div>
+    <div className="relative group">
       <button
         type="button"
         onClick={onPick}
         disabled={uploading}
         aria-label="Alterar foto de perfil"
+        title="Alterar foto de perfil"
         className={cn(
-          "absolute bottom-0 right-0 h-9 w-9 rounded-full grid place-items-center",
+          "h-28 w-28 rounded-full overflow-hidden bg-muted border-2 border-white shadow-md grid place-items-center cursor-pointer",
+          "transition hover:opacity-90 hover:ring-2 hover:ring-[hsl(var(--brand-end))]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand-end))]/60",
+          "disabled:cursor-wait",
+        )}
+      >
+        {avatar ? (
+          <img src={avatar} alt={name || "Foto de perfil"} className="h-full w-full object-cover pointer-events-none" />
+        ) : (
+          <User className="h-12 w-12 text-muted-foreground/60" strokeWidth={1.5} />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onPick}
+        disabled={uploading}
+        aria-label="Alterar foto de perfil"
+        title="Alterar foto de perfil"
+        className={cn(
+          "absolute bottom-0 right-0 h-9 w-9 rounded-full grid place-items-center cursor-pointer",
           "bg-gradient-brand text-brand-foreground shadow-brand border-2 border-white",
-          "hover:opacity-95 transition disabled:opacity-60",
+          "hover:opacity-95 hover:scale-105 transition disabled:opacity-60 disabled:cursor-wait",
         )}
       >
         {uploading ? (

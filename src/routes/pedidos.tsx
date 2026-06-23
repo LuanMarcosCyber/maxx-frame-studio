@@ -63,6 +63,8 @@ type OrderRow = {
   status: string;
   created_at: string;
   budget_id: string | null;
+  user_id: string;
+  created_by: string | null;
 };
 
 const ORDER_STATUSES = [
@@ -88,6 +90,11 @@ const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
+function collaboratorLabel(row: { user_id: string; created_by: string | null }, names: Map<string, string>) {
+  if (!row.created_by || row.created_by === row.user_id) return "—";
+  return names.get(row.created_by) || "—";
+}
+
 function Pedidos() {
   const { session } = useAuth();
   const queryClient = useQueryClient();
@@ -105,12 +112,31 @@ function Pedidos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, number, client_name, total_value, status, created_at, budget_id")
+        .select("id, number, client_name, total_value, status, created_at, budget_id, user_id, created_by")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as OrderRow[];
     },
   });
+
+  const creatorIds = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))),
+    [rows],
+  );
+  const { data: creatorNames } = useQuery({
+    queryKey: ["profiles", "names", creatorIds],
+    enabled: creatorIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, username")
+        .in("id", creatorIds);
+      const map = new Map<string, string>();
+      (data ?? []).forEach((p: any) => map.set(p.id, p.full_name || p.username || "—"));
+      return map;
+    },
+  });
+  const namesMap = creatorNames ?? new Map<string, string>();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -225,7 +251,8 @@ function Pedidos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
-                <th className="font-medium py-3 px-6">Pedido</th>
+                <th className="font-medium py-3 px-6">Colaborador</th>
+                <th className="font-medium py-3 px-3">Pedido</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
                 <th className="font-medium py-3 px-3">Data</th>
                 <th className="font-medium py-3 px-3">Valor total</th>
@@ -236,20 +263,23 @@ function Pedidos() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhum pedido cadastrado.
                   </td>
                 </tr>
               ) : (
                 filtered.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/40 transition">
-                    <td className="py-3.5 px-6 font-mono font-semibold">
+                    <td className="py-3.5 px-6 text-muted-foreground">
+                      {collaboratorLabel(o, namesMap)}
+                    </td>
+                    <td className="py-3.5 px-3 font-mono font-semibold">
                       <button
                         type="button"
                         onClick={() => setViewing(o)}
