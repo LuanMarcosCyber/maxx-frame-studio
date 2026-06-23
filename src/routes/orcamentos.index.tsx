@@ -225,7 +225,9 @@ function Orcamentos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
-                <th className="font-medium py-3 px-6">Colaborador</th>
+                {showCollaborator && (
+                  <th className="font-medium py-3 px-6">Colaborador</th>
+                )}
                 <th className="font-medium py-3 px-3">Número</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
                 <th className="font-medium py-3 px-3">Data</th>
