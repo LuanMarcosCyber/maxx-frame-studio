@@ -670,6 +670,7 @@ function ResumoDialog({
               <Info label="Cliente" value={budget.client_name} />
               <Info label="Data" value={fmtDate(budget.created_at)} />
               <Info label="Status" value={budget.status} />
+              <Info label="Colaborador" value={creatorName} />
               <Info
                 label="Forma de pagamento"
                 value={gStr("formaPagamento") || "—"}
