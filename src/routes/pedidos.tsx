@@ -105,6 +105,8 @@ function Pedidos() {
   const { session, role } = useAuth();
   const showCollaborator = role !== "colaborador";
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { view: viewParam } = Route.useSearch();
   const [viewing, setViewing] = useState<OrderRow | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
