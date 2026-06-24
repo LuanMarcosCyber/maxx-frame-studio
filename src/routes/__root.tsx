@@ -153,6 +153,43 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useMobileKeyboardScroll();
 
+  // Recuperação global de chunks antigos (cache stale após deploy)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = "__tm_reload_attempt";
+    // Limpa marcador antigo após carregar com sucesso
+    const ok = setTimeout(() => sessionStorage.removeItem(key), 5000);
+
+    const isStale = (msg: string) => {
+      const m = msg.toLowerCase();
+      return (
+        m.includes("failed to fetch dynamically imported module") ||
+        m.includes("importing a module script failed") ||
+        m.includes("loading chunk") ||
+        m.includes("loading css chunk")
+      );
+    };
+    const tryReload = (msg: string) => {
+      if (!isStale(msg)) return;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, String(Date.now()));
+      window.location.reload();
+    };
+    const onError = (e: ErrorEvent) => tryReload(e.message || "");
+    const onRejection = (e: PromiseRejectionEvent) => {
+      const reason = e.reason;
+      const msg = typeof reason === "string" ? reason : reason?.message ?? "";
+      tryReload(msg);
+    };
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      clearTimeout(ok);
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -164,6 +201,7 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+
 
 function AuthLoadingScreen() {
   return (
