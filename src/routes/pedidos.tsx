@@ -178,6 +178,16 @@ function Pedidos() {
     });
   }, [rows, search, statusFilter]);
 
+  // Abrir automaticamente o resumo quando vindo de /pedidos?view=<id>
+  useEffect(() => {
+    if (!viewParam) return;
+    const found = rows.find((r) => r.id === viewParam);
+    if (found) {
+      setViewing(found);
+      navigate({ to: "/pedidos", search: {}, replace: true });
+    }
+  }, [viewParam, rows, navigate]);
+
   async function updateOrderStatus(orderId: string, newStatus: string) {
     const { error } = await supabase
       .from("orders")
