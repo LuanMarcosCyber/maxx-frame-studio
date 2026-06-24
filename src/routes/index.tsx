@@ -327,31 +327,34 @@ function Dashboard() {
                 ) : (
                   <ul className="divide-y divide-border">
                     {data.recent.map((r) => (
-                      <li
-                        key={`${r.kind}-${r.id}`}
-                        className="py-4 flex items-center justify-between gap-4"
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
-                              {r.kind}
-                            </span>
+                      <li key={`${r.kind}-${r.id}`}>
+                        <Link
+                          to={r.to}
+                          search={{ view: r.id }}
+                          className="py-4 px-2 -mx-2 rounded-md flex items-center justify-between gap-4 hover:bg-muted/60 transition cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                                {r.kind}
+                              </span>
+                              <span className="text-sm font-semibold text-foreground">
+                                #{r.number}
+                              </span>
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1 truncate">
+                              {r.client_name} · {fmtDate(r.created_at)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 shrink-0">
                             <span className="text-sm font-semibold text-foreground">
-                              #{r.number}
+                              {fmtMoney(r.total_value)}
+                            </span>
+                            <span className="text-[11px] px-2.5 py-1 rounded-full bg-accent text-accent-foreground font-medium">
+                              {r.status}
                             </span>
                           </div>
-                          <div className="text-sm text-muted-foreground mt-1 truncate">
-                            {r.client_name} · {fmtDate(r.created_at)}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 shrink-0">
-                          <span className="text-sm font-semibold text-foreground">
-                            {fmtMoney(r.total_value)}
-                          </span>
-                          <span className="text-[11px] px-2.5 py-1 rounded-full bg-accent text-accent-foreground font-medium">
-                            {r.status}
-                          </span>
-                        </div>
+                        </Link>
                       </li>
                     ))}
                   </ul>

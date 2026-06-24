@@ -306,10 +306,24 @@ function Orcamentos() {
                         {collaboratorLabel(b, namesMap)}
                       </td>
                     )}
-                    <td className="py-3.5 px-3 font-mono font-semibold text-foreground">
-                      {b.number}
+                    <td className="py-3.5 px-3 font-mono font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(b)}
+                        className="text-primary hover:underline"
+                      >
+                        {b.number}
+                      </button>
                     </td>
-                    <td className="py-3.5 px-3">{b.client_name}</td>
+                    <td className="py-3.5 px-3">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(b)}
+                        className="text-foreground hover:text-primary hover:underline text-left"
+                      >
+                        {b.client_name}
+                      </button>
+                    </td>
                     <td className="py-3.5 px-3 text-muted-foreground">
                       {fmtDate(b.created_at)}
                     </td>

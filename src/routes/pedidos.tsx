@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -55,6 +55,9 @@ import { BudgetSummaryById } from "./orcamentos.index";
 
 export const Route = createFileRoute("/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Total Maxx ERP" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    view: typeof search.view === "string" ? search.view : undefined,
+  }),
   component: Pedidos,
 });
 
@@ -102,6 +105,8 @@ function Pedidos() {
   const { session, role } = useAuth();
   const showCollaborator = role !== "colaborador";
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { view: viewParam } = Route.useSearch();
   const [viewing, setViewing] = useState<OrderRow | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -172,6 +177,16 @@ function Pedidos() {
       );
     });
   }, [rows, search, statusFilter]);
+
+  // Abrir automaticamente o resumo quando vindo de /pedidos?view=<id>
+  useEffect(() => {
+    if (!viewParam) return;
+    const found = rows.find((r) => r.id === viewParam);
+    if (found) {
+      setViewing(found);
+      navigate({ to: "/pedidos", search: {}, replace: true });
+    }
+  }, [viewParam, rows, navigate]);
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
     const { error } = await supabase
