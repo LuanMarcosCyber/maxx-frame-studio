@@ -39,9 +39,7 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
-const fmtMoney = (n: number) =>
-  n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+import { fmtMoney, fmtDateTime } from "@/lib/utils";
 
 function startOfMonth(d = new Date()) {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
@@ -67,38 +65,52 @@ type DashboardData = {
 async function fetchDashboard(): Promise<DashboardData> {
   const monthStart = startOfMonth();
 
-  const [budgetsAll, ordersAll, productsAll, recentBudgets, recentOrders] =
-    await Promise.all([
-      supabase.from("budgets").select("id, created_at"),
-      supabase.from("orders").select("id, total_value, created_at"),
-      supabase.from("products").select("id"),
-      supabase
-        .from("budgets")
-        .select("id, number, client_name, total_value, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("orders")
-        .select("id, number, client_name, total_value, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5),
-    ]);
+  // Contagens server-side (head:true não traz linhas) e soma do mês via
+  // select mínimo apenas dos pedidos do mês corrente.
+  const [
+    budgetsMonthRes,
+    ordersMonthRes,
+    productsTotalRes,
+    revenueRowsRes,
+    recentBudgets,
+    recentOrders,
+  ] = await Promise.all([
+    supabase
+      .from("budgets")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+    supabase.from("products").select("id", { count: "exact", head: true }),
+    supabase
+      .from("orders")
+      .select("total_value")
+      .gte("created_at", monthStart),
+    supabase
+      .from("budgets")
+      .select("id, number, client_name, total_value, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("orders")
+      .select("id, number, client_name, total_value, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
+  ]);
 
-  if (budgetsAll.error) throw budgetsAll.error;
-  if (ordersAll.error) throw ordersAll.error;
-  if (productsAll.error) throw productsAll.error;
+  if (budgetsMonthRes.error) throw budgetsMonthRes.error;
+  if (ordersMonthRes.error) throw ordersMonthRes.error;
+  if (productsTotalRes.error) throw productsTotalRes.error;
+  if (revenueRowsRes.error) throw revenueRowsRes.error;
   if (recentBudgets.error) throw recentBudgets.error;
   if (recentOrders.error) throw recentOrders.error;
 
-  const budgets = budgetsAll.data ?? [];
-  const orders = ordersAll.data ?? [];
-  const products = productsAll.data ?? [];
-
-  const budgetsMonth = budgets.filter((b) => b.created_at >= monthStart).length;
-  const ordersMonth = orders.filter((o) => o.created_at >= monthStart).length;
-  const revenueMonth = orders
-    .filter((o) => o.created_at >= monthStart)
-    .reduce((s, o) => s + Number(o.total_value || 0), 0);
+  const revenueMonth = (revenueRowsRes.data ?? []).reduce(
+    (s, o) => s + Number(o.total_value || 0),
+    0,
+  );
 
   const recent = [
     ...(recentBudgets.data ?? []).map((b) => ({
@@ -118,13 +130,14 @@ async function fetchDashboard(): Promise<DashboardData> {
     .slice(0, 6);
 
   return {
-    budgetsMonth,
-    ordersMonth,
-    productsTotal: products.length,
+    budgetsMonth: budgetsMonthRes.count ?? 0,
+    ordersMonth: ordersMonthRes.count ?? 0,
+    productsTotal: productsTotalRes.count ?? 0,
     revenueMonth,
     recent,
   };
 }
+
 
 const quickActions = [
   {
