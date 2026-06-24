@@ -209,6 +209,12 @@ function Produtos() {
       }
       setSaving(true);
       try {
+        const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+        if (Number.isNaN(commission)) {
+          toast.error("Comissão inválida.");
+          setSaving(false);
+          return;
+        }
         const payload = {
           code: form.code.trim(),
           description: form.description.trim(),
@@ -220,6 +226,7 @@ function Produtos() {
           name: form.name.trim(),
           barcode: form.barcode.trim() || null,
           supplier: form.supplier.trim() || null,
+          commission_percentage: commission,
         };
         if (editing) {
           const { error } = await supabase
@@ -273,6 +280,21 @@ function Produtos() {
       }
     }
 
+    const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+    if (Number.isNaN(commission)) {
+      toast.error("Comissão inválida.");
+      return;
+    }
+    let laborCost = 0;
+    if (isPerfil && form.labor_cost.trim() !== "") {
+      const lc = parseNum(form.labor_cost);
+      if (Number.isNaN(lc)) {
+        toast.error("Mão de obra inválida.");
+        return;
+      }
+      laborCost = lc;
+    }
+
     setSaving(true);
     try {
       if (editing) {
@@ -286,6 +308,8 @@ function Produtos() {
             profit_margin: margin,
             waste_percentage: waste,
             frame_width_cm: isPerfil ? frameWidth : null,
+            labor_cost: isPerfil ? laborCost : 0,
+            commission_percentage: commission,
           })
           .eq("id", editing.id);
         if (error) throw error;
@@ -300,6 +324,8 @@ function Produtos() {
           profit_margin: margin,
           waste_percentage: waste,
           frame_width_cm: isPerfil ? frameWidth : null,
+          labor_cost: isPerfil ? laborCost : 0,
+          commission_percentage: commission,
         });
         if (error) throw error;
         toast.success("Produto cadastrado.");
