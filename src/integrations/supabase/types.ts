@@ -238,10 +238,12 @@ export type Database = {
           barcode: string | null
           category: string | null
           code: string
+          commission_percentage: number
           created_at: string
           description: string
           frame_width_cm: number | null
           id: string
+          labor_cost: number
           name: string | null
           profit_margin: number
           supplier: string | null
@@ -254,10 +256,12 @@ export type Database = {
           barcode?: string | null
           category?: string | null
           code: string
+          commission_percentage?: number
           created_at?: string
           description: string
           frame_width_cm?: number | null
           id?: string
+          labor_cost?: number
           name?: string | null
           profit_margin?: number
           supplier?: string | null
@@ -270,10 +274,12 @@ export type Database = {
           barcode?: string | null
           category?: string | null
           code?: string
+          commission_percentage?: number
           created_at?: string
           description?: string
           frame_width_cm?: number | null
           id?: string
+          labor_cost?: number
           name?: string | null
           profit_margin?: number
           supplier?: string | null
