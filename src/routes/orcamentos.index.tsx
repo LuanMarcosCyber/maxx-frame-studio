@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check } from "lucide-react";
-import { cn, fmtMeasure } from "@/lib/utils";
+import { cn, fmtMeasure, fmtDateBR } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -922,14 +922,15 @@ function ResumoDialog({
               />
               <Info
                 label="Entrega"
-                value={gStr("dataEntrega") ? fmtDate(gStr("dataEntrega")) : "—"}
+                value={gStr("dataEntrega") ? fmtDateBR(gStr("dataEntrega")) : "—"}
               />
               {!isParcelado && (
                 <Info
                   label="Vencimento"
-                  value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
+                  value={budget.data_vencimento ? fmtDateBR(budget.data_vencimento) : "—"}
                 />
               )}
+
             </div>
 
             {isParcelado && (
@@ -958,8 +959,9 @@ function ResumoDialog({
                       <span className="text-muted-foreground">
                         {p.numero}/{parcelasList.length} ·{" "}
                         {p.vencimento
-                          ? fmtDate(p.vencimento)
+                          ? fmtDateBR(p.vencimento)
                           : "—"}
+
                       </span>
                       <span className="font-medium">{fmtMoney(p.valor)}</span>
                     </div>
@@ -1139,7 +1141,7 @@ function ResumoDialog({
               >
                 <span className="text-muted-foreground">
                   {p.numero}/{parcelasList.length} ·{" "}
-                  {p.vencimento ? fmtDate(p.vencimento) : "—"}
+                  {p.vencimento ? fmtDateBR(p.vencimento) : "—"}
                 </span>
                 <span className="font-semibold">{fmtMoney(p.valor)}</span>
               </div>
