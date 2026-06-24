@@ -1856,6 +1856,7 @@ function NovoOrcamento() {
                           id="m-adic-esq"
                           value={paspaturAdicionalEsq}
                           onChange={onPaspaturAdicEsqChange}
+                          onBlur={onPaspaturAdicEsqBlur}
                         />
                         <FieldNum
                           label="Direita (cm)"
