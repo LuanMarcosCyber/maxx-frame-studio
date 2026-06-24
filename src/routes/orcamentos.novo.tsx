@@ -659,8 +659,7 @@ function NovoOrcamento() {
     const n = parseFloat(v.replace(",", "."));
     return !Number.isFinite(n) || n === 0;
   };
-  const makeMargemHandler = (
-    field: "esq" | "dir" | "sup" | "inf",
+  const makeMargemEsqBlur = (
     values: { esq: string; dir: string; sup: string; inf: string },
     setters: {
       esq: (v: string) => void;
@@ -668,12 +667,11 @@ function NovoOrcamento() {
       sup: (v: string) => void;
       inf: (v: string) => void;
     }
-  ) => (val: string) => {
-    setters[field](val);
+  ) => () => {
+    const val = values.esq;
     const num = parseFloat(val.replace(",", "."));
     if (!Number.isFinite(num) || num <= 0) return;
-    (["esq", "dir", "sup", "inf"] as const).forEach((k) => {
-      if (k === field) return;
+    (["dir", "sup", "inf"] as const).forEach((k) => {
       if (isEmptyOrZero(values[k])) setters[k](val);
     });
   };
@@ -684,10 +682,11 @@ function NovoOrcamento() {
     sup: setMargemSup,
     inf: setMargemInf,
   };
-  const onMargemEsqChange = makeMargemHandler("esq", margemValues, margemSetters);
-  const onMargemDirChange = makeMargemHandler("dir", margemValues, margemSetters);
-  const onMargemSupChange = makeMargemHandler("sup", margemValues, margemSetters);
-  const onMargemInfChange = makeMargemHandler("inf", margemValues, margemSetters);
+  const onMargemEsqChange = setMargemEsq;
+  const onMargemDirChange = setMargemDir;
+  const onMargemSupChange = setMargemSup;
+  const onMargemInfChange = setMargemInf;
+  const onMargemEsqBlur = makeMargemEsqBlur(margemValues, margemSetters);
 
   const paspaturAdicValues = {
     esq: paspaturAdicionalEsq,
@@ -701,10 +700,12 @@ function NovoOrcamento() {
     sup: setPaspaturAdicionalSup,
     inf: setPaspaturAdicionalInf,
   };
-  const onPaspaturAdicEsqChange = makeMargemHandler("esq", paspaturAdicValues, paspaturAdicSetters);
-  const onPaspaturAdicDirChange = makeMargemHandler("dir", paspaturAdicValues, paspaturAdicSetters);
-  const onPaspaturAdicSupChange = makeMargemHandler("sup", paspaturAdicValues, paspaturAdicSetters);
-  const onPaspaturAdicInfChange = makeMargemHandler("inf", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicEsqChange = setPaspaturAdicionalEsq;
+  const onPaspaturAdicDirChange = setPaspaturAdicionalDir;
+  const onPaspaturAdicSupChange = setPaspaturAdicionalSup;
+  const onPaspaturAdicInfChange = setPaspaturAdicionalInf;
+  const onPaspaturAdicEsqBlur = makeMargemEsqBlur(paspaturAdicValues, paspaturAdicSetters);
+
 
   // Toggling Paspatur off clears margins and selection; toggling back on
   // keeps them cleared (user starts fresh from 0/0/0/0).
@@ -1779,7 +1780,7 @@ function NovoOrcamento() {
               )}
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="paspatur-ativo">Paspatur</Label>
+                <Label htmlFor="paspatur-ativo">Paspatur Externo</Label>
                 <Select
                   value={paspaturAtivo}
                   onValueChange={(v) => handlePaspaturAtivoChange(v as "sim" | "nao")}
@@ -1797,7 +1798,7 @@ function NovoOrcamento() {
               {paspaturAtivo === "sim" && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} />
+                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} onBlur={onMargemEsqBlur} />
                     <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={onMargemDirChange} />
                     <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={onMargemSupChange} />
                     <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={onMargemInfChange} />
@@ -1855,6 +1856,7 @@ function NovoOrcamento() {
                           id="m-adic-esq"
                           value={paspaturAdicionalEsq}
                           onChange={onPaspaturAdicEsqChange}
+                          onBlur={onPaspaturAdicEsqBlur}
                         />
                         <FieldNum
                           label="Direita (cm)"
@@ -2019,6 +2021,7 @@ function NovoOrcamento() {
                   loading={loadingPerfis}
                   placeholder="Selecione um perfil"
                   emptyLabel="Nenhum perfil cadastrado."
+                  allowNone
                 />
               </div>
 
@@ -2215,6 +2218,7 @@ function NovoOrcamento() {
                   loading={loadingFoams}
                   placeholder="Selecione um produto"
                   emptyLabel="Nenhum produto cadastrado."
+                  allowNone
                 />
               </div>
 
@@ -3457,11 +3461,13 @@ function FieldNum({
   label,
   value,
   onChange,
+  onBlur,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
 }) {
   return (
     <div className="space-y-1.5">
@@ -3472,10 +3478,12 @@ function FieldNum({
         placeholder="0"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       />
     </div>
   );
 }
+
 
 function ProductSelect({
   id,
@@ -3485,6 +3493,8 @@ function ProductSelect({
   loading,
   placeholder,
   emptyLabel,
+  allowNone = false,
+  noneLabel = "Nenhum",
 }: {
   id: string;
   value: string;
@@ -3493,10 +3503,13 @@ function ProductSelect({
   loading: boolean;
   placeholder: string;
   emptyLabel: string;
+  allowNone?: boolean;
+  noneLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = products.find((p) => p.id === value);
   const label = (p: Produto) => `${p.code}${p.description ? ` — ${p.description}` : ""}`;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -3533,6 +3546,25 @@ function ProductSelect({
           <CommandList>
             <CommandEmpty>{emptyLabel}</CommandEmpty>
             <CommandGroup>
+              {allowNone && (
+                <CommandItem
+                  key="__none__"
+                  value={noneLabel}
+                  onSelect={() => {
+                    onChange("");
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === "" ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate text-muted-foreground">{noneLabel}</span>
+                </CommandItem>
+              )}
+
               {products.map((p) => (
                 <CommandItem
                   key={p.id}
