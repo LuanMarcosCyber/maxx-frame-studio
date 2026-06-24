@@ -77,6 +77,8 @@ type Product = {
   name: string | null;
   barcode: string | null;
   supplier: string | null;
+  labor_cost: number | null;
+  commission_percentage: number | null;
 };
 
 type FormState = {
@@ -89,6 +91,8 @@ type FormState = {
   name: string;
   barcode: string;
   supplier: string;
+  labor_cost: string;
+  commission_percentage: string;
 };
 
 const emptyForm: FormState = {
@@ -101,6 +105,8 @@ const emptyForm: FormState = {
   name: "",
   barcode: "",
   supplier: "",
+  labor_cost: "",
+  commission_percentage: "",
 };
 
 function Produtos() {
@@ -109,6 +115,7 @@ function Produtos() {
   const isColaborador = role === "colaborador";
   const canEdit = role === "admin" || role === "revendedor";
   const showInternal = !isColaborador;
+  const showCommission = role === "admin" || role === "revendedor";
 
   const [activeCategory, setActiveCategory] = useState<Category>("Foam");
   const [search, setSearch] = useState("");
@@ -119,8 +126,10 @@ function Produtos() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const isDiversos = activeCategory === "produtos_diversos";
-  const activeLabel =
+  const baseLabel =
     CATEGORIES.find((c) => c.key === activeCategory)?.label ?? activeCategory;
+  const activeLabel =
+    activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -129,7 +138,7 @@ function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier",
+          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, labor_cost, commission_percentage",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -173,6 +182,14 @@ function Produtos() {
       name: p.name ?? "",
       barcode: p.barcode ?? "",
       supplier: p.supplier ?? "",
+      labor_cost:
+        p.labor_cost == null || Number(p.labor_cost) === 0
+          ? ""
+          : String(p.labor_cost).replace(".", ","),
+      commission_percentage:
+        p.commission_percentage == null || Number(p.commission_percentage) === 0
+          ? ""
+          : String(p.commission_percentage).replace(".", ","),
     });
     setDialogOpen(true);
   };
@@ -192,6 +209,12 @@ function Produtos() {
       }
       setSaving(true);
       try {
+        const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+        if (Number.isNaN(commission)) {
+          toast.error("Comissão inválida.");
+          setSaving(false);
+          return;
+        }
         const payload = {
           code: form.code.trim(),
           description: form.description.trim(),
@@ -203,6 +226,7 @@ function Produtos() {
           name: form.name.trim(),
           barcode: form.barcode.trim() || null,
           supplier: form.supplier.trim() || null,
+          commission_percentage: commission,
         };
         if (editing) {
           const { error } = await supabase
@@ -256,6 +280,21 @@ function Produtos() {
       }
     }
 
+    const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+    if (Number.isNaN(commission)) {
+      toast.error("Comissão inválida.");
+      return;
+    }
+    let laborCost = 0;
+    if (isPerfil && form.labor_cost.trim() !== "") {
+      const lc = parseNum(form.labor_cost);
+      if (Number.isNaN(lc)) {
+        toast.error("Mão de obra inválida.");
+        return;
+      }
+      laborCost = lc;
+    }
+
     setSaving(true);
     try {
       if (editing) {
@@ -269,6 +308,8 @@ function Produtos() {
             profit_margin: margin,
             waste_percentage: waste,
             frame_width_cm: isPerfil ? frameWidth : null,
+            labor_cost: isPerfil ? laborCost : 0,
+            commission_percentage: commission,
           })
           .eq("id", editing.id);
         if (error) throw error;
@@ -283,6 +324,8 @@ function Produtos() {
           profit_margin: margin,
           waste_percentage: waste,
           frame_width_cm: isPerfil ? frameWidth : null,
+          labor_cost: isPerfil ? laborCost : 0,
+          commission_percentage: commission,
         });
         if (error) throw error;
         toast.success("Produto cadastrado.");
@@ -377,6 +420,7 @@ function Produtos() {
                     {showInternal && (
                       <th className="font-medium py-3 px-3">Valor</th>
                     )}
+                    {showCommission && <th className="font-medium py-3 px-3">Comissão</th>}
                     <th className="font-medium py-3 px-3">Descrição</th>
                     {canEdit && (
                       <th className="font-medium py-3 px-6 text-right">Ações</th>
@@ -392,6 +436,7 @@ function Produtos() {
                     {showInternal && <th className="font-medium py-3 px-3">Valor/m</th>}
                     {showInternal && <th className="font-medium py-3 px-3">Margem</th>}
                     {showInternal && <th className="font-medium py-3 px-3">Perda</th>}
+                    {showCommission && <th className="font-medium py-3 px-3">Comissão</th>}
                     {canEdit && (
                       <th className="font-medium py-3 px-6 text-right">Ações</th>
                     )}
@@ -424,6 +469,11 @@ function Produtos() {
                       {showInternal && (
                         <td className="py-3.5 px-3 font-semibold">
                           {fmtMoney(Number(p.value_per_meter))}
+                        </td>
+                      )}
+                      {showCommission && (
+                        <td className="py-3.5 px-3 text-muted-foreground">
+                          {Number(p.commission_percentage ?? 0) > 0 ? fmtPct(Number(p.commission_percentage)) : "—"}
                         </td>
                       )}
                       <td className="py-3.5 px-3 text-muted-foreground max-w-xs truncate">
@@ -474,6 +524,11 @@ function Produtos() {
                       {showInternal && (
                         <td className="py-3.5 px-3 text-muted-foreground">
                           {fmtPct(Number(p.waste_percentage))}
+                        </td>
+                      )}
+                      {showCommission && (
+                        <td className="py-3.5 px-3 text-muted-foreground">
+                          {Number(p.commission_percentage ?? 0) > 0 ? fmtPct(Number(p.commission_percentage)) : "—"}
                         </td>
                       )}
                       {canEdit && (
@@ -582,6 +637,20 @@ function Produtos() {
                   }
                 />
               </div>
+              {showCommission && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-com">Comissão (%)</Label>
+                  <Input
+                    id="d-com"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={form.commission_percentage}
+                    onChange={(e) =>
+                      setForm({ ...form, commission_percentage: e.target.value })
+                    }
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -653,6 +722,34 @@ function Produtos() {
                     value={form.frame_width_cm}
                     onChange={(e) =>
                       setForm({ ...form, frame_width_cm: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {activeCategory === "Perfil" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="lc">Mão de obra (R$)</Label>
+                  <Input
+                    id="lc"
+                    inputMode="decimal"
+                    placeholder="0,00 (opcional)"
+                    value={form.labor_cost}
+                    onChange={(e) =>
+                      setForm({ ...form, labor_cost: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {showCommission && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="com">Comissão (%)</Label>
+                  <Input
+                    id="com"
+                    inputMode="decimal"
+                    placeholder="0 (opcional)"
+                    value={form.commission_percentage}
+                    onChange={(e) =>
+                      setForm({ ...form, commission_percentage: e.target.value })
                     }
                   />
                 </div>
