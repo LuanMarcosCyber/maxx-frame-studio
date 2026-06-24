@@ -659,8 +659,7 @@ function NovoOrcamento() {
     const n = parseFloat(v.replace(",", "."));
     return !Number.isFinite(n) || n === 0;
   };
-  const makeMargemHandler = (
-    field: "esq" | "dir" | "sup" | "inf",
+  const makeMargemEsqBlur = (
     values: { esq: string; dir: string; sup: string; inf: string },
     setters: {
       esq: (v: string) => void;
@@ -668,12 +667,11 @@ function NovoOrcamento() {
       sup: (v: string) => void;
       inf: (v: string) => void;
     }
-  ) => (val: string) => {
-    setters[field](val);
+  ) => () => {
+    const val = values.esq;
     const num = parseFloat(val.replace(",", "."));
     if (!Number.isFinite(num) || num <= 0) return;
-    (["esq", "dir", "sup", "inf"] as const).forEach((k) => {
-      if (k === field) return;
+    (["dir", "sup", "inf"] as const).forEach((k) => {
       if (isEmptyOrZero(values[k])) setters[k](val);
     });
   };
@@ -684,10 +682,11 @@ function NovoOrcamento() {
     sup: setMargemSup,
     inf: setMargemInf,
   };
-  const onMargemEsqChange = makeMargemHandler("esq", margemValues, margemSetters);
-  const onMargemDirChange = makeMargemHandler("dir", margemValues, margemSetters);
-  const onMargemSupChange = makeMargemHandler("sup", margemValues, margemSetters);
-  const onMargemInfChange = makeMargemHandler("inf", margemValues, margemSetters);
+  const onMargemEsqChange = setMargemEsq;
+  const onMargemDirChange = setMargemDir;
+  const onMargemSupChange = setMargemSup;
+  const onMargemInfChange = setMargemInf;
+  const onMargemEsqBlur = makeMargemEsqBlur(margemValues, margemSetters);
 
   const paspaturAdicValues = {
     esq: paspaturAdicionalEsq,
@@ -701,10 +700,12 @@ function NovoOrcamento() {
     sup: setPaspaturAdicionalSup,
     inf: setPaspaturAdicionalInf,
   };
-  const onPaspaturAdicEsqChange = makeMargemHandler("esq", paspaturAdicValues, paspaturAdicSetters);
-  const onPaspaturAdicDirChange = makeMargemHandler("dir", paspaturAdicValues, paspaturAdicSetters);
-  const onPaspaturAdicSupChange = makeMargemHandler("sup", paspaturAdicValues, paspaturAdicSetters);
-  const onPaspaturAdicInfChange = makeMargemHandler("inf", paspaturAdicValues, paspaturAdicSetters);
+  const onPaspaturAdicEsqChange = setPaspaturAdicionalEsq;
+  const onPaspaturAdicDirChange = setPaspaturAdicionalDir;
+  const onPaspaturAdicSupChange = setPaspaturAdicionalSup;
+  const onPaspaturAdicInfChange = setPaspaturAdicionalInf;
+  const onPaspaturAdicEsqBlur = makeMargemEsqBlur(paspaturAdicValues, paspaturAdicSetters);
+
 
   // Toggling Paspatur off clears margins and selection; toggling back on
   // keeps them cleared (user starts fresh from 0/0/0/0).
