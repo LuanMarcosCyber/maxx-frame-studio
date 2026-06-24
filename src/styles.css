@@ -118,12 +118,39 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html, body {
+    /* Evita scroll horizontal acidental em mobile (Android/iOS) */
+    overflow-x: hidden;
+    /* Tipografia consistente entre Chrome/Firefox/Safari */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* iOS Safari: respeita safe-area */
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "cv11", "ss01";
+    /* Remove o flash azul de tap em mobile */
+    -webkit-tap-highlight-color: transparent;
   }
+  /* Todo elemento interativo sempre com cursor pointer */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+  /* Tabular nums para valores monetários e contagens consistentes */
+  .tabular-nums { font-variant-numeric: tabular-nums; }
 }
+
 
 @utility bg-gradient-brand {
   background-image: var(--gradient-brand);
