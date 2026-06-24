@@ -173,23 +173,30 @@ function Pedidos() {
     });
   }, [rows, search, statusFilter]);
 
-  async function changeStatus(newStatus: string) {
-    if (!viewing) return;
-    setSavingStatus(true);
+  async function updateOrderStatus(orderId: string, newStatus: string) {
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
-      .eq("id", viewing.id);
-    setSavingStatus(false);
+      .eq("id", orderId);
     if (error) {
       toast.error("Não foi possível atualizar o status.");
-      return;
+      return false;
     }
     toast.success(`Status atualizado para "${newStatus}".`);
+    await queryClient.invalidateQueries({ queryKey: ["orders"] });
+    return true;
+  }
+
+  async function changeStatus(newStatus: string) {
+    if (!viewing) return;
+    setSavingStatus(true);
+    const ok = await updateOrderStatus(viewing.id, newStatus);
+    setSavingStatus(false);
+    if (!ok) return;
     setViewing({ ...viewing, status: newStatus });
     setStatusOpen(false);
-    await queryClient.invalidateQueries({ queryKey: ["orders"] });
   }
+
 
   async function handleDelete() {
     if (!viewing) return;
@@ -333,15 +340,43 @@ function Pedidos() {
                       {fmtMoney(Number(o.total_value))}
                     </td>
                     <td className="py-3.5 px-3">
-                      <span
-                        className={cn(
-                          "text-[11px] px-2 py-0.5 rounded-full font-medium",
-                          statusStyle[o.status] ?? "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {o.status}
-                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Alterar status (atual: ${o.status})`}
+                            className={cn(
+                              "text-[11px] px-2 py-0.5 rounded-full font-medium cursor-pointer transition hover:shadow-sm hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-ring/40",
+                              statusStyle[o.status] ?? "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {o.status}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="min-w-[200px]">
+                          {ORDER_STATUSES.map((s) => (
+                            <DropdownMenuItem
+                              key={s}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (s !== o.status) void updateOrderStatus(o.id, s);
+                              }}
+                              className="gap-2"
+                            >
+                              <span
+                                className={cn(
+                                  "h-2.5 w-2.5 rounded-full",
+                                  (statusStyle[s] ?? "bg-muted").split(" ")[0],
+                                )}
+                              />
+                              <span className="flex-1">{s}</span>
+                              {s === o.status && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
+
                     <td className="py-3.5 px-6 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
