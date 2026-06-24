@@ -425,7 +425,7 @@ function Orcamentos() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={clientMissingOpen} onOpenChange={setClientMissingOpen}>
+      <AlertDialog open={!!clientMissingFor} onOpenChange={(o) => !o && setClientMissingFor(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cliente não vinculado</AlertDialogTitle>
@@ -433,13 +433,139 @@ function Orcamentos() {
               Para aprovar este orçamento e gerar um pedido, selecione ou cadastre um cliente.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setClientMissingOpen(false)}>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const b = clientMissingFor;
+                setClientMissingFor(null);
+                setSelectedClient(null);
+                setLinkSearch("");
+                if (b) setLinkingFor(b);
+              }}
+            >
+              Vincular cliente
+            </Button>
+            <AlertDialogAction onClick={() => setClientMissingFor(null)}>
               Entendi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!linkingFor}
+        onOpenChange={(o) => {
+          if (!o && !linkSaving) {
+            setLinkingFor(null);
+            setSelectedClient(null);
+            setLinkSearch("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Vincular cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                placeholder="Buscar cliente cadastrado"
+                className="pl-9 h-11 text-base"
+                value={linkSearch}
+                onChange={(e) => setLinkSearch(e.target.value)}
+              />
+            </div>
+            {selectedClient && (
+              <div className="flex items-center justify-between rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+                <span className="font-medium text-emerald-800">Selecionado: {selectedClient.name}</span>
+                <button
+                  type="button"
+                  className="text-xs text-emerald-700 underline"
+                  onClick={() => setSelectedClient(null)}
+                >
+                  Trocar
+                </button>
+              </div>
+            )}
+            <div className="max-h-64 overflow-y-auto rounded-md border">
+              {clientList.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">
+                  Nenhum cliente cadastrado. Cadastre este cliente na aba Clientes antes de aprovar.
+                </div>
+              ) : filteredClients.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">Nenhum cliente encontrado.</div>
+              ) : (
+                <ul className="divide-y">
+                  {filteredClients.map((c) => {
+                    const active = selectedClient?.id === c.id;
+                    return (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedClient({ id: c.id, name: c.name })}
+                          className={cn(
+                            "w-full flex items-center justify-between text-left px-3 py-2.5 text-sm hover:bg-muted",
+                            active && "bg-muted",
+                          )}
+                        >
+                          <span>{c.name}</span>
+                          {active && <Check className="h-4 w-4 text-emerald-600" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button
+              variant="outline"
+              disabled={linkSaving}
+              onClick={() => {
+                setLinkingFor(null);
+                setSelectedClient(null);
+                setLinkSearch("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveLink} disabled={!selectedClient || linkSaving}>
+              {linkSaving ? "Salvando..." : "Salvar vínculo"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!askApproveAfterLink}
+        onOpenChange={(o) => !o && setAskApproveAfterLink(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar orçamento agora?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O cliente foi vinculado. Deseja aprovar este orçamento agora e gerar o pedido?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAskApproveAfterLink(null)}>Não</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const b = askApproveAfterLink;
+                setAskApproveAfterLink(null);
+                if (b) setApproving(b);
+              }}
+            >
+              Sim, aprovar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </AppShell>
   );
 }
