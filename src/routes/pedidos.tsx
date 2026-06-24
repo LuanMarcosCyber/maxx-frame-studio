@@ -340,15 +340,43 @@ function Pedidos() {
                       {fmtMoney(Number(o.total_value))}
                     </td>
                     <td className="py-3.5 px-3">
-                      <span
-                        className={cn(
-                          "text-[11px] px-2 py-0.5 rounded-full font-medium",
-                          statusStyle[o.status] ?? "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {o.status}
-                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Alterar status (atual: ${o.status})`}
+                            className={cn(
+                              "text-[11px] px-2 py-0.5 rounded-full font-medium cursor-pointer transition hover:shadow-sm hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-ring/40",
+                              statusStyle[o.status] ?? "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {o.status}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="min-w-[200px]">
+                          {ORDER_STATUSES.map((s) => (
+                            <DropdownMenuItem
+                              key={s}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (s !== o.status) void updateOrderStatus(o.id, s);
+                              }}
+                              className="gap-2"
+                            >
+                              <span
+                                className={cn(
+                                  "h-2.5 w-2.5 rounded-full",
+                                  (statusStyle[s] ?? "bg-muted").split(" ")[0],
+                                )}
+                              />
+                              <span className="flex-1">{s}</span>
+                              {s === o.status && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
+
                     <td className="py-3.5 px-6 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
