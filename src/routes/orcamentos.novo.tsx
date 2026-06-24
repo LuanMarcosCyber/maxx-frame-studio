@@ -2597,7 +2597,7 @@ function NovoOrcamento() {
                         value={fmtMoney(valorPaspaturPrincipal)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
-                        Margens: E {mEsq} · D {mDir} · S {mSup} · I {mInf} cm
+                        Margens: E {fmtMeasure(mEsq)} · D {fmtMeasure(mDir)} · S {fmtMeasure(mSup)} · I {fmtMeasure(mInf)} cm
                       </div>
                       <Row
                         label={`Paspatur interno${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
