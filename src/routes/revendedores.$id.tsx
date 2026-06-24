@@ -566,7 +566,7 @@ function ResumoDialog({
               <Info label="Forma de pagamento" value={gStr("formaPagamento") || "—"} />
               <Info
                 label="Vencimento"
-                value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
+                value={budget.data_vencimento ? fmtDateBR(budget.data_vencimento) : "—"}
               />
             </div>
 
