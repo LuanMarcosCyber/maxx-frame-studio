@@ -43,6 +43,9 @@ import {
   RefreshCw,
   Trash2,
   Check,
+  Store,
+  Hammer,
+  User,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
