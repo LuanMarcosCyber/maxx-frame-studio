@@ -420,6 +420,7 @@ function Produtos() {
                     {showInternal && (
                       <th className="font-medium py-3 px-3">Valor</th>
                     )}
+                    {showCommission && <th className="font-medium py-3 px-3">Comissão</th>}
                     <th className="font-medium py-3 px-3">Descrição</th>
                     {canEdit && (
                       <th className="font-medium py-3 px-6 text-right">Ações</th>
@@ -435,6 +436,7 @@ function Produtos() {
                     {showInternal && <th className="font-medium py-3 px-3">Valor/m</th>}
                     {showInternal && <th className="font-medium py-3 px-3">Margem</th>}
                     {showInternal && <th className="font-medium py-3 px-3">Perda</th>}
+                    {showCommission && <th className="font-medium py-3 px-3">Comissão</th>}
                     {canEdit && (
                       <th className="font-medium py-3 px-6 text-right">Ações</th>
                     )}
@@ -467,6 +469,11 @@ function Produtos() {
                       {showInternal && (
                         <td className="py-3.5 px-3 font-semibold">
                           {fmtMoney(Number(p.value_per_meter))}
+                        </td>
+                      )}
+                      {showCommission && (
+                        <td className="py-3.5 px-3 text-muted-foreground">
+                          {Number(p.commission_percentage ?? 0) > 0 ? fmtPct(Number(p.commission_percentage)) : "—"}
                         </td>
                       )}
                       <td className="py-3.5 px-3 text-muted-foreground max-w-xs truncate">
@@ -517,6 +524,11 @@ function Produtos() {
                       {showInternal && (
                         <td className="py-3.5 px-3 text-muted-foreground">
                           {fmtPct(Number(p.waste_percentage))}
+                        </td>
+                      )}
+                      {showCommission && (
+                        <td className="py-3.5 px-3 text-muted-foreground">
+                          {Number(p.commission_percentage ?? 0) > 0 ? fmtPct(Number(p.commission_percentage)) : "—"}
                         </td>
                       )}
                       {canEdit && (
