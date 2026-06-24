@@ -3490,6 +3490,8 @@ function ProductSelect({
   loading,
   placeholder,
   emptyLabel,
+  allowNone = false,
+  noneLabel = "Nenhum",
 }: {
   id: string;
   value: string;
@@ -3498,10 +3500,13 @@ function ProductSelect({
   loading: boolean;
   placeholder: string;
   emptyLabel: string;
+  allowNone?: boolean;
+  noneLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = products.find((p) => p.id === value);
   const label = (p: Produto) => `${p.code}${p.description ? ` — ${p.description}` : ""}`;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
