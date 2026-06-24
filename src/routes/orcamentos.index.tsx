@@ -584,11 +584,11 @@ function ResumoDialog({
     ? [
         {
           label: "Tamanho original",
-          value: `${dNum(d, "larguraOriginal")} × ${dNum(d, "alturaOriginal")} cm`,
+          value: `${fmtMeasure(dNum(d, "larguraOriginal"))} × ${fmtMeasure(dNum(d, "alturaOriginal"))} cm`,
         },
         {
           label: "Tamanho final",
-          value: `${dNum(d, "larguraFinal")} × ${dNum(d, "alturaFinal")} cm`,
+          value: `${fmtMeasure(dNum(d, "larguraFinal"))} × ${fmtMeasure(dNum(d, "alturaFinal"))} cm`,
         },
         ...(d.paspaturAdicionalAtivo === "sim" && paspaturAtivo
           ? [
