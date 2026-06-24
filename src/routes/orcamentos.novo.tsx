@@ -1700,7 +1700,7 @@ function NovoOrcamento() {
                 <div className="mt-3 text-xs text-muted-foreground text-right">
                   Medidas finais (com paspatur):{" "}
                   <span className="font-medium text-foreground">
-                    {larguraFinal} × {alturaFinal} cm
+                    {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm
                   </span>
                 </div>
               )}
@@ -1964,7 +1964,7 @@ function NovoOrcamento() {
                         <span className="text-muted-foreground">
                           Paspatur externo
                           {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
-                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPaspaturPrincipal)}
@@ -1974,7 +1974,7 @@ function NovoOrcamento() {
                         <span className="text-muted-foreground">
                           Paspatur interno
                           {paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}
-                          <span className="block text-xs">Medida usada: {larguraAdicional} × {alturaAdicional} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraAdicional)} × {fmtMeasure(alturaAdicional)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPaspaturAdicional)}
@@ -1990,7 +1990,7 @@ function NovoOrcamento() {
                       <span className="text-muted-foreground">
                         Paspatur
                         {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
-                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                       </span>
                       <span className="font-semibold text-foreground whitespace-nowrap">
                         {fmtMoney(valorPaspaturPrincipal)}
@@ -2068,7 +2068,7 @@ function NovoOrcamento() {
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Perfil externo ({perfilAdicionalSelecionado.code})
-                          <span className="block text-xs">Medida usada: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPerfilAdicional)}
@@ -2077,7 +2077,7 @@ function NovoOrcamento() {
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Perfil interno ({perfilSelecionado.code})
-                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPerfilPrincipal)}
@@ -2092,7 +2092,7 @@ function NovoOrcamento() {
                     <div className="flex justify-between gap-3">
                       <span className="text-muted-foreground">
                         Perfil ({perfilSelecionado.code})
-                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                       </span>
                       <span className="font-semibold text-foreground whitespace-nowrap">
                         {fmtMoney(valorPerfilPrincipal)}
@@ -2179,7 +2179,7 @@ function NovoOrcamento() {
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Vidro ({vidroSelecionado.code})
-                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorVidroUnit)}
@@ -2583,11 +2583,11 @@ function NovoOrcamento() {
                   </div>
                   <Row
                     label="Tamanho original"
-                    value={`${larguraNum || 0} × ${alturaNum || 0} cm`}
+                    value={`${fmtMeasure(larguraNum)} × ${fmtMeasure(alturaNum)} cm`}
                   />
                   <Row
                     label="Tamanho final (com paspatur)"
-                    value={`${larguraFinal || 0} × ${alturaFinal || 0} cm`}
+                    value={`${fmtMeasure(larguraFinal)} × ${fmtMeasure(alturaFinal)} cm`}
                   />
                   <hr className="my-2 border-border" />
                   {paspaturAdicionalAtivo === "sim" && paspaturAtivo === "sim" ? (
@@ -2629,7 +2629,7 @@ function NovoOrcamento() {
                         value={fmtMoney(valorPerfilAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
-                        Medida usada no cálculo: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm
+                        Medida usada no cálculo: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm
                       </div>
                       <Row label="Total Perfil" value={fmtMoney(valorPerfil)} />
                     </>
