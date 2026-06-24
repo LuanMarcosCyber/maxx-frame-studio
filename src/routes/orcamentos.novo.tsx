@@ -2218,6 +2218,7 @@ function NovoOrcamento() {
                   loading={loadingFoams}
                   placeholder="Selecione um produto"
                   emptyLabel="Nenhum produto cadastrado."
+                  allowNone
                 />
               </div>
 
