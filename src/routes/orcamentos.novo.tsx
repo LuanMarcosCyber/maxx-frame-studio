@@ -1724,6 +1724,12 @@ function NovoOrcamento() {
                     placeholder="0"
                     value={altura}
                     onChange={(e) => setAltura(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        document.getElementById("largura")?.focus();
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1734,6 +1740,13 @@ function NovoOrcamento() {
                     placeholder="0"
                     value={largura}
                     onChange={(e) => setLargura(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.target as HTMLInputElement).blur();
+                        setActive("paspatur");
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -1805,7 +1818,7 @@ function NovoOrcamento() {
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
-                    <Label htmlFor="paspatur">Produto Paspatur</Label>
+                    <Label htmlFor="paspatur">Produto Paspatur / Sanduíche de Vidro</Label>
                     <ProductSelect
                       id="paspatur"
                       value={paspaturId}
