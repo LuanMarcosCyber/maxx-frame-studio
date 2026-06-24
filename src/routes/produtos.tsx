@@ -637,6 +637,20 @@ function Produtos() {
                   }
                 />
               </div>
+              {showCommission && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-com">Comissão (%)</Label>
+                  <Input
+                    id="d-com"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={form.commission_percentage}
+                    onChange={(e) =>
+                      setForm({ ...form, commission_percentage: e.target.value })
+                    }
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -708,6 +722,34 @@ function Produtos() {
                     value={form.frame_width_cm}
                     onChange={(e) =>
                       setForm({ ...form, frame_width_cm: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {activeCategory === "Perfil" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="lc">Mão de obra (R$)</Label>
+                  <Input
+                    id="lc"
+                    inputMode="decimal"
+                    placeholder="0,00 (opcional)"
+                    value={form.labor_cost}
+                    onChange={(e) =>
+                      setForm({ ...form, labor_cost: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+              {showCommission && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="com">Comissão (%)</Label>
+                  <Input
+                    id="com"
+                    inputMode="decimal"
+                    placeholder="0 (opcional)"
+                    value={form.commission_percentage}
+                    onChange={(e) =>
+                      setForm({ ...form, commission_percentage: e.target.value })
                     }
                   />
                 </div>
