@@ -77,6 +77,8 @@ type Product = {
   name: string | null;
   barcode: string | null;
   supplier: string | null;
+  labor_cost: number | null;
+  commission_percentage: number | null;
 };
 
 type FormState = {
@@ -89,6 +91,8 @@ type FormState = {
   name: string;
   barcode: string;
   supplier: string;
+  labor_cost: string;
+  commission_percentage: string;
 };
 
 const emptyForm: FormState = {
@@ -101,6 +105,8 @@ const emptyForm: FormState = {
   name: "",
   barcode: "",
   supplier: "",
+  labor_cost: "",
+  commission_percentage: "",
 };
 
 function Produtos() {
@@ -109,6 +115,7 @@ function Produtos() {
   const isColaborador = role === "colaborador";
   const canEdit = role === "admin" || role === "revendedor";
   const showInternal = !isColaborador;
+  const showCommission = role === "admin" || role === "revendedor";
 
   const [activeCategory, setActiveCategory] = useState<Category>("Foam");
   const [search, setSearch] = useState("");
@@ -119,8 +126,10 @@ function Produtos() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const isDiversos = activeCategory === "produtos_diversos";
-  const activeLabel =
+  const baseLabel =
     CATEGORIES.find((c) => c.key === activeCategory)?.label ?? activeCategory;
+  const activeLabel =
+    activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -129,7 +138,7 @@ function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier",
+          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, labor_cost, commission_percentage",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -173,6 +182,14 @@ function Produtos() {
       name: p.name ?? "",
       barcode: p.barcode ?? "",
       supplier: p.supplier ?? "",
+      labor_cost:
+        p.labor_cost == null || Number(p.labor_cost) === 0
+          ? ""
+          : String(p.labor_cost).replace(".", ","),
+      commission_percentage:
+        p.commission_percentage == null || Number(p.commission_percentage) === 0
+          ? ""
+          : String(p.commission_percentage).replace(".", ","),
     });
     setDialogOpen(true);
   };
