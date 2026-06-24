@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { cn, fmtDateBR } from "@/lib/utils";
 import {
   getResellerInfo,
   listResellerProducts,
