@@ -82,7 +82,56 @@ function Orcamentos() {
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
   const [approving, setApproving] = useState<BudgetRow | null>(null);
   const [approveLoading, setApproveLoading] = useState(false);
-  const [clientMissingOpen, setClientMissingOpen] = useState(false);
+  const [clientMissingFor, setClientMissingFor] = useState<BudgetRow | null>(null);
+  const [linkingFor, setLinkingFor] = useState<BudgetRow | null>(null);
+  const [linkSearch, setLinkSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<{ id: string; name: string } | null>(null);
+  const [linkSaving, setLinkSaving] = useState(false);
+  const [askApproveAfterLink, setAskApproveAfterLink] = useState<BudgetRow | null>(null);
+
+  const { data: clientList = [] } = useQuery({
+    queryKey: ["clients", "picker"],
+    enabled: !!session && (!!linkingFor),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string }[];
+    },
+  });
+
+  const filteredClients = useMemo(() => {
+    const q = linkSearch.trim().toLowerCase();
+    if (!q) return clientList.slice(0, 50);
+    return clientList.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 50);
+  }, [clientList, linkSearch]);
+
+  async function handleSaveLink() {
+    if (!linkingFor || !selectedClient) return;
+    setLinkSaving(true);
+    try {
+      const { error } = await supabase
+        .from("budgets")
+        .update({ client_id: selectedClient.id, client_name: selectedClient.name })
+        .eq("id", linkingFor.id);
+      if (error) throw error;
+      toast.success("Cliente vinculado ao orçamento.");
+      const updated: BudgetRow = { ...linkingFor, client_id: selectedClient.id, client_name: selectedClient.name };
+      setLinkingFor(null);
+      setSelectedClient(null);
+      setLinkSearch("");
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
+      setAskApproveAfterLink(updated);
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível vincular o cliente.");
+    } finally {
+      setLinkSaving(false);
+    }
+  }
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["budgets", "pending"],
