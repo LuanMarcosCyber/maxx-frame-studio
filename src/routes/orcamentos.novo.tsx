@@ -403,8 +403,8 @@ function computeItemValues(
 
   // Perfil adicional: usa medidas finais + largura da moldura do perfil principal nos 2 lados
   const fwPrincipal = Number(P.perfil?.frame_width_cm ?? 0) || 0;
-  const larguraPerfilAdicional = larguraFinal + fwPrincipal * 2;
-  const alturaPerfilAdicional = alturaFinal + fwPrincipal * 2;
+  const larguraPerfilAdicional = roundMeasure(larguraFinal + fwPrincipal * 2);
+  const alturaPerfilAdicional = roundMeasure(alturaFinal + fwPrincipal * 2);
   let valorPerfilAdicional = 0;
   if (
     snap.perfilAdicionalAtivo === "sim" &&
