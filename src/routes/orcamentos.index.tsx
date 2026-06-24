@@ -628,7 +628,7 @@ function ResumoDialog({
               {
                 label: "Perfil adicional",
                 value: fmtMoney(dNum(d, "valorPerfilAdicional")),
-                sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${dNum(d, "larguraPerfilAdicional")} × ${dNum(d, "alturaPerfilAdicional")} cm`,
+                sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${fmtMeasure(dNum(d, "larguraPerfilAdicional"))} × ${fmtMeasure(dNum(d, "alturaPerfilAdicional"))} cm`,
               },
               {
                 label: "Total Perfil",
