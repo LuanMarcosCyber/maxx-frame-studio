@@ -2021,6 +2021,7 @@ function NovoOrcamento() {
                   loading={loadingPerfis}
                   placeholder="Selecione um perfil"
                   emptyLabel="Nenhum perfil cadastrado."
+                  allowNone
                 />
               </div>
 
