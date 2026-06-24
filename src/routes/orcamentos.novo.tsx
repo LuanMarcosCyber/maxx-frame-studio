@@ -79,7 +79,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/orcamentos/novo")({
