@@ -214,7 +214,6 @@ function Pedidos() {
       >
         <Printer className="h-5 w-5" />
         <span className="text-sm font-medium">Imprimir</span>
-        <span className="text-[10px] uppercase tracking-wider text-amber-700">Em breve</span>
       </Button>
       <Button
         type="button"
