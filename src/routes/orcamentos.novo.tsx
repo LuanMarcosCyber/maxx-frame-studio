@@ -358,16 +358,16 @@ function computeItemValues(
   const mDir = parseNum(snap.margemDir);
   const mSup = parseNum(snap.margemSup);
   const mInf = parseNum(snap.margemInf);
-  const larguraFinal = larguraNum + mEsq + mDir;
-  const alturaFinal = alturaNum + mSup + mInf;
+  const larguraFinal = roundMeasure(larguraNum + mEsq + mDir);
+  const alturaFinal = roundMeasure(alturaNum + mSup + mInf);
 
   // Additional paspatur margins (do NOT affect frame final size)
   const mEsqA = parseNum(snap.paspaturAdicionalEsq);
   const mDirA = parseNum(snap.paspaturAdicionalDir);
   const mSupA = parseNum(snap.paspaturAdicionalSup);
   const mInfA = parseNum(snap.paspaturAdicionalInf);
-  const larguraAdicional = larguraNum + mEsqA + mDirA;
-  const alturaAdicional = alturaNum + mSupA + mInfA;
+  const larguraAdicional = roundMeasure(larguraNum + mEsqA + mDirA);
+  const alturaAdicional = roundMeasure(alturaNum + mSupA + mInfA);
 
   let valorPaspaturPrincipal = 0;
   if (snap.paspaturAtivo === "sim" && P.paspatur && larguraFinal > 0 && alturaFinal > 0) {
