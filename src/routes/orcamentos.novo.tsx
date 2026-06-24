@@ -3543,6 +3543,25 @@ function ProductSelect({
           <CommandList>
             <CommandEmpty>{emptyLabel}</CommandEmpty>
             <CommandGroup>
+              {allowNone && (
+                <CommandItem
+                  key="__none__"
+                  value={noneLabel}
+                  onSelect={() => {
+                    onChange("");
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === "" ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="truncate text-muted-foreground">{noneLabel}</span>
+                </CommandItem>
+              )}
+
               {products.map((p) => (
                 <CommandItem
                   key={p.id}
