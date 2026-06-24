@@ -1798,7 +1798,7 @@ function NovoOrcamento() {
               {paspaturAtivo === "sim" && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} />
+                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} onBlur={onMargemEsqBlur} />
                     <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={onMargemDirChange} />
                     <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={onMargemSupChange} />
                     <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={onMargemInfChange} />
