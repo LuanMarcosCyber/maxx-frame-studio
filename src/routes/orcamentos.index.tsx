@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check } from "lucide-react";
-import { cn, fmtMeasure } from "@/lib/utils";
+import { cn, fmtMeasure, fmtDateBR } from "@/lib/utils";
 
 import {
   DropdownMenu,
