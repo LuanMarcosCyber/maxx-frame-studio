@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, fmtMeasure } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -584,11 +584,11 @@ function ResumoDialog({
     ? [
         {
           label: "Tamanho original",
-          value: `${dNum(d, "larguraOriginal")} × ${dNum(d, "alturaOriginal")} cm`,
+          value: `${fmtMeasure(dNum(d, "larguraOriginal"))} × ${fmtMeasure(dNum(d, "alturaOriginal"))} cm`,
         },
         {
           label: "Tamanho final",
-          value: `${dNum(d, "larguraFinal")} × ${dNum(d, "alturaFinal")} cm`,
+          value: `${fmtMeasure(dNum(d, "larguraFinal"))} × ${fmtMeasure(dNum(d, "alturaFinal"))} cm`,
         },
         ...(d.paspaturAdicionalAtivo === "sim" && paspaturAtivo
           ? [
@@ -628,7 +628,7 @@ function ResumoDialog({
               {
                 label: "Perfil adicional",
                 value: fmtMoney(dNum(d, "valorPerfilAdicional")),
-                sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${dNum(d, "larguraPerfilAdicional")} × ${dNum(d, "alturaPerfilAdicional")} cm`,
+                sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${fmtMeasure(dNum(d, "larguraPerfilAdicional"))} × ${fmtMeasure(dNum(d, "alturaPerfilAdicional"))} cm`,
               },
               {
                 label: "Total Perfil",

@@ -79,7 +79,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/orcamentos/novo")({
@@ -358,16 +358,16 @@ function computeItemValues(
   const mDir = parseNum(snap.margemDir);
   const mSup = parseNum(snap.margemSup);
   const mInf = parseNum(snap.margemInf);
-  const larguraFinal = larguraNum + mEsq + mDir;
-  const alturaFinal = alturaNum + mSup + mInf;
+  const larguraFinal = roundMeasure(larguraNum + mEsq + mDir);
+  const alturaFinal = roundMeasure(alturaNum + mSup + mInf);
 
   // Additional paspatur margins (do NOT affect frame final size)
   const mEsqA = parseNum(snap.paspaturAdicionalEsq);
   const mDirA = parseNum(snap.paspaturAdicionalDir);
   const mSupA = parseNum(snap.paspaturAdicionalSup);
   const mInfA = parseNum(snap.paspaturAdicionalInf);
-  const larguraAdicional = larguraNum + mEsqA + mDirA;
-  const alturaAdicional = alturaNum + mSupA + mInfA;
+  const larguraAdicional = roundMeasure(larguraNum + mEsqA + mDirA);
+  const alturaAdicional = roundMeasure(alturaNum + mSupA + mInfA);
 
   let valorPaspaturPrincipal = 0;
   if (snap.paspaturAtivo === "sim" && P.paspatur && larguraFinal > 0 && alturaFinal > 0) {
@@ -403,8 +403,8 @@ function computeItemValues(
 
   // Perfil adicional: usa medidas finais + largura da moldura do perfil principal nos 2 lados
   const fwPrincipal = Number(P.perfil?.frame_width_cm ?? 0) || 0;
-  const larguraPerfilAdicional = larguraFinal + fwPrincipal * 2;
-  const alturaPerfilAdicional = alturaFinal + fwPrincipal * 2;
+  const larguraPerfilAdicional = roundMeasure(larguraFinal + fwPrincipal * 2);
+  const alturaPerfilAdicional = roundMeasure(alturaFinal + fwPrincipal * 2);
   let valorPerfilAdicional = 0;
   if (
     snap.perfilAdicionalAtivo === "sim" &&
@@ -1700,7 +1700,7 @@ function NovoOrcamento() {
                 <div className="mt-3 text-xs text-muted-foreground text-right">
                   Medidas finais (com paspatur):{" "}
                   <span className="font-medium text-foreground">
-                    {larguraFinal} × {alturaFinal} cm
+                    {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm
                   </span>
                 </div>
               )}
@@ -1964,7 +1964,7 @@ function NovoOrcamento() {
                         <span className="text-muted-foreground">
                           Paspatur externo
                           {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
-                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPaspaturPrincipal)}
@@ -1974,7 +1974,7 @@ function NovoOrcamento() {
                         <span className="text-muted-foreground">
                           Paspatur interno
                           {paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}
-                          <span className="block text-xs">Medida usada: {larguraAdicional} × {alturaAdicional} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraAdicional)} × {fmtMeasure(alturaAdicional)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPaspaturAdicional)}
@@ -1990,7 +1990,7 @@ function NovoOrcamento() {
                       <span className="text-muted-foreground">
                         Paspatur
                         {paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}
-                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                       </span>
                       <span className="font-semibold text-foreground whitespace-nowrap">
                         {fmtMoney(valorPaspaturPrincipal)}
@@ -2068,7 +2068,7 @@ function NovoOrcamento() {
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Perfil externo ({perfilAdicionalSelecionado.code})
-                          <span className="block text-xs">Medida usada: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPerfilAdicional)}
@@ -2077,7 +2077,7 @@ function NovoOrcamento() {
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Perfil interno ({perfilSelecionado.code})
-                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPerfilPrincipal)}
@@ -2092,7 +2092,7 @@ function NovoOrcamento() {
                     <div className="flex justify-between gap-3">
                       <span className="text-muted-foreground">
                         Perfil ({perfilSelecionado.code})
-                        <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                        <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                       </span>
                       <span className="font-semibold text-foreground whitespace-nowrap">
                         {fmtMoney(valorPerfilPrincipal)}
@@ -2179,7 +2179,7 @@ function NovoOrcamento() {
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Vidro ({vidroSelecionado.code})
-                          <span className="block text-xs">Medida usada: {larguraFinal} × {alturaFinal} cm</span>
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorVidroUnit)}
@@ -2583,11 +2583,11 @@ function NovoOrcamento() {
                   </div>
                   <Row
                     label="Tamanho original"
-                    value={`${larguraNum || 0} × ${alturaNum || 0} cm`}
+                    value={`${fmtMeasure(larguraNum)} × ${fmtMeasure(alturaNum)} cm`}
                   />
                   <Row
                     label="Tamanho final (com paspatur)"
-                    value={`${larguraFinal || 0} × ${alturaFinal || 0} cm`}
+                    value={`${fmtMeasure(larguraFinal)} × ${fmtMeasure(alturaFinal)} cm`}
                   />
                   <hr className="my-2 border-border" />
                   {paspaturAdicionalAtivo === "sim" && paspaturAtivo === "sim" ? (
@@ -2597,14 +2597,14 @@ function NovoOrcamento() {
                         value={fmtMoney(valorPaspaturPrincipal)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
-                        Margens: E {mEsq} · D {mDir} · S {mSup} · I {mInf} cm
+                        Margens: E {fmtMeasure(mEsq)} · D {fmtMeasure(mDir)} · S {fmtMeasure(mSup)} · I {fmtMeasure(mInf)} cm
                       </div>
                       <Row
                         label={`Paspatur interno${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPaspaturAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
-                        Margens: E {mEsqA} · D {mDirA} · S {mSupA} · I {mInfA} cm
+                        Margens: E {fmtMeasure(mEsqA)} · D {fmtMeasure(mDirA)} · S {fmtMeasure(mSupA)} · I {fmtMeasure(mInfA)} cm
                         {paspaturAdicionalObs ? ` · ${paspaturAdicionalObs}` : ""}
                       </div>
                       <Row
@@ -2629,7 +2629,7 @@ function NovoOrcamento() {
                         value={fmtMoney(valorPerfilAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
-                        Medida usada no cálculo: {larguraPerfilAdicional} × {alturaPerfilAdicional} cm
+                        Medida usada no cálculo: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm
                       </div>
                       <Row label="Total Perfil" value={fmtMoney(valorPerfil)} />
                     </>
