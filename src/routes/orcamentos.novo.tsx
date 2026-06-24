@@ -1780,7 +1780,7 @@ function NovoOrcamento() {
               )}
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="paspatur-ativo">Paspatur</Label>
+                <Label htmlFor="paspatur-ativo">Paspatur Externo</Label>
                 <Select
                   value={paspaturAtivo}
                   onValueChange={(v) => handlePaspaturAtivoChange(v as "sim" | "nao")}
