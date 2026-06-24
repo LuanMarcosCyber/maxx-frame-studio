@@ -922,14 +922,15 @@ function ResumoDialog({
               />
               <Info
                 label="Entrega"
-                value={gStr("dataEntrega") ? fmtDate(gStr("dataEntrega")) : "—"}
+                value={gStr("dataEntrega") ? fmtDateBR(gStr("dataEntrega")) : "—"}
               />
               {!isParcelado && (
                 <Info
                   label="Vencimento"
-                  value={budget.data_vencimento ? fmtDate(budget.data_vencimento) : "—"}
+                  value={budget.data_vencimento ? fmtDateBR(budget.data_vencimento) : "—"}
                 />
               )}
+
             </div>
 
             {isParcelado && (
