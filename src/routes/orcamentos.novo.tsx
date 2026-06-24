@@ -2604,7 +2604,7 @@ function NovoOrcamento() {
                         value={fmtMoney(valorPaspaturAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
-                        Margens: E {mEsqA} · D {mDirA} · S {mSupA} · I {mInfA} cm
+                        Margens: E {fmtMeasure(mEsqA)} · D {fmtMeasure(mDirA)} · S {fmtMeasure(mSupA)} · I {fmtMeasure(mInfA)} cm
                         {paspaturAdicionalObs ? ` · ${paspaturAdicionalObs}` : ""}
                       </div>
                       <Row
