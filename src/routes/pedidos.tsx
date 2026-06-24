@@ -55,6 +55,9 @@ import { BudgetSummaryById } from "./orcamentos.index";
 
 export const Route = createFileRoute("/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Total Maxx ERP" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    view: typeof search.view === "string" ? search.view : undefined,
+  }),
   component: Pedidos,
 });
 
