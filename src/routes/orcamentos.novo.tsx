@@ -3458,11 +3458,13 @@ function FieldNum({
   label,
   value,
   onChange,
+  onBlur,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
 }) {
   return (
     <div className="space-y-1.5">
@@ -3473,10 +3475,12 @@ function FieldNum({
         placeholder="0"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       />
     </div>
   );
 }
+
 
 function ProductSelect({
   id,
