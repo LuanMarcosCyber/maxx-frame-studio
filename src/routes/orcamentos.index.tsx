@@ -248,7 +248,7 @@ function Orcamentos() {
 
   function tryApprove(b: BudgetRow) {
     if (!b.client_id) {
-      setClientMissingOpen(true);
+      setClientMissingFor(b);
       return;
     }
     setApproving(b);
