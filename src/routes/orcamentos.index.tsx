@@ -959,8 +959,9 @@ function ResumoDialog({
                       <span className="text-muted-foreground">
                         {p.numero}/{parcelasList.length} ·{" "}
                         {p.vencimento
-                          ? fmtDate(p.vencimento)
+                          ? fmtDateBR(p.vencimento)
                           : "—"}
+
                       </span>
                       <span className="font-medium">{fmtMoney(p.valor)}</span>
                     </div>
