@@ -356,7 +356,7 @@ function Dashboard() {
                               </span>
                             </div>
                             <div className="text-sm text-muted-foreground mt-1 truncate">
-                              {r.client_name} · {fmtDate(r.created_at)}
+                              {r.client_name} · {fmtDateTime(r.created_at)}
                             </div>
                           </div>
                           <div className="flex items-center gap-4 shrink-0">
