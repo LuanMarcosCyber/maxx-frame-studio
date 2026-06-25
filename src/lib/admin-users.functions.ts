@@ -19,6 +19,7 @@ async function ensureAdmin(supabase: any, userId: string) {
 
 const createUserSchema = z.object({
   full_name: z.string().min(1).max(120),
+  store_name: z.string().trim().min(1, "Informe o nome da loja.").max(120),
   username: z
     .string()
     .min(3)
@@ -27,6 +28,7 @@ const createUserSchema = z.object({
   password: z.string().min(6).max(72),
   role: z.enum(["admin", "revendedor"]),
 });
+
 
 export const listResellers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
