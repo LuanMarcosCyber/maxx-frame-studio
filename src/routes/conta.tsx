@@ -21,6 +21,7 @@ function Conta() {
   const { user, profile, refreshProfile } = useAuth();
   const [form, setForm] = useState({
     full_name: "",
+    store_name: "",
     email: "",
     phone: "",
     document: "",
@@ -31,6 +32,7 @@ function Conta() {
   useEffect(() => {
     setForm({
       full_name: profile?.full_name ?? "",
+      store_name: profile?.store_name ?? "",
       email: profile?.email ?? "",
       phone: profile?.phone ?? "",
       document: profile?.document ?? "",
@@ -68,6 +70,7 @@ function Conta() {
       .from("profiles")
       .update({
         full_name: form.full_name || null,
+        store_name: form.store_name || null,
         email: form.email || null,
         phone: form.phone || null,
         document: form.document || null,
@@ -82,6 +85,7 @@ function Conta() {
     await refreshProfile();
     toast.success("Dados atualizados com sucesso");
   };
+
 
   return (
     <AppShell title="Minha Conta" subtitle="Dados do usuário e perfil">
