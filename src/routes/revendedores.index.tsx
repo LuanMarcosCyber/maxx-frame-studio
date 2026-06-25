@@ -111,6 +111,7 @@ function Content() {
   const createMut = useMutation({
     mutationFn: (data: {
       full_name: string;
+      store_name: string;
       username: string;
       password: string;
       role: "admin" | "revendedor";
@@ -121,6 +122,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const resetMut = useMutation({
     mutationFn: (data: { user_id: string; password: string }) => reset({ data }),
