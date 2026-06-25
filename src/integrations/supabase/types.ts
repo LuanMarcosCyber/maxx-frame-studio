@@ -302,6 +302,7 @@ export type Database = {
           id: string
           parent_user_id: string | null
           phone: string | null
+          store_name: string | null
           updated_at: string
           username: string | null
         }
@@ -316,6 +317,7 @@ export type Database = {
           id: string
           parent_user_id?: string | null
           phone?: string | null
+          store_name?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -330,6 +332,7 @@ export type Database = {
           id?: string
           parent_user_id?: string | null
           phone?: string | null
+          store_name?: string | null
           updated_at?: string
           username?: string | null
         }

@@ -14,10 +14,12 @@ interface Profile {
   phone: string | null;
   document: string | null;
   address: string | null;
+  store_name: string | null;
   parent_user_id: string | null;
   active: boolean;
   avatar_url: string | null;
 }
+
 
 interface AuthContextValue {
   session: Session | null;
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, address, parent_user_id, active, avatar_url")
+        .select("full_name, username, email, phone, document, address, store_name, parent_user_id, active, avatar_url")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -78,12 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: null,
         document: null,
         address: null,
+        store_name: null,
         parent_user_id: null,
         active: true,
         avatar_url: null,
       },
     );
   };
+
 
   const refreshProfile = async () => {
     if (session?.user) await loadUserData(session.user.id);

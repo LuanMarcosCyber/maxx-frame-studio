@@ -19,6 +19,7 @@ async function ensureAdmin(supabase: any, userId: string) {
 
 const createUserSchema = z.object({
   full_name: z.string().min(1).max(120),
+  store_name: z.string().trim().min(1, "Informe o nome da loja.").max(120),
   username: z
     .string()
     .min(3)
@@ -27,6 +28,7 @@ const createUserSchema = z.object({
   password: z.string().min(6).max(72),
   role: z.enum(["admin", "revendedor"]),
 });
+
 
 export const listResellers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -87,15 +89,24 @@ export const createUser = createServerFn({ method: "POST" })
     // ('revendedor'). The admin explicitly sets the real role here using
     // the service-role client so client-supplied metadata can never elevate.
     const createdId = created.user?.id;
-    if (createdId && data.role !== "revendedor") {
-      const { error: roleErr } = await supabaseAdmin
-        .from("user_roles")
-        .update({ role: data.role })
-        .eq("user_id", createdId);
-      if (roleErr) throw new Error(roleErr.message);
+    if (createdId) {
+      const { error: storeErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ store_name: data.store_name })
+        .eq("id", createdId);
+      if (storeErr) throw new Error(storeErr.message);
+
+      if (data.role !== "revendedor") {
+        const { error: roleErr } = await supabaseAdmin
+          .from("user_roles")
+          .update({ role: data.role })
+          .eq("user_id", createdId);
+        if (roleErr) throw new Error(roleErr.message);
+      }
     }
     return { id: createdId };
   });
+
 
 const resetSchema = z.object({
   user_id: z.string().uuid(),
