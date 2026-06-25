@@ -14,10 +14,12 @@ interface Profile {
   phone: string | null;
   document: string | null;
   address: string | null;
+  store_name: string | null;
   parent_user_id: string | null;
   active: boolean;
   avatar_url: string | null;
 }
+
 
 interface AuthContextValue {
   session: Session | null;
