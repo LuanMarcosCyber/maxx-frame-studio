@@ -25,6 +25,7 @@ import { Route as RevendedoresIndexRouteImport } from './routes/revendedores.ind
 import { Route as OrcamentosIndexRouteImport } from './routes/orcamentos.index'
 import { Route as RevendedoresIdRouteImport } from './routes/revendedores.$id'
 import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
+import { Route as PedidosIdImprimirViaRouteImport } from './routes/pedidos.$id.imprimir.$via'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -106,6 +107,11 @@ const OrcamentosNovoRoute = OrcamentosNovoRouteImport.update({
   path: '/novo',
   getParentRoute: () => OrcamentosRoute,
 } as any)
+const PedidosIdImprimirViaRoute = PedidosIdImprimirViaRouteImport.update({
+  id: '/$id/imprimir/$via',
+  path: '/$id/imprimir/$via',
+  getParentRoute: () => PedidosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -115,7 +121,7 @@ export interface FileRoutesByFullPath {
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
   '/orcamentos': typeof OrcamentosRouteWithChildren
-  '/pedidos': typeof PedidosRoute
+  '/pedidos': typeof PedidosRouteWithChildren
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
   '/revendedores': typeof RevendedoresRouteWithChildren
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
   '/revendedores/': typeof RevendedoresIndexRoute
+  '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,7 +139,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
-  '/pedidos': typeof PedidosRoute
+  '/pedidos': typeof PedidosRouteWithChildren
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos': typeof OrcamentosIndexRoute
   '/revendedores': typeof RevendedoresIndexRoute
+  '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -150,7 +158,7 @@ export interface FileRoutesById {
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
   '/orcamentos': typeof OrcamentosRouteWithChildren
-  '/pedidos': typeof PedidosRoute
+  '/pedidos': typeof PedidosRouteWithChildren
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
   '/revendedores': typeof RevendedoresRouteWithChildren
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
   '/revendedores/': typeof RevendedoresIndexRoute
+  '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/revendedores/$id'
     | '/orcamentos/'
     | '/revendedores/'
+    | '/pedidos/$id/imprimir/$via'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/revendedores/$id'
     | '/orcamentos'
     | '/revendedores'
+    | '/pedidos/$id/imprimir/$via'
   id:
     | '__root__'
     | '/'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/revendedores/$id'
     | '/orcamentos/'
     | '/revendedores/'
+    | '/pedidos/$id/imprimir/$via'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,7 +235,7 @@ export interface RootRouteChildren {
   ContaRoute: typeof ContaRoute
   LoginRoute: typeof LoginRoute
   OrcamentosRoute: typeof OrcamentosRouteWithChildren
-  PedidosRoute: typeof PedidosRoute
+  PedidosRoute: typeof PedidosRouteWithChildren
   ProdutosRoute: typeof ProdutosRoute
   RelatoriosRoute: typeof RelatoriosRoute
   RevendedoresRoute: typeof RevendedoresRouteWithChildren
@@ -344,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrcamentosNovoRouteImport
       parentRoute: typeof OrcamentosRoute
     }
+    '/pedidos/$id/imprimir/$via': {
+      id: '/pedidos/$id/imprimir/$via'
+      path: '/$id/imprimir/$via'
+      fullPath: '/pedidos/$id/imprimir/$via'
+      preLoaderRoute: typeof PedidosIdImprimirViaRouteImport
+      parentRoute: typeof PedidosRoute
+    }
   }
 }
 
@@ -360,6 +379,17 @@ const OrcamentosRouteChildren: OrcamentosRouteChildren = {
 const OrcamentosRouteWithChildren = OrcamentosRoute._addFileChildren(
   OrcamentosRouteChildren,
 )
+
+interface PedidosRouteChildren {
+  PedidosIdImprimirViaRoute: typeof PedidosIdImprimirViaRoute
+}
+
+const PedidosRouteChildren: PedidosRouteChildren = {
+  PedidosIdImprimirViaRoute: PedidosIdImprimirViaRoute,
+}
+
+const PedidosRouteWithChildren =
+  PedidosRoute._addFileChildren(PedidosRouteChildren)
 
 interface RevendedoresRouteChildren {
   RevendedoresIdRoute: typeof RevendedoresIdRoute
@@ -383,7 +413,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContaRoute: ContaRoute,
   LoginRoute: LoginRoute,
   OrcamentosRoute: OrcamentosRouteWithChildren,
-  PedidosRoute: PedidosRoute,
+  PedidosRoute: PedidosRouteWithChildren,
   ProdutosRoute: ProdutosRoute,
   RelatoriosRoute: RelatoriosRoute,
   RevendedoresRoute: RevendedoresRouteWithChildren,
