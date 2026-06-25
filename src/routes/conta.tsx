@@ -106,6 +106,16 @@ function Conta() {
               />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="loja">Nome da loja</Label>
+              <Input
+                id="loja"
+                value={form.store_name}
+                onChange={onChange("store_name")}
+                placeholder="Ex.: Molduraria Silva"
+              />
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
