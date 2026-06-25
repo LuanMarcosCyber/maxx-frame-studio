@@ -4,7 +4,7 @@ import { Fragment, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/pedidos/$id/imprimir/$via")({
+export const Route = createFileRoute("/pedidos_/$id/imprimir/$via")({
   head: () => ({ meta: [{ title: "Imprimir pedido — Total Maxx ERP" }] }),
   component: PrintOrder,
 });
