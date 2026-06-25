@@ -334,11 +334,12 @@ function PrintOrder() {
                 <h3>Item {idx + 1}</h3>
                 <div className="item-rows">
                   {rows.map(([k, v], i) => (
-                    <>
-                      <div className="k" key={`k-${i}`}>{k}</div>
-                      <div key={`v-${i}`}>{v}</div>
-                    </>
+                    <Fragment key={i}>
+                      <div className="k">{k}</div>
+                      <div>{v}</div>
+                    </Fragment>
                   ))}
+
                 </div>
                 {itemObs && <div className="obs" style={{ marginTop: 6 }}>{itemObs}</div>}
               </div>
