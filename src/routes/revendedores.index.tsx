@@ -286,6 +286,7 @@ function CreateUserDialog({
 }: {
   onSubmit: (d: {
     full_name: string;
+    store_name: string;
     username: string;
     password: string;
     role: "admin" | "revendedor";
@@ -294,6 +295,7 @@ function CreateUserDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "revendedor">("revendedor");
@@ -301,9 +303,10 @@ function CreateUserDialog({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit({ full_name: fullName, username, password, role });
+      await onSubmit({ full_name: fullName, store_name: storeName, username, password, role });
       setOpen(false);
       setFullName("");
+      setStoreName("");
       setUsername("");
       setPassword("");
       setRole("revendedor");
@@ -335,6 +338,16 @@ function CreateUserDialog({
               onChange={(e) => setFullName(e.target.value)}
               required
               placeholder="João da Silva"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="store_name">Nome da loja *</Label>
+            <Input
+              id="store_name"
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              required
+              placeholder="Molduraria Silva"
             />
           </div>
           <div className="space-y-1.5">
@@ -390,6 +403,7 @@ function CreateUserDialog({
     </Dialog>
   );
 }
+
 
 function ResetPasswordDialog({
   target,
