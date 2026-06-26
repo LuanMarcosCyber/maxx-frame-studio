@@ -402,6 +402,38 @@ function Orcamentos() {
 
       <ResumoDialog budget={viewing} onClose={() => setViewing(null)} />
 
+      <Dialog open={!!printingFor} onOpenChange={(o) => !o && setPrintingFor(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Imprimir via para:</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2">
+            {[
+              { key: "loja", label: "Loja", Icon: Store },
+              { key: "producao", label: "Produção", Icon: Hammer },
+              { key: "cliente", label: "Cliente", Icon: User },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  if (!printingFor) return;
+                  const id = printingFor.id;
+                  setPrintingFor(null);
+                  window.open(`/orcamentos_/${id}/imprimir/${key}`, "_blank");
+                }}
+                className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-8 sm:py-10 shadow-sm transition-all hover:border-brand hover:bg-brand/5 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted group-hover:bg-brand/10 group-hover:text-brand transition-colors">
+                  <Icon className="h-7 w-7" />
+                </div>
+                <span className="text-base font-semibold group-hover:text-brand">{label}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
