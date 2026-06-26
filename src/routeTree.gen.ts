@@ -26,6 +26,7 @@ import { Route as OrcamentosIndexRouteImport } from './routes/orcamentos.index'
 import { Route as RevendedoresIdRouteImport } from './routes/revendedores.$id'
 import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
 import { Route as PedidosIdImprimirViaRouteImport } from './routes/pedidos_.$id.imprimir.$via'
+import { Route as OrcamentosIdImprimirViaRouteImport } from './routes/orcamentos_.$id.imprimir.$via'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -112,6 +113,11 @@ const PedidosIdImprimirViaRoute = PedidosIdImprimirViaRouteImport.update({
   path: '/pedidos/$id/imprimir/$via',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrcamentosIdImprimirViaRoute = OrcamentosIdImprimirViaRouteImport.update({
+  id: '/orcamentos_/$id/imprimir/$via',
+  path: '/orcamentos/$id/imprimir/$via',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
   '/revendedores/': typeof RevendedoresIndexRoute
+  '/orcamentos/$id/imprimir/$via': typeof OrcamentosIdImprimirViaRoute
   '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
 export interface FileRoutesByTo {
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos': typeof OrcamentosIndexRoute
   '/revendedores': typeof RevendedoresIndexRoute
+  '/orcamentos/$id/imprimir/$via': typeof OrcamentosIdImprimirViaRoute
   '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
 export interface FileRoutesById {
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
   '/revendedores/': typeof RevendedoresIndexRoute
+  '/orcamentos_/$id/imprimir/$via': typeof OrcamentosIdImprimirViaRoute
   '/pedidos_/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
 export interface FileRouteTypes {
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/revendedores/$id'
     | '/orcamentos/'
     | '/revendedores/'
+    | '/orcamentos/$id/imprimir/$via'
     | '/pedidos/$id/imprimir/$via'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/revendedores/$id'
     | '/orcamentos'
     | '/revendedores'
+    | '/orcamentos/$id/imprimir/$via'
     | '/pedidos/$id/imprimir/$via'
   id:
     | '__root__'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/revendedores/$id'
     | '/orcamentos/'
     | '/revendedores/'
+    | '/orcamentos_/$id/imprimir/$via'
     | '/pedidos_/$id/imprimir/$via'
   fileRoutesById: FileRoutesById
 }
@@ -240,6 +252,7 @@ export interface RootRouteChildren {
   RelatoriosRoute: typeof RelatoriosRoute
   RevendedoresRoute: typeof RevendedoresRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  OrcamentosIdImprimirViaRoute: typeof OrcamentosIdImprimirViaRoute
   PedidosIdImprimirViaRoute: typeof PedidosIdImprimirViaRoute
 }
 
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PedidosIdImprimirViaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/orcamentos_/$id/imprimir/$via': {
+      id: '/orcamentos_/$id/imprimir/$via'
+      path: '/orcamentos/$id/imprimir/$via'
+      fullPath: '/orcamentos/$id/imprimir/$via'
+      preLoaderRoute: typeof OrcamentosIdImprimirViaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -408,6 +428,7 @@ const rootRouteChildren: RootRouteChildren = {
   RelatoriosRoute: RelatoriosRoute,
   RevendedoresRoute: RevendedoresRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  OrcamentosIdImprimirViaRoute: OrcamentosIdImprimirViaRoute,
   PedidosIdImprimirViaRoute: PedidosIdImprimirViaRoute,
 }
 export const routeTree = rootRouteImport
