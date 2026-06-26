@@ -626,12 +626,16 @@ export function PrintDocument({
             <div className="section-title">Produtos diversos</div>
             {diversos.map((p, i) => {
               const idx = frames.length + i + 1;
+              const unit = p.valorUnitario || (p.quantidade ? p.valorTotal / p.quantidade : 0);
               return (
                 <div className="item-block diverso-block" key={i}>
                   <div className="item-head">
                     <div className="left">
                       <span className="idx">{idx}</span>
-                      <span className="title">ITEM {idx} — {p.nome}</span>
+                      <span className="title">
+                        ITEM {idx} — {p.nome}
+                        {frames.length > 0 ? ` (ref. Item ${p.itemPos})` : ""}
+                      </span>
                     </div>
                     {showFinance && (
                       <div className="total">Total: {fmtMoney(p.valorTotal)}</div>
@@ -644,6 +648,12 @@ export function PrintDocument({
                       <tr><td className="k">Descrição</td><td>{p.descricao || p.nome}</td></tr>
                       {p.fornecedor ? <tr><td className="k">Fornecedor</td><td>{p.fornecedor}</td></tr> : null}
                       <tr><td className="k">Quantidade</td><td>{p.quantidade}</td></tr>
+                      {showFinance && (
+                        <>
+                          <tr><td className="k">Valor unitário</td><td>{fmtMoney(unit)}</td></tr>
+                          <tr><td className="k">Total do item</td><td>{fmtMoney(p.valorTotal)}</td></tr>
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>
