@@ -149,15 +149,19 @@ function FramePreview({ d }: { d: ItemData }) {
   );
 }
 
-function extractDiversos(items: Array<{ data: ItemData }>): Diverso[] {
-  const out: Diverso[] = [];
+type DiversoEx = Diverso & { valorUnitario: number; itemPos: number };
+
+function extractDiversos(items: Array<{ position: number; data: ItemData }>): DiversoEx[] {
+  const out: DiversoEx[] = [];
   for (const it of items) {
     const raw = it.data.produtosDiversos;
     if (!Array.isArray(raw)) continue;
     for (const p of raw as Array<Record<string, unknown>>) {
       const qtd = Number(p.quantidade) || 1;
-      const valorUnit = Number(p.valor) || Number(p.preco) || 0;
-      const valorTotal = Number(p.valorTotal) || valorUnit * qtd;
+      const valorUnit =
+        Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
+      const valorTotal =
+        Number(p.total) || Number(p.valorTotal) || valorUnit * qtd;
       out.push({
         code: typeof p.code === "string" ? p.code : undefined,
         nome:
@@ -169,11 +173,26 @@ function extractDiversos(items: Array<{ data: ItemData }>): Diverso[] {
         descricao: typeof p.descricao === "string" ? p.descricao : undefined,
         fornecedor: typeof p.fornecedor === "string" ? p.fornecedor : undefined,
         quantidade: qtd,
+        valorUnitario: valorUnit,
         valorTotal,
+        itemPos: it.position,
       });
     }
   }
   return out;
+}
+
+function diversosTotalForItem(d: ItemData): number {
+  const raw = d.produtosDiversos;
+  if (!Array.isArray(raw)) return 0;
+  let s = 0;
+  for (const p of raw as Array<Record<string, unknown>>) {
+    const qtd = Number(p.quantidade) || 1;
+    const unit =
+      Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
+    s += Number(p.total) || Number(p.valorTotal) || unit * qtd;
+  }
+  return s;
 }
 
 function frameItemRows(d: ItemData): Array<[string, string]> {
@@ -211,7 +230,13 @@ function frameItemRows(d: ItemData): Array<[string, string]> {
   }
   rows.push([
     "Vidro / Espelho",
-    dStr(d, "vidroTipo") === "sim" ? productLabel(d, "vidroCode", "vidroDescription") : "Não aplicado",
+    dStr(d, "vidroTipo") === "sim"
+      ? (() => {
+          const base = productLabel(d, "vidroCode", "vidroDescription");
+          const qtd = Number(dNum(d, "vidroQuantidade")) || 1;
+          return qtd > 1 ? `${qtd}x — ${base}` : base;
+        })()
+      : "Não aplicado",
   ]);
   rows.push(["Foam / MDF", productLabel(d, "foamCode", "foamDescription")]);
   rows.push([
@@ -408,10 +433,10 @@ export function PrintDocument({
         .topbar { display:flex; justify-content:space-between; align-items:center; gap:8px;
           padding:2px 2px 5px; border-bottom:1.2px solid #000; }
         .topbar .left { display:flex; align-items:center; gap:8px; min-width:0; }
-        .avatar { width:24px; height:24px; border-radius:50%; background:#fff; color:#000;
-          display:grid; place-items:center; font-weight:800; font-size:11px; overflow:hidden;
-          border:1.2px solid #000; flex:0 0 24px; }
-        .avatar img { width:100%; height:100%; object-fit:cover; }
+        .avatar { height:34px; max-width:140px; color:#000;
+          display:inline-flex; align-items:center; font-weight:800; font-size:11px;
+          flex:0 0 auto; }
+        .avatar img { height:34px; max-width:140px; width:auto; object-fit:contain; display:block; }
         .topbar h1 { margin:0; font-size:14px; font-weight:800; letter-spacing:.2px; color:#000; }
         .topbar .right { text-align:right; font-size:9px; text-transform:uppercase;
           letter-spacing:.6px; line-height:1.15; color:#000; }
@@ -554,7 +579,9 @@ export function PrintDocument({
                       <span className="title">ITEM {idx + 1} — Quadro {W} x {H} cm</span>
                     </div>
                     {showFinance && (
-                      <div className="total">Total: {fmtMoney(Number(it.subtotal))}</div>
+                      <div className="total">
+                        Total: {fmtMoney(Number(it.subtotal) - diversosTotalForItem(d))}
+                      </div>
                     )}
                   </div>
                   {showPreview ? (
@@ -599,12 +626,16 @@ export function PrintDocument({
             <div className="section-title">Produtos diversos</div>
             {diversos.map((p, i) => {
               const idx = frames.length + i + 1;
+              const unit = p.valorUnitario || (p.quantidade ? p.valorTotal / p.quantidade : 0);
               return (
                 <div className="item-block diverso-block" key={i}>
                   <div className="item-head">
                     <div className="left">
                       <span className="idx">{idx}</span>
-                      <span className="title">ITEM {idx} — {p.nome}</span>
+                      <span className="title">
+                        ITEM {idx} — {p.nome}
+                        {frames.length > 0 ? ` (ref. Item ${p.itemPos})` : ""}
+                      </span>
                     </div>
                     {showFinance && (
                       <div className="total">Total: {fmtMoney(p.valorTotal)}</div>
@@ -617,6 +648,12 @@ export function PrintDocument({
                       <tr><td className="k">Descrição</td><td>{p.descricao || p.nome}</td></tr>
                       {p.fornecedor ? <tr><td className="k">Fornecedor</td><td>{p.fornecedor}</td></tr> : null}
                       <tr><td className="k">Quantidade</td><td>{p.quantidade}</td></tr>
+                      {showFinance && (
+                        <>
+                          <tr><td className="k">Valor unitário</td><td>{fmtMoney(unit)}</td></tr>
+                          <tr><td className="k">Total do item</td><td>{fmtMoney(p.valorTotal)}</td></tr>
+                        </>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -703,7 +740,8 @@ export function PrintDocument({
 
         <div className="footer">
           {storeName} · {docLabel} {order.number || "—"} · {variantTitle.replace("VIA ", "Via ")} ·{" "}
-          Emitido em {fmtDate(new Date().toISOString())}
+          Emitido em {fmtDate(new Date().toISOString())} às{" "}
+          {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
     </>
