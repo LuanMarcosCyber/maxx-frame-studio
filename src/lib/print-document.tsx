@@ -230,7 +230,13 @@ function frameItemRows(d: ItemData): Array<[string, string]> {
   }
   rows.push([
     "Vidro / Espelho",
-    dStr(d, "vidroTipo") === "sim" ? productLabel(d, "vidroCode", "vidroDescription") : "Não aplicado",
+    dStr(d, "vidroTipo") === "sim"
+      ? (() => {
+          const base = productLabel(d, "vidroCode", "vidroDescription");
+          const qtd = Number(dNum(d, "vidroQuantidade")) || 1;
+          return qtd > 1 ? `${qtd}x — ${base}` : base;
+        })()
+      : "Não aplicado",
   ]);
   rows.push(["Foam / MDF", productLabel(d, "foamCode", "foamDescription")]);
   rows.push([
