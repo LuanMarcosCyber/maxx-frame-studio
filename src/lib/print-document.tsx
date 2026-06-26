@@ -109,27 +109,28 @@ function FramePreview({ d }: { d: ItemData }) {
       preserveAspectRatio="xMidYMid meet"
     >
       {/* top + bottom outer dim */}
-      <text x={VB / 2} y={y0 - 4} textAnchor="middle" fontSize="7" fill="#111">{fmtM(W)} cm</text>
-      <text x={VB / 2} y={y0 + dh + 11} textAnchor="middle" fontSize="7" fill="#111">{fmtM(W)} cm</text>
+      <text x={VB / 2} y={y0 - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
+      <text x={VB / 2} y={y0 + dh + 14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
       {/* left side outer dim */}
       <text
-        x={x0 - 5}
+        x={x0 - 7}
         y={y0 + dh / 2}
         textAnchor="middle"
-        fontSize="7"
-        fill="#111"
-        transform={`rotate(-90 ${x0 - 5} ${y0 + dh / 2})`}
+        fontSize="11"
+        fontWeight="700"
+        fill="#000"
+        transform={`rotate(-90 ${x0 - 7} ${y0 + dh / 2})`}
       >
         {fmtM(H)} cm
       </text>
 
       {/* outer frame */}
-      <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#111" strokeWidth="1" />
+      <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#000" strokeWidth="1.2" />
       {hasExt && (
-        <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#111" strokeWidth="0.6" />
+        <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
       {hasInt && intW > 0 && intH > 0 && (
-        <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#111" strokeWidth="0.6" />
+        <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
 
       {/* art label centered, always same font size visually */}
@@ -138,8 +139,9 @@ function FramePreview({ d }: { d: ItemData }) {
         y={artY + artH / 2}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize="9"
-        fill="#333"
+        fontSize="12"
+        fontWeight="700"
+        fill="#000"
       >
         ARTE {fmtM(artCmW)}×{fmtM(artCmH)}
       </text>
@@ -200,9 +202,12 @@ function frameItemRows(d: ItemData): Array<[string, string]> {
       ]);
     }
   }
-  rows.push(["Perfil", productLabel(d, "perfilCode", "perfilDescription")]);
-  if (dStr(d, "perfilAdicionalAtivo") === "sim") {
-    rows.push(["Perfil adicional", productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")]);
+  const temPerfilInterno = dStr(d, "perfilAdicionalAtivo") === "sim";
+  if (temPerfilInterno) {
+    rows.push(["Perfil externo", productLabel(d, "perfilCode", "perfilDescription")]);
+    rows.push(["Perfil interno", productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")]);
+  } else {
+    rows.push(["Perfil", productLabel(d, "perfilCode", "perfilDescription")]);
   }
   rows.push([
     "Vidro / Espelho",
@@ -390,101 +395,96 @@ export function PrintDocument({
         @page { size: A4; margin: 8mm; }
         html, body { background:#eef0f3; margin:0; padding:0; }
         body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-               color:#111; -webkit-print-color-adjust:exact; print-color-adjust:exact; font-size: 10.5px; }
+               color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact; font-size: 10.5px; }
         .sheet {
           width: 210mm; min-height: 297mm; padding: 6mm 7mm 8mm;
           margin: 10px auto; background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.08);
           box-sizing:border-box;
         }
-        .via-title { text-align:center; font-size:13px; font-weight:800; color:#7a1f2b;
-          letter-spacing:1.2px; margin:0 0 4px; }
+        .via-title { text-align:center; font-size:12px; font-weight:800; color:#000;
+          letter-spacing:1.4px; margin:0 0 4px; }
 
-        .topbar { background:#7a1f2b; color:#fff; padding:5px 10px;
-          display:flex; justify-content:space-between; align-items:center; gap:8px;
-          border-radius:2px; }
+        /* Lightweight topbar: no filled bar, only thin underline */
+        .topbar { display:flex; justify-content:space-between; align-items:center; gap:8px;
+          padding:2px 2px 5px; border-bottom:1.2px solid #000; }
         .topbar .left { display:flex; align-items:center; gap:8px; min-width:0; }
-        .avatar { width:26px; height:26px; border-radius:50%; background:#fff; color:#7a1f2b;
+        .avatar { width:24px; height:24px; border-radius:50%; background:#fff; color:#000;
           display:grid; place-items:center; font-weight:800; font-size:11px; overflow:hidden;
-          border:1px solid #fff; flex:0 0 26px; }
+          border:1.2px solid #000; flex:0 0 24px; }
         .avatar img { width:100%; height:100%; object-fit:cover; }
-        .topbar h1 { margin:0; font-size:13px; font-weight:800; letter-spacing:.2px; }
+        .topbar h1 { margin:0; font-size:14px; font-weight:800; letter-spacing:.2px; color:#000; }
         .topbar .right { text-align:right; font-size:9px; text-transform:uppercase;
-          letter-spacing:.6px; line-height:1.1; }
+          letter-spacing:.6px; line-height:1.15; color:#000; }
         .topbar .right .num { font-family: ui-monospace, Menlo, Consolas, monospace;
-          font-size:12px; font-weight:700; letter-spacing:0; }
+          font-size:13px; font-weight:700; letter-spacing:0; color:#000; }
 
-        .section-title { font-size:9px; font-weight:800; text-transform:uppercase;
-          letter-spacing:1px; color:#7a1f2b; margin:8px 0 3px;
-          border-bottom:1px solid #7a1f2b; padding-bottom:2px; }
+        .section-title { font-size:9.5px; font-weight:800; text-transform:uppercase;
+          letter-spacing:1px; color:#000; margin:8px 0 3px;
+          border-bottom:1px solid #000; padding-bottom:2px; }
 
         .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:2px 14px;
           font-size:10.5px; padding:2px 0; }
-        .grid-2 .lbl { color:#444; font-weight:700; display:inline-block; min-width:105px; }
+        .grid-2 .lbl { color:#000; font-weight:700; display:inline-block; min-width:105px; }
 
-        .item-block { border:1px solid #bbb; margin-top:5px; page-break-inside:avoid;
-          break-inside:avoid; border-radius:2px; overflow:hidden; }
-        .item-head { background:#7a1f2b; color:#fff; padding:3px 8px;
-          display:flex; justify-content:space-between; align-items:center; font-size:10.5px; }
-        .item-head .idx { background:#fff; color:#7a1f2b; width:15px; height:15px;
-          border-radius:2px; display:inline-grid; place-items:center; font-weight:800;
-          font-size:9.5px; margin-right:6px; }
-        .item-head .title { font-weight:700; }
-        .item-head .total { font-weight:700; font-size:10.5px; }
-        .kv-table { width:100%; border-collapse:collapse; font-size:10px; }
-        .kv-table td { padding:2.5px 7px; border-bottom:1px solid #e2e2e2;
-          vertical-align:top; }
-        .kv-table td.k { width:36%; color:#333; font-weight:600; background:#f7f7f7; }
+        /* Item block: no filled header bar, just bold title + thin underline + numbered square */
+        .item-block { margin-top:6px; page-break-inside:avoid; break-inside:avoid; }
+        .item-head { padding:2px 0 3px; display:flex; justify-content:space-between;
+          align-items:center; font-size:11.5px; border-bottom:1px solid #000; margin-bottom:0; }
+        .item-head .left { display:flex; align-items:center; gap:6px; min-width:0; }
+        .item-head .idx { background:#fff; color:#000; width:16px; height:16px;
+          border:1.2px solid #000; border-radius:2px; display:inline-grid; place-items:center;
+          font-weight:800; font-size:10px; }
+        .item-head .title { font-weight:800; color:#000; }
+        .item-head .total { font-weight:700; font-size:11px; color:#000; }
+
+        .kv-table { width:100%; border-collapse:collapse; font-size:10.5px; }
+        .kv-table td { padding:2.5px 7px; border-bottom:1px solid #ddd; vertical-align:top; }
+        .kv-table td.k { width:38%; color:#000; font-weight:600; background:#fff; }
         .kv-table tr:last-child td { border-bottom:none; }
 
-        .prod-row { display:grid; grid-template-columns: 180px 1fr; gap:0; }
-        .prod-row .col-preview { padding:4px; border-right:1px solid #e2e2e2;
+        /* Production row: preview ~40% width, larger */
+        .prod-row { display:grid; grid-template-columns: 40% 60%; gap:0; align-items:stretch; }
+        .prod-row .col-preview { padding:4px 8px 4px 2px; border-right:1px solid #ccc;
           display:flex; align-items:center; justify-content:center; }
-        .frame-preview { width:170px; height:170px; }
+        .frame-preview { width:100%; height:auto; max-height:78mm; aspect-ratio:1/1; }
+        .prod-row .kv-table { font-size:11px; }
+        .prod-row .kv-table td { padding:3px 7px; }
 
-        .totals { margin-top:4px; border:1px solid #bbb; border-radius:2px; overflow:hidden; }
+        .totals { margin-top:4px; border:1px solid #000; border-radius:2px; overflow:hidden; }
         .totals .row { display:flex; justify-content:space-between; padding:3px 8px;
-          font-size:10.5px; border-bottom:1px solid #e2e2e2; }
+          font-size:10.5px; border-bottom:1px solid #ddd; color:#000; }
         .totals .row:last-child { border-bottom:none; }
-        .totals .row.total { background:#7a1f2b; color:#fff; font-weight:800; font-size:11.5px; }
-        .totals .row.due { background:#eafff1; color:#0c5132; font-weight:800; }
-        .totals .row.muted { color:#444; }
+        .totals .row.total { background:#fff; color:#000; font-weight:800; font-size:12px;
+          border-top:1.5px solid #000; }
+        .totals .row.due { background:#fff; color:#000; font-weight:800;
+          border-top:1px solid #000; }
+        .totals .row.muted { color:#000; }
 
         .parc-table { width:100%; border-collapse:collapse; font-size:10px;
-          margin-top:4px; border:1px solid #bbb; border-radius:2px; overflow:hidden; }
-        .parc-table th, .parc-table td { padding:3px 7px; border-bottom:1px solid #e2e2e2;
-          text-align:left; }
-        .parc-table th { background:#f0f0f0; font-size:9px; text-transform:uppercase;
-          letter-spacing:.4px; }
+          margin-top:4px; border:1px solid #000; border-radius:2px; overflow:hidden; }
+        .parc-table th, .parc-table td { padding:3px 7px; border-bottom:1px solid #ddd;
+          text-align:left; color:#000; }
+        .parc-table th { background:#fff; font-size:9px; text-transform:uppercase;
+          letter-spacing:.4px; border-bottom:1px solid #000; }
         .parc-table tr:last-child td { border-bottom:none; }
 
         .obs-box { margin-top:4px; font-size:10px; padding:5px 7px;
-          border:1px dashed #888; background:#fafafa; white-space:pre-wrap; border-radius:2px; }
+          border:1px dashed #555; background:#fff; white-space:pre-wrap; border-radius:2px;
+          color:#000; }
 
-        .diverso-block .item-head { background:#444; }
-        .diverso-block .item-head .idx { color:#444; }
-
-        .footer { margin-top:10px; padding-top:4px; border-top:1px solid #888;
-          font-size:9px; color:#555; text-align:center; }
+        .footer { margin-top:10px; padding-top:4px; border-top:1px solid #000;
+          font-size:9px; color:#000; text-align:center; }
         .print-actions { position:fixed; top:10px; right:10px; display:flex; gap:8px; z-index:10; }
-        .print-actions button { background:#7a1f2b; color:#fff; border:none;
+        .print-actions button { background:#000; color:#fff; border:none;
           border-radius:6px; padding:8px 14px; font-size:12px; cursor:pointer;
           box-shadow:0 2px 6px rgba(0,0,0,.15); }
-        .print-actions button.secondary { background:#fff; color:#111;
-          border:1px solid #ccc; }
+        .print-actions button.secondary { background:#fff; color:#000;
+          border:1px solid #000; }
 
         @media print {
           html, body { background:#fff; }
           .sheet { box-shadow:none; margin:0; width:auto; min-height:auto; padding:0; }
           .print-actions { display:none; }
-          .via-title { color:#000 !important; }
-          .section-title { color:#000 !important; border-bottom-color:#000 !important; }
-          .topbar { background:#000 !important; }
-          .item-head { background:#000 !important; }
-          .item-head .idx { color:#000 !important; }
-          .diverso-block .item-head { background:#444 !important; }
-          .totals .row.total { background:#000 !important; }
-          .totals .row.due { background:#fff !important; color:#000 !important;
-            border:1px solid #000; }
         }
       `}</style>
 
@@ -549,7 +549,7 @@ export function PrintDocument({
               return (
                 <div className="item-block" key={it.id}>
                   <div className="item-head">
-                    <div>
+                    <div className="left">
                       <span className="idx">{idx + 1}</span>
                       <span className="title">ITEM {idx + 1} — Quadro {W} x {H} cm</span>
                     </div>
@@ -602,7 +602,7 @@ export function PrintDocument({
               return (
                 <div className="item-block diverso-block" key={i}>
                   <div className="item-head">
-                    <div>
+                    <div className="left">
                       <span className="idx">{idx}</span>
                       <span className="title">ITEM {idx} — {p.nome}</span>
                     </div>

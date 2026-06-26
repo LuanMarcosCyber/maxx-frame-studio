@@ -2025,7 +2025,7 @@ function NovoOrcamento() {
               </p>
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="perfil">Código</Label>
+                <Label htmlFor="perfil">{perfilAdicionalAtivo === "sim" ? "Perfil externo" : "Perfil"}</Label>
                 <ProductSelect
                   id="perfil"
                   value={perfilId}
@@ -2039,7 +2039,7 @@ function NovoOrcamento() {
               </div>
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="perfil-adicional-ativo">Adicionar perfil adicional?</Label>
+                <Label htmlFor="perfil-adicional-ativo">Adicionar um segundo perfil?</Label>
                 <Select
                   value={perfilAdicionalAtivo}
                   onValueChange={(v) => setPerfilAdicionalAtivo(v as "sim" | "nao")}
@@ -2056,7 +2056,7 @@ function NovoOrcamento() {
 
               {perfilAdicionalAtivo === "sim" && (
                 <div className="mt-4 max-w-md space-y-1.5">
-                  <Label htmlFor="perfil-adicional">Perfil adicional</Label>
+                  <Label htmlFor="perfil-adicional">Perfil interno</Label>
                   <ProductSelect
                     id="perfil-adicional"
                     value={perfilAdicionalId}
@@ -2068,7 +2068,7 @@ function NovoOrcamento() {
                   />
                   {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
                     <p className="mt-2 text-xs text-amber-600">
-                      Selecione o perfil principal para calcular o perfil adicional.
+                      Selecione o perfil externo para calcular o perfil interno.
                     </p>
                   )}
                 </div>
@@ -2634,11 +2634,11 @@ function NovoOrcamento() {
                   {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
                     <>
                       <Row
-                        label={`Perfil principal${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                        label={`Perfil externo${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPerfilPrincipal)}
                       />
                       <Row
-                        label={`Perfil adicional${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
+                        label={`Perfil interno${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPerfilAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">

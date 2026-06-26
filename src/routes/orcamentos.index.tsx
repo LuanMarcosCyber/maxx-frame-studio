@@ -846,12 +846,12 @@ function ResumoDialog({
         ...(d.perfilAdicionalAtivo === "sim"
           ? [
               {
-                label: "Perfil principal",
+                label: "Perfil externo",
                 value: fmtMoney(dNum(d, "valorPerfilPrincipal")),
                 sub: productLabel(d, "perfilCode", "perfilDescription"),
               },
               {
-                label: "Perfil adicional",
+                label: "Perfil interno",
                 value: fmtMoney(dNum(d, "valorPerfilAdicional")),
                 sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${fmtMeasure(dNum(d, "larguraPerfilAdicional"))} × ${fmtMeasure(dNum(d, "alturaPerfilAdicional"))} cm`,
               },
