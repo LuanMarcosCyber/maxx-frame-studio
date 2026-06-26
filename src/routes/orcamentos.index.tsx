@@ -420,7 +420,7 @@ function Orcamentos() {
                   if (!printingFor) return;
                   const id = printingFor.id;
                   setPrintingFor(null);
-                  window.open(`/orcamentos_/${id}/imprimir/${key}`, "_blank");
+                  window.open(`/orcamentos/${id}/imprimir/${key}`, "_blank");
                 }}
                 className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-8 sm:py-10 shadow-sm transition-all hover:border-brand hover:bg-brand/5 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
               >
