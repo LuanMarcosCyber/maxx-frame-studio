@@ -109,27 +109,28 @@ function FramePreview({ d }: { d: ItemData }) {
       preserveAspectRatio="xMidYMid meet"
     >
       {/* top + bottom outer dim */}
-      <text x={VB / 2} y={y0 - 4} textAnchor="middle" fontSize="7" fill="#111">{fmtM(W)} cm</text>
-      <text x={VB / 2} y={y0 + dh + 11} textAnchor="middle" fontSize="7" fill="#111">{fmtM(W)} cm</text>
+      <text x={VB / 2} y={y0 - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
+      <text x={VB / 2} y={y0 + dh + 14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
       {/* left side outer dim */}
       <text
-        x={x0 - 5}
+        x={x0 - 7}
         y={y0 + dh / 2}
         textAnchor="middle"
-        fontSize="7"
-        fill="#111"
-        transform={`rotate(-90 ${x0 - 5} ${y0 + dh / 2})`}
+        fontSize="11"
+        fontWeight="700"
+        fill="#000"
+        transform={`rotate(-90 ${x0 - 7} ${y0 + dh / 2})`}
       >
         {fmtM(H)} cm
       </text>
 
       {/* outer frame */}
-      <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#111" strokeWidth="1" />
+      <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#000" strokeWidth="1.2" />
       {hasExt && (
-        <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#111" strokeWidth="0.6" />
+        <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
       {hasInt && intW > 0 && intH > 0 && (
-        <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#111" strokeWidth="0.6" />
+        <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
 
       {/* art label centered, always same font size visually */}
@@ -138,8 +139,9 @@ function FramePreview({ d }: { d: ItemData }) {
         y={artY + artH / 2}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize="9"
-        fill="#333"
+        fontSize="12"
+        fontWeight="700"
+        fill="#000"
       >
         ARTE {fmtM(artCmW)}×{fmtM(artCmH)}
       </text>
