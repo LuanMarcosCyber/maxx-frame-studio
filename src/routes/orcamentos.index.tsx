@@ -400,7 +400,47 @@ function Orcamentos() {
         </div>
       </Card>
 
-      <ResumoDialog budget={viewing} onClose={() => setViewing(null)} />
+      <ResumoDialog
+        budget={viewing}
+        onClose={() => setViewing(null)}
+        extraActions={
+          viewing && (
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const b = viewing;
+                  setViewing(null);
+                  setDeleting(b);
+                }}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Excluir orçamento
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const b = viewing;
+                  setViewing(null);
+                  setPrintingFor(b);
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" /> Imprimir
+              </Button>
+              <Button
+                onClick={() => {
+                  const b = viewing;
+                  setViewing(null);
+                  tryApprove(b);
+                }}
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                <Check className="h-4 w-4 mr-2" /> Aprovar orçamento
+              </Button>
+            </div>
+          )
+        }
+      />
 
       <Dialog open={!!printingFor} onOpenChange={(o) => !o && setPrintingFor(null)}>
         <DialogContent className="sm:max-w-2xl">
