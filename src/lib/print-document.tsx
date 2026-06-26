@@ -149,15 +149,19 @@ function FramePreview({ d }: { d: ItemData }) {
   );
 }
 
-function extractDiversos(items: Array<{ data: ItemData }>): Diverso[] {
-  const out: Diverso[] = [];
+type DiversoEx = Diverso & { valorUnitario: number; itemPos: number };
+
+function extractDiversos(items: Array<{ position: number; data: ItemData }>): DiversoEx[] {
+  const out: DiversoEx[] = [];
   for (const it of items) {
     const raw = it.data.produtosDiversos;
     if (!Array.isArray(raw)) continue;
     for (const p of raw as Array<Record<string, unknown>>) {
       const qtd = Number(p.quantidade) || 1;
-      const valorUnit = Number(p.valor) || Number(p.preco) || 0;
-      const valorTotal = Number(p.valorTotal) || valorUnit * qtd;
+      const valorUnit =
+        Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
+      const valorTotal =
+        Number(p.total) || Number(p.valorTotal) || valorUnit * qtd;
       out.push({
         code: typeof p.code === "string" ? p.code : undefined,
         nome:
@@ -169,11 +173,26 @@ function extractDiversos(items: Array<{ data: ItemData }>): Diverso[] {
         descricao: typeof p.descricao === "string" ? p.descricao : undefined,
         fornecedor: typeof p.fornecedor === "string" ? p.fornecedor : undefined,
         quantidade: qtd,
+        valorUnitario: valorUnit,
         valorTotal,
+        itemPos: it.position,
       });
     }
   }
   return out;
+}
+
+function diversosTotalForItem(d: ItemData): number {
+  const raw = d.produtosDiversos;
+  if (!Array.isArray(raw)) return 0;
+  let s = 0;
+  for (const p of raw as Array<Record<string, unknown>>) {
+    const qtd = Number(p.quantidade) || 1;
+    const unit =
+      Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
+    s += Number(p.total) || Number(p.valorTotal) || unit * qtd;
+  }
+  return s;
 }
 
 function frameItemRows(d: ItemData): Array<[string, string]> {
