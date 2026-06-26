@@ -740,7 +740,8 @@ export function PrintDocument({
 
         <div className="footer">
           {storeName} · {docLabel} {order.number || "—"} · {variantTitle.replace("VIA ", "Via ")} ·{" "}
-          Emitido em {fmtDate(new Date().toISOString())}
+          Emitido em {fmtDate(new Date().toISOString())} às{" "}
+          {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
     </>
