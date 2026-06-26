@@ -200,9 +200,12 @@ function frameItemRows(d: ItemData): Array<[string, string]> {
       ]);
     }
   }
-  rows.push(["Perfil", productLabel(d, "perfilCode", "perfilDescription")]);
-  if (dStr(d, "perfilAdicionalAtivo") === "sim") {
-    rows.push(["Perfil adicional", productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")]);
+  const temPerfilInterno = dStr(d, "perfilAdicionalAtivo") === "sim";
+  if (temPerfilInterno) {
+    rows.push(["Perfil externo", productLabel(d, "perfilCode", "perfilDescription")]);
+    rows.push(["Perfil interno", productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")]);
+  } else {
+    rows.push(["Perfil", productLabel(d, "perfilCode", "perfilDescription")]);
   }
   rows.push([
     "Vidro / Espelho",
