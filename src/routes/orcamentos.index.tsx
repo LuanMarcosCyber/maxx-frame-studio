@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check, Printer, Store, Hammer, User } from "lucide-react";
 import { cn, fmtMeasure, fmtDateBR } from "@/lib/utils";
 
 import {
@@ -88,6 +88,7 @@ function Orcamentos() {
   const [selectedClient, setSelectedClient] = useState<{ id: string; name: string } | null>(null);
   const [linkSaving, setLinkSaving] = useState(false);
   const [askApproveAfterLink, setAskApproveAfterLink] = useState<BudgetRow | null>(null);
+  const [printingFor, setPrintingFor] = useState<BudgetRow | null>(null);
 
   const { data: clientList = [] } = useQuery({
     queryKey: ["clients", "picker"],
@@ -376,6 +377,9 @@ function Orcamentos() {
                               }
                             >
                               <Pencil className="h-4 w-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setPrintingFor(b)}>
+                              <Printer className="h-4 w-4 mr-2" /> Imprimir
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
