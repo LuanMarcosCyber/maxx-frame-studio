@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check, Printer, Store, Hammer, User } from "lucide-react";
 import { cn, fmtMeasure, fmtDateBR } from "@/lib/utils";
 
 import {
@@ -88,6 +88,7 @@ function Orcamentos() {
   const [selectedClient, setSelectedClient] = useState<{ id: string; name: string } | null>(null);
   const [linkSaving, setLinkSaving] = useState(false);
   const [askApproveAfterLink, setAskApproveAfterLink] = useState<BudgetRow | null>(null);
+  const [printingFor, setPrintingFor] = useState<BudgetRow | null>(null);
 
   const { data: clientList = [] } = useQuery({
     queryKey: ["clients", "picker"],
@@ -377,6 +378,9 @@ function Orcamentos() {
                             >
                               <Pencil className="h-4 w-4 mr-2" /> Editar
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setPrintingFor(b)}>
+                              <Printer className="h-4 w-4 mr-2" /> Imprimir
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => setDeleting(b)}
@@ -397,6 +401,38 @@ function Orcamentos() {
       </Card>
 
       <ResumoDialog budget={viewing} onClose={() => setViewing(null)} />
+
+      <Dialog open={!!printingFor} onOpenChange={(o) => !o && setPrintingFor(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Imprimir via para:</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2">
+            {[
+              { key: "loja", label: "Loja", Icon: Store },
+              { key: "producao", label: "Produção", Icon: Hammer },
+              { key: "cliente", label: "Cliente", Icon: User },
+            ].map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  if (!printingFor) return;
+                  const id = printingFor.id;
+                  setPrintingFor(null);
+                  window.open(`/orcamentos/${id}/imprimir/${key}`, "_blank");
+                }}
+                className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-8 sm:py-10 shadow-sm transition-all hover:border-brand hover:bg-brand/5 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted group-hover:bg-brand/10 group-hover:text-brand transition-colors">
+                  <Icon className="h-7 w-7" />
+                </div>
+                <span className="text-base font-semibold group-hover:text-brand">{label}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
