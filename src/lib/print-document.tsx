@@ -433,10 +433,10 @@ export function PrintDocument({
         .topbar { display:flex; justify-content:space-between; align-items:center; gap:8px;
           padding:2px 2px 5px; border-bottom:1.2px solid #000; }
         .topbar .left { display:flex; align-items:center; gap:8px; min-width:0; }
-        .avatar { width:24px; height:24px; border-radius:50%; background:#fff; color:#000;
-          display:grid; place-items:center; font-weight:800; font-size:11px; overflow:hidden;
-          border:1.2px solid #000; flex:0 0 24px; }
-        .avatar img { width:100%; height:100%; object-fit:cover; }
+        .avatar { height:34px; max-width:140px; color:#000;
+          display:inline-flex; align-items:center; font-weight:800; font-size:11px;
+          flex:0 0 auto; }
+        .avatar img { height:34px; max-width:140px; width:auto; object-fit:contain; display:block; }
         .topbar h1 { margin:0; font-size:14px; font-weight:800; letter-spacing:.2px; color:#000; }
         .topbar .right { text-align:right; font-size:9px; text-transform:uppercase;
           letter-spacing:.6px; line-height:1.15; color:#000; }
