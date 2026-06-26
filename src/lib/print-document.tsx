@@ -602,7 +602,7 @@ export function PrintDocument({
               return (
                 <div className="item-block diverso-block" key={i}>
                   <div className="item-head">
-                    <div>
+                    <div className="left">
                       <span className="idx">{idx}</span>
                       <span className="title">ITEM {idx} — {p.nome}</span>
                     </div>
