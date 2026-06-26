@@ -549,7 +549,7 @@ export function PrintDocument({
               return (
                 <div className="item-block" key={it.id}>
                   <div className="item-head">
-                    <div>
+                    <div className="left">
                       <span className="idx">{idx + 1}</span>
                       <span className="title">ITEM {idx + 1} — Quadro {W} x {H} cm</span>
                     </div>
