@@ -579,7 +579,9 @@ export function PrintDocument({
                       <span className="title">ITEM {idx + 1} — Quadro {W} x {H} cm</span>
                     </div>
                     {showFinance && (
-                      <div className="total">Total: {fmtMoney(Number(it.subtotal))}</div>
+                      <div className="total">
+                        Total: {fmtMoney(Number(it.subtotal) - diversosTotalForItem(d))}
+                      </div>
                     )}
                   </div>
                   {showPreview ? (
