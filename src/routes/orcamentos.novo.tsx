@@ -2080,20 +2080,20 @@ function NovoOrcamento() {
                     <>
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
-                          Perfil externo ({perfilAdicionalSelecionado.code})
-                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
-                        </span>
-                        <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorPerfilAdicional)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">
                           Perfil interno ({perfilSelecionado.code})
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPerfilPrincipal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Perfil externo ({perfilAdicionalSelecionado.code})
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPerfilAdicional)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
