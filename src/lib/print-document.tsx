@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+// Print document renderer — opened in a new tab. Does not auto-call window.print().
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
