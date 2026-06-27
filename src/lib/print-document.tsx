@@ -609,12 +609,34 @@ export function PrintDocument({
         .print-actions button.secondary { background:#fff; color:#000;
           border:1px solid #000; }
 
+        /* Guia fixo de impressão à esquerda (não imprime) */
+        .print-guide { position:fixed; top:12px; left:12px; width:240px;
+          background:#fff; border:1px solid #e4e4e7; border-radius:10px;
+          padding:14px 16px; box-shadow:0 4px 12px rgba(0,0,0,.06); z-index:5;
+          color:#000; font-size:12px; line-height:1.5; text-align:left; }
+        .print-guide h3 { margin:0 0 8px; font-size:14px; font-weight:800;
+          display:flex; align-items:center; gap:6px; }
+        .print-guide ol { margin:0; padding-left:18px; }
+        .print-guide li { margin-bottom:6px; }
+        .print-guide strong { font-weight:700; }
+        @media (max-width: 1100px) { .print-guide { display:none; } }
+
         @media print {
           html, body { background:#fff; }
           .sheet { box-shadow:none; margin:0; width:auto; min-height:auto; padding:0; }
-          .print-actions { display:none; }
+          .print-actions, .print-guide { display:none; }
         }
       `}</style>
+
+      <aside className="print-guide" aria-label="Como imprimir">
+        <h3>🖨️ Como imprimir</h3>
+        <ol>
+          <li>Na primeira etapa, clique em <strong>Imprimir</strong>.</li>
+          <li>O navegador abrirá a janela de impressão.</li>
+          <li>Enquanto essa janela estiver aberta, a aba do sistema ficará temporariamente bloqueada pelo navegador.</li>
+          <li>Após imprimir ou cancelar, basta fechar a janela de impressão para continuar utilizando o sistema normalmente.</li>
+        </ol>
+      </aside>
 
       <div className="print-actions">
         <button type="button" className="secondary" onClick={() => window.close()}>Fechar</button>
