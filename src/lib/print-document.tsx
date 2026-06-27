@@ -108,10 +108,9 @@ function FramePreview({ d }: { d: ItemData }) {
       className="frame-preview"
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* top + bottom outer dim */}
+      {/* medida superior */}
       <text x={VB / 2} y={y0 - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
-      <text x={VB / 2} y={y0 + dh + 14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
-      {/* left side outer dim */}
+      {/* medida lateral esquerda */}
       <text
         x={x0 - 7}
         y={y0 + dh / 2}
@@ -124,7 +123,7 @@ function FramePreview({ d }: { d: ItemData }) {
         {fmtM(H)} cm
       </text>
 
-      {/* outer frame */}
+      {/* contornos do quadro e paspatur */}
       <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#000" strokeWidth="1.2" />
       {hasExt && (
         <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#000" strokeWidth="0.8" />
@@ -133,7 +132,7 @@ function FramePreview({ d }: { d: ItemData }) {
         <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
 
-      {/* art label centered, always same font size visually */}
+      {/* texto central ARTE LxA */}
       <text
         x={artX + artW / 2}
         y={artY + artH / 2}
@@ -195,88 +194,151 @@ function diversosTotalForItem(d: ItemData): number {
   return s;
 }
 
-function frameItemRows(d: ItemData, showPrices: boolean): Array<[string, string]> {
-  const rows: Array<[string, string]> = [];
-  const aoX = fmtM(dNum(d, "larguraOriginal"));
-  const aoY = fmtM(dNum(d, "alturaOriginal"));
-  const fX = fmtM(dNum(d, "larguraFinal"));
-  const fY = fmtM(dNum(d, "alturaFinal"));
-  rows.push(["Arte (sem paspatur)", `${aoX} x ${aoY} cm`]);
-  rows.push(["Medida final", `${fX} x ${fY} cm`]);
+type CompRow = { categoria: string; qtd: number; produto: string; valor: number };
 
-  const priceSuffix = (v: number) => (showPrices && v > 0 ? ` — ${fmtMoney(v)}` : "");
+function componentRows(d: ItemData): CompRow[] {
+  const rows: CompRow[] = [];
 
   if (dStr(d, "paspaturAtivo") === "sim") {
-    const pasExtLabel = productLabel(d, "paspaturCode", "paspaturDescription");
-    if (pasExtLabel !== "—") {
-      rows.push([
-        "Paspatur externo",
-        `${pasExtLabel}${priceSuffix(dNum(d, "valorPaspaturPrincipal"))}`,
-      ]);
-      rows.push([
-        "Margens (Externo)",
-        `Sup ${fmtM(dNum(d, "margemSup"))} | Inf ${fmtM(dNum(d, "margemInf"))} | Esq ${fmtM(dNum(d, "margemEsq"))} | Dir ${fmtM(dNum(d, "margemDir"))} cm`,
-      ]);
+    const lblExt = productLabel(d, "paspaturCode", "paspaturDescription");
+    if (lblExt !== "—") {
+      rows.push({
+        categoria: "Paspatur externo",
+        qtd: 1,
+        produto: lblExt,
+        valor: dNum(d, "valorPaspaturPrincipal"),
+      });
     }
     if (dStr(d, "paspaturAdicionalAtivo") === "sim") {
-      const pasIntLabel = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
-      if (pasIntLabel !== "—") {
-        rows.push([
-          "Paspatur interno",
-          `${pasIntLabel}${priceSuffix(dNum(d, "valorPaspaturAdicional"))}`,
-        ]);
-        rows.push([
-          "Margens (Interno)",
-          `Sup ${fmtM(dNum(d, "paspaturAdicionalSup"))} | Inf ${fmtM(dNum(d, "paspaturAdicionalInf"))} | Esq ${fmtM(dNum(d, "paspaturAdicionalEsq"))} | Dir ${fmtM(dNum(d, "paspaturAdicionalDir"))} cm`,
-        ]);
+      const lblInt = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
+      if (lblInt !== "—") {
+        rows.push({
+          categoria: "Paspatur interno",
+          qtd: 1,
+          produto: lblInt,
+          valor: dNum(d, "valorPaspaturAdicional"),
+        });
       }
     }
   }
 
   // Ordem: Perfil interno primeiro, depois Perfil externo.
-  // Mapeamento de dados: principal (perfilCode) = interno; adicional = externo.
   const temPerfilExterno = dStr(d, "perfilAdicionalAtivo") === "sim";
   const perfilPrincipalLabel = productLabel(d, "perfilCode", "perfilDescription");
   if (temPerfilExterno) {
     if (perfilPrincipalLabel !== "—") {
-      rows.push(["Perfil interno", `${perfilPrincipalLabel}${priceSuffix(dNum(d, "valorPerfilPrincipal"))}`]);
+      rows.push({
+        categoria: "Perfil interno",
+        qtd: 1,
+        produto: perfilPrincipalLabel,
+        valor: dNum(d, "valorPerfilPrincipal"),
+      });
     }
     const perfilExtLabel = productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription");
     if (perfilExtLabel !== "—") {
-      rows.push(["Perfil externo", `${perfilExtLabel}${priceSuffix(dNum(d, "valorPerfilAdicional"))}`]);
+      rows.push({
+        categoria: "Perfil externo",
+        qtd: 1,
+        produto: perfilExtLabel,
+        valor: dNum(d, "valorPerfilAdicional"),
+      });
     }
   } else if (perfilPrincipalLabel !== "—") {
-    rows.push(["Perfil", `${perfilPrincipalLabel}${priceSuffix(dNum(d, "valorPerfilPrincipal"))}`]);
+    rows.push({
+      categoria: "Perfil",
+      qtd: 1,
+      produto: perfilPrincipalLabel,
+      valor: dNum(d, "valorPerfilPrincipal"),
+    });
   }
 
   if (dStr(d, "vidroTipo") === "sim") {
     const base = productLabel(d, "vidroCode", "vidroDescription");
     if (base !== "—") {
       const qtd = Number(dNum(d, "vidroQuantidade")) || 1;
-      const label = qtd > 1 ? `${qtd}x — ${base}` : base;
-      rows.push(["Vidro / Espelho", `${label}${priceSuffix(dNum(d, "valorVidro"))}`]);
+      rows.push({ categoria: "Vidro / Espelho", qtd, produto: base, valor: dNum(d, "valorVidro") });
     }
   }
 
   const foamLabel = productLabel(d, "foamCode", "foamDescription");
   if (foamLabel !== "—") {
-    rows.push(["Foam / MDF", `${foamLabel}${priceSuffix(dNum(d, "valorFoam"))}`]);
+    rows.push({ categoria: "Foam / MDF", qtd: 1, produto: foamLabel, valor: dNum(d, "valorFoam") });
   }
 
   if (dStr(d, "colagemAtivo") === "sim") {
     const colLabel = productLabel(d, "colagemCode", "colagemDescription");
     if (colLabel !== "—") {
-      rows.push(["Colagem", `${colLabel}${priceSuffix(dNum(d, "valorColagem"))}`]);
+      rows.push({ categoria: "Colagem", qtd: 1, produto: colLabel, valor: dNum(d, "valorColagem") });
     }
   }
 
   if (dStr(d, "impressaoAtivo") === "sim") {
     const impLabel = productLabel(d, "impressaoCode", "impressaoDescription");
     if (impLabel !== "—") {
-      rows.push(["Impressão", `${impLabel}${priceSuffix(dNum(d, "valorImpressao"))}`]);
+      rows.push({ categoria: "Impressão", qtd: 1, produto: impLabel, valor: dNum(d, "valorImpressao") });
     }
   }
   return rows;
+}
+
+function infoRows(d: ItemData): Array<[string, string]> {
+  const rows: Array<[string, string]> = [];
+  const aoX = fmtM(dNum(d, "larguraOriginal"));
+  const aoY = fmtM(dNum(d, "alturaOriginal"));
+  const fX = fmtM(dNum(d, "larguraFinal"));
+  const fY = fmtM(dNum(d, "alturaFinal"));
+  rows.push(["Medida final", `${fX} x ${fY} cm`]);
+  rows.push(["Arte (sem paspatur)", `${aoX} x ${aoY} cm`]);
+
+  if (
+    dStr(d, "paspaturAtivo") === "sim" &&
+    (dNum(d, "margemSup") || dNum(d, "margemInf") || dNum(d, "margemEsq") || dNum(d, "margemDir"))
+  ) {
+    rows.push([
+      "Margens (Externo)",
+      `Sup ${fmtM(dNum(d, "margemSup"))} | Inf ${fmtM(dNum(d, "margemInf"))} | Esq ${fmtM(dNum(d, "margemEsq"))} | Dir ${fmtM(dNum(d, "margemDir"))} cm`,
+    ]);
+  }
+  if (
+    dStr(d, "paspaturAdicionalAtivo") === "sim" &&
+    (dNum(d, "paspaturAdicionalSup") ||
+      dNum(d, "paspaturAdicionalInf") ||
+      dNum(d, "paspaturAdicionalEsq") ||
+      dNum(d, "paspaturAdicionalDir"))
+  ) {
+    rows.push([
+      "Margens (Interno)",
+      `Sup ${fmtM(dNum(d, "paspaturAdicionalSup"))} | Inf ${fmtM(dNum(d, "paspaturAdicionalInf"))} | Esq ${fmtM(dNum(d, "paspaturAdicionalEsq"))} | Dir ${fmtM(dNum(d, "paspaturAdicionalDir"))} cm`,
+    ]);
+  }
+  return rows;
+}
+
+function ComponentsTable({ rows, showPrices }: { rows: CompRow[]; showPrices: boolean }) {
+  if (rows.length === 0) return null;
+  const showQty = rows.some((r) => r.qtd > 1);
+  return (
+    <table className="comp-table">
+      <thead>
+        <tr>
+          <th className="cat">Categoria</th>
+          {showQty && <th className="qty">Qtd</th>}
+          <th className="prod">Produto / Descrição</th>
+          {showPrices && <th className="val">Valor</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={i}>
+            <td className="cat">{r.categoria}</td>
+            {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
+            <td className="prod">{r.produto}</td>
+            {showPrices && <td className="val">{fmtMoney(r.valor)}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 export function PrintDocument({
@@ -492,6 +554,22 @@ export function PrintDocument({
         .kv-table td.k { width:38%; color:#000; font-weight:600; background:#fff; }
         .kv-table tr:last-child td { border-bottom:none; }
 
+        /* Components table: Categoria | Qtd | Produto/Descrição | Valor */
+        .comp-table { width:100%; border-collapse:collapse; font-size:10.5px; margin-top:2px; }
+        .comp-table th, .comp-table td { padding:4px 10px; border-bottom:1px solid #ddd;
+          vertical-align:top; color:#000; }
+        .comp-table th { font-size:9px; text-transform:uppercase; letter-spacing:.5px;
+          font-weight:800; border-bottom:1px solid #000; text-align:left; background:#fff; }
+        .comp-table th.qty, .comp-table td.qty { width:46px; text-align:center;
+          font-variant-numeric: tabular-nums; white-space:nowrap; }
+        .comp-table th.val, .comp-table td.val { width:90px; text-align:right;
+          font-variant-numeric: tabular-nums; white-space:nowrap; font-weight:700; }
+        .comp-table th.cat, .comp-table td.cat { width:130px; font-weight:700; }
+        .comp-table tr:last-child td { border-bottom:none; }
+
+        .item-obs { margin-top:4px; font-size:10px; padding:4px 8px;
+          border:1px dashed #999; background:#fff; white-space:pre-wrap; color:#000; border-radius:2px; }
+
         /* Production row: preview ~40% width, larger */
         .prod-row { display:grid; grid-template-columns: 40% 60%; gap:0; align-items:stretch; }
         .prod-row .col-preview { padding:4px 8px 4px 2px; border-right:1px solid #ccc;
@@ -531,12 +609,34 @@ export function PrintDocument({
         .print-actions button.secondary { background:#fff; color:#000;
           border:1px solid #000; }
 
+        /* Guia fixo de impressão à esquerda (não imprime) */
+        .print-guide { position:fixed; top:12px; left:12px; width:240px;
+          background:#fff; border:1px solid #e4e4e7; border-radius:10px;
+          padding:14px 16px; box-shadow:0 4px 12px rgba(0,0,0,.06); z-index:5;
+          color:#000; font-size:12px; line-height:1.5; text-align:left; }
+        .print-guide h3 { margin:0 0 8px; font-size:14px; font-weight:800;
+          display:flex; align-items:center; gap:6px; }
+        .print-guide ol { margin:0; padding-left:18px; }
+        .print-guide li { margin-bottom:6px; }
+        .print-guide strong { font-weight:700; }
+        @media (max-width: 1100px) { .print-guide { display:none; } }
+
         @media print {
           html, body { background:#fff; }
           .sheet { box-shadow:none; margin:0; width:auto; min-height:auto; padding:0; }
-          .print-actions { display:none; }
+          .print-actions, .print-guide { display:none; }
         }
       `}</style>
+
+      <aside className="print-guide" aria-label="Como imprimir">
+        <h3>🖨️ Como imprimir</h3>
+        <ol>
+          <li>Na primeira etapa, clique em <strong>Imprimir</strong>.</li>
+          <li>O navegador abrirá a janela de impressão.</li>
+          <li>Enquanto essa janela estiver aberta, a aba do sistema ficará temporariamente bloqueada pelo navegador.</li>
+          <li>Após imprimir ou cancelar, basta fechar a janela de impressão para continuar utilizando o sistema normalmente.</li>
+        </ol>
+      </aside>
 
       <div className="print-actions">
         <button type="button" className="secondary" onClick={() => window.close()}>Fechar</button>
@@ -592,7 +692,8 @@ export function PrintDocument({
             <div className="section-title">{showPreview ? "Itens para produção" : "Itens"}</div>
             {frames.map((it, idx) => {
               const d = it.data;
-              const rows = frameItemRows(d, variant === "loja");
+              const comps = componentRows(d);
+              const info = infoRows(d);
               const itemObs = dStr(d, "observacoes");
               const W = fmtM(dNum(d, "larguraFinal"));
               const H = fmtM(dNum(d, "alturaFinal"));
@@ -617,7 +718,7 @@ export function PrintDocument({
                       <div>
                         <table className="kv-table">
                           <tbody>
-                            {rows.map(([k, v], i) => (
+                            {info.map(([k, v], i) => (
                               <tr key={i}><td className="k">{k}</td><td>{v}</td></tr>
                             ))}
                             {itemObs && (
@@ -625,19 +726,16 @@ export function PrintDocument({
                             )}
                           </tbody>
                         </table>
+                        <ComponentsTable rows={comps} showPrices={false} />
                       </div>
                     </div>
                   ) : (
-                    <table className="kv-table">
-                      <tbody>
-                        {rows.map(([k, v], i) => (
-                          <tr key={i}><td className="k">{k}</td><td>{v}</td></tr>
-                        ))}
-                        {itemObs && (
-                          <tr><td className="k">Observações</td><td>{itemObs}</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                    <>
+                      <ComponentsTable rows={comps} showPrices={variant === "loja"} />
+                      {itemObs && (
+                        <div className="item-obs"><strong>Observações:</strong> {itemObs}</div>
+                      )}
+                    </>
                   )}
                 </div>
               );
