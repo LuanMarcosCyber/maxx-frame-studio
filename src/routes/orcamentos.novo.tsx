@@ -2025,7 +2025,7 @@ function NovoOrcamento() {
               </p>
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="perfil">{perfilAdicionalAtivo === "sim" ? "Perfil externo" : "Perfil"}</Label>
+                <Label htmlFor="perfil">Perfil</Label>
                 <ProductSelect
                   id="perfil"
                   value={perfilId}
