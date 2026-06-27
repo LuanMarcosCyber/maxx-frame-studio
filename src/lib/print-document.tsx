@@ -359,12 +359,8 @@ export function PrintDocument({
     },
   });
 
-  useEffect(() => {
-    if (!isLoading && data) {
-      const t = setTimeout(() => window.print(), 400);
-      return () => clearTimeout(t);
-    }
-  }, [isLoading, data]);
+  // Não dispara impressão automaticamente: a tela abre em nova aba e o
+  // usuário decide quando clicar em "Imprimir", para não travar o sistema.
 
   if (isLoading) {
     return <div style={{ padding: 40, fontFamily: "system-ui" }}>Carregando…</div>;
