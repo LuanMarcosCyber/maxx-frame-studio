@@ -2068,7 +2068,7 @@ function NovoOrcamento() {
                   />
                   {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
                     <p className="mt-2 text-xs text-amber-600">
-                      Selecione o perfil externo para calcular o perfil interno.
+                      Selecione o perfil para calcular o perfil externo.
                     </p>
                   )}
                 </div>
