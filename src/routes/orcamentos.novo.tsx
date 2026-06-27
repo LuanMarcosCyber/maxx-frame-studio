@@ -2056,7 +2056,7 @@ function NovoOrcamento() {
 
               {perfilAdicionalAtivo === "sim" && (
                 <div className="mt-4 max-w-md space-y-1.5">
-                  <Label htmlFor="perfil-adicional">Perfil interno</Label>
+                  <Label htmlFor="perfil-adicional">Perfil externo</Label>
                   <ProductSelect
                     id="perfil-adicional"
                     value={perfilAdicionalId}
