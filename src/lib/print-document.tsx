@@ -654,7 +654,8 @@ export function PrintDocument({
             <div className="section-title">{showPreview ? "Itens para produção" : "Itens"}</div>
             {frames.map((it, idx) => {
               const d = it.data;
-              const rows = frameItemRows(d, variant === "loja");
+              const comps = componentRows(d);
+              const info = infoRows(d);
               const itemObs = dStr(d, "observacoes");
               const W = fmtM(dNum(d, "larguraFinal"));
               const H = fmtM(dNum(d, "alturaFinal"));
@@ -679,7 +680,7 @@ export function PrintDocument({
                       <div>
                         <table className="kv-table">
                           <tbody>
-                            {rows.map(([k, v], i) => (
+                            {info.map(([k, v], i) => (
                               <tr key={i}><td className="k">{k}</td><td>{v}</td></tr>
                             ))}
                             {itemObs && (
@@ -687,19 +688,16 @@ export function PrintDocument({
                             )}
                           </tbody>
                         </table>
+                        <ComponentsTable rows={comps} showPrices={false} />
                       </div>
                     </div>
                   ) : (
-                    <table className="kv-table">
-                      <tbody>
-                        {rows.map(([k, v], i) => (
-                          <tr key={i}><td className="k">{k}</td><td>{v}</td></tr>
-                        ))}
-                        {itemObs && (
-                          <tr><td className="k">Observações</td><td>{itemObs}</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                    <>
+                      <ComponentsTable rows={comps} showPrices={variant === "loja"} />
+                      {itemObs && (
+                        <div className="item-obs"><strong>Observações:</strong> {itemObs}</div>
+                      )}
+                    </>
                   )}
                 </div>
               );
