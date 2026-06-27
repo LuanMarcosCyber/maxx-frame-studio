@@ -195,7 +195,7 @@ function diversosTotalForItem(d: ItemData): number {
   return s;
 }
 
-function frameItemRows(d: ItemData): Array<[string, string]> {
+function frameItemRows(d: ItemData, showPrices: boolean): Array<[string, string]> {
   const rows: Array<[string, string]> = [];
   const aoX = fmtM(dNum(d, "larguraOriginal"));
   const aoY = fmtM(dNum(d, "alturaOriginal"));
@@ -204,49 +204,78 @@ function frameItemRows(d: ItemData): Array<[string, string]> {
   rows.push(["Arte (sem paspatur)", `${aoX} x ${aoY} cm`]);
   rows.push(["Medida final", `${fX} x ${fY} cm`]);
 
+  const priceSuffix = (v: number) => (showPrices && v > 0 ? ` — ${fmtMoney(v)}` : "");
+
   if (dStr(d, "paspaturAtivo") === "sim") {
-    rows.push(["Paspatur externo", productLabel(d, "paspaturCode", "paspaturDescription")]);
-    rows.push([
-      "Margens (Externo)",
-      `Sup ${fmtM(dNum(d, "margemSup"))} | Inf ${fmtM(dNum(d, "margemInf"))} | Esq ${fmtM(dNum(d, "margemEsq"))} | Dir ${fmtM(dNum(d, "margemDir"))} cm`,
-    ]);
-    if (dStr(d, "paspaturAdicionalAtivo") === "sim") {
+    const pasExtLabel = productLabel(d, "paspaturCode", "paspaturDescription");
+    if (pasExtLabel !== "—") {
       rows.push([
-        "Paspatur interno",
-        productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription"),
+        "Paspatur externo",
+        `${pasExtLabel}${priceSuffix(dNum(d, "valorPaspaturPrincipal"))}`,
       ]);
       rows.push([
-        "Margens (Interno)",
-        `Sup ${fmtM(dNum(d, "paspaturAdicionalSup"))} | Inf ${fmtM(dNum(d, "paspaturAdicionalInf"))} | Esq ${fmtM(dNum(d, "paspaturAdicionalEsq"))} | Dir ${fmtM(dNum(d, "paspaturAdicionalDir"))} cm`,
+        "Margens (Externo)",
+        `Sup ${fmtM(dNum(d, "margemSup"))} | Inf ${fmtM(dNum(d, "margemInf"))} | Esq ${fmtM(dNum(d, "margemEsq"))} | Dir ${fmtM(dNum(d, "margemDir"))} cm`,
       ]);
     }
+    if (dStr(d, "paspaturAdicionalAtivo") === "sim") {
+      const pasIntLabel = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
+      if (pasIntLabel !== "—") {
+        rows.push([
+          "Paspatur interno",
+          `${pasIntLabel}${priceSuffix(dNum(d, "valorPaspaturAdicional"))}`,
+        ]);
+        rows.push([
+          "Margens (Interno)",
+          `Sup ${fmtM(dNum(d, "paspaturAdicionalSup"))} | Inf ${fmtM(dNum(d, "paspaturAdicionalInf"))} | Esq ${fmtM(dNum(d, "paspaturAdicionalEsq"))} | Dir ${fmtM(dNum(d, "paspaturAdicionalDir"))} cm`,
+        ]);
+      }
+    }
   }
-  const temPerfilInterno = dStr(d, "perfilAdicionalAtivo") === "sim";
-  if (temPerfilInterno) {
-    rows.push(["Perfil externo", productLabel(d, "perfilCode", "perfilDescription")]);
-    rows.push(["Perfil interno", productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")]);
-  } else {
-    rows.push(["Perfil", productLabel(d, "perfilCode", "perfilDescription")]);
+
+  // Ordem: Perfil interno primeiro, depois Perfil externo.
+  // Mapeamento de dados: principal (perfilCode) = interno; adicional = externo.
+  const temPerfilExterno = dStr(d, "perfilAdicionalAtivo") === "sim";
+  const perfilPrincipalLabel = productLabel(d, "perfilCode", "perfilDescription");
+  if (temPerfilExterno) {
+    if (perfilPrincipalLabel !== "—") {
+      rows.push(["Perfil interno", `${perfilPrincipalLabel}${priceSuffix(dNum(d, "valorPerfilPrincipal"))}`]);
+    }
+    const perfilExtLabel = productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription");
+    if (perfilExtLabel !== "—") {
+      rows.push(["Perfil externo", `${perfilExtLabel}${priceSuffix(dNum(d, "valorPerfilAdicional"))}`]);
+    }
+  } else if (perfilPrincipalLabel !== "—") {
+    rows.push(["Perfil", `${perfilPrincipalLabel}${priceSuffix(dNum(d, "valorPerfilPrincipal"))}`]);
   }
-  rows.push([
-    "Vidro / Espelho",
-    dStr(d, "vidroTipo") === "sim"
-      ? (() => {
-          const base = productLabel(d, "vidroCode", "vidroDescription");
-          const qtd = Number(dNum(d, "vidroQuantidade")) || 1;
-          return qtd > 1 ? `${qtd}x — ${base}` : base;
-        })()
-      : "Não aplicado",
-  ]);
-  rows.push(["Foam / MDF", productLabel(d, "foamCode", "foamDescription")]);
-  rows.push([
-    "Colagem",
-    dStr(d, "colagemAtivo") === "sim" ? productLabel(d, "colagemCode", "colagemDescription") : "Colagem simples",
-  ]);
-  rows.push([
-    "Impressão",
-    dStr(d, "impressaoAtivo") === "sim" ? productLabel(d, "impressaoCode", "impressaoDescription") : "Não aplicada",
-  ]);
+
+  if (dStr(d, "vidroTipo") === "sim") {
+    const base = productLabel(d, "vidroCode", "vidroDescription");
+    if (base !== "—") {
+      const qtd = Number(dNum(d, "vidroQuantidade")) || 1;
+      const label = qtd > 1 ? `${qtd}x — ${base}` : base;
+      rows.push(["Vidro / Espelho", `${label}${priceSuffix(dNum(d, "valorVidro"))}`]);
+    }
+  }
+
+  const foamLabel = productLabel(d, "foamCode", "foamDescription");
+  if (foamLabel !== "—") {
+    rows.push(["Foam / MDF", `${foamLabel}${priceSuffix(dNum(d, "valorFoam"))}`]);
+  }
+
+  if (dStr(d, "colagemAtivo") === "sim") {
+    const colLabel = productLabel(d, "colagemCode", "colagemDescription");
+    if (colLabel !== "—") {
+      rows.push(["Colagem", `${colLabel}${priceSuffix(dNum(d, "valorColagem"))}`]);
+    }
+  }
+
+  if (dStr(d, "impressaoAtivo") === "sim") {
+    const impLabel = productLabel(d, "impressaoCode", "impressaoDescription");
+    if (impLabel !== "—") {
+      rows.push(["Impressão", `${impLabel}${priceSuffix(dNum(d, "valorImpressao"))}`]);
+    }
+  }
   return rows;
 }
 
