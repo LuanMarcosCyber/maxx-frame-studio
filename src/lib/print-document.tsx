@@ -108,10 +108,9 @@ function FramePreview({ d }: { d: ItemData }) {
       className="frame-preview"
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* top + bottom outer dim */}
+      {/* medida superior */}
       <text x={VB / 2} y={y0 - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
-      <text x={VB / 2} y={y0 + dh + 14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
-      {/* left side outer dim */}
+      {/* medida lateral esquerda */}
       <text
         x={x0 - 7}
         y={y0 + dh / 2}
@@ -124,7 +123,7 @@ function FramePreview({ d }: { d: ItemData }) {
         {fmtM(H)} cm
       </text>
 
-      {/* outer frame */}
+      {/* contornos do quadro e paspatur */}
       <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#000" strokeWidth="1.2" />
       {hasExt && (
         <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#000" strokeWidth="0.8" />
@@ -133,7 +132,7 @@ function FramePreview({ d }: { d: ItemData }) {
         <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
 
-      {/* art label centered, always same font size visually */}
+      {/* texto central ARTE LxA */}
       <text
         x={artX + artW / 2}
         y={artY + artH / 2}
