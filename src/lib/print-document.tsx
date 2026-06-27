@@ -554,6 +554,22 @@ export function PrintDocument({
         .kv-table td.k { width:38%; color:#000; font-weight:600; background:#fff; }
         .kv-table tr:last-child td { border-bottom:none; }
 
+        /* Components table: Categoria | Qtd | Produto/Descrição | Valor */
+        .comp-table { width:100%; border-collapse:collapse; font-size:10.5px; margin-top:2px; }
+        .comp-table th, .comp-table td { padding:4px 10px; border-bottom:1px solid #ddd;
+          vertical-align:top; color:#000; }
+        .comp-table th { font-size:9px; text-transform:uppercase; letter-spacing:.5px;
+          font-weight:800; border-bottom:1px solid #000; text-align:left; background:#fff; }
+        .comp-table th.qty, .comp-table td.qty { width:46px; text-align:center;
+          font-variant-numeric: tabular-nums; white-space:nowrap; }
+        .comp-table th.val, .comp-table td.val { width:90px; text-align:right;
+          font-variant-numeric: tabular-nums; white-space:nowrap; font-weight:700; }
+        .comp-table th.cat, .comp-table td.cat { width:130px; font-weight:700; }
+        .comp-table tr:last-child td { border-bottom:none; }
+
+        .item-obs { margin-top:4px; font-size:10px; padding:4px 8px;
+          border:1px dashed #999; background:#fff; white-space:pre-wrap; color:#000; border-radius:2px; }
+
         /* Production row: preview ~40% width, larger */
         .prod-row { display:grid; grid-template-columns: 40% 60%; gap:0; align-items:stretch; }
         .prod-row .col-preview { padding:4px 8px 4px 2px; border-right:1px solid #ccc;
