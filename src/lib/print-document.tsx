@@ -194,88 +194,151 @@ function diversosTotalForItem(d: ItemData): number {
   return s;
 }
 
-function frameItemRows(d: ItemData, showPrices: boolean): Array<[string, string]> {
-  const rows: Array<[string, string]> = [];
-  const aoX = fmtM(dNum(d, "larguraOriginal"));
-  const aoY = fmtM(dNum(d, "alturaOriginal"));
-  const fX = fmtM(dNum(d, "larguraFinal"));
-  const fY = fmtM(dNum(d, "alturaFinal"));
-  rows.push(["Arte (sem paspatur)", `${aoX} x ${aoY} cm`]);
-  rows.push(["Medida final", `${fX} x ${fY} cm`]);
+type CompRow = { categoria: string; qtd: number; produto: string; valor: number };
 
-  const priceSuffix = (v: number) => (showPrices && v > 0 ? ` — ${fmtMoney(v)}` : "");
+function componentRows(d: ItemData): CompRow[] {
+  const rows: CompRow[] = [];
 
   if (dStr(d, "paspaturAtivo") === "sim") {
-    const pasExtLabel = productLabel(d, "paspaturCode", "paspaturDescription");
-    if (pasExtLabel !== "—") {
-      rows.push([
-        "Paspatur externo",
-        `${pasExtLabel}${priceSuffix(dNum(d, "valorPaspaturPrincipal"))}`,
-      ]);
-      rows.push([
-        "Margens (Externo)",
-        `Sup ${fmtM(dNum(d, "margemSup"))} | Inf ${fmtM(dNum(d, "margemInf"))} | Esq ${fmtM(dNum(d, "margemEsq"))} | Dir ${fmtM(dNum(d, "margemDir"))} cm`,
-      ]);
+    const lblExt = productLabel(d, "paspaturCode", "paspaturDescription");
+    if (lblExt !== "—") {
+      rows.push({
+        categoria: "Paspatur externo",
+        qtd: 1,
+        produto: lblExt,
+        valor: dNum(d, "valorPaspaturPrincipal"),
+      });
     }
     if (dStr(d, "paspaturAdicionalAtivo") === "sim") {
-      const pasIntLabel = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
-      if (pasIntLabel !== "—") {
-        rows.push([
-          "Paspatur interno",
-          `${pasIntLabel}${priceSuffix(dNum(d, "valorPaspaturAdicional"))}`,
-        ]);
-        rows.push([
-          "Margens (Interno)",
-          `Sup ${fmtM(dNum(d, "paspaturAdicionalSup"))} | Inf ${fmtM(dNum(d, "paspaturAdicionalInf"))} | Esq ${fmtM(dNum(d, "paspaturAdicionalEsq"))} | Dir ${fmtM(dNum(d, "paspaturAdicionalDir"))} cm`,
-        ]);
+      const lblInt = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
+      if (lblInt !== "—") {
+        rows.push({
+          categoria: "Paspatur interno",
+          qtd: 1,
+          produto: lblInt,
+          valor: dNum(d, "valorPaspaturAdicional"),
+        });
       }
     }
   }
 
   // Ordem: Perfil interno primeiro, depois Perfil externo.
-  // Mapeamento de dados: principal (perfilCode) = interno; adicional = externo.
   const temPerfilExterno = dStr(d, "perfilAdicionalAtivo") === "sim";
   const perfilPrincipalLabel = productLabel(d, "perfilCode", "perfilDescription");
   if (temPerfilExterno) {
     if (perfilPrincipalLabel !== "—") {
-      rows.push(["Perfil interno", `${perfilPrincipalLabel}${priceSuffix(dNum(d, "valorPerfilPrincipal"))}`]);
+      rows.push({
+        categoria: "Perfil interno",
+        qtd: 1,
+        produto: perfilPrincipalLabel,
+        valor: dNum(d, "valorPerfilPrincipal"),
+      });
     }
     const perfilExtLabel = productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription");
     if (perfilExtLabel !== "—") {
-      rows.push(["Perfil externo", `${perfilExtLabel}${priceSuffix(dNum(d, "valorPerfilAdicional"))}`]);
+      rows.push({
+        categoria: "Perfil externo",
+        qtd: 1,
+        produto: perfilExtLabel,
+        valor: dNum(d, "valorPerfilAdicional"),
+      });
     }
   } else if (perfilPrincipalLabel !== "—") {
-    rows.push(["Perfil", `${perfilPrincipalLabel}${priceSuffix(dNum(d, "valorPerfilPrincipal"))}`]);
+    rows.push({
+      categoria: "Perfil",
+      qtd: 1,
+      produto: perfilPrincipalLabel,
+      valor: dNum(d, "valorPerfilPrincipal"),
+    });
   }
 
   if (dStr(d, "vidroTipo") === "sim") {
     const base = productLabel(d, "vidroCode", "vidroDescription");
     if (base !== "—") {
       const qtd = Number(dNum(d, "vidroQuantidade")) || 1;
-      const label = qtd > 1 ? `${qtd}x — ${base}` : base;
-      rows.push(["Vidro / Espelho", `${label}${priceSuffix(dNum(d, "valorVidro"))}`]);
+      rows.push({ categoria: "Vidro / Espelho", qtd, produto: base, valor: dNum(d, "valorVidro") });
     }
   }
 
   const foamLabel = productLabel(d, "foamCode", "foamDescription");
   if (foamLabel !== "—") {
-    rows.push(["Foam / MDF", `${foamLabel}${priceSuffix(dNum(d, "valorFoam"))}`]);
+    rows.push({ categoria: "Foam / MDF", qtd: 1, produto: foamLabel, valor: dNum(d, "valorFoam") });
   }
 
   if (dStr(d, "colagemAtivo") === "sim") {
     const colLabel = productLabel(d, "colagemCode", "colagemDescription");
     if (colLabel !== "—") {
-      rows.push(["Colagem", `${colLabel}${priceSuffix(dNum(d, "valorColagem"))}`]);
+      rows.push({ categoria: "Colagem", qtd: 1, produto: colLabel, valor: dNum(d, "valorColagem") });
     }
   }
 
   if (dStr(d, "impressaoAtivo") === "sim") {
     const impLabel = productLabel(d, "impressaoCode", "impressaoDescription");
     if (impLabel !== "—") {
-      rows.push(["Impressão", `${impLabel}${priceSuffix(dNum(d, "valorImpressao"))}`]);
+      rows.push({ categoria: "Impressão", qtd: 1, produto: impLabel, valor: dNum(d, "valorImpressao") });
     }
   }
   return rows;
+}
+
+function infoRows(d: ItemData): Array<[string, string]> {
+  const rows: Array<[string, string]> = [];
+  const aoX = fmtM(dNum(d, "larguraOriginal"));
+  const aoY = fmtM(dNum(d, "alturaOriginal"));
+  const fX = fmtM(dNum(d, "larguraFinal"));
+  const fY = fmtM(dNum(d, "alturaFinal"));
+  rows.push(["Medida final", `${fX} x ${fY} cm`]);
+  rows.push(["Arte (sem paspatur)", `${aoX} x ${aoY} cm`]);
+
+  if (
+    dStr(d, "paspaturAtivo") === "sim" &&
+    (dNum(d, "margemSup") || dNum(d, "margemInf") || dNum(d, "margemEsq") || dNum(d, "margemDir"))
+  ) {
+    rows.push([
+      "Margens (Externo)",
+      `Sup ${fmtM(dNum(d, "margemSup"))} | Inf ${fmtM(dNum(d, "margemInf"))} | Esq ${fmtM(dNum(d, "margemEsq"))} | Dir ${fmtM(dNum(d, "margemDir"))} cm`,
+    ]);
+  }
+  if (
+    dStr(d, "paspaturAdicionalAtivo") === "sim" &&
+    (dNum(d, "paspaturAdicionalSup") ||
+      dNum(d, "paspaturAdicionalInf") ||
+      dNum(d, "paspaturAdicionalEsq") ||
+      dNum(d, "paspaturAdicionalDir"))
+  ) {
+    rows.push([
+      "Margens (Interno)",
+      `Sup ${fmtM(dNum(d, "paspaturAdicionalSup"))} | Inf ${fmtM(dNum(d, "paspaturAdicionalInf"))} | Esq ${fmtM(dNum(d, "paspaturAdicionalEsq"))} | Dir ${fmtM(dNum(d, "paspaturAdicionalDir"))} cm`,
+    ]);
+  }
+  return rows;
+}
+
+function ComponentsTable({ rows, showPrices }: { rows: CompRow[]; showPrices: boolean }) {
+  if (rows.length === 0) return null;
+  const showQty = rows.some((r) => r.qtd > 1);
+  return (
+    <table className="comp-table">
+      <thead>
+        <tr>
+          <th className="cat">Categoria</th>
+          {showQty && <th className="qty">Qtd</th>}
+          <th className="prod">Produto / Descrição</th>
+          {showPrices && <th className="val">Valor</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={i}>
+            <td className="cat">{r.categoria}</td>
+            {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
+            <td className="prod">{r.produto}</td>
+            {showPrices && <td className="val">{fmtMoney(r.valor)}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 export function PrintDocument({
