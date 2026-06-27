@@ -2634,11 +2634,11 @@ function NovoOrcamento() {
                   {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
                     <>
                       <Row
-                        label={`Perfil externo${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                        label={`Perfil interno${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPerfilPrincipal)}
                       />
                       <Row
-                        label={`Perfil interno${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
+                        label={`Perfil externo${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPerfilAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
