@@ -2025,7 +2025,7 @@ function NovoOrcamento() {
               </p>
 
               <div className="mt-6 max-w-md space-y-1.5">
-                <Label htmlFor="perfil">{perfilAdicionalAtivo === "sim" ? "Perfil externo" : "Perfil"}</Label>
+                <Label htmlFor="perfil">Perfil</Label>
                 <ProductSelect
                   id="perfil"
                   value={perfilId}
@@ -2056,7 +2056,7 @@ function NovoOrcamento() {
 
               {perfilAdicionalAtivo === "sim" && (
                 <div className="mt-4 max-w-md space-y-1.5">
-                  <Label htmlFor="perfil-adicional">Perfil interno</Label>
+                  <Label htmlFor="perfil-adicional">Perfil externo</Label>
                   <ProductSelect
                     id="perfil-adicional"
                     value={perfilAdicionalId}
@@ -2068,7 +2068,7 @@ function NovoOrcamento() {
                   />
                   {perfilAdicionalAtivo === "sim" && !perfilSelecionado && (
                     <p className="mt-2 text-xs text-amber-600">
-                      Selecione o perfil externo para calcular o perfil interno.
+                      Selecione o perfil para calcular o perfil externo.
                     </p>
                   )}
                 </div>
@@ -2080,20 +2080,20 @@ function NovoOrcamento() {
                     <>
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
-                          Perfil externo ({perfilAdicionalSelecionado.code})
-                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
-                        </span>
-                        <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorPerfilAdicional)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">
                           Perfil interno ({perfilSelecionado.code})
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
                           {fmtMoney(valorPerfilPrincipal)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          Perfil externo ({perfilAdicionalSelecionado.code})
+                          <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
+                        </span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {fmtMoney(valorPerfilAdicional)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
@@ -2634,11 +2634,11 @@ function NovoOrcamento() {
                   {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
                     <>
                       <Row
-                        label={`Perfil externo${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
+                        label={`Perfil interno${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPerfilPrincipal)}
                       />
                       <Row
-                        label={`Perfil interno${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
+                        label={`Perfil externo${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
                         value={fmtMoney(valorPerfilAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
