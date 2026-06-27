@@ -592,7 +592,7 @@ export function PrintDocument({
             <div className="section-title">{showPreview ? "Itens para produção" : "Itens"}</div>
             {frames.map((it, idx) => {
               const d = it.data;
-              const rows = frameItemRows(d);
+              const rows = frameItemRows(d, variant === "loja");
               const itemObs = dStr(d, "observacoes");
               const W = fmtM(dNum(d, "larguraFinal"));
               const H = fmtM(dNum(d, "alturaFinal"));
