@@ -787,6 +787,9 @@ function NovoOrcamento() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [cloneOpen, setCloneOpen] = useState(false);
+  const [rtPercStr, setRtPercStr] = useState<string>("");
+  const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
+  const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
 
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
@@ -980,8 +983,11 @@ function NovoOrcamento() {
     tipoEntrega === "Retirada" ? 0 : parseNum(valorEntregaStr);
   const maoDeObraExtra = parseNum(maoDeObraExtraStr);
 
+  const rtPercNum = Math.min(1000, Math.max(0, parseNum(rtPercStr)));
+  const rtValor = subtotalItens * (rtPercNum / 100);
+
   const subtotalSemDesconto =
-    subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
+    subtotalItens + rtValor + valorInstalacao + valorEntrega + maoDeObraExtra;
   const descontoPercNum = Math.min(100, Math.max(0, parseNum(descontoPercStr)));
   const descontoValor = subtotalSemDesconto * (descontoPercNum / 100);
   const subtotalComDesconto = Math.max(0, subtotalSemDesconto - descontoValor);
@@ -991,6 +997,13 @@ function NovoOrcamento() {
       ? Math.min(valorTotal, Math.max(0, parseNum(valorSinalStr)))
       : 0;
   const valorAReceber = Math.max(0, valorTotal - valorSinal);
+
+  useEffect(() => {
+    if (paspaturId) setPaspaturProdutoError(false);
+  }, [paspaturId]);
+  useEffect(() => {
+    if (paspaturAdicionalId) setPaspaturAdicProdutoError(false);
+  }, [paspaturAdicionalId]);
 
   // Auto-regenerate parcelas when relevant inputs change.
   // Uses a signature ref so user edits to individual parcelas are preserved
@@ -1286,6 +1299,13 @@ function NovoOrcamento() {
       setValorInstalacaoStr(s("valorInstalacaoStr"));
       setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
       setValorEntregaStr(s("valorEntregaStr"));
+      setRtPercStr(
+        typeof d.rtPercStr === "string"
+          ? (d.rtPercStr as string)
+          : typeof d.rtPercentual === "number" && (d.rtPercentual as number) > 0
+            ? String(d.rtPercentual)
+            : "",
+      );
 
       // Load items
       const { data: itemRows } = await supabase
@@ -1420,6 +1440,9 @@ function NovoOrcamento() {
         descontoValor: Number(descontoValor.toFixed(2)),
         subtotalSemDesconto: Number(subtotalSemDesconto.toFixed(2)),
         subtotalComDesconto: Number(subtotalComDesconto.toFixed(2)),
+        rtPercStr,
+        rtPercentual: Number(rtPercNum.toFixed(2)),
+        rtValor: Number(rtValor.toFixed(2)),
         sinalAtivo,
         valorSinalStr,
         valorSinal: Number(valorSinal.toFixed(2)),
@@ -1774,6 +1797,17 @@ function NovoOrcamento() {
                 </div>
               </div>
 
+              <div className="mt-8 max-w-xs space-y-1.5">
+                <Label htmlFor="rt-perc">Usar código interno (%)</Label>
+                <Input
+                  id="rt-perc"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={rtPercStr}
+                  onChange={(e) => setRtPercStr(e.target.value)}
+                />
+              </div>
+
             </Card>
           )}
 
@@ -1811,10 +1845,56 @@ function NovoOrcamento() {
               {paspaturAtivo === "sim" && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} onBlur={onMargemEsqBlur} />
-                    <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={onMargemDirChange} />
-                    <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={onMargemSupChange} />
-                    <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={onMargemInfChange} />
+                    <FieldNum
+                      label="Esquerda (cm)"
+                      id="m-esq"
+                      value={margemEsq}
+                      onChange={onMargemEsqChange}
+                      onBlur={onMargemEsqBlur}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          onMargemEsqBlur();
+                          document.getElementById("m-dir")?.focus();
+                        }
+                      }}
+                    />
+                    <FieldNum
+                      label="Direita (cm)"
+                      id="m-dir"
+                      value={margemDir}
+                      onChange={onMargemDirChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("m-sup")?.focus();
+                        }
+                      }}
+                    />
+                    <FieldNum
+                      label="Superior (cm)"
+                      id="m-sup"
+                      value={margemSup}
+                      onChange={onMargemSupChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("m-inf")?.focus();
+                        }
+                      }}
+                    />
+                    <FieldNum
+                      label="Inferior (cm)"
+                      id="m-inf"
+                      value={margemInf}
+                      onChange={onMargemInfChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("paspatur")?.focus();
+                        }
+                      }}
+                    />
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
@@ -1827,7 +1907,15 @@ function NovoOrcamento() {
                       loading={loadingPaspaturs}
                       placeholder="Selecione um paspatur"
                       emptyLabel="Nenhum paspatur cadastrado."
+                      triggerClassName={
+                        paspaturProdutoError ? "border-destructive focus-visible:ring-destructive" : undefined
+                      }
                     />
+                    {paspaturProdutoError && (
+                      <p className="text-xs text-destructive">
+                        Selecione um produto de paspatur para continuar.
+                      </p>
+                    )}
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
@@ -1901,7 +1989,15 @@ function NovoOrcamento() {
                           loading={loadingPaspaturs}
                           placeholder="Selecione um paspatur"
                           emptyLabel="Nenhum paspatur cadastrado."
+                          triggerClassName={
+                            paspaturAdicProdutoError ? "border-destructive focus-visible:ring-destructive" : undefined
+                          }
                         />
+                        {paspaturAdicProdutoError && (
+                          <p className="text-xs text-destructive">
+                            Selecione um produto de paspatur para continuar.
+                          </p>
+                        )}
                       </div>
 
                       {paspaturAdicionalInvalido && (
@@ -2717,6 +2813,12 @@ function NovoOrcamento() {
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
                   <Row label={`Entrega (${tipoEntrega})`} value={fmtMoney(valorEntrega)} />
                   <Row label="Mão de obra extra" value={fmtMoney(maoDeObraExtra)} />
+                  {rtPercNum > 0 && (
+                    <Row
+                      label={`RT / Comissão Técnica (${rtPercNum.toFixed(2).replace(/\.?0+$/, "")}%)`}
+                      value={fmtMoney(rtValor)}
+                    />
+                  )}
                   {descontoPercNum > 0 && (
                     <>
                       <hr className="my-2 border-border" />
@@ -3226,6 +3328,32 @@ function NovoOrcamento() {
             const idx = steps.findIndex((s) => s.key === active);
             const prev = idx > 0 ? steps[idx - 1] : null;
             const next = idx < steps.length - 1 ? steps[idx + 1] : null;
+            const tryAdvance = (key: StepKey) => {
+              // Required paspatur product validation
+              if (active === "paspatur") {
+                let blocked = false;
+                if (paspaturAtivo === "sim" && !paspaturId) {
+                  setPaspaturProdutoError(true);
+                  blocked = true;
+                }
+                if (
+                  paspaturAtivo === "sim" &&
+                  paspaturAdicionalAtivo === "sim" &&
+                  !paspaturAdicionalId
+                ) {
+                  setPaspaturAdicProdutoError(true);
+                  blocked = true;
+                }
+                if (blocked) {
+                  const el = document.getElementById(
+                    paspaturAtivo === "sim" && !paspaturId ? "paspatur" : "paspatur-adic",
+                  );
+                  el?.focus();
+                  return;
+                }
+              }
+              goTo(key);
+            };
             const goTo = (key: StepKey) => {
               setActive(key);
               if (typeof window !== "undefined") {
@@ -3258,7 +3386,7 @@ function NovoOrcamento() {
                 {next && (
                   <Button
                     type="button"
-                    onClick={() => goTo(next.key)}
+                    onClick={() => tryAdvance(next.key)}
                     className="w-full sm:w-auto bg-gradient-brand text-brand-foreground shadow-brand hover:opacity-90"
                   >
                     Próximo: {next.label}
@@ -3475,12 +3603,16 @@ function FieldNum({
   value,
   onChange,
   onBlur,
+  onKeyDown,
+  inputClassName,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  inputClassName?: string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -3492,6 +3624,8 @@ function FieldNum({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        className={inputClassName}
       />
     </div>
   );
@@ -3508,6 +3642,7 @@ function ProductSelect({
   emptyLabel,
   allowNone = false,
   noneLabel = "Nenhum",
+  triggerClassName,
 }: {
   id: string;
   value: string;
@@ -3518,6 +3653,7 @@ function ProductSelect({
   emptyLabel: string;
   allowNone?: boolean;
   noneLabel?: string;
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = products.find((p) => p.id === value);
@@ -3533,7 +3669,7 @@ function ProductSelect({
           role="combobox"
           aria-expanded={open}
           disabled={loading}
-          className="w-full justify-between font-normal"
+          className={cn("w-full justify-between font-normal", triggerClassName)}
         >
           <span className={cn("truncate", !selected && "text-muted-foreground")}>
             {loading
