@@ -787,6 +787,9 @@ function NovoOrcamento() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [cloneOpen, setCloneOpen] = useState(false);
+  const [rtPercStr, setRtPercStr] = useState<string>("");
+  const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
+  const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
 
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
