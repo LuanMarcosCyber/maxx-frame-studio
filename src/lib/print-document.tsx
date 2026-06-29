@@ -709,7 +709,7 @@ export function PrintDocument({
                     </div>
                     {showFinance && (
                       <div className="total">
-                        Total: {fmtMoney(Number(it.subtotal) - diversosTotalForItem(d))}
+                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d)) * rtMult)}
                       </div>
                     )}
                   </div>
@@ -734,7 +734,7 @@ export function PrintDocument({
                     </div>
                   ) : (
                     <>
-                      <ComponentsTable rows={comps} showPrices={variant === "loja"} />
+                      <ComponentsTable rows={comps} showPrices={variant === "loja"} priceMultiplier={rtMult} />
                       {itemObs && (
                         <div className="item-obs"><strong>Observações:</strong> {itemObs}</div>
                       )}
