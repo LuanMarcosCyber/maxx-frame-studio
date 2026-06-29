@@ -3322,6 +3322,32 @@ function NovoOrcamento() {
             const idx = steps.findIndex((s) => s.key === active);
             const prev = idx > 0 ? steps[idx - 1] : null;
             const next = idx < steps.length - 1 ? steps[idx + 1] : null;
+            const tryAdvance = (key: StepKey) => {
+              // Required paspatur product validation
+              if (active === "paspatur") {
+                let blocked = false;
+                if (paspaturAtivo === "sim" && !paspaturId) {
+                  setPaspaturProdutoError(true);
+                  blocked = true;
+                }
+                if (
+                  paspaturAtivo === "sim" &&
+                  paspaturAdicionalAtivo === "sim" &&
+                  !paspaturAdicionalId
+                ) {
+                  setPaspaturAdicProdutoError(true);
+                  blocked = true;
+                }
+                if (blocked) {
+                  const el = document.getElementById(
+                    paspaturAtivo === "sim" && !paspaturId ? "paspatur" : "paspatur-adic",
+                  );
+                  el?.focus();
+                  return;
+                }
+              }
+              goTo(key);
+            };
             const goTo = (key: StepKey) => {
               setActive(key);
               if (typeof window !== "undefined") {
@@ -3354,7 +3380,7 @@ function NovoOrcamento() {
                 {next && (
                   <Button
                     type="button"
-                    onClick={() => goTo(next.key)}
+                    onClick={() => tryAdvance(next.key)}
                     className="w-full sm:w-auto bg-gradient-brand text-brand-foreground shadow-brand hover:opacity-90"
                   >
                     Próximo: {next.label}
