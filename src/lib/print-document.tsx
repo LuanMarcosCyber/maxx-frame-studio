@@ -314,7 +314,7 @@ function infoRows(d: ItemData): Array<[string, string]> {
   return rows;
 }
 
-function ComponentsTable({ rows, showPrices }: { rows: CompRow[]; showPrices: boolean }) {
+function ComponentsTable({ rows, showPrices, priceMultiplier = 1 }: { rows: CompRow[]; showPrices: boolean; priceMultiplier?: number }) {
   if (rows.length === 0) return null;
   const showQty = rows.some((r) => r.qtd > 1);
   return (
@@ -333,7 +333,7 @@ function ComponentsTable({ rows, showPrices }: { rows: CompRow[]; showPrices: bo
             <td className="cat">{r.categoria}</td>
             {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
             <td className="prod">{r.produto}</td>
-            {showPrices && <td className="val">{fmtMoney(r.valor)}</td>}
+            {showPrices && <td className="val">{fmtMoney(r.valor * priceMultiplier)}</td>}
           </tr>
         ))}
       </tbody>
@@ -489,6 +489,7 @@ export function PrintDocument({
   const maoObra = dNum(general, "maoDeObraExtra");
   const rtPerc = dNum(general, "rtPercentual");
   const rtValor = dNum(general, "rtValor");
+  const rtMult = 1 + (rtPerc || 0) / 100;
   const total = Number(order.total_value);
   const totalItens = items.reduce((s, it) => s + Number(it.subtotal || 0), 0);
 
@@ -708,7 +709,7 @@ export function PrintDocument({
                     </div>
                     {showFinance && (
                       <div className="total">
-                        Total: {fmtMoney(Number(it.subtotal) - diversosTotalForItem(d))}
+                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d)) * rtMult)}
                       </div>
                     )}
                   </div>
@@ -733,7 +734,7 @@ export function PrintDocument({
                     </div>
                   ) : (
                     <>
-                      <ComponentsTable rows={comps} showPrices={variant === "loja"} />
+                      <ComponentsTable rows={comps} showPrices={variant === "loja"} priceMultiplier={rtMult} />
                       {itemObs && (
                         <div className="item-obs"><strong>Observações:</strong> {itemObs}</div>
                       )}
@@ -751,7 +752,8 @@ export function PrintDocument({
             <div className="section-title">Produtos diversos</div>
             {diversos.map((p, i) => {
               const idx = frames.length + i + 1;
-              const unit = p.valorUnitario || (p.quantidade ? p.valorTotal / p.quantidade : 0);
+              const unit = (p.valorUnitario || (p.quantidade ? p.valorTotal / p.quantidade : 0)) * rtMult;
+              const totalDiv = p.valorTotal * rtMult;
               return (
                 <div className="item-block diverso-block" key={i}>
                   <div className="item-head">
@@ -763,7 +765,7 @@ export function PrintDocument({
                       </span>
                     </div>
                     {showFinance && (
-                      <div className="total">Total: {fmtMoney(p.valorTotal)}</div>
+                      <div className="total">Total: {fmtMoney(totalDiv)}</div>
                     )}
                   </div>
                   <table className="kv-table">
@@ -776,7 +778,7 @@ export function PrintDocument({
                       {showFinance && (
                         <>
                           <tr><td className="k">Valor unitário</td><td>{fmtMoney(unit)}</td></tr>
-                          <tr><td className="k">Total do item</td><td>{fmtMoney(p.valorTotal)}</td></tr>
+                          <tr><td className="k">Total do item</td><td>{fmtMoney(totalDiv)}</td></tr>
                         </>
                       )}
                     </tbody>
@@ -810,10 +812,10 @@ export function PrintDocument({
                 {variant === "loja" && dNum(general, "valorEntrega") > 0 && (
                   <div className="row muted"><span>Entrega / Frete</span><span>{fmtMoney(dNum(general, "valorEntrega"))}</span></div>
                 )}
-                {variant === "loja" && rtValor > 0 && (
+                {variant === "loja" && (rtValor > 0 || rtPerc > 0) && (
                   <div className="row muted">
                     <span>RT / Comissão Técnica{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
-                    <span>{fmtMoney(rtValor)}</span>
+                    <span>—</span>
                   </div>
                 )}
                 <div className="row muted">
@@ -821,7 +823,7 @@ export function PrintDocument({
                   <span>{desconto > 0 ? `- ${fmtMoney(desconto)}` : fmtMoney(0)}</span>
                 </div>
                 {variant === "loja" && (
-                  <div className="row muted"><span>Total dos itens</span><span>{fmtMoney(totalItens)}</span></div>
+                  <div className="row muted"><span>Total dos itens</span><span>{fmtMoney(totalItens * rtMult)}</span></div>
                 )}
                 <div className="row total"><span>TOTAL GERAL</span><span>{fmtMoney(total)}</span></div>
                 {sinalAtivo && valorSinal > 0 && (
