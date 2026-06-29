@@ -810,6 +810,12 @@ export function PrintDocument({
                 {variant === "loja" && dNum(general, "valorEntrega") > 0 && (
                   <div className="row muted"><span>Entrega / Frete</span><span>{fmtMoney(dNum(general, "valorEntrega"))}</span></div>
                 )}
+                {variant === "loja" && rtValor > 0 && (
+                  <div className="row muted">
+                    <span>RT / Comissão Técnica{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
+                    <span>{fmtMoney(rtValor)}</span>
+                  </div>
+                )}
                 <div className="row muted">
                   <span>Desconto{descontoPerc > 0 ? ` (${descontoPerc}%)` : ""}</span>
                   <span>{desconto > 0 ? `- ${fmtMoney(desconto)}` : fmtMoney(0)}</span>
