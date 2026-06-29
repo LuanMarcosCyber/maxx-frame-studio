@@ -2813,6 +2813,12 @@ function NovoOrcamento() {
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
                   <Row label={`Entrega (${tipoEntrega})`} value={fmtMoney(valorEntrega)} />
                   <Row label="Mão de obra extra" value={fmtMoney(maoDeObraExtra)} />
+                  {rtPercNum > 0 && (
+                    <Row
+                      label={`RT / Comissão Técnica (${rtPercNum.toFixed(2).replace(/\.?0+$/, "")}%)`}
+                      value={fmtMoney(rtValor)}
+                    />
+                  )}
                   {descontoPercNum > 0 && (
                     <>
                       <hr className="my-2 border-border" />
