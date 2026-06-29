@@ -1989,7 +1989,15 @@ function NovoOrcamento() {
                           loading={loadingPaspaturs}
                           placeholder="Selecione um paspatur"
                           emptyLabel="Nenhum paspatur cadastrado."
+                          triggerClassName={
+                            paspaturAdicProdutoError ? "border-destructive focus-visible:ring-destructive" : undefined
+                          }
                         />
+                        {paspaturAdicProdutoError && (
+                          <p className="text-xs text-destructive">
+                            Selecione um produto de paspatur para continuar.
+                          </p>
+                        )}
                       </div>
 
                       {paspaturAdicionalInvalido && (
