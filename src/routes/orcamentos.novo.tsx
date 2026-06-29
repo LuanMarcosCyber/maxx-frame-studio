@@ -3475,12 +3475,16 @@ function FieldNum({
   value,
   onChange,
   onBlur,
+  onKeyDown,
+  inputClassName,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  inputClassName?: string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -3492,6 +3496,8 @@ function FieldNum({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        className={inputClassName}
       />
     </div>
   );
