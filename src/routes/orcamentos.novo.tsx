@@ -1299,6 +1299,13 @@ function NovoOrcamento() {
       setValorInstalacaoStr(s("valorInstalacaoStr"));
       setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
       setValorEntregaStr(s("valorEntregaStr"));
+      setRtPercStr(
+        typeof d.rtPercStr === "string"
+          ? (d.rtPercStr as string)
+          : typeof d.rtPercentual === "number" && (d.rtPercentual as number) > 0
+            ? String(d.rtPercentual)
+            : "",
+      );
 
       // Load items
       const { data: itemRows } = await supabase
