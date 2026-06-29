@@ -3514,6 +3514,7 @@ function ProductSelect({
   emptyLabel,
   allowNone = false,
   noneLabel = "Nenhum",
+  triggerClassName,
 }: {
   id: string;
   value: string;
@@ -3524,6 +3525,7 @@ function ProductSelect({
   emptyLabel: string;
   allowNone?: boolean;
   noneLabel?: string;
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = products.find((p) => p.id === value);
@@ -3539,7 +3541,7 @@ function ProductSelect({
           role="combobox"
           aria-expanded={open}
           disabled={loading}
-          className="w-full justify-between font-normal"
+          className={cn("w-full justify-between font-normal", triggerClassName)}
         >
           <span className={cn("truncate", !selected && "text-muted-foreground")}>
             {loading
