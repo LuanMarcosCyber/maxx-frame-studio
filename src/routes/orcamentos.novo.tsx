@@ -983,8 +983,11 @@ function NovoOrcamento() {
     tipoEntrega === "Retirada" ? 0 : parseNum(valorEntregaStr);
   const maoDeObraExtra = parseNum(maoDeObraExtraStr);
 
+  const rtPercNum = Math.min(1000, Math.max(0, parseNum(rtPercStr)));
+  const rtValor = subtotalItens * (rtPercNum / 100);
+
   const subtotalSemDesconto =
-    subtotalItens + valorInstalacao + valorEntrega + maoDeObraExtra;
+    subtotalItens + rtValor + valorInstalacao + valorEntrega + maoDeObraExtra;
   const descontoPercNum = Math.min(100, Math.max(0, parseNum(descontoPercStr)));
   const descontoValor = subtotalSemDesconto * (descontoPercNum / 100);
   const subtotalComDesconto = Math.max(0, subtotalSemDesconto - descontoValor);
@@ -994,6 +997,13 @@ function NovoOrcamento() {
       ? Math.min(valorTotal, Math.max(0, parseNum(valorSinalStr)))
       : 0;
   const valorAReceber = Math.max(0, valorTotal - valorSinal);
+
+  useEffect(() => {
+    if (paspaturId) setPaspaturProdutoError(false);
+  }, [paspaturId]);
+  useEffect(() => {
+    if (paspaturAdicionalId) setPaspaturAdicProdutoError(false);
+  }, [paspaturAdicionalId]);
 
   // Auto-regenerate parcelas when relevant inputs change.
   // Uses a signature ref so user edits to individual parcelas are preserved
