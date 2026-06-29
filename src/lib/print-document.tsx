@@ -812,10 +812,10 @@ export function PrintDocument({
                 {variant === "loja" && dNum(general, "valorEntrega") > 0 && (
                   <div className="row muted"><span>Entrega / Frete</span><span>{fmtMoney(dNum(general, "valorEntrega"))}</span></div>
                 )}
-                {variant === "loja" && rtValor > 0 && (
+                {variant === "loja" && (rtValor > 0 || rtPerc > 0) && (
                   <div className="row muted">
                     <span>RT / Comissão Técnica{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
-                    <span>{fmtMoney(rtValor)}</span>
+                    <span>—</span>
                   </div>
                 )}
                 <div className="row muted">
@@ -823,7 +823,7 @@ export function PrintDocument({
                   <span>{desconto > 0 ? `- ${fmtMoney(desconto)}` : fmtMoney(0)}</span>
                 </div>
                 {variant === "loja" && (
-                  <div className="row muted"><span>Total dos itens</span><span>{fmtMoney(totalItens)}</span></div>
+                  <div className="row muted"><span>Total dos itens</span><span>{fmtMoney(totalItens * rtMult)}</span></div>
                 )}
                 <div className="row total"><span>TOTAL GERAL</span><span>{fmtMoney(total)}</span></div>
                 {sinalAtivo && valorSinal > 0 && (
