@@ -1845,10 +1845,56 @@ function NovoOrcamento() {
               {paspaturAtivo === "sim" && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 max-w-2xl">
-                    <FieldNum label="Esquerda (cm)" id="m-esq" value={margemEsq} onChange={onMargemEsqChange} onBlur={onMargemEsqBlur} />
-                    <FieldNum label="Direita (cm)" id="m-dir" value={margemDir} onChange={onMargemDirChange} />
-                    <FieldNum label="Superior (cm)" id="m-sup" value={margemSup} onChange={onMargemSupChange} />
-                    <FieldNum label="Inferior (cm)" id="m-inf" value={margemInf} onChange={onMargemInfChange} />
+                    <FieldNum
+                      label="Esquerda (cm)"
+                      id="m-esq"
+                      value={margemEsq}
+                      onChange={onMargemEsqChange}
+                      onBlur={onMargemEsqBlur}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          onMargemEsqBlur();
+                          document.getElementById("m-dir")?.focus();
+                        }
+                      }}
+                    />
+                    <FieldNum
+                      label="Direita (cm)"
+                      id="m-dir"
+                      value={margemDir}
+                      onChange={onMargemDirChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("m-sup")?.focus();
+                        }
+                      }}
+                    />
+                    <FieldNum
+                      label="Superior (cm)"
+                      id="m-sup"
+                      value={margemSup}
+                      onChange={onMargemSupChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("m-inf")?.focus();
+                        }
+                      }}
+                    />
+                    <FieldNum
+                      label="Inferior (cm)"
+                      id="m-inf"
+                      value={margemInf}
+                      onChange={onMargemInfChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("paspatur")?.focus();
+                        }
+                      }}
+                    />
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
@@ -1861,7 +1907,15 @@ function NovoOrcamento() {
                       loading={loadingPaspaturs}
                       placeholder="Selecione um paspatur"
                       emptyLabel="Nenhum paspatur cadastrado."
+                      triggerClassName={
+                        paspaturProdutoError ? "border-destructive focus-visible:ring-destructive" : undefined
+                      }
                     />
+                    {paspaturProdutoError && (
+                      <p className="text-xs text-destructive">
+                        Selecione um produto de paspatur para continuar.
+                      </p>
+                    )}
                   </div>
 
                   <div className="mt-6 max-w-md space-y-1.5">
