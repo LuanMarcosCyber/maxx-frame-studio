@@ -487,6 +487,8 @@ export function PrintDocument({
   const valorSinal = dNum(general, "valorSinal");
   const valorAReceber = dNum(general, "valorAReceber");
   const maoObra = dNum(general, "maoDeObraExtra");
+  const rtPerc = dNum(general, "rtPercentual");
+  const rtValor = dNum(general, "rtValor");
   const total = Number(order.total_value);
   const totalItens = items.reduce((s, it) => s + Number(it.subtotal || 0), 0);
 
