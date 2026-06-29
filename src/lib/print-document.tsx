@@ -314,7 +314,7 @@ function infoRows(d: ItemData): Array<[string, string]> {
   return rows;
 }
 
-function ComponentsTable({ rows, showPrices }: { rows: CompRow[]; showPrices: boolean }) {
+function ComponentsTable({ rows, showPrices, priceMultiplier = 1 }: { rows: CompRow[]; showPrices: boolean; priceMultiplier?: number }) {
   if (rows.length === 0) return null;
   const showQty = rows.some((r) => r.qtd > 1);
   return (
@@ -333,7 +333,7 @@ function ComponentsTable({ rows, showPrices }: { rows: CompRow[]; showPrices: bo
             <td className="cat">{r.categoria}</td>
             {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
             <td className="prod">{r.produto}</td>
-            {showPrices && <td className="val">{fmtMoney(r.valor)}</td>}
+            {showPrices && <td className="val">{fmtMoney(r.valor * priceMultiplier)}</td>}
           </tr>
         ))}
       </tbody>
