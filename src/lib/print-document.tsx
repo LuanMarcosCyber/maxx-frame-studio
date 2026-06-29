@@ -489,6 +489,7 @@ export function PrintDocument({
   const maoObra = dNum(general, "maoDeObraExtra");
   const rtPerc = dNum(general, "rtPercentual");
   const rtValor = dNum(general, "rtValor");
+  const rtMult = 1 + (rtPerc || 0) / 100;
   const total = Number(order.total_value);
   const totalItens = items.reduce((s, it) => s + Number(it.subtotal || 0), 0);
 
