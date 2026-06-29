@@ -15,10 +15,8 @@ type Diverso = {
   valorTotal: number;
 };
 
-const fmtMoney = (n: number) =>
-  Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const fmtDate = (s: string | null | undefined) =>
-  s ? new Date(s).toLocaleDateString("pt-BR") : "—";
+const fmtMoney = (n: number) => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmtDate = (s: string | null | undefined) => (s ? new Date(s).toLocaleDateString("pt-BR") : "—");
 const fmtDateBR = (s: string | null | undefined) => {
   if (!s) return "—";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
@@ -99,17 +97,15 @@ function FramePreview({ d }: { d: ItemData }) {
   const artH = hasInt && intW > 0 && intH > 0 ? intH : hasExt ? extH : dh;
 
   // Art dimensions in cm to display in label
-  const artCmW = dNum(d, "larguraOriginal") || (W - mE - mD - aE - aD);
-  const artCmH = dNum(d, "alturaOriginal") || (H - mS - mI - aS - aI);
+  const artCmW = dNum(d, "larguraOriginal") || W - mE - mD - aE - aD;
+  const artCmH = dNum(d, "alturaOriginal") || H - mS - mI - aS - aI;
 
   return (
-    <svg
-      viewBox={`0 0 ${VB} ${VB}`}
-      className="frame-preview"
-      preserveAspectRatio="xMidYMid meet"
-    >
+    <svg viewBox={`0 0 ${VB} ${VB}`} className="frame-preview" preserveAspectRatio="xMidYMid meet">
       {/* medida superior */}
-      <text x={VB / 2} y={y0 - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">{fmtM(W)} cm</text>
+      <text x={VB / 2} y={y0 - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="#000">
+        {fmtM(W)} cm
+      </text>
       {/* medida lateral esquerda */}
       <text
         x={x0 - 7}
@@ -125,9 +121,7 @@ function FramePreview({ d }: { d: ItemData }) {
 
       {/* contornos do quadro e paspatur */}
       <rect x={x0} y={y0} width={dw} height={dh} fill="#fff" stroke="#000" strokeWidth="1.2" />
-      {hasExt && (
-        <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#000" strokeWidth="0.8" />
-      )}
+      {hasExt && <rect x={extX} y={extY} width={extW} height={extH} fill="none" stroke="#000" strokeWidth="0.8" />}
       {hasInt && intW > 0 && intH > 0 && (
         <rect x={intX} y={intY} width={intW} height={intH} fill="none" stroke="#000" strokeWidth="0.8" />
       )}
@@ -157,18 +151,11 @@ function extractDiversos(items: Array<{ position: number; data: ItemData }>): Di
     if (!Array.isArray(raw)) continue;
     for (const p of raw as Array<Record<string, unknown>>) {
       const qtd = Number(p.quantidade) || 1;
-      const valorUnit =
-        Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
-      const valorTotal =
-        Number(p.total) || Number(p.valorTotal) || valorUnit * qtd;
+      const valorUnit = Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
+      const valorTotal = Number(p.total) || Number(p.valorTotal) || valorUnit * qtd;
       out.push({
         code: typeof p.code === "string" ? p.code : undefined,
-        nome:
-          typeof p.nome === "string"
-            ? p.nome
-            : typeof p.descricao === "string"
-              ? p.descricao
-              : "Produto",
+        nome: typeof p.nome === "string" ? p.nome : typeof p.descricao === "string" ? p.descricao : "Produto",
         descricao: typeof p.descricao === "string" ? p.descricao : undefined,
         fornecedor: typeof p.fornecedor === "string" ? p.fornecedor : undefined,
         quantidade: qtd,
@@ -187,8 +174,7 @@ function diversosTotalForItem(d: ItemData): number {
   let s = 0;
   for (const p of raw as Array<Record<string, unknown>>) {
     const qtd = Number(p.quantidade) || 1;
-    const unit =
-      Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
+    const unit = Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
     s += Number(p.total) || Number(p.valorTotal) || unit * qtd;
   }
   return s;
@@ -314,7 +300,15 @@ function infoRows(d: ItemData): Array<[string, string]> {
   return rows;
 }
 
-function ComponentsTable({ rows, showPrices, priceMultiplier = 1 }: { rows: CompRow[]; showPrices: boolean; priceMultiplier?: number }) {
+function ComponentsTable({
+  rows,
+  showPrices,
+  priceMultiplier = 1,
+}: {
+  rows: CompRow[];
+  showPrices: boolean;
+  priceMultiplier?: number;
+}) {
   if (rows.length === 0) return null;
   const showQty = rows.some((r) => r.qtd > 1);
   return (
@@ -341,15 +335,7 @@ function ComponentsTable({ rows, showPrices, priceMultiplier = 1 }: { rows: Comp
   );
 }
 
-export function PrintDocument({
-  kind,
-  id,
-  via,
-}: {
-  kind: DocKind;
-  id: string;
-  via: string;
-}) {
+export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; via: string }) {
   const variant: Variant = via === "producao" || via === "cliente" ? via : "loja";
 
   const { data, isLoading } = useQuery({
@@ -433,8 +419,8 @@ export function PrintDocument({
           : Promise.resolve({ data: null }),
       ]);
 
-      let items: Array<{ id: string; position: number; subtotal: number; data: ItemData }> =
-        ((itemsRes as any).data ?? []) as any;
+      let items: Array<{ id: string; position: number; subtotal: number; data: ItemData }> = ((itemsRes as any).data ??
+        []) as any;
       if (items.length === 0 && budget) {
         items = [
           {
@@ -498,8 +484,7 @@ export function PrintDocument({
 
   const storeName = profile?.store_name || profile?.full_name || "Loja";
   const docLabel = kind === "pedido" ? "Pedido" : "Orçamento";
-  const variantTitle =
-    variant === "loja" ? "VIA LOJA" : variant === "producao" ? "VIA PRODUÇÃO" : "VIA CLIENTE";
+  const variantTitle = variant === "loja" ? "VIA LOJA" : variant === "producao" ? "VIA PRODUÇÃO" : "VIA CLIENTE";
 
   const showFinance = variant !== "producao";
   const showPreview = variant === "producao";
@@ -634,16 +619,27 @@ export function PrintDocument({
       <aside className="print-guide" aria-label="Como imprimir">
         <h3>🖨️ Como imprimir</h3>
         <ol>
-          <li>Na primeira etapa, clique em <strong>Imprimir</strong>.</li>
+          <li>
+            Na primeira etapa, clique em <strong>Imprimir</strong>.
+          </li>
           <li>O navegador abrirá a janela de impressão.</li>
-          <li>Enquanto essa janela estiver aberta, a aba do sistema ficará temporariamente bloqueada pelo navegador.</li>
-          <li>Após imprimir ou cancelar, basta fechar a janela de impressão para continuar utilizando o sistema normalmente.</li>
+          <li>
+            Enquanto essa janela estiver aberta, a aba do sistema ficará temporariamente bloqueada pelo navegador.
+          </li>
+          <li>
+            Após imprimir ou cancelar, basta fechar a janela de impressão para continuar utilizando o sistema
+            normalmente.
+          </li>
         </ol>
       </aside>
 
       <div className="print-actions">
-        <button type="button" className="secondary" onClick={() => window.close()}>Fechar</button>
-        <button type="button" onClick={() => window.print()}>Imprimir</button>
+        <button type="button" className="secondary" onClick={() => window.close()}>
+          Fechar
+        </button>
+        <button type="button" onClick={() => window.print()}>
+          Imprimir
+        </button>
       </div>
 
       <div className="sheet">
@@ -665,25 +661,37 @@ export function PrintDocument({
         <div className="section-title">Dados do {docLabel.toLowerCase()}</div>
         <div className="grid-2">
           <div>
-            <span className="lbl">Cliente:</span>{" "}
-            {order.client_name || client?.name || "—"}
+            <span className="lbl">Cliente:</span> {order.client_name || client?.name || "—"}
           </div>
           {kind === "pedido" && budget && (
-            <div><span className="lbl">Orçamento origem:</span> {budget.number || "—"}</div>
+            <div>
+              <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
+            </div>
           )}
           <div>
             <span className="lbl">Data {kind === "pedido" ? "do pedido" : "do orçamento"}:</span>{" "}
             {fmtDate(order.created_at)}
           </div>
-          <div><span className="lbl">Data de entrega:</span> {dataEntrega}</div>
+          <div>
+            <span className="lbl">Data de entrega:</span> {dataEntrega}
+          </div>
           {variant !== "producao" && (
             <>
-              {client?.phone && <div><span className="lbl">Telefone:</span> {client.phone}</div>}
-              {client?.email && <div><span className="lbl">E-mail:</span> {client.email}</div>}
-              <div><span className="lbl">Forma de pagamento:</span> {forma}</div>
+              {client?.phone && (
+                <div>
+                  <span className="lbl">Telefone:</span> {client.phone}
+                </div>
+              )}
+              {client?.email && (
+                <div>
+                  <span className="lbl">E-mail:</span> {client.email}
+                </div>
+              )}
               <div>
-                <span className="lbl">Condição:</span>{" "}
-                {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
+                <span className="lbl">Forma de pagamento:</span> {forma}
+              </div>
+              <div>
+                <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
               </div>
             </>
           )}
@@ -705,7 +713,9 @@ export function PrintDocument({
                   <div className="item-head">
                     <div className="left">
                       <span className="idx">{idx + 1}</span>
-                      <span className="title">ITEM {idx + 1} — Quadro {W} x {H} cm</span>
+                      <span className="title">
+                        ITEM {idx + 1} — Quadro {W} x {H} cm
+                      </span>
                     </div>
                     {showFinance && (
                       <div className="total">
@@ -722,10 +732,16 @@ export function PrintDocument({
                         <table className="kv-table">
                           <tbody>
                             {info.map(([k, v], i) => (
-                              <tr key={i}><td className="k">{k}</td><td>{v}</td></tr>
+                              <tr key={i}>
+                                <td className="k">{k}</td>
+                                <td>{v}</td>
+                              </tr>
                             ))}
                             {itemObs && (
-                              <tr><td className="k">Observações</td><td>{itemObs}</td></tr>
+                              <tr>
+                                <td className="k">Observações</td>
+                                <td>{itemObs}</td>
+                              </tr>
                             )}
                           </tbody>
                         </table>
@@ -736,7 +752,9 @@ export function PrintDocument({
                     <>
                       <ComponentsTable rows={comps} showPrices={variant === "loja"} priceMultiplier={rtMult} />
                       {itemObs && (
-                        <div className="item-obs"><strong>Observações:</strong> {itemObs}</div>
+                        <div className="item-obs">
+                          <strong>Observações:</strong> {itemObs}
+                        </div>
                       )}
                     </>
                   )}
@@ -764,21 +782,44 @@ export function PrintDocument({
                         {frames.length > 0 ? ` (ref. Item ${p.itemPos})` : ""}
                       </span>
                     </div>
-                    {showFinance && (
-                      <div className="total">Total: {fmtMoney(totalDiv)}</div>
-                    )}
+                    {showFinance && <div className="total">Total: {fmtMoney(totalDiv)}</div>}
                   </div>
                   <table className="kv-table">
                     <tbody>
-                      <tr><td className="k">Tipo</td><td>Produto diverso</td></tr>
-                      {p.code ? <tr><td className="k">Código</td><td>{p.code}</td></tr> : null}
-                      <tr><td className="k">Descrição</td><td>{p.descricao || p.nome}</td></tr>
-                      {p.fornecedor ? <tr><td className="k">Fornecedor</td><td>{p.fornecedor}</td></tr> : null}
-                      <tr><td className="k">Quantidade</td><td>{p.quantidade}</td></tr>
+                      <tr>
+                        <td className="k">Tipo</td>
+                        <td>Produto diverso</td>
+                      </tr>
+                      {p.code ? (
+                        <tr>
+                          <td className="k">Código</td>
+                          <td>{p.code}</td>
+                        </tr>
+                      ) : null}
+                      <tr>
+                        <td className="k">Descrição</td>
+                        <td>{p.descricao || p.nome}</td>
+                      </tr>
+                      {p.fornecedor ? (
+                        <tr>
+                          <td className="k">Fornecedor</td>
+                          <td>{p.fornecedor}</td>
+                        </tr>
+                      ) : null}
+                      <tr>
+                        <td className="k">Quantidade</td>
+                        <td>{p.quantidade}</td>
+                      </tr>
                       {showFinance && (
                         <>
-                          <tr><td className="k">Valor unitário</td><td>{fmtMoney(unit)}</td></tr>
-                          <tr><td className="k">Total do item</td><td>{fmtMoney(totalDiv)}</td></tr>
+                          <tr>
+                            <td className="k">Valor unitário</td>
+                            <td>{fmtMoney(unit)}</td>
+                          </tr>
+                          <tr>
+                            <td className="k">Total do item</td>
+                            <td>{fmtMoney(totalDiv)}</td>
+                          </tr>
                         </>
                       )}
                     </tbody>
@@ -804,18 +845,27 @@ export function PrintDocument({
               <div className="section-title">Resumo financeiro</div>
               <div className="totals">
                 {variant === "loja" && maoObra > 0 && (
-                  <div className="row muted"><span>Mão de obra extra</span><span>{fmtMoney(maoObra)}</span></div>
+                  <div className="row muted">
+                    <span>Mão de obra extra</span>
+                    <span>{fmtMoney(maoObra)}</span>
+                  </div>
                 )}
                 {variant === "loja" && dNum(general, "valorInstalacao") > 0 && (
-                  <div className="row muted"><span>Instalação</span><span>{fmtMoney(dNum(general, "valorInstalacao"))}</span></div>
+                  <div className="row muted">
+                    <span>Instalação</span>
+                    <span>{fmtMoney(dNum(general, "valorInstalacao"))}</span>
+                  </div>
                 )}
                 {variant === "loja" && dNum(general, "valorEntrega") > 0 && (
-                  <div className="row muted"><span>Entrega / Frete</span><span>{fmtMoney(dNum(general, "valorEntrega"))}</span></div>
+                  <div className="row muted">
+                    <span>Entrega / Frete</span>
+                    <span>{fmtMoney(dNum(general, "valorEntrega"))}</span>
+                  </div>
                 )}
                 {variant === "loja" && (rtValor > 0 || rtPerc > 0) && (
                   <div className="row muted">
-                    <span>RT / Comissão Técnica{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
-                    <span>—</span>
+                    <span>RT / Comissão Técnica</span>
+                    <span>{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
                   </div>
                 )}
                 <div className="row muted">
@@ -823,15 +873,24 @@ export function PrintDocument({
                   <span>{desconto > 0 ? `- ${fmtMoney(desconto)}` : fmtMoney(0)}</span>
                 </div>
                 {variant === "loja" && (
-                  <div className="row muted"><span>Total dos itens</span><span>{fmtMoney(totalItens * rtMult)}</span></div>
+                  <div className="row muted">
+                    <span>Total dos itens</span>
+                    <span>{fmtMoney(totalItens * rtMult)}</span>
+                  </div>
                 )}
-                <div className="row total"><span>TOTAL GERAL</span><span>{fmtMoney(total)}</span></div>
+                <div className="row total">
+                  <span>TOTAL GERAL</span>
+                  <span>{fmtMoney(total)}</span>
+                </div>
                 {sinalAtivo && valorSinal > 0 && (
                   <>
-                    <div className="row"><span>Sinal pago</span><span>{fmtMoney(valorSinal)}</span></div>
+                    <div className="row">
+                      <span>Sinal pago</span>
+                      <span>{fmtMoney(valorSinal)}</span>
+                    </div>
                     <div className="row due">
                       <span>{variant === "cliente" ? "Valor a pagar" : "Valor a receber"}</span>
-                      <span>{fmtMoney(valorAReceber || (total - valorSinal))}</span>
+                      <span>{fmtMoney(valorAReceber || total - valorSinal)}</span>
                     </div>
                   </>
                 )}
@@ -852,7 +911,9 @@ export function PrintDocument({
                   <tbody>
                     {parcelas.map((p) => (
                       <tr key={p.numero}>
-                        <td>{p.numero}/{parcelas.length}</td>
+                        <td>
+                          {p.numero}/{parcelas.length}
+                        </td>
                         <td>{p.vencimento ? fmtDateBR(p.vencimento) : "—"}</td>
                         <td style={{ textAlign: "right", fontWeight: 700 }}>{fmtMoney(p.valor)}</td>
                       </tr>
@@ -872,8 +933,8 @@ export function PrintDocument({
         )}
 
         <div className="footer">
-          {storeName} · {docLabel} {order.number || "—"} · {variantTitle.replace("VIA ", "Via ")} ·{" "}
-          Emitido em {fmtDate(new Date().toISOString())} às{" "}
+          {storeName} · {docLabel} {order.number || "—"} · {variantTitle.replace("VIA ", "Via ")} · Emitido em{" "}
+          {fmtDate(new Date().toISOString())} às{" "}
           {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
