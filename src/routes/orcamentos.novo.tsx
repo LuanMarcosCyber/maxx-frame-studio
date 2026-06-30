@@ -1332,6 +1332,10 @@ function NovoOrcamento() {
       );
       setVendedorNome(s("vendedorNome"));
       setArquitetoNome(s("arquitetoNome"));
+      setArquitetoId(typeof d.arquitetoId === "string" ? (d.arquitetoId as string) : null);
+      setArquitetoPerc(
+        typeof d.arquitetoPercentual === "number" ? (d.arquitetoPercentual as number) : 0,
+      );
 
 
       // Load items
