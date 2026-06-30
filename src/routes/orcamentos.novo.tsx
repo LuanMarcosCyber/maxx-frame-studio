@@ -1313,6 +1313,9 @@ function NovoOrcamento() {
             ? String(d.rtPercentual)
             : "",
       );
+      setVendedorNome(s("vendedorNome"));
+      setArquitetoNome(s("arquitetoNome"));
+
 
       // Load items
       const { data: itemRows } = await supabase
