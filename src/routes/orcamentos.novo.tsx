@@ -1866,16 +1866,8 @@ function NovoOrcamento() {
                 </div>
               </div>
 
-              <div className="mt-8 max-w-xs space-y-1.5">
-                <Label htmlFor="rt-perc">Usar código interno (%)</Label>
-                <Input
-                  id="rt-perc"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={rtPercStr}
-                  onChange={(e) => setRtPercStr(e.target.value)}
-                />
-              </div>
+
+
 
             </Card>
           )}
