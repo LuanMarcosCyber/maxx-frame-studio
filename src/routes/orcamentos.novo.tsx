@@ -790,6 +790,9 @@ function NovoOrcamento() {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [rtPercStr, setRtPercStr] = useState<string>("");
+  const [vendedorNome, setVendedorNome] = useState<string>("");
+  const [arquitetoNome, setArquitetoNome] = useState<string>("");
+
   const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
   const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
   const [discountAuthOpen, setDiscountAuthOpen] = useState(false);
