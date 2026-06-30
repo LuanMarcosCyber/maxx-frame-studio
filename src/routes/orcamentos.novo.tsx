@@ -792,6 +792,8 @@ function NovoOrcamento() {
   const [rtPercStr, setRtPercStr] = useState<string>("");
   const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
   const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
+  const [discountAuthOpen, setDiscountAuthOpen] = useState(false);
+  const [requestingAuth, setRequestingAuth] = useState(false);
 
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
