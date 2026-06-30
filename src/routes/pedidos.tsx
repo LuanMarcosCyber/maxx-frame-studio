@@ -102,8 +102,9 @@ function collaboratorLabel(row: { user_id: string; created_by: string | null }, 
 }
 
 function Pedidos() {
-  const { session, role } = useAuth();
+  const { session, role, profile } = useAuth();
   const showCollaborator = role !== "colaborador";
+  const canDelete = role !== "colaborador" || !!profile?.can_delete_orders;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { view: viewParam } = Route.useSearch();
