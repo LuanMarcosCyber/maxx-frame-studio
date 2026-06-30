@@ -233,7 +233,9 @@ function Produtos() {
           barcode: form.barcode.trim() || null,
           supplier: form.supplier.trim() || null,
           commission_percentage: commission,
+          ncm: form.ncm.trim() || null,
         };
+
         if (editing) {
           const { error } = await supabase
             .from("products")
