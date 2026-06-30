@@ -247,17 +247,20 @@ function Pedidos() {
         <span className="text-sm font-medium">Mudar estado</span>
         <span className="text-[10px] opacity-80">Status atual: {viewing.status}</span>
       </Button>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => setDeleteOpen(true)}
-        className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 className="h-5 w-5" />
-        <span className="text-sm font-medium">Excluir pedido</span>
-      </Button>
+      {canDelete && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setDeleteOpen(true)}
+          className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="h-5 w-5" />
+          <span className="text-sm font-medium">Excluir pedido</span>
+        </Button>
+      )}
     </div>
   ) : null;
+
 
   return (
     <AppShell title="Pedidos" subtitle="Acompanhe o status dos seus pedidos">
