@@ -1907,13 +1907,100 @@ function NovoOrcamento() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="top-arquiteto">Arquiteto</Label>
-                <Input
-                  id="top-arquiteto"
-                  placeholder="Nome do arquiteto (opcional)"
-                  value={arquitetoNome}
-                  autoComplete="off"
-                  onChange={(e) => setArquitetoNome(e.target.value)}
-                />
+                <Popover
+                  open={
+                    arquitetoSugestoesOpen &&
+                    arquitetoNome.trim().length > 0 &&
+                    arquitetos.some((a) =>
+                      a.name.toLowerCase().includes(arquitetoNome.trim().toLowerCase()),
+                    )
+                  }
+                  onOpenChange={setArquitetoSugestoesOpen}
+                >
+                  <PopoverAnchor asChild>
+                    <div className="w-full">
+                      <Input
+                        id="top-arquiteto"
+                        placeholder="Buscar arquiteto cadastrado"
+                        value={arquitetoNome}
+                        autoComplete="off"
+                        onFocus={() => {
+                          if (arquitetoNome.trim().length > 0) {
+                            setArquitetoSugestoesOpen(true);
+                          }
+                        }}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setArquitetoNome(v);
+                          // Mudou o texto → desvincula arquiteto (e remove RT automático)
+                          if (arquitetoId) {
+                            setArquitetoId(null);
+                            setArquitetoPerc(0);
+                            setRtPercStr("");
+                          }
+                          setArquitetoSugestoesOpen(true);
+                        }}
+                      />
+                    </div>
+                  </PopoverAnchor>
+                  <PopoverContent
+                    className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
+                    align="start"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandEmpty>Nenhum arquiteto encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {arquitetos
+                            .filter((a) =>
+                              a.name
+                                .toLowerCase()
+                                .includes(arquitetoNome.trim().toLowerCase()),
+                            )
+                            .slice(0, 8)
+                            .map((a) => (
+                              <CommandItem
+                                key={a.id}
+                                value={a.id}
+                                onSelect={() => {
+                                  const perc = Number(a.percentage) || 0;
+                                  setArquitetoId(a.id);
+                                  setArquitetoNome(a.name);
+                                  setArquitetoPerc(perc);
+                                  setRtPercStr(perc > 0 ? String(perc) : "");
+                                  setArquitetoSugestoesOpen(false);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{a.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    RT {Number(a.percentage).toFixed(2).replace(".", ",")}%
+                                    {a.phone ? ` · ${a.phone}` : ""}
+                                  </span>
+                                </div>
+                                {arquitetoId === a.id && (
+                                  <Check className="ml-auto h-4 w-4" />
+                                )}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {arquitetoId ? (
+                  <p className="text-xs text-muted-foreground">
+                    RT aplicado automaticamente:{" "}
+                    <span className="font-medium text-foreground">
+                      {arquitetoPerc.toFixed(2).replace(".", ",")}%
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Selecione um arquiteto para aplicar o RT automaticamente.
+                  </p>
+                )}
               </div>
             </div>
           </Card>
