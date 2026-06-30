@@ -80,9 +80,9 @@ export const createColaborador = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    // Trigger inserts the safe default 'revendedor' role. Update it to
-    // 'colaborador' here using the service-role client. Client-supplied
-    // role metadata is ignored by the trigger.
+    // Trigger inserts the safe default 'revendedor' role and ignores
+    // client-supplied parent_user_id metadata. Server-side admin code is
+    // the only place trusted to set both, using the service-role client.
     const createdId = created.user?.id;
     if (createdId) {
       const { error: roleErr } = await supabaseAdmin
@@ -90,6 +90,12 @@ export const createColaborador = createServerFn({ method: "POST" })
         .update({ role: "colaborador" })
         .eq("user_id", createdId);
       if (roleErr) throw new Error(roleErr.message);
+
+      const { error: linkErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ parent_user_id: context.userId })
+        .eq("id", createdId);
+      if (linkErr) throw new Error(linkErr.message);
     }
     return { id: createdId };
   });
