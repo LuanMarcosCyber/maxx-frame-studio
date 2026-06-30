@@ -1358,6 +1358,28 @@ function NovoOrcamento() {
       return;
     }
 
+    // Collaborator discount limit
+    if (isColaborador && descontoPercNum > maxDiscount + 0.001) {
+      let approved = false;
+      if (isEdit && editId) {
+        const { data: req } = await supabase
+          .from("discount_approval_requests")
+          .select("requested_percent, status")
+          .eq("budget_id", editId)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (req && Number(req.requested_percent) + 0.001 >= descontoPercNum) {
+          approved = true;
+        }
+      }
+      if (!approved) {
+        setDiscountAuthOpen(true);
+        return;
+      }
+    }
+
     // Validate parcelas sum if forma parcelável + condição parcelado
     const isParcelado =
       isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
