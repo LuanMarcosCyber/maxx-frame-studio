@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, address, store_name, parent_user_id, active, avatar_url")
+        .select("full_name, username, email, phone, document, address, store_name, parent_user_id, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -89,6 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         parent_user_id: null,
         active: true,
         avatar_url: null,
+        can_edit_budgets: true,
+        can_create_products: true,
+        can_create_clients: true,
+        can_delete_orders: false,
+        max_discount_percent: 100,
       },
     );
   };
