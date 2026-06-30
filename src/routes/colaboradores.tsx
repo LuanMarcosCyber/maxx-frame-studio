@@ -164,7 +164,8 @@ function Content() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: { user_id: string; full_name: string }) => update({ data }),
+    mutationFn: (data: { user_id: string; full_name: string } & Partial<Permissions>) =>
+      update({ data }),
     onSuccess: () => {
       toast.success("Colaborador atualizado.");
       setEditTarget(null);
