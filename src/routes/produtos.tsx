@@ -664,7 +664,17 @@ function Produtos() {
                   />
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label htmlFor="d-ncm">NCM</Label>
+                <Input
+                  id="d-ncm"
+                  placeholder="Opcional"
+                  value={form.ncm}
+                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                />
+              </div>
             </div>
+
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
