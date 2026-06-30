@@ -136,8 +136,17 @@ function Content() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["colaboradores"] });
 
   const createMut = useMutation({
-    mutationFn: (data: { full_name: string; username: string; password: string }) =>
-      create({ data }),
+    mutationFn: async (
+      data: { full_name: string; username: string; password: string } & Permissions,
+    ) => {
+      const { full_name, username, password, ...perms } = data;
+      const created = await create({ data: { full_name, username, password } });
+      const newId = (created as { id?: string } | undefined)?.id;
+      if (newId) {
+        await update({ data: { user_id: newId, full_name, ...perms } });
+      }
+      return created;
+    },
     onSuccess: () => {
       toast.success("Colaborador criado.");
       invalidate();
