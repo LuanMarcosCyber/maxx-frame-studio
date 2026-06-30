@@ -18,6 +18,11 @@ interface Profile {
   parent_user_id: string | null;
   active: boolean;
   avatar_url: string | null;
+  can_edit_budgets: boolean;
+  can_create_products: boolean;
+  can_create_clients: boolean;
+  can_delete_orders: boolean;
+  max_discount_percent: number;
 }
 
 
