@@ -1359,7 +1359,7 @@ function NovoOrcamento() {
     }
 
     // Collaborator discount limit
-    if (isColaborador && descontoPercNum > maxDiscount + 0.001) {
+    if (isColaborador && !opts.skipDiscountCheck && descontoPercNum > maxDiscount + 0.001) {
       let approved = false;
       if (isEdit && editId) {
         const { data: req } = await supabase
