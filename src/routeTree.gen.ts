@@ -20,6 +20,7 @@ import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
 import { Route as ColaboradoresRouteImport } from './routes/colaboradores'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ArquitetosRouteImport } from './routes/arquitetos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RevendedoresIndexRouteImport } from './routes/revendedores.index'
 import { Route as OrcamentosIndexRouteImport } from './routes/orcamentos.index'
@@ -83,6 +84,11 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ArquitetosRoute = ArquitetosRouteImport.update({
+  id: '/arquitetos',
+  path: '/arquitetos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -121,6 +127,7 @@ const OrcamentosIdImprimirViaRoute = OrcamentosIdImprimirViaRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/arquitetos': typeof ArquitetosRoute
   '/clientes': typeof ClientesRoute
   '/colaboradores': typeof ColaboradoresRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/arquitetos': typeof ArquitetosRoute
   '/clientes': typeof ClientesRoute
   '/colaboradores': typeof ColaboradoresRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -160,6 +168,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/arquitetos': typeof ArquitetosRoute
   '/clientes': typeof ClientesRoute
   '/colaboradores': typeof ColaboradoresRoute
   '/configuracoes': typeof ConfiguracoesRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/arquitetos'
     | '/clientes'
     | '/colaboradores'
     | '/configuracoes'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/arquitetos'
     | '/clientes'
     | '/colaboradores'
     | '/configuracoes'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/arquitetos'
     | '/clientes'
     | '/colaboradores'
     | '/configuracoes'
@@ -241,6 +253,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ArquitetosRoute: typeof ArquitetosRoute
   ClientesRoute: typeof ClientesRoute
   ColaboradoresRoute: typeof ColaboradoresRoute
   ConfiguracoesRoute: typeof ConfiguracoesRoute
@@ -335,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/arquitetos': {
+      id: '/arquitetos'
+      path: '/arquitetos'
+      fullPath: '/arquitetos'
+      preLoaderRoute: typeof ArquitetosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -417,6 +437,7 @@ const RevendedoresRouteWithChildren = RevendedoresRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ArquitetosRoute: ArquitetosRoute,
   ClientesRoute: ClientesRoute,
   ColaboradoresRoute: ColaboradoresRoute,
   ConfiguracoesRoute: ConfiguracoesRoute,
