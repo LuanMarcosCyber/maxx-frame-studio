@@ -1479,7 +1479,10 @@ function NovoOrcamento() {
         valorSinalStr,
         valorSinal: Number(valorSinal.toFixed(2)),
         valorAReceber: Number(valorAReceber.toFixed(2)),
+        vendedorNome: vendedorNome.trim(),
+        arquitetoNome: arquitetoNome.trim(),
       };
+
 
       const budgetPayload = {
         client_name: clienteNome.trim(),
