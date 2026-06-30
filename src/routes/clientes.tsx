@@ -94,7 +94,8 @@ const customerTypeLabel = (t: string) =>
 const onlyDigits = (s: string) => (s || "").replace(/\D+/g, "");
 
 function Clientes() {
-  const { session, ownerUserId } = useAuth();
+  const { session, ownerUserId, role, profile } = useAuth();
+  const canCreateClients = role !== "colaborador" || !!profile?.can_create_clients;
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
