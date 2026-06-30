@@ -159,7 +159,14 @@ export const updateColaborador = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureOwnership(supabaseAdmin, data.user_id, context.userId);
 
-    const patch: Record<string, unknown> = { full_name: data.full_name };
+    const patch: {
+      full_name: string;
+      can_edit_budgets?: boolean;
+      can_create_products?: boolean;
+      can_create_clients?: boolean;
+      can_delete_orders?: boolean;
+      max_discount_percent?: number;
+    } = { full_name: data.full_name };
     if (data.can_edit_budgets !== undefined) patch.can_edit_budgets = data.can_edit_budgets;
     if (data.can_create_products !== undefined) patch.can_create_products = data.can_create_products;
     if (data.can_create_clients !== undefined) patch.can_create_clients = data.can_create_clients;
