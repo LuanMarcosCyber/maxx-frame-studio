@@ -336,6 +336,8 @@ function Produtos() {
           frame_width_cm: isPerfil ? frameWidth : null,
           labor_cost: isPerfil ? laborCost : 0,
           commission_percentage: commission,
+          ncm: form.ncm.trim() || null,
+
         });
         if (error) throw error;
         toast.success("Produto cadastrado.");
