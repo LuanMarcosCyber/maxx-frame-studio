@@ -318,6 +318,8 @@ function Produtos() {
             frame_width_cm: isPerfil ? frameWidth : null,
             labor_cost: isPerfil ? laborCost : 0,
             commission_percentage: commission,
+            ncm: form.ncm.trim() || null,
+
           })
           .eq("id", editing.id);
         if (error) throw error;
