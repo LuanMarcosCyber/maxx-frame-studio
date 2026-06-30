@@ -36,7 +36,7 @@ export const listColaboradores = createServerFn({ method: "GET" })
 
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, username, created_at, active")
+      .select("id, full_name, username, created_at, active, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
       .eq("parent_user_id", context.userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
