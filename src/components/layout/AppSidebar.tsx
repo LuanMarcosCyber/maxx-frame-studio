@@ -55,15 +55,15 @@ function useSidebarData() {
   let bottomItems: Item[];
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, colaboradores, revendedores];
+    cadastroItems = [clientes, produtos, arquitetos, colaboradores, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
     mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos];
+    cadastroItems = [clientes, produtos, arquitetos];
     bottomItems = [conta];
   } else {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, colaboradores];
+    cadastroItems = [clientes, produtos, arquitetos, colaboradores];
     bottomItems = [conta, configuracoes];
   }
 
