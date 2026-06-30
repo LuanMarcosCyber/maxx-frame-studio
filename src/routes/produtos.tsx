@@ -683,7 +683,7 @@ function Produtos() {
                   placeholder="Descrição do produto"
                   value={form.description}
                   onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
+                    setForm({ ...form, description: e.target.value.toUpperCase() })
                   }
                 />
               </div>
