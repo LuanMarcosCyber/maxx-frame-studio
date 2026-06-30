@@ -792,6 +792,9 @@ function NovoOrcamento() {
   const [rtPercStr, setRtPercStr] = useState<string>("");
   const [vendedorNome, setVendedorNome] = useState<string>("");
   const [arquitetoNome, setArquitetoNome] = useState<string>("");
+  const [arquitetoId, setArquitetoId] = useState<string | null>(null);
+  const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
+  const [arquitetoSugestoesOpen, setArquitetoSugestoesOpen] = useState(false);
 
   const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
   const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
