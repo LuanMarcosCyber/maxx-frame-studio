@@ -295,6 +295,7 @@ export type Database = {
           id: string
           labor_cost: number
           name: string | null
+          ncm: string | null
           profit_margin: number
           supplier: string | null
           updated_at: string
@@ -313,6 +314,7 @@ export type Database = {
           id?: string
           labor_cost?: number
           name?: string | null
+          ncm?: string | null
           profit_margin?: number
           supplier?: string | null
           updated_at?: string
@@ -331,6 +333,7 @@ export type Database = {
           id?: string
           labor_cost?: number
           name?: string | null
+          ncm?: string | null
           profit_margin?: number
           supplier?: string | null
           updated_at?: string

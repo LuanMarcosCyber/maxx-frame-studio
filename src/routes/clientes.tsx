@@ -204,7 +204,7 @@ function Clientes() {
         .join(", ");
       setForm((f) => ({
         ...f,
-        name: name || f.name,
+        name: (name || f.name).toUpperCase(),
         cep: data.cep ? String(data.cep) : f.cep,
         address: addrParts || f.address,
         address_number: data.numero ? String(data.numero) : f.address_number,
@@ -454,9 +454,10 @@ function Clientes() {
               <Input
                 id="cli-name"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder={isPJ ? "Razão social / nome fantasia" : "Nome do cliente"}
+                onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+                placeholder={isPJ ? "RAZÃO SOCIAL / NOME FANTASIA" : "NOME DO CLIENTE"}
               />
+
             </div>
 
             <div className="space-y-1.5 sm:col-span-3">
@@ -543,8 +544,9 @@ function Clientes() {
                 id="cli-notes"
                 rows={3}
                 value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                onChange={(e) => setForm({ ...form, notes: e.target.value.toUpperCase() })}
               />
+
             </div>
           </div>
           <DialogFooter>

@@ -79,6 +79,7 @@ type Product = {
   supplier: string | null;
   labor_cost: number | null;
   commission_percentage: number | null;
+  ncm: string | null;
 };
 
 type FormState = {
@@ -93,6 +94,7 @@ type FormState = {
   supplier: string;
   labor_cost: string;
   commission_percentage: string;
+  ncm: string;
 };
 
 const emptyForm: FormState = {
@@ -107,7 +109,9 @@ const emptyForm: FormState = {
   supplier: "",
   labor_cost: "",
   commission_percentage: "",
+  ncm: "",
 };
+
 
 function Produtos() {
   const { session, user, role, profile } = useAuth();
@@ -138,7 +142,7 @@ function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, labor_cost, commission_percentage",
+          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, labor_cost, commission_percentage, ncm",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -190,7 +194,9 @@ function Produtos() {
         p.commission_percentage == null || Number(p.commission_percentage) === 0
           ? ""
           : String(p.commission_percentage).replace(".", ","),
+      ncm: p.ncm ?? "",
     });
+
     setDialogOpen(true);
   };
 
@@ -227,7 +233,9 @@ function Produtos() {
           barcode: form.barcode.trim() || null,
           supplier: form.supplier.trim() || null,
           commission_percentage: commission,
+          ncm: form.ncm.trim() || null,
         };
+
         if (editing) {
           const { error } = await supabase
             .from("products")
@@ -310,6 +318,8 @@ function Produtos() {
             frame_width_cm: isPerfil ? frameWidth : null,
             labor_cost: isPerfil ? laborCost : 0,
             commission_percentage: commission,
+            ncm: form.ncm.trim() || null,
+
           })
           .eq("id", editing.id);
         if (error) throw error;
@@ -326,6 +336,8 @@ function Produtos() {
           frame_width_cm: isPerfil ? frameWidth : null,
           labor_cost: isPerfil ? laborCost : 0,
           commission_percentage: commission,
+          ncm: form.ncm.trim() || null,
+
         });
         if (error) throw error;
         toast.success("Produto cadastrado.");
@@ -633,7 +645,8 @@ function Produtos() {
                   placeholder="Detalhes do produto (opcional)"
                   value={form.description}
                   onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
+                    setForm({ ...form, description: e.target.value.toUpperCase() })
+
                   }
                 />
               </div>
@@ -651,7 +664,17 @@ function Produtos() {
                   />
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label htmlFor="d-ncm">NCM</Label>
+                <Input
+                  id="d-ncm"
+                  placeholder="Opcional"
+                  value={form.ncm}
+                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                />
+              </div>
             </div>
+
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
@@ -670,7 +693,7 @@ function Produtos() {
                   placeholder="Descrição do produto"
                   value={form.description}
                   onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
+                    setForm({ ...form, description: e.target.value.toUpperCase() })
                   }
                 />
               </div>
@@ -754,7 +777,17 @@ function Produtos() {
                   />
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label htmlFor="ncm">NCM</Label>
+                <Input
+                  id="ncm"
+                  placeholder="Opcional"
+                  value={form.ncm}
+                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                />
+              </div>
             </div>
+
           )}
 
           <DialogFooter>

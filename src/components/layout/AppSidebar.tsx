@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -13,12 +13,15 @@ import {
   BarChart3,
   Pencil,
   Loader2,
+  FolderPlus,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getInitials, fileToAvatarDataUrl } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
 
 type Item = {
   title: string;
@@ -45,24 +48,29 @@ function useSidebarData() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
 
-  let items: Item[];
+  let mainItems: Item[];
+  let cadastroItems: Item[];
   let bottomItems: Item[];
   if (role === "admin") {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, revendedores, colaboradores];
+    mainItems = [dashboard, orcamentos, pedidos, relatorios];
+    cadastroItems = [clientes, produtos, colaboradores, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos];
+    mainItems = [dashboard, orcamentos, pedidos];
+    cadastroItems = [clientes, produtos];
     bottomItems = [conta];
   } else {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, colaboradores];
+    mainItems = [dashboard, orcamentos, pedidos, relatorios];
+    cadastroItems = [clientes, produtos, colaboradores];
     bottomItems = [conta, configuracoes];
   }
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  return { items, bottomItems, isActive, profile };
+  return { mainItems, cadastroItems, bottomItems, isActive, profile, pathname };
 }
+
 
 function ProfileAvatar() {
   const { user, profile, refreshProfile } = useAuth();
@@ -149,10 +157,16 @@ function ProfileAvatar() {
 }
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
-  const { items, bottomItems, isActive } = useSidebarData();
+  const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
   const { profile } = useAuth();
 
-  const renderLink = (item: Item) => {
+  const cadastroHasActive = cadastroItems.some((i) => isActive(i.url));
+  const [cadastroOpen, setCadastroOpen] = useState(cadastroHasActive);
+  useEffect(() => {
+    if (cadastroHasActive) setCadastroOpen(true);
+  }, [cadastroHasActive, pathname]);
+
+  const renderLink = (item: Item, indent = false) => {
     const active = isActive(item.url);
     return (
       <Link
@@ -161,6 +175,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
         onClick={onNavigate}
         className={cn(
           "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
+          indent && "pl-9",
           active
             ? "bg-gradient-brand text-brand-foreground shadow-brand"
             : "text-foreground/75 hover:bg-accent hover:text-foreground",
@@ -197,13 +212,40 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
         <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Principal
         </div>
-        {items.map(renderLink)}
+        {mainItems.map((i) => renderLink(i))}
+
+        <button
+          type="button"
+          onClick={() => setCadastroOpen((v) => !v)}
+          className={cn(
+            "mt-1 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
+            cadastroHasActive
+              ? "text-foreground"
+              : "text-foreground/75 hover:bg-accent hover:text-foreground",
+          )}
+          aria-expanded={cadastroOpen}
+        >
+          <FolderPlus className="h-4 w-4" />
+          <span className="flex-1 text-left">Cadastro</span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 transition-transform",
+              cadastroOpen && "rotate-180",
+            )}
+          />
+        </button>
+        {cadastroOpen && (
+          <div className="space-y-1">
+            {cadastroItems.map((i) => renderLink(i, true))}
+          </div>
+        )}
 
         <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Sistema
         </div>
-        {bottomItems.map(renderLink)}
+        {bottomItems.map((i) => renderLink(i))}
       </nav>
+
 
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 rounded-md bg-card border border-border p-3">

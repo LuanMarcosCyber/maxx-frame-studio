@@ -790,6 +790,9 @@ function NovoOrcamento() {
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [rtPercStr, setRtPercStr] = useState<string>("");
+  const [vendedorNome, setVendedorNome] = useState<string>("");
+  const [arquitetoNome, setArquitetoNome] = useState<string>("");
+
   const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
   const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
   const [discountAuthOpen, setDiscountAuthOpen] = useState(false);
@@ -1310,6 +1313,9 @@ function NovoOrcamento() {
             ? String(d.rtPercentual)
             : "",
       );
+      setVendedorNome(s("vendedorNome"));
+      setArquitetoNome(s("arquitetoNome"));
+
 
       // Load items
       const { data: itemRows } = await supabase
@@ -1473,7 +1479,10 @@ function NovoOrcamento() {
         valorSinalStr,
         valorSinal: Number(valorSinal.toFixed(2)),
         valorAReceber: Number(valorAReceber.toFixed(2)),
+        vendedorNome: vendedorNome.trim(),
+        arquitetoNome: arquitetoNome.trim(),
       };
+
 
       const budgetPayload = {
         client_name: clienteNome.trim(),
@@ -1750,6 +1759,144 @@ function NovoOrcamento() {
         {/* Content area */}
         <div id="step-content" className="space-y-6 scroll-mt-4">
 
+          {/* Identificação (Colaborador, Cliente, Arquiteto) */}
+          <Card className="p-5">
+            <div className="text-sm font-semibold text-foreground mb-3">
+              Identificação
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="top-colaborador">Colaborador</Label>
+                <Input
+                  id="top-colaborador"
+                  placeholder="Nome do vendedor"
+                  value={vendedorNome}
+                  autoComplete="off"
+                  onChange={(e) => setVendedorNome(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="top-cliente">Cliente</Label>
+                <Popover
+                  open={
+                    clienteSugestoesOpen &&
+                    !naoVincularCliente &&
+                    clienteNome.trim().length > 0 &&
+                    clientes.some((c) =>
+                      c.name.toLowerCase().includes(clienteNome.trim().toLowerCase()),
+                    )
+                  }
+                  onOpenChange={setClienteSugestoesOpen}
+                >
+                  <PopoverAnchor asChild>
+                    <div className="w-full">
+                      <Input
+                        id="top-cliente"
+                        placeholder="Nome do cliente"
+                        value={clienteNome}
+                        autoComplete="off"
+                        onFocus={() => {
+                          if (!naoVincularCliente && clienteNome.trim().length > 0) {
+                            setClienteSugestoesOpen(true);
+                          }
+                        }}
+                        onChange={(e) => {
+                          setClienteNome(e.target.value);
+                          if (clienteId) setClienteId(null);
+                          if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                        }}
+                      />
+                    </div>
+                  </PopoverAnchor>
+                  <PopoverContent
+                    className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
+                    align="start"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {clientes
+                            .filter((c) =>
+                              c.name
+                                .toLowerCase()
+                                .includes(clienteNome.trim().toLowerCase()),
+                            )
+                            .slice(0, 8)
+                            .map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={c.id}
+                                onSelect={() => {
+                                  setClienteId(c.id);
+                                  setClienteNome(c.name);
+                                  setClienteSugestoesOpen(false);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{c.name}</span>
+                                  {(c.phone || c.document) && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {[c.phone, c.document].filter(Boolean).join(" · ")}
+                                    </span>
+                                  )}
+                                </div>
+                                {clienteId === c.id && (
+                                  <Check className="ml-auto h-4 w-4" />
+                                )}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Checkbox
+                    id="top-nao-vincular-cliente"
+                    checked={naoVincularCliente}
+                    onCheckedChange={(v) => {
+                      const checked = v === true;
+                      setNaoVincularCliente(checked);
+                      if (checked) {
+                        setClienteId(null);
+                        setClienteSugestoesOpen(false);
+                      }
+                    }}
+                  />
+                  <Label
+                    htmlFor="top-nao-vincular-cliente"
+                    className="text-xs font-normal text-muted-foreground cursor-pointer"
+                  >
+                    Não vincular a cliente cadastrado
+                  </Label>
+                </div>
+
+                {clienteId && !naoVincularCliente && (
+                  <p className="text-xs text-muted-foreground">
+                    Cliente cadastrado vinculado a este orçamento.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="top-arquiteto">Arquiteto</Label>
+                <Input
+                  id="top-arquiteto"
+                  placeholder="Nome do arquiteto (opcional)"
+                  value={arquitetoNome}
+                  autoComplete="off"
+                  onChange={(e) => setArquitetoNome(e.target.value)}
+                />
+              </div>
+            </div>
+          </Card>
+
+
+
           {/* Totals header */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
@@ -1857,16 +2004,8 @@ function NovoOrcamento() {
                 </div>
               </div>
 
-              <div className="mt-8 max-w-xs space-y-1.5">
-                <Label htmlFor="rt-perc">Usar código interno (%)</Label>
-                <Input
-                  id="rt-perc"
-                  inputMode="decimal"
-                  placeholder="0"
-                  value={rtPercStr}
-                  onChange={(e) => setRtPercStr(e.target.value)}
-                />
-              </div>
+
+
 
             </Card>
           )}
@@ -2960,111 +3099,8 @@ function NovoOrcamento() {
 
                 {/* Campos finais */}
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cliente">Cliente</Label>
-                    <Popover
-                      open={
-                        clienteSugestoesOpen &&
-                        !naoVincularCliente &&
-                        clienteNome.trim().length > 0 &&
-                        clientes.some((c) =>
-                          c.name.toLowerCase().includes(clienteNome.trim().toLowerCase()),
-                        )
-                      }
-                      onOpenChange={setClienteSugestoesOpen}
-                    >
-                      <PopoverAnchor asChild>
-                        <div className="w-full">
-                          <Input
-                            id="cliente"
-                            placeholder="Nome do cliente"
-                            value={clienteNome}
-                            autoComplete="off"
-                            onFocus={() => {
-                              if (!naoVincularCliente && clienteNome.trim().length > 0) {
-                                setClienteSugestoesOpen(true);
-                              }
-                            }}
-                            onChange={(e) => {
-                              setClienteNome(e.target.value);
-                              if (clienteId) setClienteId(null);
-                              if (!naoVincularCliente) setClienteSugestoesOpen(true);
-                            }}
-                          />
-                        </div>
-                      </PopoverAnchor>
-                      <PopoverContent
-                        className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
-                        align="start"
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                      >
-                        <Command shouldFilter={false}>
-                          <CommandList>
-                            <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                            <CommandGroup>
-                              {clientes
-                                .filter((c) =>
-                                  c.name
-                                    .toLowerCase()
-                                    .includes(clienteNome.trim().toLowerCase()),
-                                )
-                                .slice(0, 8)
-                                .map((c) => (
-                                  <CommandItem
-                                    key={c.id}
-                                    value={c.id}
-                                    onSelect={() => {
-                                      setClienteId(c.id);
-                                      setClienteNome(c.name);
-                                      setClienteSugestoesOpen(false);
-                                    }}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{c.name}</span>
-                                      {(c.phone || c.document) && (
-                                        <span className="text-xs text-muted-foreground">
-                                          {[c.phone, c.document].filter(Boolean).join(" · ")}
-                                        </span>
-                                      )}
-                                    </div>
-                                    {clienteId === c.id && (
-                                      <Check className="ml-auto h-4 w-4" />
-                                    )}
-                                  </CommandItem>
-                                ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
 
-                    <div className="flex items-center gap-2 pt-1">
-                      <Checkbox
-                        id="nao-vincular-cliente"
-                        checked={naoVincularCliente}
-                        onCheckedChange={(v) => {
-                          const checked = v === true;
-                          setNaoVincularCliente(checked);
-                          if (checked) {
-                            setClienteId(null);
-                            setClienteSugestoesOpen(false);
-                          }
-                        }}
-                      />
-                      <Label
-                        htmlFor="nao-vincular-cliente"
-                        className="text-xs font-normal text-muted-foreground cursor-pointer"
-                      >
-                        Não vincular a nenhum cliente cadastrado
-                      </Label>
-                    </div>
 
-                    {clienteId && !naoVincularCliente && (
-                      <p className="text-xs text-muted-foreground">
-                        Cliente cadastrado vinculado a este orçamento.
-                      </p>
-                    )}
-                  </div>
 
 
 
