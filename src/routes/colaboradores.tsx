@@ -92,6 +92,27 @@ type Colab = {
   username: string | null;
   created_at: string;
   active: boolean;
+  can_edit_budgets: boolean;
+  can_create_products: boolean;
+  can_create_clients: boolean;
+  can_delete_orders: boolean;
+  max_discount_percent: number;
+};
+
+type Permissions = {
+  can_edit_budgets: boolean;
+  can_create_products: boolean;
+  can_create_clients: boolean;
+  can_delete_orders: boolean;
+  max_discount_percent: number;
+};
+
+const DEFAULT_PERMS: Permissions = {
+  can_edit_budgets: true,
+  can_create_products: true,
+  can_create_clients: true,
+  can_delete_orders: false,
+  max_discount_percent: 100,
 };
 
 function Content() {
