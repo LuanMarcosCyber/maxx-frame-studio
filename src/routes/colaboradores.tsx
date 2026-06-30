@@ -412,6 +412,7 @@ function CreateDialog({
               placeholder="Mínimo 6 caracteres"
             />
           </div>
+          <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
               type="submit"
