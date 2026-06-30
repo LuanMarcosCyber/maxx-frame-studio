@@ -544,8 +544,9 @@ function Clientes() {
                 id="cli-notes"
                 rows={3}
                 value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                onChange={(e) => setForm({ ...form, notes: e.target.value.toUpperCase() })}
               />
+
             </div>
           </div>
           <DialogFooter>
