@@ -1339,7 +1339,7 @@ function NovoOrcamento() {
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
 
-  async function handleSalvar(opts: { approve?: boolean } = {}) {
+  async function handleSalvar(opts: { approve?: boolean; skipDiscountCheck?: boolean } = {}) {
     const approve = !!opts.approve;
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
