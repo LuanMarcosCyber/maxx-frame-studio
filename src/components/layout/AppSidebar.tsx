@@ -15,6 +15,7 @@ import {
   Loader2,
   FolderPlus,
   ChevronDown,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getInitials, fileToAvatarDataUrl } from "@/lib/avatar";
