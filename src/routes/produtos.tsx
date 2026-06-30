@@ -777,7 +777,17 @@ function Produtos() {
                   />
                 </div>
               )}
+              <div className="space-y-1.5">
+                <Label htmlFor="ncm">NCM</Label>
+                <Input
+                  id="ncm"
+                  placeholder="Opcional"
+                  value={form.ncm}
+                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                />
+              </div>
             </div>
+
           )}
 
           <DialogFooter>
