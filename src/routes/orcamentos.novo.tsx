@@ -1502,6 +1502,8 @@ function NovoOrcamento() {
         valorAReceber: Number(valorAReceber.toFixed(2)),
         vendedorNome: vendedorNome.trim(),
         arquitetoNome: arquitetoNome.trim(),
+        arquitetoId: arquitetoId,
+        arquitetoPercentual: arquitetoId ? Number(arquitetoPerc.toFixed(2)) : 0,
       };
 
 
