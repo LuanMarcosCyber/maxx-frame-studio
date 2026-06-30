@@ -79,6 +79,7 @@ type Product = {
   supplier: string | null;
   labor_cost: number | null;
   commission_percentage: number | null;
+  ncm: string | null;
 };
 
 type FormState = {
@@ -93,6 +94,7 @@ type FormState = {
   supplier: string;
   labor_cost: string;
   commission_percentage: string;
+  ncm: string;
 };
 
 const emptyForm: FormState = {
@@ -107,7 +109,9 @@ const emptyForm: FormState = {
   supplier: "",
   labor_cost: "",
   commission_percentage: "",
+  ncm: "",
 };
+
 
 function Produtos() {
   const { session, user, role, profile } = useAuth();
