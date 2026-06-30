@@ -300,13 +300,16 @@ function Clientes() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            onClick={openCreate}
-            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
-          </Button>
+          {canCreateClients && (
+            <Button
+              onClick={openCreate}
+              className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
+            </Button>
+          )}
         </div>
+
 
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
