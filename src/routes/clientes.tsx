@@ -94,7 +94,8 @@ const customerTypeLabel = (t: string) =>
 const onlyDigits = (s: string) => (s || "").replace(/\D+/g, "");
 
 function Clientes() {
-  const { session, ownerUserId } = useAuth();
+  const { session, ownerUserId, role, profile } = useAuth();
+  const canCreateClients = role !== "colaborador" || !!profile?.can_create_clients;
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -299,13 +300,16 @@ function Clientes() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            onClick={openCreate}
-            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
-          </Button>
+          {canCreateClients && (
+            <Button
+              onClick={openCreate}
+              className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
+            </Button>
+          )}
         </div>
+
 
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">

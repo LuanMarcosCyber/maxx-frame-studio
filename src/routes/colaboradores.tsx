@@ -92,6 +92,27 @@ type Colab = {
   username: string | null;
   created_at: string;
   active: boolean;
+  can_edit_budgets: boolean;
+  can_create_products: boolean;
+  can_create_clients: boolean;
+  can_delete_orders: boolean;
+  max_discount_percent: number;
+};
+
+type Permissions = {
+  can_edit_budgets: boolean;
+  can_create_products: boolean;
+  can_create_clients: boolean;
+  can_delete_orders: boolean;
+  max_discount_percent: number;
+};
+
+const DEFAULT_PERMS: Permissions = {
+  can_edit_budgets: true,
+  can_create_products: true,
+  can_create_clients: true,
+  can_delete_orders: false,
+  max_discount_percent: 100,
 };
 
 function Content() {
@@ -115,8 +136,17 @@ function Content() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["colaboradores"] });
 
   const createMut = useMutation({
-    mutationFn: (data: { full_name: string; username: string; password: string }) =>
-      create({ data }),
+    mutationFn: async (
+      data: { full_name: string; username: string; password: string } & Permissions,
+    ) => {
+      const { full_name, username, password, ...perms } = data;
+      const created = await create({ data: { full_name, username, password } });
+      const newId = (created as { id?: string } | undefined)?.id;
+      if (newId) {
+        await update({ data: { user_id: newId, full_name, ...perms } });
+      }
+      return created;
+    },
     onSuccess: () => {
       toast.success("Colaborador criado.");
       invalidate();
@@ -143,7 +173,8 @@ function Content() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: { user_id: string; full_name: string }) => update({ data }),
+    mutationFn: (data: { user_id: string; full_name: string } & Partial<Permissions>) =>
+      update({ data }),
     onSuccess: () => {
       toast.success("Colaborador atualizado.");
       setEditTarget(null);
@@ -274,8 +305,10 @@ function Content() {
       <EditDialog
         target={editTarget}
         onOpenChange={(o) => !o && setEditTarget(null)}
-        onSubmit={(name) =>
-          editTarget ? updateMut.mutateAsync({ user_id: editTarget.id, full_name: name }) : undefined
+        onSubmit={(name, perms) =>
+          editTarget
+            ? updateMut.mutateAsync({ user_id: editTarget.id, full_name: name, ...perms })
+            : undefined
         }
         submitting={updateMut.isPending}
       />
@@ -312,26 +345,29 @@ function CreateDialog({
   onSubmit,
   submitting,
 }: {
-  onSubmit: (d: { full_name: string; username: string; password: string }) => Promise<unknown>;
+  onSubmit: (d: { full_name: string; username: string; password: string } & Permissions) => Promise<unknown>;
   submitting: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit({ full_name: fullName, username, password });
+      await onSubmit({ full_name: fullName, username, password, ...perms });
       setOpen(false);
       setFullName("");
       setUsername("");
       setPassword("");
+      setPerms(DEFAULT_PERMS);
     } catch {
       // toast handled
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -340,7 +376,7 @@ function CreateDialog({
           <UserPlus className="h-4 w-4 mr-2" /> Novo colaborador
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo colaborador</DialogTitle>
           <DialogDescription>
@@ -385,6 +421,7 @@ function CreateDialog({
               placeholder="Mínimo 6 caracteres"
             />
           </div>
+          <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
               type="submit"
@@ -463,6 +500,61 @@ function ResetDialog({
   );
 }
 
+function PermissionsFields({
+  perms,
+  setPerms,
+}: {
+  perms: Permissions;
+  setPerms: (p: Permissions) => void;
+}) {
+  const row = (
+    label: string,
+    key: keyof Omit<Permissions, "max_discount_percent">,
+  ) => (
+    <div className="flex items-center justify-between py-1">
+      <Label htmlFor={`perm_${key}`} className="text-sm font-normal">
+        {label}
+      </Label>
+      <Switch
+        id={`perm_${key}`}
+        checked={perms[key]}
+        onCheckedChange={(v) => setPerms({ ...perms, [key]: v })}
+      />
+    </div>
+  );
+  return (
+    <div className="space-y-2 rounded-md border p-3">
+      <p className="text-sm font-semibold">Permissões</p>
+      {row("Editar orçamentos", "can_edit_budgets")}
+      {row("Cadastrar produtos", "can_create_products")}
+      {row("Cadastrar clientes", "can_create_clients")}
+      {row("Excluir pedidos", "can_delete_orders")}
+      <div className="space-y-1 pt-2 border-t">
+        <Label htmlFor="max_discount" className="text-sm">
+          Máximo de desconto permitido (%)
+        </Label>
+        <Input
+          id="max_discount"
+          type="number"
+          min={0}
+          max={100}
+          step="0.01"
+          value={perms.max_discount_percent}
+          onChange={(e) =>
+            setPerms({
+              ...perms,
+              max_discount_percent: Math.max(
+                0,
+                Math.min(100, Number(e.target.value) || 0),
+              ),
+            })
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
 function EditDialog({
   target,
   onOpenChange,
@@ -471,19 +563,31 @@ function EditDialog({
 }: {
   target: Colab | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string) => Promise<unknown> | undefined;
+  onSubmit: (name: string, perms: Permissions) => Promise<unknown> | undefined;
   submitting: boolean;
 }) {
   const [name, setName] = useState("");
+  const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
 
   useEffect(() => {
     setName(target?.full_name ?? "");
+    if (target) {
+      setPerms({
+        can_edit_budgets: target.can_edit_budgets,
+        can_create_products: target.can_create_products,
+        can_create_clients: target.can_create_clients,
+        can_delete_orders: target.can_delete_orders,
+        max_discount_percent: target.max_discount_percent,
+      });
+    } else {
+      setPerms(DEFAULT_PERMS);
+    }
   }, [target]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(name);
+      await onSubmit(name, perms);
     } catch {
       // toast handled
     }
@@ -491,11 +595,12 @@ function EditDialog({
 
   return (
     <Dialog open={!!target} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar colaborador</DialogTitle>
           <DialogDescription>
-            Atualize o nome do colaborador <span className="font-mono">{target?.username}</span>.
+            Atualize o nome e as permissões de{" "}
+            <span className="font-mono">{target?.username}</span>.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
@@ -508,6 +613,7 @@ function EditDialog({
               required
             />
           </div>
+          <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
               type="submit"

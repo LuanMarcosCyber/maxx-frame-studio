@@ -102,8 +102,9 @@ function collaboratorLabel(row: { user_id: string; created_by: string | null }, 
 }
 
 function Pedidos() {
-  const { session, role } = useAuth();
+  const { session, role, profile } = useAuth();
   const showCollaborator = role !== "colaborador";
+  const canDelete = role !== "colaborador" || !!profile?.can_delete_orders;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { view: viewParam } = Route.useSearch();
@@ -246,17 +247,20 @@ function Pedidos() {
         <span className="text-sm font-medium">Mudar estado</span>
         <span className="text-[10px] opacity-80">Status atual: {viewing.status}</span>
       </Button>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => setDeleteOpen(true)}
-        className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 className="h-5 w-5" />
-        <span className="text-sm font-medium">Excluir pedido</span>
-      </Button>
+      {canDelete && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setDeleteOpen(true)}
+          className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="h-5 w-5" />
+          <span className="text-sm font-medium">Excluir pedido</span>
+        </Button>
+      )}
     </div>
   ) : null;
+
 
   return (
     <AppShell title="Pedidos" subtitle="Acompanhe o status dos seus pedidos">
@@ -420,16 +424,18 @@ function Pedidos() {
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Mudar estado
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => {
-                              setViewing(o);
-                              setDeleteOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir pedido
-                          </DropdownMenuItem>
+                          {canDelete && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => {
+                                setViewing(o);
+                                setDeleteOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir pedido
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>

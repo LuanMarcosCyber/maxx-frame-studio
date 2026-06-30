@@ -623,7 +623,9 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
 
 function NovoOrcamento() {
   const navigate = useNavigate();
-  const { session, ownerUserId } = useAuth();
+  const { session, ownerUserId, role, profile } = useAuth();
+  const maxDiscount = profile?.max_discount_percent ?? 100;
+  const isColaborador = role === "colaborador";
   const queryClient = useQueryClient();
   const { id: editId } = Route.useSearch();
   const isEdit = !!editId;
@@ -790,6 +792,8 @@ function NovoOrcamento() {
   const [rtPercStr, setRtPercStr] = useState<string>("");
   const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
   const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
+  const [discountAuthOpen, setDiscountAuthOpen] = useState(false);
+  const [requestingAuth, setRequestingAuth] = useState(false);
 
 
   const { data: perfis = [], isLoading: loadingPerfis } = useCategoryProducts(
@@ -1335,7 +1339,7 @@ function NovoOrcamento() {
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
 
-  async function handleSalvar(opts: { approve?: boolean } = {}) {
+  async function handleSalvar(opts: { approve?: boolean; skipDiscountCheck?: boolean } = {}) {
     const approve = !!opts.approve;
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
@@ -1352,6 +1356,28 @@ function NovoOrcamento() {
     if (valorTotal <= 0) {
       toast.error("Valor total inválido. Verifique os itens do orçamento.");
       return;
+    }
+
+    // Collaborator discount limit
+    if (isColaborador && !opts.skipDiscountCheck && descontoPercNum > maxDiscount + 0.001) {
+      let approved = false;
+      if (isEdit && editId) {
+        const { data: req } = await supabase
+          .from("discount_approval_requests")
+          .select("requested_percent, status")
+          .eq("budget_id", editId)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (req && Number(req.requested_percent) + 0.001 >= descontoPercNum) {
+          approved = true;
+        }
+      }
+      if (!approved) {
+        setDiscountAuthOpen(true);
+        return;
+      }
     }
 
     // Validate parcelas sum if forma parcelável + condição parcelado
@@ -1549,6 +1575,12 @@ function NovoOrcamento() {
         }
       }
 
+      if (opts.skipDiscountCheck && !approve) {
+        // Silent save for discount authorization request flow
+        await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+        return { budgetId, budgetNumber } as { budgetId: string; budgetNumber: string | null };
+      }
+
       toast.success(
         approve
           ? "Orçamento aprovado e pedido gerado!"
@@ -1569,6 +1601,34 @@ function NovoOrcamento() {
     } finally {
       setSalvando(false);
       setAprovando(false);
+    }
+  }
+
+  async function requestDiscountAuthorization() {
+    if (!session?.user?.id || !ownerUserId) return;
+    setRequestingAuth(true);
+    try {
+      const result = await handleSalvar({ skipDiscountCheck: true });
+      if (!result || !result.budgetId) {
+        throw new Error("Falha ao salvar orçamento.");
+      }
+      const { error } = await supabase.from("discount_approval_requests").insert({
+        owner_user_id: ownerUserId,
+        requested_by: session.user.id,
+        budget_id: result.budgetId,
+        budget_number: result.budgetNumber,
+        requested_percent: Number(descontoPercNum.toFixed(2)),
+        status: "pending",
+      });
+      if (error) throw error;
+      toast.success("Solicitação enviada ao administrador.");
+      setDiscountAuthOpen(false);
+      navigate({ to: "/orcamentos" });
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível enviar a solicitação.");
+    } finally {
+      setRequestingAuth(false);
     }
   }
 
@@ -3399,6 +3459,31 @@ function NovoOrcamento() {
         </div>
 
       </div>
+
+      <AlertDialog open={discountAuthOpen} onOpenChange={setDiscountAuthOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desconto acima do permitido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Seu limite de desconto é de {maxDiscount}%. Deseja solicitar autorização
+              ao administrador para aplicar {descontoPercNum.toFixed(2)}%?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={requestingAuth}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={requestingAuth}
+              onClick={(e) => {
+                e.preventDefault();
+                requestDiscountAuthorization();
+              }}
+              className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+            >
+              {requestingAuth ? "Enviando..." : "Solicitar autorização"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent>

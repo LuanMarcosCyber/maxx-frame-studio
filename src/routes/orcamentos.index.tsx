@@ -72,8 +72,9 @@ function collaboratorLabel(row: { user_id: string; created_by: string | null }, 
 }
 
 function Orcamentos() {
-  const { session, ownerUserId, role } = useAuth();
+  const { session, ownerUserId, role, profile } = useAuth();
   const showCollaborator = role !== "colaborador";
+  const canEditBudgets = role !== "colaborador" || !!profile?.can_edit_budgets;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { view: viewParam } = Route.useSearch();
@@ -368,16 +369,18 @@ function Orcamentos() {
                             <DropdownMenuItem onClick={() => setViewing(b)}>
                               <Eye className="h-4 w-4 mr-2" /> Visualizar
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate({
-                                  to: "/orcamentos/novo",
-                                  search: { id: b.id },
-                                })
-                              }
-                            >
-                              <Pencil className="h-4 w-4 mr-2" /> Editar
-                            </DropdownMenuItem>
+                            {canEditBudgets && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  navigate({
+                                    to: "/orcamentos/novo",
+                                    search: { id: b.id },
+                                  })
+                                }
+                              >
+                                <Pencil className="h-4 w-4 mr-2" /> Editar
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => setPrintingFor(b)}>
                               <Printer className="h-4 w-4 mr-2" /> Imprimir
                             </DropdownMenuItem>

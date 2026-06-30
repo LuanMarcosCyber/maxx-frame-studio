@@ -165,6 +165,56 @@ export type Database = {
         }
         Relationships: []
       }
+      discount_approval_requests: {
+        Row: {
+          budget_id: string | null
+          budget_number: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          owner_user_id: string
+          requested_by: string
+          requested_percent: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget_id?: string | null
+          budget_number?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          owner_user_id: string
+          requested_by: string
+          requested_percent: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string | null
+          budget_number?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          owner_user_id?: string
+          requested_by?: string
+          requested_percent?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_approval_requests_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       number_counters: {
         Row: {
           kind: string
@@ -295,11 +345,16 @@ export type Database = {
           active: boolean
           address: string | null
           avatar_url: string | null
+          can_create_clients: boolean
+          can_create_products: boolean
+          can_delete_orders: boolean
+          can_edit_budgets: boolean
           created_at: string
           document: string | null
           email: string | null
           full_name: string | null
           id: string
+          max_discount_percent: number
           parent_user_id: string | null
           phone: string | null
           store_name: string | null
@@ -310,11 +365,16 @@ export type Database = {
           active?: boolean
           address?: string | null
           avatar_url?: string | null
+          can_create_clients?: boolean
+          can_create_products?: boolean
+          can_delete_orders?: boolean
+          can_edit_budgets?: boolean
           created_at?: string
           document?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          max_discount_percent?: number
           parent_user_id?: string | null
           phone?: string | null
           store_name?: string | null
@@ -325,11 +385,16 @@ export type Database = {
           active?: boolean
           address?: string | null
           avatar_url?: string | null
+          can_create_clients?: boolean
+          can_create_products?: boolean
+          can_delete_orders?: boolean
+          can_edit_budgets?: boolean
           created_at?: string
           document?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          max_discount_percent?: number
           parent_user_id?: string | null
           phone?: string | null
           store_name?: string | null
