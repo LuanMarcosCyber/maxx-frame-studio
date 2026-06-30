@@ -296,8 +296,10 @@ function Content() {
       <EditDialog
         target={editTarget}
         onOpenChange={(o) => !o && setEditTarget(null)}
-        onSubmit={(name) =>
-          editTarget ? updateMut.mutateAsync({ user_id: editTarget.id, full_name: name }) : undefined
+        onSubmit={(name, perms) =>
+          editTarget
+            ? updateMut.mutateAsync({ user_id: editTarget.id, full_name: name, ...perms })
+            : undefined
         }
         submitting={updateMut.isPending}
       />
