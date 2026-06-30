@@ -454,9 +454,10 @@ function Clientes() {
               <Input
                 id="cli-name"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder={isPJ ? "Razão social / nome fantasia" : "Nome do cliente"}
+                onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+                placeholder={isPJ ? "RAZÃO SOCIAL / NOME FANTASIA" : "NOME DO CLIENTE"}
               />
+
             </div>
 
             <div className="space-y-1.5 sm:col-span-3">
