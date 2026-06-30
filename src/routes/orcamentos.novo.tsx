@@ -623,7 +623,9 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
 
 function NovoOrcamento() {
   const navigate = useNavigate();
-  const { session, ownerUserId } = useAuth();
+  const { session, ownerUserId, role, profile } = useAuth();
+  const maxDiscount = profile?.max_discount_percent ?? 100;
+  const isColaborador = role === "colaborador";
   const queryClient = useQueryClient();
   const { id: editId } = Route.useSearch();
   const isEdit = !!editId;
