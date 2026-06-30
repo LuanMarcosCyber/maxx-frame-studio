@@ -144,6 +144,11 @@ export const toggleColaboradorActive = createServerFn({ method: "POST" })
 const updateSchema = z.object({
   user_id: z.string().uuid(),
   full_name: z.string().min(1).max(120),
+  can_edit_budgets: z.boolean().optional(),
+  can_create_products: z.boolean().optional(),
+  can_create_clients: z.boolean().optional(),
+  can_delete_orders: z.boolean().optional(),
+  max_discount_percent: z.number().min(0).max(100).optional(),
 });
 
 export const updateColaborador = createServerFn({ method: "POST" })
@@ -154,9 +159,16 @@ export const updateColaborador = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureOwnership(supabaseAdmin, data.user_id, context.userId);
 
+    const patch: Record<string, unknown> = { full_name: data.full_name };
+    if (data.can_edit_budgets !== undefined) patch.can_edit_budgets = data.can_edit_budgets;
+    if (data.can_create_products !== undefined) patch.can_create_products = data.can_create_products;
+    if (data.can_create_clients !== undefined) patch.can_create_clients = data.can_create_clients;
+    if (data.can_delete_orders !== undefined) patch.can_delete_orders = data.can_delete_orders;
+    if (data.max_discount_percent !== undefined) patch.max_discount_percent = data.max_discount_percent;
+
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update({ full_name: data.full_name })
+      .update(patch)
       .eq("id", data.user_id);
     if (error) throw new Error(error.message);
     return { ok: true };
