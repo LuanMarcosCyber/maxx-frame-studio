@@ -845,6 +845,20 @@ function NovoOrcamento() {
     },
   });
 
+  // Lista de arquitetos da loja (dono / colaboradores via RLS)
+  const { data: arquitetos = [] } = useQuery({
+    queryKey: ["architects", "picker"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("architects")
+        .select("id, name, phone, percentage")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
   // Resolve products for an arbitrary snapshot (used for non-active items)
   function resolveProducts(snap: ItemSnapshot) {
