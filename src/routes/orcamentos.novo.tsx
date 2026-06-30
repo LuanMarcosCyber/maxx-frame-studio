@@ -3460,6 +3460,31 @@ function NovoOrcamento() {
 
       </div>
 
+      <AlertDialog open={discountAuthOpen} onOpenChange={setDiscountAuthOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desconto acima do permitido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Seu limite de desconto é de {maxDiscount}%. Deseja solicitar autorização
+              ao administrador para aplicar {descontoPercNum.toFixed(2)}%?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={requestingAuth}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={requestingAuth}
+              onClick={(e) => {
+                e.preventDefault();
+                requestDiscountAuthorization();
+              }}
+              className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+            >
+              {requestingAuth ? "Enviando..." : "Solicitar autorização"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
