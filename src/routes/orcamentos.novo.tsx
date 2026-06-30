@@ -1575,6 +1575,12 @@ function NovoOrcamento() {
         }
       }
 
+      if (opts.skipDiscountCheck && !approve) {
+        // Silent save for discount authorization request flow
+        await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+        return { budgetId, budgetNumber } as { budgetId: string; budgetNumber: string | null };
+      }
+
       toast.success(
         approve
           ? "Orçamento aprovado e pedido gerado!"
@@ -1595,6 +1601,34 @@ function NovoOrcamento() {
     } finally {
       setSalvando(false);
       setAprovando(false);
+    }
+  }
+
+  async function requestDiscountAuthorization() {
+    if (!session?.user?.id || !ownerUserId) return;
+    setRequestingAuth(true);
+    try {
+      const result = await handleSalvar({ skipDiscountCheck: true });
+      if (!result || !result.budgetId) {
+        throw new Error("Falha ao salvar orçamento.");
+      }
+      const { error } = await supabase.from("discount_approval_requests").insert({
+        owner_user_id: ownerUserId,
+        requested_by: session.user.id,
+        budget_id: result.budgetId,
+        budget_number: result.budgetNumber,
+        requested_percent: Number(descontoPercNum.toFixed(2)),
+        status: "pending",
+      });
+      if (error) throw error;
+      toast.success("Solicitação enviada ao administrador.");
+      setDiscountAuthOpen(false);
+      navigate({ to: "/orcamentos" });
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível enviar a solicitação.");
+    } finally {
+      setRequestingAuth(false);
     }
   }
 
