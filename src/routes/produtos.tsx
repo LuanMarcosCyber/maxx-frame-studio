@@ -194,7 +194,9 @@ function Produtos() {
         p.commission_percentage == null || Number(p.commission_percentage) === 0
           ? ""
           : String(p.commission_percentage).replace(".", ","),
+      ncm: p.ncm ?? "",
     });
+
     setDialogOpen(true);
   };
 
