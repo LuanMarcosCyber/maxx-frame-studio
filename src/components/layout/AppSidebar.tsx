@@ -48,24 +48,29 @@ function useSidebarData() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
 
-  let items: Item[];
+  let mainItems: Item[];
+  let cadastroItems: Item[];
   let bottomItems: Item[];
   if (role === "admin") {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, revendedores, colaboradores];
+    mainItems = [dashboard, orcamentos, pedidos, relatorios];
+    cadastroItems = [clientes, produtos, colaboradores, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos];
+    mainItems = [dashboard, orcamentos, pedidos];
+    cadastroItems = [clientes, produtos];
     bottomItems = [conta];
   } else {
-    items = [dashboard, orcamentos, pedidos, clientes, produtos, relatorios, colaboradores];
+    mainItems = [dashboard, orcamentos, pedidos, relatorios];
+    cadastroItems = [clientes, produtos, colaboradores];
     bottomItems = [conta, configuracoes];
   }
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  return { items, bottomItems, isActive, profile };
+  return { mainItems, cadastroItems, bottomItems, isActive, profile, pathname };
 }
+
 
 function ProfileAvatar() {
   const { user, profile, refreshProfile } = useAuth();
