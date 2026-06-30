@@ -204,7 +204,7 @@ function Clientes() {
         .join(", ");
       setForm((f) => ({
         ...f,
-        name: name || f.name,
+        name: (name || f.name).toUpperCase(),
         cep: data.cep ? String(data.cep) : f.cep,
         address: addrParts || f.address,
         address_number: data.numero ? String(data.numero) : f.address_number,
