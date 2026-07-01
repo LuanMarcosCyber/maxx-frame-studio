@@ -516,7 +516,15 @@ function Produtos() {
                   ) : (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
                       <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
-                      <td className="py-3.5 px-3">{p.description}</td>
+                      <td
+                        className="py-3.5 px-3 max-w-[280px] truncate"
+                        title={p.description}
+                      >
+                        {p.description}
+                      </td>
+                      <td className="py-3.5 px-3 text-muted-foreground font-mono text-xs">
+                        {p.ncm ?? "—"}
+                      </td>
                       {activeCategory === "Perfil" && (
                         <td className="py-3.5 px-3 text-muted-foreground">
                           {p.frame_width_cm == null
