@@ -442,6 +442,7 @@ function Produtos() {
                   <>
                     <th className="font-medium py-3 px-6">Código</th>
                     <th className="font-medium py-3 px-3">Descrição</th>
+                    <th className="font-medium py-3 px-3">NCM</th>
                     {activeCategory === "Perfil" && (
                       <th className="font-medium py-3 px-3">Largura</th>
                     )}
