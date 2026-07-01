@@ -19,15 +19,37 @@ import { listActiveOperators, validateOperatorPin } from "@/lib/colaboradores.fu
 
 type Op = { id: string; full_name: string; username: string | null; has_pin: boolean };
 
-export function OperatorSwitcher() {
+export type OperatorSwitcherProps = {
+  /** Controlled open state (optional). When provided, the internal trigger is hidden by default. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the header trigger button. Useful when opened externally. */
+  hideTrigger?: boolean;
+  /** Called after an operator is successfully activated via PIN. */
+  onSwitched?: (op: Op) => void;
+};
+
+export function OperatorSwitcher({
+  open: openProp,
+  onOpenChange,
+  hideTrigger,
+  onSwitched,
+}: OperatorSwitcherProps = {}) {
   const { activeOperator, setActiveOperator } = useOperator();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? !!openProp : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v);
+    onOpenChange?.(v);
+  };
   const [step, setStep] = useState<"choose" | "pin">("choose");
   const [selected, setSelected] = useState<Op | null>(null);
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const list = useServerFn(listActiveOperators);
+
   const validate = useServerFn(validateOperatorPin);
 
   const { data: operators = [], isLoading } = useQuery<Op[]>({
