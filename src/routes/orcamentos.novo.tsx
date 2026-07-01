@@ -1873,15 +1873,72 @@ function NovoOrcamento() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="top-colaborador">Colaborador</Label>
-                <Input
-                  id="top-colaborador"
-                  placeholder="Nome do colaborador"
-                  value={vendedorNome}
-                  autoComplete="off"
-                  onChange={(e) => setVendedorNome(e.target.value)}
-                />
-
+                <Popover
+                  open={
+                    colabSugestoesOpen &&
+                    vendedorNome.trim().length > 0 &&
+                    operatorList.some((o) =>
+                      o.full_name.toLowerCase().includes(vendedorNome.trim().toLowerCase()),
+                    )
+                  }
+                  onOpenChange={setColabSugestoesOpen}
+                >
+                  <PopoverAnchor asChild>
+                    <div className="w-full">
+                      <Input
+                        id="top-colaborador"
+                        placeholder="Nome do colaborador"
+                        value={vendedorNome}
+                        autoComplete="off"
+                        onFocus={() => {
+                          if (vendedorNome.trim().length > 0) setColabSugestoesOpen(true);
+                        }}
+                        onChange={(e) => {
+                          setVendedorNome(e.target.value);
+                          setColabSugestoesOpen(true);
+                        }}
+                      />
+                    </div>
+                  </PopoverAnchor>
+                  <PopoverContent
+                    className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
+                    align="start"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandEmpty>Nenhum colaborador encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {operatorList
+                            .filter((o) =>
+                              o.full_name
+                                .toLowerCase()
+                                .includes(vendedorNome.trim().toLowerCase()),
+                            )
+                            .slice(0, 8)
+                            .map((o) => (
+                              <CommandItem
+                                key={o.id}
+                                value={o.id}
+                                onSelect={() => handleSelectOperator(o)}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{o.full_name}</span>
+                                  {o.username && (
+                                    <span className="text-[11px] text-muted-foreground font-mono">
+                                      @{o.username}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
+
 
               <div className="space-y-1.5">
                 <Label htmlFor="top-cliente">Cliente</Label>
