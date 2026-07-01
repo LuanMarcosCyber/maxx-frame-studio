@@ -74,7 +74,9 @@ export function OperatorSwitcher({
       const result = await validate({ data: { operator_id: selected.id, pin } });
       setActiveOperator(result as never);
       toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
+      onSwitched?.(result as Op);
       setOpen(false);
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "PIN incorreto.");
     } finally {
