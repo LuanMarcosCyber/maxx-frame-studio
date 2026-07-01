@@ -3901,7 +3901,59 @@ function NovoOrcamento() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Trocar operador via campo Colaborador */}
+      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mudar operador?</DialogTitle>
+            <DialogDescription>
+              Você está alterando o operador do orçamento de{" "}
+              <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
+              <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar, informe o PIN
+              de {pendingOperator?.full_name ?? ""}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={confirmOperatorPin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="switch_op_pin">
+                PIN de {pendingOperator?.full_name ?? ""}
+              </Label>
+              <Input
+                id="switch_op_pin"
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={pinValue}
+                onChange={(e) => setPinValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                pattern="\d{4,6}"
+                minLength={4}
+                maxLength={6}
+                placeholder="••••"
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPinDialogOpen(false)}
+              >
+                Voltar
+              </Button>
+              <Button
+                type="submit"
+                disabled={pinSubmitting || pinValue.length < 4}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+              >
+                {pinSubmitting ? "Validando..." : "Confirmar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppShell>
+
 
   );
 }
