@@ -802,6 +802,12 @@ function NovoOrcamento() {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinValue, setPinValue] = useState("");
   const [pinSubmitting, setPinSubmitting] = useState(false);
+  // True once the operator identity was confirmed (via PIN switch or existing budget load).
+  const [operatorConfirmed, setOperatorConfirmed] = useState(false);
+  // Pending save opts, used to resume handleSalvar after PIN confirm at save time.
+  const [pendingSaveOpts, setPendingSaveOpts] = useState<
+    { approve?: boolean; skipDiscountCheck?: boolean } | null
+  >(null);
 
   const listOperatorsFn = useServerFn(listActiveOperators);
   const validateOperatorPinFn = useServerFn(validateOperatorPin);
