@@ -858,10 +858,19 @@ function NovoOrcamento() {
       });
       setActiveOperator(result as never);
       setVendedorNome((result as { full_name: string }).full_name);
+      setOperatorConfirmed(true);
       toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
       setPinDialogOpen(false);
       setPendingOperator(null);
       setPinValue("");
+      // Resume pending save (PIN was requested at save time).
+      const resume = pendingSaveOpts;
+      setPendingSaveOpts(null);
+      if (resume) {
+        setTimeout(() => {
+          void handleSalvar(resume);
+        }, 0);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "PIN incorreto.");
     } finally {
