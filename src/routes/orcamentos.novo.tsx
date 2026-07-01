@@ -3219,6 +3219,106 @@ function NovoOrcamento() {
                 )}
               </div>
 
+              {tipoEntrega === "Transportadora" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 max-w-2xl">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="transportadora">Transportadora</Label>
+                    <Popover
+                      open={
+                        transportadoraSugestoesOpen &&
+                        transportadoras.some((t) =>
+                          t.name
+                            .toLowerCase()
+                            .includes(transportadoraNome.trim().toLowerCase()),
+                        )
+                      }
+                      onOpenChange={setTransportadoraSugestoesOpen}
+                    >
+                      <PopoverAnchor asChild>
+                        <div className="w-full">
+                          <Input
+                            id="transportadora"
+                            placeholder="Buscar transportadora cadastrada"
+                            value={transportadoraNome}
+                            autoComplete="off"
+                            onFocus={() => setTransportadoraSugestoesOpen(true)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setTransportadoraNome(v);
+                              if (transportadoraId) setTransportadoraId(null);
+                              setTransportadoraSugestoesOpen(true);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter") return;
+                              e.preventDefault();
+                              if (transportadoraId) return;
+                              const q = transportadoraNome.trim().toLowerCase();
+                              if (q.length === 0) return;
+                              const match = transportadoras.find((t) =>
+                                t.name.toLowerCase().includes(q),
+                              );
+                              if (match) {
+                                setTransportadoraId(match.id);
+                                setTransportadoraNome(match.name);
+                                setTransportadoraSugestoesOpen(false);
+                              }
+                            }}
+                          />
+                        </div>
+                      </PopoverAnchor>
+                      <PopoverContent
+                        className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <Command shouldFilter={false}>
+                          <CommandList>
+                            <CommandEmpty>Nenhuma transportadora encontrada.</CommandEmpty>
+                            <CommandGroup>
+                              {transportadoras
+                                .filter((t) =>
+                                  t.name
+                                    .toLowerCase()
+                                    .includes(transportadoraNome.trim().toLowerCase()),
+                                )
+                                .slice(0, 8)
+                                .map((t) => (
+                                  <CommandItem
+                                    key={t.id}
+                                    value={t.id}
+                                    onSelect={() => {
+                                      setTransportadoraId(t.id);
+                                      setTransportadoraNome(t.name);
+                                      setTransportadoraSugestoesOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{t.name}</span>
+                                      {(t.phone || t.whatsapp) && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {t.phone || t.whatsapp}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {transportadoraId === t.id && (
+                                      <Check className="ml-auto h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {transportadoras.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Nenhuma transportadora cadastrada. Cadastre em Cadastro → Transportadoras.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Instalação:</span>
