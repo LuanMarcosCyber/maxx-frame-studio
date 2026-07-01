@@ -2025,6 +2025,32 @@ function NovoOrcamento() {
                           if (clienteId) setClienteId(null);
                           if (!naoVincularCliente) setClienteSugestoesOpen(true);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const advance = () =>
+                            document.getElementById("top-arquiteto")?.focus();
+                          if (naoVincularCliente) {
+                            advance();
+                            return;
+                          }
+                          const q = clienteNome.trim().toLowerCase();
+                          if (clienteId) {
+                            advance();
+                            return;
+                          }
+                          const matches = clientes.filter((c) =>
+                            c.name.toLowerCase().includes(q),
+                          );
+                          if (matches.length > 0) {
+                            const c = matches[0];
+                            setClienteId(c.id);
+                            setClienteNome(c.name);
+                            setClienteSugestoesOpen(false);
+                          } else if (q.length === 0) {
+                            advance();
+                          }
+                        }}
                       />
                     </div>
                   </PopoverAnchor>
