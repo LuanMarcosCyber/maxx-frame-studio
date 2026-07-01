@@ -408,9 +408,10 @@ function CreateDialog({
             <Input
               id="full_name"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => setFullName(e.target.value.toUpperCase())}
               required
-              placeholder="João da Silva"
+              placeholder="JOÃO DA SILVA"
+              style={{ textTransform: "uppercase" }}
             />
           </div>
           <div className="space-y-1.5">
