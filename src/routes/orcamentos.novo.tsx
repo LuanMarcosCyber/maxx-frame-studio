@@ -1372,6 +1372,11 @@ function NovoOrcamento() {
       toast.error("Sessão expirada. Faça login novamente.");
       return;
     }
+    if (!vendedorNome.trim()) {
+      toast.error("Informe o nome do colaborador.");
+      document.getElementById("top-colaborador")?.focus();
+      return;
+    }
     if (!clienteNome.trim()) {
       setClientWarning("required");
       return;
@@ -1380,6 +1385,7 @@ function NovoOrcamento() {
       setClientWarning("unlinked");
       return;
     }
+
     if (valorTotal <= 0) {
       toast.error("Valor total inválido. Verifique os itens do orçamento.");
       return;
@@ -1792,11 +1798,12 @@ function NovoOrcamento() {
                 <Label htmlFor="top-colaborador">Colaborador</Label>
                 <Input
                   id="top-colaborador"
-                  placeholder="Nome do vendedor"
+                  placeholder="Nome do colaborador"
                   value={vendedorNome}
                   autoComplete="off"
                   onChange={(e) => setVendedorNome(e.target.value)}
                 />
+
               </div>
 
               <div className="space-y-1.5">
@@ -1990,17 +1997,15 @@ function NovoOrcamento() {
                   </PopoverContent>
                 </Popover>
                 {arquitetoId ? (
-                  <p className="text-xs text-muted-foreground">
-                    RT aplicado automaticamente:{" "}
-                    <span className="font-medium text-foreground">
-                      {arquitetoPerc.toFixed(2).replace(".", ",")}%
-                    </span>
+                  <p className="text-xs text-emerald-600">
+                    ✅ Aplicado com sucesso.
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     Selecione um arquiteto para aplicar o RT automaticamente.
                   </p>
                 )}
+
               </div>
             </div>
           </Card>
