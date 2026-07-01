@@ -600,14 +600,16 @@ function EditDialog({
 }: {
   target: Colab | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string, perms: Permissions) => Promise<unknown> | undefined;
+  onSubmit: (name: string, perms: Permissions, pin?: string) => Promise<unknown> | undefined;
   submitting: boolean;
 }) {
   const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
 
   useEffect(() => {
     setName(target?.full_name ?? "");
+    setPin("");
     if (target) {
       setPerms({
         can_edit_budgets: target.can_edit_budgets,
@@ -624,7 +626,7 @@ function EditDialog({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(name, perms);
+      await onSubmit(name, perms, pin || undefined);
     } catch {
       // toast handled
     }
@@ -636,7 +638,7 @@ function EditDialog({
         <DialogHeader>
           <DialogTitle>Editar colaborador</DialogTitle>
           <DialogDescription>
-            Atualize o nome e as permissões de{" "}
+            Atualize o nome, PIN e as permissões de{" "}
             <span className="font-mono">{target?.username}</span>.
           </DialogDescription>
         </DialogHeader>
@@ -648,6 +650,22 @@ function EditDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit_pin">
+              PIN de operação {target?.has_pin ? "(deixe vazio para manter o atual)" : "(4 a 6 dígitos)"}
+            </Label>
+            <Input
+              id="edit_pin"
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              pattern="\d{4,6}"
+              minLength={target?.has_pin ? undefined : 4}
+              maxLength={6}
+              placeholder={target?.has_pin ? "••••" : "Ex.: 1234"}
             />
           </div>
           <PermissionsFields perms={perms} setPerms={setPerms} />
@@ -665,3 +683,4 @@ function EditDialog({
     </Dialog>
   );
 }
+
