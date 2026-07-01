@@ -380,7 +380,7 @@ function CreateDialog({
       setUsername("");
       setPassword("");
       setPin("");
-      setPerms(DEFAULT_PERMS);
+      setPerms({ ...DEFAULT_PERMS, max_discount_percent: 10 });
     } catch {
       // toast handled
     }
