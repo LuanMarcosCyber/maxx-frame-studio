@@ -1464,6 +1464,24 @@ function NovoOrcamento() {
       document.getElementById("top-colaborador")?.focus();
       return;
     }
+    // If the operator was auto-filled from the active session and never confirmed
+    // via the PIN switch flow, require the PIN before saving.
+    if (!operatorConfirmed && activeOperator) {
+      if (!activeOperator) {
+        // no-op: activeOperator guaranteed above
+      }
+      setPendingOperator({
+        id: activeOperator.id,
+        full_name: activeOperator.full_name,
+        username: activeOperator.username,
+        has_pin: true,
+      });
+      setPinValue("");
+      setPendingSaveOpts(opts);
+      setPinDialogOpen(true);
+      toast.message("Confirme o PIN do operador para salvar este orçamento.");
+      return;
+    }
     if (!clienteNome.trim()) {
       setClientWarning("required");
       return;
