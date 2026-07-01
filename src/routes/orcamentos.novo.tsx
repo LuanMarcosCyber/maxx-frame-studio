@@ -84,6 +84,8 @@ import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
 import { listActiveOperators, validateOperatorPin } from "@/lib/colaboradores.functions";
+import { OperatorSwitcher } from "@/components/layout/OperatorSwitcher";
+
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
@@ -808,6 +810,9 @@ function NovoOrcamento() {
   const [pendingSaveOpts, setPendingSaveOpts] = useState<
     { approve?: boolean; skipDiscountCheck?: boolean } | null
   >(null);
+  // Controls the shared header OperatorSwitcher dialog when opened via "Trocar operador".
+  const [operatorSwitcherOpen, setOperatorSwitcherOpen] = useState(false);
+
 
   const listOperatorsFn = useServerFn(listActiveOperators);
   const validateOperatorPinFn = useServerFn(validateOperatorPin);
@@ -4070,27 +4075,19 @@ function NovoOrcamento() {
                   type="button"
                   variant="secondary"
                   onClick={() => {
-                    // Fecha modal, descarta save pendente e devolve foco ao
-                    // campo Colaborador com a lista aberta para nova seleção.
+                    // Fecha o modal de confirmação e abre o mesmo modal
+                    // "Selecionar operador" utilizado no header.
                     setPendingSaveOpts(null);
                     setPendingOperator(null);
                     setPinValue("");
                     setPinDialogOpen(false);
-                    setTimeout(() => {
-                      const el = document.getElementById(
-                        "top-colaborador",
-                      ) as HTMLInputElement | null;
-                      if (el) {
-                        el.focus();
-                        el.select();
-                      }
-                      setColabSugestoesOpen(true);
-                    }, 50);
+                    setTimeout(() => setOperatorSwitcherOpen(true), 50);
                   }}
                 >
                   Trocar operador
                 </Button>
               )}
+
               <Button
                 type="submit"
                 disabled={pinSubmitting || pinValue.length < 4}
@@ -4103,7 +4100,22 @@ function NovoOrcamento() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Reutiliza o mesmo modal "Selecionar operador" do header */}
+      <OperatorSwitcher
+        hideTrigger
+        open={operatorSwitcherOpen}
+        onOpenChange={setOperatorSwitcherOpen}
+        onSwitched={(op) => {
+          // Novo operador validado por PIN → marca como confirmado
+          // e sincroniza o campo Colaborador do orçamento.
+          setVendedorNome(op.full_name);
+          setOperatorConfirmed(true);
+          setColabSugestoesOpen(false);
+        }}
+      />
     </AppShell>
+
 
 
   );

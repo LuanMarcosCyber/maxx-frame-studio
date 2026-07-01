@@ -19,15 +19,37 @@ import { listActiveOperators, validateOperatorPin } from "@/lib/colaboradores.fu
 
 type Op = { id: string; full_name: string; username: string | null; has_pin: boolean };
 
-export function OperatorSwitcher() {
+export type OperatorSwitcherProps = {
+  /** Controlled open state (optional). When provided, the internal trigger is hidden by default. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the header trigger button. Useful when opened externally. */
+  hideTrigger?: boolean;
+  /** Called after an operator is successfully activated via PIN. */
+  onSwitched?: (op: Op) => void;
+};
+
+export function OperatorSwitcher({
+  open: openProp,
+  onOpenChange,
+  hideTrigger,
+  onSwitched,
+}: OperatorSwitcherProps = {}) {
   const { activeOperator, setActiveOperator } = useOperator();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? !!openProp : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v);
+    onOpenChange?.(v);
+  };
   const [step, setStep] = useState<"choose" | "pin">("choose");
   const [selected, setSelected] = useState<Op | null>(null);
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const list = useServerFn(listActiveOperators);
+
   const validate = useServerFn(validateOperatorPin);
 
   const { data: operators = [], isLoading } = useQuery<Op[]>({
@@ -52,7 +74,9 @@ export function OperatorSwitcher() {
       const result = await validate({ data: { operator_id: selected.id, pin } });
       setActiveOperator(result as never);
       toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
+      onSwitched?.(selected);
       setOpen(false);
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "PIN incorreto.");
     } finally {
@@ -67,7 +91,9 @@ export function OperatorSwitcher() {
 
   return (
     <>
+      {!hideTrigger && (
       <button
+
         type="button"
         onClick={() => setOpen(true)}
         className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm"
@@ -85,6 +111,8 @@ export function OperatorSwitcher() {
           )}
         </span>
       </button>
+      )}
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
