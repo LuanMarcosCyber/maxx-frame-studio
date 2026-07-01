@@ -353,28 +353,39 @@ function CreateDialog({
   onSubmit,
   submitting,
 }: {
-  onSubmit: (d: { full_name: string; username: string; password: string } & Permissions) => Promise<unknown>;
+  onSubmit: (
+    d: { full_name: string; username: string; password: string; pin?: string } & Permissions,
+  ) => Promise<unknown>;
   submitting: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit({ full_name: fullName, username, password, ...perms });
+      await onSubmit({
+        full_name: fullName,
+        username,
+        password,
+        ...(pin ? { pin } : {}),
+        ...perms,
+      });
       setOpen(false);
       setFullName("");
       setUsername("");
       setPassword("");
+      setPin("");
       setPerms(DEFAULT_PERMS);
     } catch {
       // toast handled
     }
   };
+
 
 
   return (
