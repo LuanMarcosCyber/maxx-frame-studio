@@ -3936,16 +3936,35 @@ function NovoOrcamento() {
         </DialogContent>
       </Dialog>
 
-      {/* Trocar operador via campo Colaborador */}
-      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+      {/* Confirmação de PIN — troca de operador ou salvamento */}
+      <Dialog
+        open={pinDialogOpen}
+        onOpenChange={(o) => {
+          setPinDialogOpen(o);
+          if (!o) {
+            // Cancelar → descarta save pendente
+            setPendingSaveOpts(null);
+            setPendingOperator(null);
+            setPinValue("");
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Mudar operador?</DialogTitle>
+            <DialogTitle>
+              {pendingSaveOpts ? "Confirmar operador" : "Mudar operador?"}
+            </DialogTitle>
             <DialogDescription>
-              Você está alterando o operador do orçamento de{" "}
-              <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
-              <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar, informe o PIN
-              de {pendingOperator?.full_name ?? ""}.
+              {pendingSaveOpts
+                ? "Confirme o PIN do operador para salvar este orçamento."
+                : (
+                  <>
+                    Você está alterando o operador do orçamento de{" "}
+                    <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
+                    <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar,
+                    informe o PIN de {pendingOperator?.full_name ?? ""}.
+                  </>
+                )}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={confirmOperatorPin} className="space-y-4">
