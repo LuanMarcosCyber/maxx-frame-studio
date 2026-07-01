@@ -795,6 +795,73 @@ function NovoOrcamento() {
   const [cloneOpen, setCloneOpen] = useState(false);
   const [rtPercStr, setRtPercStr] = useState<string>("");
   const [vendedorNome, setVendedorNome] = useState<string>("");
+  const [colabSugestoesOpen, setColabSugestoesOpen] = useState(false);
+  const [pendingOperator, setPendingOperator] = useState<
+    { id: string; full_name: string; username: string | null; has_pin: boolean } | null
+  >(null);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinValue, setPinValue] = useState("");
+  const [pinSubmitting, setPinSubmitting] = useState(false);
+
+  const listOperatorsFn = useServerFn(listActiveOperators);
+  const validateOperatorPinFn = useServerFn(validateOperatorPin);
+
+  const { data: operatorList = [] } = useQuery<
+    { id: string; full_name: string; username: string | null; has_pin: boolean }[]
+  >({
+    queryKey: ["active-operators"],
+    queryFn: () => listOperatorsFn() as Promise<never>,
+    enabled: !!session,
+  });
+
+  // Auto-fill collaborator field with the active operator name on new budgets.
+  useEffect(() => {
+    if (isEdit) return;
+    if (!activeOperator) return;
+    setVendedorNome((prev) => (prev.trim() ? prev : activeOperator.full_name));
+  }, [isEdit, activeOperator]);
+
+  function handleSelectOperator(op: {
+    id: string;
+    full_name: string;
+    username: string | null;
+    has_pin: boolean;
+  }) {
+    setColabSugestoesOpen(false);
+    // Same operator that is already active → just set the name.
+    if (activeOperator && activeOperator.id === op.id) {
+      setVendedorNome(op.full_name);
+      return;
+    }
+    if (!op.has_pin) {
+      toast.error("Este colaborador ainda não possui PIN cadastrado.");
+      return;
+    }
+    setPendingOperator(op);
+    setPinValue("");
+    setPinDialogOpen(true);
+  }
+
+  async function confirmOperatorPin(e: FormEvent) {
+    e.preventDefault();
+    if (!pendingOperator) return;
+    setPinSubmitting(true);
+    try {
+      const result = await validateOperatorPinFn({
+        data: { operator_id: pendingOperator.id, pin: pinValue },
+      });
+      setActiveOperator(result as never);
+      setVendedorNome((result as { full_name: string }).full_name);
+      toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
+      setPinDialogOpen(false);
+      setPendingOperator(null);
+      setPinValue("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "PIN incorreto.");
+    } finally {
+      setPinSubmitting(false);
+    }
+  }
   const [arquitetoNome, setArquitetoNome] = useState<string>("");
   const [arquitetoId, setArquitetoId] = useState<string | null>(null);
   const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
