@@ -176,7 +176,7 @@ function Content() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: { user_id: string; full_name: string } & Partial<Permissions>) =>
+    mutationFn: (data: { user_id: string; full_name: string; pin?: string } & Partial<Permissions>) =>
       update({ data }),
     onSuccess: () => {
       toast.success("Colaborador atualizado.");
