@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BudgetSummaryById } from "./orcamentos.index";
