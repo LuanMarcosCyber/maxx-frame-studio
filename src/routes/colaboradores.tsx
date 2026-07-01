@@ -205,7 +205,7 @@ function Content() {
             Os colaboradores usam os produtos da sua loja e criam orçamentos e pedidos em seu nome.
           </p>
         </div>
-        <CreateDialog onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
+        <CreateDialog onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>} submitting={createMut.isPending} />
       </div>
 
       <div className="rounded-lg border bg-card -mx-4 sm:mx-0 overflow-x-auto">
