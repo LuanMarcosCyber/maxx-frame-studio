@@ -83,6 +83,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
+import { listActiveOperators, validateOperatorPin } from "@/lib/colaboradores.functions";
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
