@@ -111,6 +111,8 @@ export function OperatorSwitcher({
           )}
         </span>
       </button>
+      )}
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
