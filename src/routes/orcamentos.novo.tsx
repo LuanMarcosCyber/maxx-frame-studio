@@ -802,6 +802,12 @@ function NovoOrcamento() {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinValue, setPinValue] = useState("");
   const [pinSubmitting, setPinSubmitting] = useState(false);
+  // True once the operator identity was confirmed (via PIN switch or existing budget load).
+  const [operatorConfirmed, setOperatorConfirmed] = useState(false);
+  // Pending save opts, used to resume handleSalvar after PIN confirm at save time.
+  const [pendingSaveOpts, setPendingSaveOpts] = useState<
+    { approve?: boolean; skipDiscountCheck?: boolean } | null
+  >(null);
 
   const listOperatorsFn = useServerFn(listActiveOperators);
   const validateOperatorPinFn = useServerFn(validateOperatorPin);
@@ -852,10 +858,19 @@ function NovoOrcamento() {
       });
       setActiveOperator(result as never);
       setVendedorNome((result as { full_name: string }).full_name);
+      setOperatorConfirmed(true);
       toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
       setPinDialogOpen(false);
       setPendingOperator(null);
       setPinValue("");
+      // Resume pending save (PIN was requested at save time).
+      const resume = pendingSaveOpts;
+      setPendingSaveOpts(null);
+      if (resume) {
+        setTimeout(() => {
+          void handleSalvar(resume);
+        }, 0);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "PIN incorreto.");
     } finally {
@@ -1402,6 +1417,7 @@ function NovoOrcamento() {
             : "",
       );
       setVendedorNome(s("vendedorNome"));
+      setOperatorConfirmed(true);
       setArquitetoNome(s("arquitetoNome"));
       setArquitetoId(typeof d.arquitetoId === "string" ? (d.arquitetoId as string) : null);
       setArquitetoPerc(
@@ -1446,6 +1462,21 @@ function NovoOrcamento() {
     if (!vendedorNome.trim()) {
       toast.error("Informe o nome do colaborador.");
       document.getElementById("top-colaborador")?.focus();
+      return;
+    }
+    // If the operator was auto-filled from the active session and never confirmed
+    // via the PIN switch flow, require the PIN before saving.
+    if (!operatorConfirmed && activeOperator) {
+      setPendingOperator({
+        id: activeOperator.id,
+        full_name: activeOperator.full_name,
+        username: activeOperator.username,
+        has_pin: true,
+      });
+      setPinValue("");
+      setPendingSaveOpts(opts);
+      setPinDialogOpen(true);
+      toast.message("Confirme o PIN do operador para salvar este orçamento.");
       return;
     }
     if (!clienteNome.trim()) {
@@ -1897,6 +1928,27 @@ function NovoOrcamento() {
                           setVendedorNome(e.target.value);
                           setColabSugestoesOpen(true);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const q = vendedorNome.trim().toLowerCase();
+                          const isSelected =
+                            !!activeOperator &&
+                            activeOperator.full_name.toLowerCase() === q &&
+                            operatorConfirmed;
+                          if (isSelected) {
+                            document.getElementById("top-cliente")?.focus();
+                            return;
+                          }
+                          const matches = operatorList.filter((o) =>
+                            o.full_name.toLowerCase().includes(q),
+                          );
+                          if (matches.length > 0) {
+                            handleSelectOperator(matches[0]);
+                          } else if (q.length === 0) {
+                            document.getElementById("top-cliente")?.focus();
+                          }
+                        }}
                       />
                     </div>
                   </PopoverAnchor>
@@ -1969,6 +2021,32 @@ function NovoOrcamento() {
                           setClienteNome(e.target.value);
                           if (clienteId) setClienteId(null);
                           if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const advance = () =>
+                            document.getElementById("top-arquiteto")?.focus();
+                          if (naoVincularCliente) {
+                            advance();
+                            return;
+                          }
+                          const q = clienteNome.trim().toLowerCase();
+                          if (clienteId) {
+                            advance();
+                            return;
+                          }
+                          const matches = clientes.filter((c) =>
+                            c.name.toLowerCase().includes(q),
+                          );
+                          if (matches.length > 0) {
+                            const c = matches[0];
+                            setClienteId(c.id);
+                            setClienteNome(c.name);
+                            setClienteSugestoesOpen(false);
+                          } else if (q.length === 0) {
+                            advance();
+                          }
                         }}
                       />
                     </div>
@@ -2080,6 +2158,33 @@ function NovoOrcamento() {
                             setRtPercStr("");
                           }
                           setArquitetoSugestoesOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const advance = () =>
+                            document.getElementById("altura")?.focus();
+                          const q = arquitetoNome.trim().toLowerCase();
+                          if (arquitetoId) {
+                            advance();
+                            return;
+                          }
+                          if (q.length === 0) {
+                            advance();
+                            return;
+                          }
+                          const matches = arquitetos.filter((a) =>
+                            a.name.toLowerCase().includes(q),
+                          );
+                          if (matches.length > 0) {
+                            const a = matches[0];
+                            const perc = Number(a.percentage) || 0;
+                            setArquitetoId(a.id);
+                            setArquitetoNome(a.name);
+                            setArquitetoPerc(perc);
+                            setRtPercStr(perc > 0 ? String(perc) : "");
+                            setArquitetoSugestoesOpen(false);
+                          }
                         }}
                       />
                     </div>
@@ -3902,16 +4007,35 @@ function NovoOrcamento() {
         </DialogContent>
       </Dialog>
 
-      {/* Trocar operador via campo Colaborador */}
-      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+      {/* Confirmação de PIN — troca de operador ou salvamento */}
+      <Dialog
+        open={pinDialogOpen}
+        onOpenChange={(o) => {
+          setPinDialogOpen(o);
+          if (!o) {
+            // Cancelar → descarta save pendente
+            setPendingSaveOpts(null);
+            setPendingOperator(null);
+            setPinValue("");
+          }
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Mudar operador?</DialogTitle>
+            <DialogTitle>
+              {pendingSaveOpts ? "Confirmar operador" : "Mudar operador?"}
+            </DialogTitle>
             <DialogDescription>
-              Você está alterando o operador do orçamento de{" "}
-              <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
-              <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar, informe o PIN
-              de {pendingOperator?.full_name ?? ""}.
+              {pendingSaveOpts
+                ? "Confirme o PIN do operador para salvar este orçamento."
+                : (
+                  <>
+                    Você está alterando o operador do orçamento de{" "}
+                    <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
+                    <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar,
+                    informe o PIN de {pendingOperator?.full_name ?? ""}.
+                  </>
+                )}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={confirmOperatorPin} className="space-y-4">

@@ -363,7 +363,7 @@ function CreateDialog({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
-  const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
+  const [perms, setPerms] = useState<Permissions>({ ...DEFAULT_PERMS, max_discount_percent: 10 });
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -380,7 +380,7 @@ function CreateDialog({
       setUsername("");
       setPassword("");
       setPin("");
-      setPerms(DEFAULT_PERMS);
+      setPerms({ ...DEFAULT_PERMS, max_discount_percent: 10 });
     } catch {
       // toast handled
     }
@@ -408,9 +408,10 @@ function CreateDialog({
             <Input
               id="full_name"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => setFullName(e.target.value.toUpperCase())}
               required
-              placeholder="João da Silva"
+              placeholder="JOÃO DA SILVA"
+              style={{ textTransform: "uppercase" }}
             />
           </div>
           <div className="space-y-1.5">
