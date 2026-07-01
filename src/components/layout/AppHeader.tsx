@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SidebarContents } from "./AppSidebar";
+import { OperatorSwitcher } from "./OperatorSwitcher";
 
 interface AppHeaderProps {
   title: string;
