@@ -91,7 +91,9 @@ export function OperatorSwitcher({
 
   return (
     <>
+      {!hideTrigger && (
       <button
+
         type="button"
         onClick={() => setOpen(true)}
         className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm"
