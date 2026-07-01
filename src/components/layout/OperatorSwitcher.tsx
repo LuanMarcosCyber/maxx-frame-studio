@@ -74,7 +74,7 @@ export function OperatorSwitcher({
       const result = await validate({ data: { operator_id: selected.id, pin } });
       setActiveOperator(result as never);
       toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
-      onSwitched?.(result as Op);
+      onSwitched?.(selected);
       setOpen(false);
 
     } catch (err) {
