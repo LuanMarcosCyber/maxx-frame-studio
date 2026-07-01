@@ -1621,6 +1621,9 @@ function NovoOrcamento() {
         tipoEntrega,
         valorEntregaStr,
         valorEntrega: Number(valorEntrega.toFixed(2)),
+        transportadoraId: tipoEntrega === "Transportadora" ? transportadoraId : null,
+        transportadoraNome:
+          tipoEntrega === "Transportadora" ? transportadoraNome.trim() : "",
         dataEntrega: dataEntrega || "",
         descontoPercStr,
         descontoPercentual: Number(descontoPercNum.toFixed(2)),
