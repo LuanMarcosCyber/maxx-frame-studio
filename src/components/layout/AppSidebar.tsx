@@ -281,7 +281,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
 export function AppSidebar() {
   return (
     <aside
-      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)] sticky top-0 h-screen"
+      className="hidden md:flex w-64 shrink-0 flex-col border-r border-border shadow-[2px_0_8px_-4px_rgba(15,23,42,0.08)] h-screen"
       style={{ backgroundColor: sidebarBg }}
     >
       <SidebarContents />
