@@ -79,6 +79,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -624,7 +625,8 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
 function NovoOrcamento() {
   const navigate = useNavigate();
   const { session, ownerUserId, role, profile } = useAuth();
-  const maxDiscount = profile?.max_discount_percent ?? 100;
+  const { activeOperator } = useOperator();
+  const maxDiscount = activeOperator?.permissions.max_discount_percent ?? profile?.max_discount_percent ?? 100;
   const isColaborador = role === "colaborador";
   const queryClient = useQueryClient();
   const { id: editId } = Route.useSearch();
@@ -1506,10 +1508,12 @@ function NovoOrcamento() {
         valorSinalStr,
         valorSinal: Number(valorSinal.toFixed(2)),
         valorAReceber: Number(valorAReceber.toFixed(2)),
-        vendedorNome: vendedorNome.trim(),
+        vendedorNome: (vendedorNome.trim() || activeOperator?.full_name || ""),
         arquitetoNome: arquitetoNome.trim(),
         arquitetoId: arquitetoId,
         arquitetoPercentual: arquitetoId ? Number(arquitetoPerc.toFixed(2)) : 0,
+        operatorId: activeOperator?.id ?? null,
+        operatorName: activeOperator?.full_name ?? null,
       };
 
 
@@ -1519,6 +1523,8 @@ function NovoOrcamento() {
         total_value: Number(valorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
         details: generalDetails as never,
+        operator_id: activeOperator?.id ?? null,
+        operator_name: activeOperator?.full_name ?? null,
         ...(approve ? { status: "Aprovado" } : {}),
       };
 
@@ -1588,6 +1594,8 @@ function NovoOrcamento() {
           client_name: clienteNome.trim(),
           total_value: Number(valorTotal.toFixed(2)),
           status: "Aprovado",
+          operator_id: activeOperator?.id ?? null,
+          operator_name: activeOperator?.full_name ?? null,
         };
         if (existingOrder?.id) {
           const { error: updErr } = await supabase

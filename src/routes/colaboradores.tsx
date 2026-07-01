@@ -97,6 +97,7 @@ type Colab = {
   can_create_clients: boolean;
   can_delete_orders: boolean;
   max_discount_percent: number;
+  has_pin?: boolean;
 };
 
 type Permissions = {
@@ -137,10 +138,12 @@ function Content() {
 
   const createMut = useMutation({
     mutationFn: async (
-      data: { full_name: string; username: string; password: string } & Permissions,
+      data: { full_name: string; username: string; password: string; pin?: string } & Permissions,
     ) => {
-      const { full_name, username, password, ...perms } = data;
-      const created = await create({ data: { full_name, username, password } });
+      const { full_name, username, password, pin, ...perms } = data;
+      const created = await create({
+        data: { full_name, username, password, ...(pin ? { pin } : {}) },
+      });
       const newId = (created as { id?: string } | undefined)?.id;
       if (newId) {
         await update({ data: { user_id: newId, full_name, ...perms } });
@@ -173,7 +176,7 @@ function Content() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: { user_id: string; full_name: string } & Partial<Permissions>) =>
+    mutationFn: (data: { user_id: string; full_name: string; pin?: string } & Partial<Permissions>) =>
       update({ data }),
     onSuccess: () => {
       toast.success("Colaborador atualizado.");
@@ -202,7 +205,7 @@ function Content() {
             Os colaboradores usam os produtos da sua loja e criam orçamentos e pedidos em seu nome.
           </p>
         </div>
-        <CreateDialog onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
+        <CreateDialog onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>} submitting={createMut.isPending} />
       </div>
 
       <div className="rounded-lg border bg-card -mx-4 sm:mx-0 overflow-x-auto">
@@ -305,9 +308,14 @@ function Content() {
       <EditDialog
         target={editTarget}
         onOpenChange={(o) => !o && setEditTarget(null)}
-        onSubmit={(name, perms) =>
+        onSubmit={(name, perms, pin) =>
           editTarget
-            ? updateMut.mutateAsync({ user_id: editTarget.id, full_name: name, ...perms })
+            ? updateMut.mutateAsync({
+                user_id: editTarget.id,
+                full_name: name,
+                ...perms,
+                ...(pin ? { pin } : {}),
+              })
             : undefined
         }
         submitting={updateMut.isPending}
@@ -345,28 +353,39 @@ function CreateDialog({
   onSubmit,
   submitting,
 }: {
-  onSubmit: (d: { full_name: string; username: string; password: string } & Permissions) => Promise<unknown>;
+  onSubmit: (
+    d: { full_name: string; username: string; password: string; pin?: string } & Permissions,
+  ) => Promise<unknown>;
   submitting: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit({ full_name: fullName, username, password, ...perms });
+      await onSubmit({
+        full_name: fullName,
+        username,
+        password,
+        ...(pin ? { pin } : {}),
+        ...perms,
+      });
       setOpen(false);
       setFullName("");
       setUsername("");
       setPassword("");
+      setPin("");
       setPerms(DEFAULT_PERMS);
     } catch {
       // toast handled
     }
   };
+
 
 
   return (
@@ -420,6 +439,24 @@ function CreateDialog({
               minLength={6}
               placeholder="Mínimo 6 caracteres"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="pin">PIN de operação (4 a 6 dígitos)</Label>
+            <Input
+              id="pin"
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              pattern="\d{4,6}"
+              minLength={4}
+              maxLength={6}
+              required
+              placeholder="Ex.: 1234"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Usado para ativar o operador no balcão. Não substitui a senha de login.
+            </p>
           </div>
           <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
@@ -563,14 +600,16 @@ function EditDialog({
 }: {
   target: Colab | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string, perms: Permissions) => Promise<unknown> | undefined;
+  onSubmit: (name: string, perms: Permissions, pin?: string) => Promise<unknown> | undefined;
   submitting: boolean;
 }) {
   const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
 
   useEffect(() => {
     setName(target?.full_name ?? "");
+    setPin("");
     if (target) {
       setPerms({
         can_edit_budgets: target.can_edit_budgets,
@@ -587,7 +626,7 @@ function EditDialog({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(name, perms);
+      await onSubmit(name, perms, pin || undefined);
     } catch {
       // toast handled
     }
@@ -599,7 +638,7 @@ function EditDialog({
         <DialogHeader>
           <DialogTitle>Editar colaborador</DialogTitle>
           <DialogDescription>
-            Atualize o nome e as permissões de{" "}
+            Atualize o nome, PIN e as permissões de{" "}
             <span className="font-mono">{target?.username}</span>.
           </DialogDescription>
         </DialogHeader>
@@ -611,6 +650,22 @@ function EditDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit_pin">
+              PIN de operação {target?.has_pin ? "(deixe vazio para manter o atual)" : "(4 a 6 dígitos)"}
+            </Label>
+            <Input
+              id="edit_pin"
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              pattern="\d{4,6}"
+              minLength={target?.has_pin ? undefined : 4}
+              maxLength={6}
+              placeholder={target?.has_pin ? "••••" : "Ex.: 1234"}
             />
           </div>
           <PermissionsFields perms={perms} setPerms={setPerms} />
@@ -628,3 +683,4 @@ function EditDialog({
     </Dialog>
   );
 }
+

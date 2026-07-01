@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { OperatorProvider } from "@/hooks/useOperator";
 import { useMobileKeyboardScroll } from "@/hooks/use-mobile-keyboard-scroll";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -193,10 +194,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthGate>
-          <Outlet />
-        </AuthGate>
-        <Toaster />
+        <OperatorProvider>
+          <AuthGate>
+            <Outlet />
+          </AuthGate>
+          <Toaster />
+        </OperatorProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

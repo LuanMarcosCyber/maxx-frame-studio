@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SidebarContents } from "./AppSidebar";
+import { OperatorSwitcher } from "./OperatorSwitcher";
 
 interface AppHeaderProps {
   title: string;
@@ -145,6 +146,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 border-l border-white/10 pl-3 sm:pl-4">
+          <OperatorSwitcher />
           <button
             type="button"
             aria-label="Notificações"

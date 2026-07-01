@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BudgetSummaryById } from "./orcamentos.index";
@@ -112,8 +113,11 @@ function collaboratorLabel(
 
 function Pedidos() {
   const { session, role, profile } = useAuth();
+  const { activeOperator } = useOperator();
   const showCollaborator = role !== "colaborador";
-  const canDelete = role !== "colaborador" || !!profile?.can_delete_orders;
+  const canDelete = activeOperator
+    ? activeOperator.permissions.can_delete_orders
+    : role !== "colaborador" || !!profile?.can_delete_orders;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { view: viewParam } = Route.useSearch();
