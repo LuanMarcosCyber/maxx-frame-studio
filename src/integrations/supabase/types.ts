@@ -101,6 +101,8 @@ export type Database = {
           details: Json
           id: string
           number: string
+          operator_id: string | null
+          operator_name: string | null
           status: string
           total_value: number
           updated_at: string
@@ -115,6 +117,8 @@ export type Database = {
           details?: Json
           id?: string
           number: string
+          operator_id?: string | null
+          operator_name?: string | null
           status?: string
           total_value?: number
           updated_at?: string
@@ -129,6 +133,8 @@ export type Database = {
           details?: Json
           id?: string
           number?: string
+          operator_id?: string | null
+          operator_name?: string | null
           status?: string
           total_value?: number
           updated_at?: string
@@ -280,6 +286,8 @@ export type Database = {
           created_by: string | null
           id: string
           number: string
+          operator_id: string | null
+          operator_name: string | null
           status: string
           total_value: number
           updated_at: string
@@ -292,6 +300,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           number: string
+          operator_id?: string | null
+          operator_name?: string | null
           status?: string
           total_value?: number
           updated_at?: string
@@ -304,6 +314,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           number?: string
+          operator_id?: string | null
+          operator_name?: string | null
           status?: string
           total_value?: number
           updated_at?: string
@@ -396,6 +408,7 @@ export type Database = {
           max_discount_percent: number
           parent_user_id: string | null
           phone: string | null
+          pin_hash: string | null
           store_name: string | null
           updated_at: string
           username: string | null
@@ -416,6 +429,7 @@ export type Database = {
           max_discount_percent?: number
           parent_user_id?: string | null
           phone?: string | null
+          pin_hash?: string | null
           store_name?: string | null
           updated_at?: string
           username?: string | null
@@ -436,6 +450,7 @@ export type Database = {
           max_discount_percent?: number
           parent_user_id?: string | null
           phone?: string | null
+          pin_hash?: string | null
           store_name?: string | null
           updated_at?: string
           username?: string | null
