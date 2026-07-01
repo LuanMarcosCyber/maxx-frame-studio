@@ -1931,6 +1931,27 @@ function NovoOrcamento() {
                           setVendedorNome(e.target.value);
                           setColabSugestoesOpen(true);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const q = vendedorNome.trim().toLowerCase();
+                          const isSelected =
+                            !!activeOperator &&
+                            activeOperator.full_name.toLowerCase() === q &&
+                            operatorConfirmed;
+                          if (isSelected) {
+                            document.getElementById("top-cliente")?.focus();
+                            return;
+                          }
+                          const matches = operatorList.filter((o) =>
+                            o.full_name.toLowerCase().includes(q),
+                          );
+                          if (matches.length > 0) {
+                            handleSelectOperator(matches[0]);
+                          } else if (q.length === 0) {
+                            document.getElementById("top-cliente")?.focus();
+                          }
+                        }}
                       />
                     </div>
                   </PopoverAnchor>
