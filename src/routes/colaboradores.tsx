@@ -363,7 +363,7 @@ function CreateDialog({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
-  const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
+  const [perms, setPerms] = useState<Permissions>({ ...DEFAULT_PERMS, max_discount_percent: 10 });
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
