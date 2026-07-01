@@ -769,6 +769,9 @@ function NovoOrcamento() {
   const [valorInstalacaoStr, setValorInstalacaoStr] = useState<string>("");
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
+  const [transportadoraId, setTransportadoraId] = useState<string | null>(null);
+  const [transportadoraNome, setTransportadoraNome] = useState<string>("");
+  const [transportadoraSugestoesOpen, setTransportadoraSugestoesOpen] = useState(false);
   const [clienteNome, setClienteNome] = useState<string>("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   
@@ -944,6 +947,20 @@ function NovoOrcamento() {
       const { data, error } = await supabase
         .from("architects")
         .select("id, name, phone, percentage")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Lista de transportadoras da loja
+  const { data: transportadoras = [] } = useQuery({
+    queryKey: ["carriers", "picker"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("carriers")
+        .select("id, name, phone, whatsapp")
         .order("name", { ascending: true });
       if (error) throw error;
       return data ?? [];
