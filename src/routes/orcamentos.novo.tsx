@@ -625,6 +625,7 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
 function NovoOrcamento() {
   const navigate = useNavigate();
   const { session, ownerUserId, role, profile } = useAuth();
+  const { activeOperator } = useOperator();
   const maxDiscount = profile?.max_discount_percent ?? 100;
   const isColaborador = role === "colaborador";
   const queryClient = useQueryClient();
