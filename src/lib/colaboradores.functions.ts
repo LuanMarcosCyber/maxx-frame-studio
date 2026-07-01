@@ -236,7 +236,7 @@ export const createColaborador = createServerFn({ method: "POST" })
 
     const { error: upErr } = await supabaseAdmin
       .from("profiles")
-      .upsert(profilePatch, { onConflict: "id" });
+      .upsert(profilePatch as never, { onConflict: "id" });
     if (upErr) throw new Error(upErr.message);
 
     // 4. Ensure role is 'colaborador'.
