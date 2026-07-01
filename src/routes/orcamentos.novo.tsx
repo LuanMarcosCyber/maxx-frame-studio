@@ -1431,6 +1431,10 @@ function NovoOrcamento() {
       setValorInstalacaoStr(s("valorInstalacaoStr"));
       setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
       setValorEntregaStr(s("valorEntregaStr"));
+      setTransportadoraId(
+        typeof d.transportadoraId === "string" ? (d.transportadoraId as string) : null,
+      );
+      setTransportadoraNome(s("transportadoraNome"));
       setRtPercStr(
         typeof d.rtPercStr === "string"
           ? (d.rtPercStr as string)
