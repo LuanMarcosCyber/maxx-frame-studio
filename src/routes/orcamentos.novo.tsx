@@ -2162,6 +2162,33 @@ function NovoOrcamento() {
                           }
                           setArquitetoSugestoesOpen(true);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          const advance = () =>
+                            document.getElementById("altura")?.focus();
+                          const q = arquitetoNome.trim().toLowerCase();
+                          if (arquitetoId) {
+                            advance();
+                            return;
+                          }
+                          if (q.length === 0) {
+                            advance();
+                            return;
+                          }
+                          const matches = arquitetos.filter((a) =>
+                            a.name.toLowerCase().includes(q),
+                          );
+                          if (matches.length > 0) {
+                            const a = matches[0];
+                            const perc = Number(a.percentage) || 0;
+                            setArquitetoId(a.id);
+                            setArquitetoNome(a.name);
+                            setArquitetoPerc(perc);
+                            setRtPercStr(perc > 0 ? String(perc) : "");
+                            setArquitetoSugestoesOpen(false);
+                          }
+                        }}
                       />
                     </div>
                   </PopoverAnchor>
