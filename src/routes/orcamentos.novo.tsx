@@ -4100,7 +4100,22 @@ function NovoOrcamento() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Reutiliza o mesmo modal "Selecionar operador" do header */}
+      <OperatorSwitcher
+        hideTrigger
+        open={operatorSwitcherOpen}
+        onOpenChange={setOperatorSwitcherOpen}
+        onSwitched={(op) => {
+          // Novo operador validado por PIN → marca como confirmado
+          // e sincroniza o campo Colaborador do orçamento.
+          setVendedorNome(op.full_name);
+          setOperatorConfirmed(true);
+          setColabSugestoesOpen(false);
+        }}
+      />
     </AppShell>
+
 
 
   );
