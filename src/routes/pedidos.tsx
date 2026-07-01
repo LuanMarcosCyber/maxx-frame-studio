@@ -96,10 +96,19 @@ const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
-function collaboratorLabel(row: { user_id: string; created_by: string | null }, names: Map<string, string>) {
+function collaboratorLabel(
+  row: { user_id: string; created_by: string | null; budget_id: string | null },
+  names: Map<string, string>,
+  vendors: Map<string, string>,
+) {
+  if (row.budget_id) {
+    const v = vendors.get(row.budget_id);
+    if (v) return v;
+  }
   if (!row.created_by || row.created_by === row.user_id) return "—";
   return names.get(row.created_by) || "—";
 }
+
 
 function Pedidos() {
   const { session, role, profile } = useAuth();
@@ -133,20 +142,27 @@ function Pedidos() {
     () => Array.from(new Set(rows.map((r) => r.budget_id).filter((id): id is string => !!id))),
     [rows],
   );
-  const { data: budgetNumbers } = useQuery({
-    queryKey: ["budgets", "numbers", budgetIds],
+  const { data: budgetInfo } = useQuery({
+    queryKey: ["budgets", "info", budgetIds],
     enabled: budgetIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
         .from("budgets")
-        .select("id, number")
+        .select("id, number, details")
         .in("id", budgetIds);
-      const map = new Map<string, string>();
-      (data ?? []).forEach((b: any) => map.set(b.id, b.number));
-      return map;
+      const numbers = new Map<string, string>();
+      const vendors = new Map<string, string>();
+      (data ?? []).forEach((b: any) => {
+        numbers.set(b.id, b.number);
+        const v = (b.details as { vendedorNome?: string } | null)?.vendedorNome?.trim();
+        if (v) vendors.set(b.id, v);
+      });
+      return { numbers, vendors };
     },
   });
-  const budgetNumberMap = budgetNumbers ?? new Map<string, string>();
+  const budgetNumberMap = budgetInfo?.numbers ?? new Map<string, string>();
+  const vendorMap = budgetInfo?.vendors ?? new Map<string, string>();
+
 
   const creatorIds = useMemo(
     () => Array.from(new Set(rows.map((r) => r.created_by).filter((id): id is string => !!id))),
