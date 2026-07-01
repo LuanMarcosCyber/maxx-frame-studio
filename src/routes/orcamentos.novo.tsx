@@ -1417,6 +1417,7 @@ function NovoOrcamento() {
             : "",
       );
       setVendedorNome(s("vendedorNome"));
+      setOperatorConfirmed(true);
       setArquitetoNome(s("arquitetoNome"));
       setArquitetoId(typeof d.arquitetoId === "string" ? (d.arquitetoId as string) : null);
       setArquitetoPerc(
