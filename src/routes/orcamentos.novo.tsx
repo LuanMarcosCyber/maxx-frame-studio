@@ -4075,27 +4075,19 @@ function NovoOrcamento() {
                   type="button"
                   variant="secondary"
                   onClick={() => {
-                    // Fecha modal, descarta save pendente e devolve foco ao
-                    // campo Colaborador com a lista aberta para nova seleção.
+                    // Fecha o modal de confirmação e abre o mesmo modal
+                    // "Selecionar operador" utilizado no header.
                     setPendingSaveOpts(null);
                     setPendingOperator(null);
                     setPinValue("");
                     setPinDialogOpen(false);
-                    setTimeout(() => {
-                      const el = document.getElementById(
-                        "top-colaborador",
-                      ) as HTMLInputElement | null;
-                      if (el) {
-                        el.focus();
-                        el.select();
-                      }
-                      setColabSugestoesOpen(true);
-                    }, 50);
+                    setTimeout(() => setOperatorSwitcherOpen(true), 50);
                   }}
                 >
                   Trocar operador
                 </Button>
               )}
+
               <Button
                 type="submit"
                 disabled={pinSubmitting || pinValue.length < 4}
