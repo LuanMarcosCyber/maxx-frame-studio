@@ -138,10 +138,12 @@ function Content() {
 
   const createMut = useMutation({
     mutationFn: async (
-      data: { full_name: string; username: string; password: string } & Permissions,
+      data: { full_name: string; username: string; password: string; pin?: string } & Permissions,
     ) => {
-      const { full_name, username, password, ...perms } = data;
-      const created = await create({ data: { full_name, username, password } });
+      const { full_name, username, password, pin, ...perms } = data;
+      const created = await create({
+        data: { full_name, username, password, ...(pin ? { pin } : {}) },
+      });
       const newId = (created as { id?: string } | undefined)?.id;
       if (newId) {
         await update({ data: { user_id: newId, full_name, ...perms } });
