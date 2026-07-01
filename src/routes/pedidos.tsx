@@ -348,7 +348,7 @@ function Pedidos() {
                   <tr key={o.id} className="hover:bg-muted/40 transition">
                     {showCollaborator && (
                       <td className="py-3.5 px-6 text-muted-foreground">
-                        {collaboratorLabel(o, namesMap)}
+                        {collaboratorLabel(o, namesMap, vendorMap)}
                       </td>
                     )}
                     <td className="py-3.5 px-3 font-mono font-semibold">
