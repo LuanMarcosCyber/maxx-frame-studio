@@ -66,10 +66,13 @@ type BudgetRow = {
   created_by: string | null;
 };
 
-function collaboratorLabel(row: { user_id: string; created_by: string | null }, names: Map<string, string>) {
+function collaboratorLabel(row: BudgetRow, names: Map<string, string>) {
+  const vendor = (row.details as { vendedorNome?: string } | null)?.vendedorNome?.trim();
+  if (vendor) return vendor;
   if (!row.created_by || row.created_by === row.user_id) return "—";
   return names.get(row.created_by) || "—";
 }
+
 
 function Orcamentos() {
   const { session, ownerUserId, role, profile } = useAuth();
