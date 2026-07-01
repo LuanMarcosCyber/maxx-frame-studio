@@ -4057,7 +4057,7 @@ function NovoOrcamento() {
                 required
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -4065,6 +4065,32 @@ function NovoOrcamento() {
               >
                 Voltar
               </Button>
+              {pendingSaveOpts && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    // Fecha modal, descarta save pendente e devolve foco ao
+                    // campo Colaborador com a lista aberta para nova seleção.
+                    setPendingSaveOpts(null);
+                    setPendingOperator(null);
+                    setPinValue("");
+                    setPinDialogOpen(false);
+                    setTimeout(() => {
+                      const el = document.getElementById(
+                        "top-colaborador",
+                      ) as HTMLInputElement | null;
+                      if (el) {
+                        el.focus();
+                        el.select();
+                      }
+                      setColabSugestoesOpen(true);
+                    }, 50);
+                  }}
+                >
+                  Trocar operador
+                </Button>
+              )}
               <Button
                 type="submit"
                 disabled={pinSubmitting || pinValue.length < 4}
@@ -4073,6 +4099,7 @@ function NovoOrcamento() {
                 {pinSubmitting ? "Validando..." : "Confirmar"}
               </Button>
             </div>
+
           </form>
         </DialogContent>
       </Dialog>
