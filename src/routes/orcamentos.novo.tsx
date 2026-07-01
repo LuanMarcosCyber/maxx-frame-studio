@@ -1508,10 +1508,12 @@ function NovoOrcamento() {
         valorSinalStr,
         valorSinal: Number(valorSinal.toFixed(2)),
         valorAReceber: Number(valorAReceber.toFixed(2)),
-        vendedorNome: vendedorNome.trim(),
+        vendedorNome: (vendedorNome.trim() || activeOperator?.full_name || ""),
         arquitetoNome: arquitetoNome.trim(),
         arquitetoId: arquitetoId,
         arquitetoPercentual: arquitetoId ? Number(arquitetoPerc.toFixed(2)) : 0,
+        operatorId: activeOperator?.id ?? null,
+        operatorName: activeOperator?.full_name ?? null,
       };
 
 
@@ -1521,6 +1523,8 @@ function NovoOrcamento() {
         total_value: Number(valorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
         details: generalDetails as never,
+        operator_id: activeOperator?.id ?? null,
+        operator_name: activeOperator?.full_name ?? null,
         ...(approve ? { status: "Aprovado" } : {}),
       };
 
