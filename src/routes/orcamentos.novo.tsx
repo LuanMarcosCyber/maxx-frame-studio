@@ -1594,6 +1594,8 @@ function NovoOrcamento() {
           client_name: clienteNome.trim(),
           total_value: Number(valorTotal.toFixed(2)),
           status: "Aprovado",
+          operator_id: activeOperator?.id ?? null,
+          operator_name: activeOperator?.full_name ?? null,
         };
         if (existingOrder?.id) {
           const { error: updErr } = await supabase
