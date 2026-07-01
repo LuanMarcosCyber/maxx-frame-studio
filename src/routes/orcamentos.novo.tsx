@@ -810,6 +810,9 @@ function NovoOrcamento() {
   const [pendingSaveOpts, setPendingSaveOpts] = useState<
     { approve?: boolean; skipDiscountCheck?: boolean } | null
   >(null);
+  // Controls the shared header OperatorSwitcher dialog when opened via "Trocar operador".
+  const [operatorSwitcherOpen, setOperatorSwitcherOpen] = useState(false);
+
 
   const listOperatorsFn = useServerFn(listActiveOperators);
   const validateOperatorPinFn = useServerFn(validateOperatorPin);
