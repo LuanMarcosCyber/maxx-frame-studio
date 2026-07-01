@@ -136,33 +136,49 @@ export function OperatorSwitcher({
                   Nenhum colaborador ativo cadastrado.
                 </p>
               ) : (
-                operators.map((op) => (
-                  <button
-                    key={op.id}
-                    type="button"
-                    onClick={() => {
-                      if (!op.has_pin) {
-                        toast.error("Este colaborador ainda não possui PIN cadastrado.");
-                        return;
+                operators.map((op) => {
+                  const isActive = activeOperator?.id === op.id;
+                  return (
+                    <button
+                      key={op.id}
+                      type="button"
+                      disabled={isActive}
+                      aria-disabled={isActive}
+                      onClick={() => {
+                        if (isActive) return;
+                        if (!op.has_pin) {
+                          toast.error("Este colaborador ainda não possui PIN cadastrado.");
+                          return;
+                        }
+                        setSelected(op);
+                        setStep("pin");
+                      }}
+                      className={
+                        "w-full flex items-center justify-between rounded-md border p-3 text-left transition " +
+                        (isActive
+                          ? "opacity-90 cursor-not-allowed bg-accent/40"
+                          : "hover:bg-accent")
                       }
-                      setSelected(op);
-                      setStep("pin");
-                    }}
-                    className="w-full flex items-center justify-between rounded-md border p-3 hover:bg-accent text-left transition"
-                  >
-                    <div>
-                      <div className="font-medium">{op.full_name}</div>
-                      {op.username && (
-                        <div className="text-[11px] text-muted-foreground font-mono">
-                          @{op.username}
-                        </div>
-                      )}
-                    </div>
-                    {!op.has_pin && (
-                      <span className="text-[11px] text-amber-600">Sem PIN</span>
-                    )}
-                  </button>
-                ))
+                    >
+                      <div>
+                        <div className="font-medium">{op.full_name}</div>
+                        {op.username && (
+                          <div className="text-[11px] text-muted-foreground font-mono">
+                            @{op.username}
+                          </div>
+                        )}
+                      </div>
+                      {isActive ? (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gradient-brand text-brand-foreground">
+                          Em uso
+                        </span>
+                      ) : !op.has_pin ? (
+                        <span className="text-[11px] text-amber-600">Sem PIN</span>
+                      ) : null}
+                    </button>
+                  );
+                })
+
               )}
               {activeOperator && (
                 <div className="pt-2 border-t">
