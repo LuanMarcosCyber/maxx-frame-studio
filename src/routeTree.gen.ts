@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TransportadorasRouteImport } from './routes/transportadoras'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RevendedoresRouteImport } from './routes/revendedores'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
@@ -29,6 +30,11 @@ import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
 import { Route as PedidosIdImprimirViaRouteImport } from './routes/pedidos_.$id.imprimir.$via'
 import { Route as OrcamentosIdImprimirViaRouteImport } from './routes/orcamentos_.$id.imprimir.$via'
 
+const TransportadorasRoute = TransportadorasRouteImport.update({
+  id: '/transportadoras',
+  path: '/transportadoras',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/relatorios': typeof RelatoriosRoute
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/transportadoras': typeof TransportadorasRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/transportadoras': typeof TransportadorasRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos': typeof OrcamentosIndexRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/relatorios': typeof RelatoriosRoute
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/transportadoras': typeof TransportadorasRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/revendedores'
     | '/sitemap.xml'
+    | '/transportadoras'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/relatorios'
     | '/sitemap.xml'
+    | '/transportadoras'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/revendedores'
     | '/sitemap.xml'
+    | '/transportadoras'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
@@ -265,12 +277,20 @@ export interface RootRouteChildren {
   RelatoriosRoute: typeof RelatoriosRoute
   RevendedoresRoute: typeof RevendedoresRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TransportadorasRoute: typeof TransportadorasRoute
   OrcamentosIdImprimirViaRoute: typeof OrcamentosIdImprimirViaRoute
   PedidosIdImprimirViaRoute: typeof PedidosIdImprimirViaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/transportadoras': {
+      id: '/transportadoras'
+      path: '/transportadoras'
+      fullPath: '/transportadoras'
+      preLoaderRoute: typeof TransportadorasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -449,6 +469,7 @@ const rootRouteChildren: RootRouteChildren = {
   RelatoriosRoute: RelatoriosRoute,
   RevendedoresRoute: RevendedoresRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TransportadorasRoute: TransportadorasRoute,
   OrcamentosIdImprimirViaRoute: OrcamentosIdImprimirViaRoute,
   PedidosIdImprimirViaRoute: PedidosIdImprimirViaRoute,
 }

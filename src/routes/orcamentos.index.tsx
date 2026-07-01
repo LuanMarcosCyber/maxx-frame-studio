@@ -1137,6 +1137,11 @@ function ResumoDialog({
               <div className="flex items-center justify-between px-4 py-3 text-sm">
                 <span className="text-muted-foreground">
                   Entrega / Frete ({tipoEntrega})
+                  {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
+                    <span className="block text-xs text-foreground/70 mt-0.5">
+                      Transportadora: {gStr("transportadoraNome")}
+                    </span>
+                  )}
                 </span>
                 <span className="font-semibold">
                   {moneyOrNA(entregaAtiva, gNum("valorEntrega"))}

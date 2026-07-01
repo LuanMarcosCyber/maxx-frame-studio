@@ -15,6 +15,7 @@ import {
   Loader2,
   FolderPlus,
   ChevronDown,
+  Truck,
   Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const pedidos: Item = { title: "Pedidos", url: "/pedidos", icon: ShoppingCart };
 const clientes: Item = { title: "Clientes", url: "/clientes", icon: Contact };
 const produtos: Item = { title: "Produtos", url: "/produtos", icon: Package };
 const arquitetos: Item = { title: "Arquitetos", url: "/arquitetos", icon: Compass };
+const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras", icon: Truck };
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3, badge: "Em breve" };
 const revendedores: Item = { title: "Revendedores", url: "/revendedores", icon: Users };
 const colaboradores: Item = { title: "Colaboradores", url: "/colaboradores", icon: UserCog };
@@ -55,15 +57,15 @@ function useSidebarData() {
   let bottomItems: Item[];
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, colaboradores, revendedores];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
     mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos, arquitetos];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras];
     bottomItems = [conta];
   } else {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, colaboradores];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores];
     bottomItems = [conta, configuracoes];
   }
 
