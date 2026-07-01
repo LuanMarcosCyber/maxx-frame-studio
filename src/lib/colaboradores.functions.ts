@@ -325,7 +325,7 @@ export const updateColaborador = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.user_id);
     if (error) throw new Error(error.message);
     return { ok: true };
