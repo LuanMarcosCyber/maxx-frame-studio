@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
+import { listActiveOperators, validateOperatorPin } from "@/lib/colaboradores.functions";
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
@@ -625,7 +627,7 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
 function NovoOrcamento() {
   const navigate = useNavigate();
   const { session, ownerUserId, role, profile } = useAuth();
-  const { activeOperator } = useOperator();
+  const { activeOperator, setActiveOperator } = useOperator();
   const maxDiscount = activeOperator?.permissions.max_discount_percent ?? profile?.max_discount_percent ?? 100;
   const isColaborador = role === "colaborador";
   const queryClient = useQueryClient();
@@ -793,6 +795,73 @@ function NovoOrcamento() {
   const [cloneOpen, setCloneOpen] = useState(false);
   const [rtPercStr, setRtPercStr] = useState<string>("");
   const [vendedorNome, setVendedorNome] = useState<string>("");
+  const [colabSugestoesOpen, setColabSugestoesOpen] = useState(false);
+  const [pendingOperator, setPendingOperator] = useState<
+    { id: string; full_name: string; username: string | null; has_pin: boolean } | null
+  >(null);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinValue, setPinValue] = useState("");
+  const [pinSubmitting, setPinSubmitting] = useState(false);
+
+  const listOperatorsFn = useServerFn(listActiveOperators);
+  const validateOperatorPinFn = useServerFn(validateOperatorPin);
+
+  const { data: operatorList = [] } = useQuery<
+    { id: string; full_name: string; username: string | null; has_pin: boolean }[]
+  >({
+    queryKey: ["active-operators"],
+    queryFn: () => listOperatorsFn() as Promise<never>,
+    enabled: !!session,
+  });
+
+  // Auto-fill collaborator field with the active operator name on new budgets.
+  useEffect(() => {
+    if (isEdit) return;
+    if (!activeOperator) return;
+    setVendedorNome((prev) => (prev.trim() ? prev : activeOperator.full_name));
+  }, [isEdit, activeOperator]);
+
+  function handleSelectOperator(op: {
+    id: string;
+    full_name: string;
+    username: string | null;
+    has_pin: boolean;
+  }) {
+    setColabSugestoesOpen(false);
+    // Same operator that is already active → just set the name.
+    if (activeOperator && activeOperator.id === op.id) {
+      setVendedorNome(op.full_name);
+      return;
+    }
+    if (!op.has_pin) {
+      toast.error("Este colaborador ainda não possui PIN cadastrado.");
+      return;
+    }
+    setPendingOperator(op);
+    setPinValue("");
+    setPinDialogOpen(true);
+  }
+
+  async function confirmOperatorPin(e: FormEvent) {
+    e.preventDefault();
+    if (!pendingOperator) return;
+    setPinSubmitting(true);
+    try {
+      const result = await validateOperatorPinFn({
+        data: { operator_id: pendingOperator.id, pin: pinValue },
+      });
+      setActiveOperator(result as never);
+      setVendedorNome((result as { full_name: string }).full_name);
+      toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
+      setPinDialogOpen(false);
+      setPendingOperator(null);
+      setPinValue("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "PIN incorreto.");
+    } finally {
+      setPinSubmitting(false);
+    }
+  }
   const [arquitetoNome, setArquitetoNome] = useState<string>("");
   const [arquitetoId, setArquitetoId] = useState<string | null>(null);
   const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
@@ -1804,15 +1873,72 @@ function NovoOrcamento() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="top-colaborador">Colaborador</Label>
-                <Input
-                  id="top-colaborador"
-                  placeholder="Nome do colaborador"
-                  value={vendedorNome}
-                  autoComplete="off"
-                  onChange={(e) => setVendedorNome(e.target.value)}
-                />
-
+                <Popover
+                  open={
+                    colabSugestoesOpen &&
+                    vendedorNome.trim().length > 0 &&
+                    operatorList.some((o) =>
+                      o.full_name.toLowerCase().includes(vendedorNome.trim().toLowerCase()),
+                    )
+                  }
+                  onOpenChange={setColabSugestoesOpen}
+                >
+                  <PopoverAnchor asChild>
+                    <div className="w-full">
+                      <Input
+                        id="top-colaborador"
+                        placeholder="Nome do colaborador"
+                        value={vendedorNome}
+                        autoComplete="off"
+                        onFocus={() => {
+                          if (vendedorNome.trim().length > 0) setColabSugestoesOpen(true);
+                        }}
+                        onChange={(e) => {
+                          setVendedorNome(e.target.value);
+                          setColabSugestoesOpen(true);
+                        }}
+                      />
+                    </div>
+                  </PopoverAnchor>
+                  <PopoverContent
+                    className="p-0 w-[--radix-popover-anchor-width] min-w-[240px]"
+                    align="start"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandEmpty>Nenhum colaborador encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {operatorList
+                            .filter((o) =>
+                              o.full_name
+                                .toLowerCase()
+                                .includes(vendedorNome.trim().toLowerCase()),
+                            )
+                            .slice(0, 8)
+                            .map((o) => (
+                              <CommandItem
+                                key={o.id}
+                                value={o.id}
+                                onSelect={() => handleSelectOperator(o)}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{o.full_name}</span>
+                                  {o.username && (
+                                    <span className="text-[11px] text-muted-foreground font-mono">
+                                      @{o.username}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
+
 
               <div className="space-y-1.5">
                 <Label htmlFor="top-cliente">Cliente</Label>
@@ -3775,7 +3901,59 @@ function NovoOrcamento() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Trocar operador via campo Colaborador */}
+      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mudar operador?</DialogTitle>
+            <DialogDescription>
+              Você está alterando o operador do orçamento de{" "}
+              <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
+              <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar, informe o PIN
+              de {pendingOperator?.full_name ?? ""}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={confirmOperatorPin} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="switch_op_pin">
+                PIN de {pendingOperator?.full_name ?? ""}
+              </Label>
+              <Input
+                id="switch_op_pin"
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={pinValue}
+                onChange={(e) => setPinValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                pattern="\d{4,6}"
+                minLength={4}
+                maxLength={6}
+                placeholder="••••"
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPinDialogOpen(false)}
+              >
+                Voltar
+              </Button>
+              <Button
+                type="submit"
+                disabled={pinSubmitting || pinValue.length < 4}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+              >
+                {pinSubmitting ? "Validando..." : "Confirmar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </AppShell>
+
 
   );
 }
