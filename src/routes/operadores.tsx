@@ -275,7 +275,6 @@ function OperadoresPage() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Nome</th>
-                <th className="font-medium py-3 px-3">Apelido</th>
                 {!isOperational && (
                   <th className="font-medium py-3 px-3">Conta operacional</th>
                 )}
@@ -286,13 +285,13 @@ function OperadoresPage() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={4} className="py-8 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={4} className="py-8 text-center text-muted-foreground">
                     Nenhum operador cadastrado.
                   </td>
                 </tr>
@@ -307,7 +306,7 @@ function OperadoresPage() {
                         </Badge>
                       )}
                     </td>
-                    <td className="py-3.5 px-3 text-muted-foreground">{o.nickname || "—"}</td>
+                    
                     {!isOperational && (
                       <td className="py-3.5 px-3 text-muted-foreground">
                         {o.operational_account_id
@@ -369,26 +368,15 @@ function OperadoresPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="op-name">Nome *</Label>
-                <Input
-                  id="op-name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
-                  placeholder="MÁRCIA"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="op-nick">Apelido</Label>
-                <Input
-                  id="op-nick"
-                  value={form.nickname}
-                  onChange={(e) => setForm({ ...form, nickname: e.target.value })}
-                  placeholder="Ma"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="op-name">Nome *</Label>
+              <Input
+                id="op-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+                placeholder="MÁRCIA"
+                required
+              />
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
