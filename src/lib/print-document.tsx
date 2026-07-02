@@ -550,12 +550,15 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .delivery-banner .val { font-size:13px; font-weight:800; color:#000;
           font-variant-numeric: tabular-nums; }
 
-        /* === Client table === */
-        .client-table { width:100%; border-collapse:collapse; margin-top:6px;
+        /* === Client tables (side by side) === */
+        .client-wrap { display:grid; grid-template-columns:1fr 1fr; gap:6px;
+          margin-top:6px; align-items:start; }
+        .client-table { width:100%; table-layout:fixed; border-collapse:collapse;
           border:1px solid #000; font-size:10.5px; }
-        .client-table td { border:1px solid #bbb; padding:4px 7px; vertical-align:top; color:#000; }
+        .client-table td { border:1px solid #bbb; padding:4px 7px; vertical-align:top;
+          color:#000; overflow-wrap:anywhere; word-break:break-word; white-space:normal; }
         .client-table td.k { background:#f4f4f4; font-weight:700; text-transform:uppercase;
-          font-size:9px; letter-spacing:.4px; width:110px; white-space:nowrap; }
+          font-size:9px; letter-spacing:.4px; width:38%; white-space:nowrap; }
 
         .section-title { font-size:9.5px; font-weight:800; text-transform:uppercase;
           letter-spacing:1px; color:#000; margin:8px 0 3px;
@@ -693,17 +696,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
               <div className="name">{storeName}</div>
               {profile?.document && <div className="line">CNPJ: {profile.document}</div>}
               {profile?.address && <div className="line">{profile.address}</div>}
-              {(profile?.phone || profile?.email) && (
-                <div className="line">
-                  {profile?.phone ? `Tel: ${profile.phone}` : ""}
-                  {profile?.phone && profile?.email ? " · " : ""}
-                  {profile?.email ? `E-mail: ${profile.email}` : ""}
-                </div>
-              )}
             </div>
           </div>
           <div className="contact">
-            {profile?.phone && <div>{profile.phone}</div>}
+            {profile?.phone && <div>Tel: {profile.phone}</div>}
             {profile?.email && <div>{profile.email}</div>}
             {(order.operator_name || budget?.operator_name) && (
               <div className="op">Colaborador: {order.operator_name || budget?.operator_name}</div>
@@ -731,51 +727,63 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
         {/* 4. Dados do cliente */}
         <div className="section-title">Dados do cliente</div>
-        <table className="client-table">
-          <tbody>
-            <tr>
-              <td className="k">Nome / Razão Social</td>
-              <td colSpan={3}>{order.client_name || client?.name || "—"}</td>
-            </tr>
-            {client?.document && (
-              <tr>
-                <td className="k">{client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ"}</td>
-                <td colSpan={3}>{client.document}</td>
-              </tr>
-            )}
-            {(client?.address || client?.address_number) && (
-              <tr>
-                <td className="k">Endereço</td>
-                <td colSpan={3}>
-                  {client?.address || ""}
-                  {client?.address_number ? `, ${client.address_number}` : ""}
-                </td>
-              </tr>
-            )}
-            {client?.cep && (
-              <tr>
-                <td className="k">CEP</td>
-                <td colSpan={3}>{client.cep}</td>
-              </tr>
-            )}
-            {(client?.phone || client?.mobile_phone || client?.commercial_phone || client?.whatsapp) && (
-              <tr>
-                <td className="k">Telefone</td>
-                <td colSpan={3}>
-                  {[client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </td>
-              </tr>
-            )}
-            {client?.email && (
-              <tr>
-                <td className="k">E-mail</td>
-                <td colSpan={3}>{client.email}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {(() => {
+          const nome = order.client_name || client?.name || "—";
+          const doc = client?.document || "—";
+          const docLbl = client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ";
+          const cep = client?.cep || "—";
+          const tel =
+            [client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
+              .filter(Boolean)
+              .join(" · ") || "—";
+          const endereco =
+            [client?.address, client?.address_number].filter(Boolean).join(", ") || "—";
+          const email = client?.email || "—";
+          return (
+            <div className="client-wrap">
+              <table className="client-table">
+                <tbody>
+                  <tr>
+                    <td className="k">Razão Social / Nome</td>
+                    <td>{nome}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">{docLbl}</td>
+                    <td>{doc}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">CEP</td>
+                    <td>{cep}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">Telefone</td>
+                    <td>{tel}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <table className="client-table">
+                <tbody>
+                  <tr>
+                    <td className="k">Nome Fantasia</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td className="k">Endereço</td>
+                    <td>{endereco}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">Cidade / UF</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td className="k">E-mail</td>
+                    <td>{email}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
 
         {/* Informações complementares do pedido (pagamento / origem) */}
         {(variant !== "producao" || (kind === "pedido" && budget)) && (
