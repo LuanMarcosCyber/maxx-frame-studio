@@ -50,16 +50,21 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
   const qc = useQueryClient();
 
   const canSeeNotifications = role === "admin" || role === "revendedor";
+  const currentUserId = session?.user?.id ?? null;
 
   const { data: requests = [] } = useQuery({
-    queryKey: ["discount-requests", "pending"],
-    enabled: !!session && canSeeNotifications,
+    queryKey: ["discount-requests", "pending", currentUserId],
+    enabled: !!currentUserId && canSeeNotifications,
     refetchInterval: 30000,
     queryFn: async (): Promise<DiscountRequest[]> => {
+      if (!currentUserId) return [];
+      // Only the closest responsible (owner) sees these; requester never sees own.
       const { data, error } = await supabase
         .from("discount_approval_requests")
         .select("id, budget_id, budget_number, requested_percent, status, created_at, requested_by")
         .eq("status", "pending")
+        .eq("owner_user_id", currentUserId)
+        .neq("requested_by", currentUserId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as DiscountRequest[];
