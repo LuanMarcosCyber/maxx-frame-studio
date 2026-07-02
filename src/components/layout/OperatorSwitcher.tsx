@@ -133,7 +133,7 @@ export function OperatorSwitcher({
                 <p className="text-sm text-muted-foreground py-4 text-center">Carregando...</p>
               ) : operators.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
-                  Nenhum colaborador ativo cadastrado.
+                  Nenhum operador cadastrado.
                 </p>
               ) : (
                 operators.map((op) => {
