@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOperator } from "@/hooks/useOperator";
-import { listActiveOperators, validateOperatorPin } from "@/lib/colaboradores.functions";
+import { listActiveOperatorsV2, validateOperatorPinV2 } from "@/lib/operators.functions";
 
 type Op = { id: string; full_name: string; username: string | null; has_pin: boolean };
 
@@ -48,9 +48,9 @@ export function OperatorSwitcher({
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const list = useServerFn(listActiveOperators);
+  const list = useServerFn(listActiveOperatorsV2);
 
-  const validate = useServerFn(validateOperatorPin);
+  const validate = useServerFn(validateOperatorPinV2);
 
   const { data: operators = [], isLoading } = useQuery<Op[]>({
     queryKey: ["active-operators"],
