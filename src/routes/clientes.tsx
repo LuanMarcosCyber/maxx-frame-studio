@@ -158,6 +158,8 @@ function Clientes() {
       cep: c.cep ?? "",
       address: c.address ?? "",
       address_number: c.address_number ?? "",
+      city: c.city ?? "",
+      state: c.state ?? "",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
