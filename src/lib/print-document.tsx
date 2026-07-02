@@ -511,19 +511,51 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .via-title { text-align:center; font-size:12px; font-weight:800; color:#000;
           letter-spacing:1.4px; margin:0 0 4px; }
 
-        /* Lightweight topbar: no filled bar, only thin underline */
-        .topbar { display:flex; justify-content:space-between; align-items:center; gap:8px;
-          padding:2px 2px 5px; border-bottom:1.2px solid #000; }
-        .topbar .left { display:flex; align-items:center; gap:8px; min-width:0; }
-        .avatar { height:34px; max-width:140px; color:#000;
-          display:inline-flex; align-items:center; font-weight:800; font-size:11px;
-          flex:0 0 auto; }
-        .avatar img { height:34px; max-width:140px; width:auto; object-fit:contain; display:block; }
-        .topbar h1 { margin:0; font-size:14px; font-weight:800; letter-spacing:.2px; color:#000; }
-        .topbar .right { text-align:right; font-size:9px; text-transform:uppercase;
-          letter-spacing:.6px; line-height:1.15; color:#000; }
-        .topbar .right .num { font-family: ui-monospace, Menlo, Consolas, monospace;
-          font-size:13px; font-weight:700; letter-spacing:0; color:#000; }
+        /* === Store header (emissora) === */
+        .store-header { display:flex; justify-content:space-between; align-items:flex-start;
+          gap:14px; padding:4px 2px 8px; border-bottom:1.5px solid #000; }
+        .store-header .brand { display:flex; align-items:center; gap:12px; min-width:0; flex:1; }
+        .store-header .logo { height:64px; max-width:180px; display:inline-flex;
+          align-items:center; justify-content:center; color:#000; font-weight:800;
+          font-size:22px; flex:0 0 auto; }
+        .store-header .logo img { height:64px; max-width:180px; width:auto; object-fit:contain; display:block; }
+        .store-header .company { min-width:0; }
+        .store-header .company .name { font-size:15px; font-weight:800; color:#000;
+          margin:0 0 2px; letter-spacing:.2px; line-height:1.15; }
+        .store-header .company .line { font-size:10px; color:#000; line-height:1.35; }
+        .store-header .contact { text-align:right; font-size:10px; color:#000;
+          line-height:1.35; white-space:nowrap; }
+        .store-header .contact .op { margin-top:3px; font-weight:700;
+          text-transform:uppercase; letter-spacing:.4px; font-size:9.5px; }
+
+        /* === Order banner === */
+        .order-banner { display:grid; grid-template-columns: 1fr auto 1fr;
+          align-items:center; padding:6px 8px; margin-top:6px;
+          border:1.5px solid #000; background:#fff; }
+        .order-banner .via { font-size:9.5px; font-weight:800; letter-spacing:1.4px;
+          color:#000; text-transform:uppercase; text-align:left; }
+        .order-banner .num { text-align:center; font-size:14px; font-weight:800;
+          letter-spacing:.6px; color:#000; text-transform:uppercase;
+          font-variant-numeric: tabular-nums; }
+        .order-banner .emit { text-align:right; font-size:10px; color:#000; line-height:1.25; }
+        .order-banner .emit .lbl { font-weight:700; text-transform:uppercase; letter-spacing:.4px; font-size:9px; }
+        .order-banner .emit .val { font-weight:800; font-size:11px; }
+
+        /* === Delivery === */
+        .delivery-banner { display:flex; align-items:center; gap:10px; justify-content:center;
+          padding:5px 8px; margin-top:4px; border:1.5px solid #000;
+          background:#f2f2f2; }
+        .delivery-banner .lbl { font-size:10px; font-weight:800; text-transform:uppercase;
+          letter-spacing:1px; color:#000; }
+        .delivery-banner .val { font-size:13px; font-weight:800; color:#000;
+          font-variant-numeric: tabular-nums; }
+
+        /* === Client table === */
+        .client-table { width:100%; border-collapse:collapse; margin-top:6px;
+          border:1px solid #000; font-size:10.5px; }
+        .client-table td { border:1px solid #bbb; padding:4px 7px; vertical-align:top; color:#000; }
+        .client-table td.k { background:#f4f4f4; font-weight:700; text-transform:uppercase;
+          font-size:9px; letter-spacing:.4px; width:110px; white-space:nowrap; }
 
         .section-title { font-size:9.5px; font-weight:800; text-transform:uppercase;
           letter-spacing:1px; color:#000; margin:8px 0 3px;
@@ -532,6 +564,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:2px 14px;
           font-size:10.5px; padding:2px 0; }
         .grid-2 .lbl { color:#000; font-weight:700; display:inline-block; min-width:105px; }
+
 
         /* Item block: no filled header bar, just bold title + thin underline + numbered square */
         .item-block { margin-top:6px; page-break-inside:avoid; break-inside:avoid; }
