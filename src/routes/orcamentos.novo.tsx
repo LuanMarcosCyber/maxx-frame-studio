@@ -3984,8 +3984,8 @@ function NovoOrcamento() {
           <AlertDialogHeader>
             <AlertDialogTitle>Desconto acima do permitido</AlertDialogTitle>
             <AlertDialogDescription>
-              Seu limite de desconto é de {maxDiscount}%. Deseja solicitar autorização
-              ao administrador para aplicar {descontoPercNum.toFixed(2)}%?
+              Este desconto ultrapassa o limite permitido para o operador atual.
+              Deseja solicitar autorização ao responsável pela loja?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
