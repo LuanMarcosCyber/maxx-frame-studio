@@ -63,7 +63,7 @@ function useSidebarData() {
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
     mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras, operadores];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras];
     bottomItems = [conta];
   } else {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
