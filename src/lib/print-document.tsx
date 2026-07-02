@@ -695,7 +695,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
             </div>
             <div className="company">
               <div className="name">{storeName}</div>
-              {profile?.document && <div className="line">CNPJ: {profile.document}</div>}
+              {profile?.document && <div className="line">{onlyDigits(profile.document).length === 11 ? "CPF" : "CNPJ"}: {fmtDocument(profile.document)}</div>}
               {profile?.address && <div className="line">{profile.address}</div>}
             </div>
           </div>
