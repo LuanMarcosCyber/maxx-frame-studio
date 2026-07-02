@@ -683,59 +683,121 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       </div>
 
       <div className="sheet">
-        <div className="via-title">{variantTitle}</div>
-
-        <div className="topbar">
-          <div className="left">
-            <div className="avatar">
+        {/* 1. Cabeçalho da loja (emissora) */}
+        <div className="store-header">
+          <div className="brand">
+            <div className="logo">
               {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <span>{getInitials(storeName)}</span>}
             </div>
-            <h1>{storeName}</h1>
+            <div className="company">
+              <div className="name">{storeName}</div>
+              {profile?.document && <div className="line">CNPJ: {profile.document}</div>}
+              {profile?.address && <div className="line">{profile.address}</div>}
+              {(profile?.phone || profile?.email) && (
+                <div className="line">
+                  {profile?.phone ? `Tel: ${profile.phone}` : ""}
+                  {profile?.phone && profile?.email ? " · " : ""}
+                  {profile?.email ? `E-mail: ${profile.email}` : ""}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="right">
-            <div>{docLabel}</div>
-            <div className="num">{order.number || "—"}</div>
+          <div className="contact">
+            {profile?.phone && <div>{profile.phone}</div>}
+            {profile?.email && <div>{profile.email}</div>}
+            {(order.operator_name || budget?.operator_name) && (
+              <div className="op">Colaborador: {order.operator_name || budget?.operator_name}</div>
+            )}
           </div>
         </div>
 
-        <div className="section-title">Dados do {docLabel.toLowerCase()}</div>
-        <div className="grid-2">
-          <div>
-            <span className="lbl">Cliente:</span> {order.client_name || client?.name || "—"}
+        {/* 2. Cabeçalho do pedido */}
+        <div className="order-banner">
+          <div className="via">{variantTitle}</div>
+          <div className="num">
+            {docLabel.toUpperCase()} Nº {order.number || "—"}
           </div>
-          {kind === "pedido" && budget && (
-            <div>
-              <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
-            </div>
-          )}
-          <div>
-            <span className="lbl">Data {kind === "pedido" ? "do pedido" : "do orçamento"}:</span>{" "}
-            {fmtDate(order.created_at)}
+          <div className="emit">
+            <div className="lbl">Data de emissão</div>
+            <div className="val">{fmtDate(order.created_at)}</div>
           </div>
-          <div>
-            <span className="lbl">Data de entrega:</span> {dataEntrega}
-          </div>
-          {variant !== "producao" && (
-            <>
-              {client?.phone && (
-                <div>
-                  <span className="lbl">Telefone:</span> {client.phone}
-                </div>
-              )}
-              {client?.email && (
-                <div>
-                  <span className="lbl">E-mail:</span> {client.email}
-                </div>
-              )}
-              <div>
-                <span className="lbl">Forma de pagamento:</span> {forma}
-              </div>
-              <div>
-                <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
-              </div>
-            </>
-          )}
         </div>
+
+        {/* 3. Prazo de entrega */}
+        <div className="delivery-banner">
+          <span className="lbl">Prazo de entrega:</span>
+          <span className="val">{dataEntrega}</span>
+        </div>
+
+        {/* 4. Dados do cliente */}
+        <div className="section-title">Dados do cliente</div>
+        <table className="client-table">
+          <tbody>
+            <tr>
+              <td className="k">Nome / Razão Social</td>
+              <td colSpan={3}>{order.client_name || client?.name || "—"}</td>
+            </tr>
+            {client?.document && (
+              <tr>
+                <td className="k">{client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ"}</td>
+                <td colSpan={3}>{client.document}</td>
+              </tr>
+            )}
+            {(client?.address || client?.address_number) && (
+              <tr>
+                <td className="k">Endereço</td>
+                <td colSpan={3}>
+                  {client?.address || ""}
+                  {client?.address_number ? `, ${client.address_number}` : ""}
+                </td>
+              </tr>
+            )}
+            {client?.cep && (
+              <tr>
+                <td className="k">CEP</td>
+                <td colSpan={3}>{client.cep}</td>
+              </tr>
+            )}
+            {(client?.phone || client?.mobile_phone || client?.commercial_phone || client?.whatsapp) && (
+              <tr>
+                <td className="k">Telefone</td>
+                <td colSpan={3}>
+                  {[client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </td>
+              </tr>
+            )}
+            {client?.email && (
+              <tr>
+                <td className="k">E-mail</td>
+                <td colSpan={3}>{client.email}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* Informações complementares do pedido (pagamento / origem) */}
+        {(variant !== "producao" || (kind === "pedido" && budget)) && (
+          <div className="grid-2" style={{ marginTop: 6 }}>
+            {kind === "pedido" && budget && (
+              <div>
+                <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
+              </div>
+            )}
+            {variant !== "producao" && (
+              <>
+                <div>
+                  <span className="lbl">Forma de pagamento:</span> {forma}
+                </div>
+                <div>
+                  <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
 
         {/* Itens */}
         {frames.length > 0 && (
