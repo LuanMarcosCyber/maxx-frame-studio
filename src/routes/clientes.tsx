@@ -440,7 +440,10 @@ function Clientes() {
                     onChange={(e) => setForm({ ...form, document: e.target.value })}
                     onBlur={(e) => {
                       const v = onlyDigits(e.target.value);
-                      if (v.length === 14) lookupCnpj(v);
+                      if (v.length === 14) {
+                        setForm((f) => ({ ...f, document: fmtCNPJ(v) }));
+                        lookupCnpj(v);
+                      }
                     }}
                     placeholder="00.000.000/0000-00"
                   />
