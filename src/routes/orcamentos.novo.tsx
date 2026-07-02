@@ -811,7 +811,7 @@ function NovoOrcamento() {
   const [operatorConfirmed, setOperatorConfirmed] = useState(false);
   // Pending save opts, used to resume handleSalvar after PIN confirm at save time.
   const [pendingSaveOpts, setPendingSaveOpts] = useState<
-    { approve?: boolean; skipDiscountCheck?: boolean } | null
+    { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean } | null
   >(null);
   // Controls the shared header OperatorSwitcher dialog when opened via "Trocar operador".
   const [operatorSwitcherOpen, setOperatorSwitcherOpen] = useState(false);
