@@ -205,20 +205,15 @@ function Clientes() {
       const data = await res.json();
       const name =
         data.nome_fantasia?.trim() || data.razao_social?.trim() || "";
-      const addrParts = [
-        data.logradouro,
-        data.bairro,
-        data.municipio,
-        data.uf,
-      ]
-        .filter(Boolean)
-        .join(", ");
       setForm((f) => ({
         ...f,
         name: (name || f.name).toUpperCase(),
+        document: fmtCNPJ(cnpj),
         cep: data.cep ? String(data.cep) : f.cep,
-        address: addrParts || f.address,
+        address: data.logradouro || f.address,
         address_number: data.numero ? String(data.numero) : f.address_number,
+        city: data.municipio || f.city,
+        state: data.uf || f.state,
       }));
       toast.success("Dados do CNPJ preenchidos.");
     } catch {
