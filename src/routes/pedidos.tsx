@@ -323,7 +323,7 @@ function Pedidos() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 {showCollaborator && (
-                  <th className="font-medium py-3 px-6">Colaborador</th>
+                  <th className="font-medium py-3 px-6">Operador</th>
                 )}
                 <th className="font-medium py-3 px-3">Pedido</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
