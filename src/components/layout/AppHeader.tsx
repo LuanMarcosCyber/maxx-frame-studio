@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/avatar";
+import { fmtPct } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -49,16 +50,21 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
   const qc = useQueryClient();
 
   const canSeeNotifications = role === "admin" || role === "revendedor";
+  const currentUserId = session?.user?.id ?? null;
 
   const { data: requests = [] } = useQuery({
-    queryKey: ["discount-requests", "pending"],
-    enabled: !!session && canSeeNotifications,
+    queryKey: ["discount-requests", "pending", currentUserId],
+    enabled: !!currentUserId && canSeeNotifications,
     refetchInterval: 30000,
     queryFn: async (): Promise<DiscountRequest[]> => {
+      if (!currentUserId) return [];
+      // Only the closest responsible (owner) sees these; requester never sees own.
       const { data, error } = await supabase
         .from("discount_approval_requests")
         .select("id, budget_id, budget_number, requested_percent, status, created_at, requested_by")
         .eq("status", "pending")
+        .eq("owner_user_id", currentUserId)
+        .neq("requested_by", currentUserId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as DiscountRequest[];
@@ -81,20 +87,62 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
   });
 
   async function decide(req: DiscountRequest, status: "approved" | "rejected") {
-    const { error } = await supabase
-      .from("discount_approval_requests")
-      .update({
-        status,
-        decided_by: session?.user?.id,
-        decided_at: new Date().toISOString(),
-      })
-      .eq("id", req.id);
-    if (error) {
+    try {
+      if (status === "approved" && req.budget_id) {
+        // Fetch budget and re-apply the requested discount to details + total.
+        const { data: b, error: bErr } = await supabase
+          .from("budgets")
+          .select("id, details, total_value")
+          .eq("id", req.budget_id)
+          .maybeSingle();
+        if (bErr) throw bErr;
+        if (b) {
+          const details = { ...(b.details as Record<string, unknown> | null ?? {}) };
+          const subtotalSemDesconto = Number(details.subtotalSemDesconto ?? b.total_value ?? 0);
+          const pct = Number(req.requested_percent);
+          const descontoValor = subtotalSemDesconto * (pct / 100);
+          const subtotalComDesconto = Math.max(0, subtotalSemDesconto - descontoValor);
+          const valorSinal = Math.min(
+            subtotalComDesconto,
+            Number(details.valorSinal ?? 0),
+          );
+          const valorAReceber = Math.max(0, subtotalComDesconto - valorSinal);
+          details.descontoPercentual = Number(pct.toFixed(2));
+          details.descontoPercStr = String(pct);
+          details.descontoValor = Number(descontoValor.toFixed(2));
+          details.subtotalComDesconto = Number(subtotalComDesconto.toFixed(2));
+          details.valorSinal = Number(valorSinal.toFixed(2));
+          details.valorAReceber = Number(valorAReceber.toFixed(2));
+          const newTotal = Number(subtotalComDesconto.toFixed(2));
+          const { error: uErr } = await supabase
+            .from("budgets")
+            .update({ details: details as never, total_value: newTotal })
+            .eq("id", req.budget_id);
+          if (uErr) throw uErr;
+          // If a linked order exists, keep totals in sync.
+          await supabase
+            .from("orders")
+            .update({ total_value: newTotal })
+            .eq("budget_id", req.budget_id);
+        }
+      }
+      const { error } = await supabase
+        .from("discount_approval_requests")
+        .update({
+          status,
+          decided_by: session?.user?.id,
+          decided_at: new Date().toISOString(),
+        })
+        .eq("id", req.id);
+      if (error) throw error;
+      toast.success(status === "approved" ? "Desconto aprovado." : "Solicitação rejeitada.");
+      qc.invalidateQueries({ queryKey: ["discount-requests"] });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    } catch (e) {
+      console.error(e);
       toast.error("Falha ao atualizar solicitação.");
-      return;
     }
-    toast.success(status === "approved" ? "Desconto aprovado." : "Solicitação rejeitada.");
-    qc.invalidateQueries({ queryKey: ["discount-requests"] });
   }
 
   function openBudget(req: DiscountRequest) {
@@ -208,7 +256,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
                     </span>{" "}
                     solicitou aprovação para aplicar{" "}
                     <span className="font-semibold">
-                      {Number(r.requested_percent).toFixed(2)}%
+                      {fmtPct(r.requested_percent)}
                     </span>{" "}
                     de desconto no orçamento{" "}
                     <span className="font-mono">{r.budget_number || "—"}</span>.

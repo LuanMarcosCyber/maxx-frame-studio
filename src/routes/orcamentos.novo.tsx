@@ -811,7 +811,7 @@ function NovoOrcamento() {
   const [operatorConfirmed, setOperatorConfirmed] = useState(false);
   // Pending save opts, used to resume handleSalvar after PIN confirm at save time.
   const [pendingSaveOpts, setPendingSaveOpts] = useState<
-    { approve?: boolean; skipDiscountCheck?: boolean } | null
+    { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean } | null
   >(null);
   // Controls the shared header OperatorSwitcher dialog when opened via "Trocar operador".
   const [operatorSwitcherOpen, setOperatorSwitcherOpen] = useState(false);
@@ -1479,7 +1479,7 @@ function NovoOrcamento() {
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
 
-  async function handleSalvar(opts: { approve?: boolean; skipDiscountCheck?: boolean } = {}) {
+  async function handleSalvar(opts: { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean } = {}) {
     const approve = !!opts.approve;
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
@@ -1541,10 +1541,24 @@ function NovoOrcamento() {
       }
     }
 
+    // If saving with a pending discount request, do NOT apply the requested
+    // discount to totals yet — save as if no discount was applied.
+    const effDescontoPercNum = opts.pendingDiscount ? 0 : descontoPercNum;
+    const effDescontoPercStr = opts.pendingDiscount ? "" : descontoPercStr;
+    const effDescontoValor = opts.pendingDiscount ? 0 : descontoValor;
+    const effSubtotalComDesconto = opts.pendingDiscount
+      ? subtotalSemDesconto
+      : subtotalComDesconto;
+    const effValorTotal = opts.pendingDiscount ? subtotalSemDesconto : valorTotal;
+    const effValorSinal = Math.min(valorSinal, effValorTotal);
+    const effValorAReceber = Math.max(0, effValorTotal - effValorSinal);
+
     // Validate parcelas sum if forma parcelável + condição parcelado
     const isParcelado =
       isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
-    if (isParcelado) {
+    // Skip parcelas validation on a pending-discount silent save: the effective
+    // total differs from what the user generated parcelas for.
+    if (isParcelado && !opts.pendingDiscount) {
       if (parcelas.length === 0) {
         toast.error("Gere as parcelas antes de salvar.");
         return;
@@ -1625,18 +1639,18 @@ function NovoOrcamento() {
         transportadoraNome:
           tipoEntrega === "Transportadora" ? transportadoraNome.trim() : "",
         dataEntrega: dataEntrega || "",
-        descontoPercStr,
-        descontoPercentual: Number(descontoPercNum.toFixed(2)),
-        descontoValor: Number(descontoValor.toFixed(2)),
+        descontoPercStr: effDescontoPercStr,
+        descontoPercentual: Number(effDescontoPercNum.toFixed(2)),
+        descontoValor: Number(effDescontoValor.toFixed(2)),
         subtotalSemDesconto: Number(subtotalSemDesconto.toFixed(2)),
-        subtotalComDesconto: Number(subtotalComDesconto.toFixed(2)),
+        subtotalComDesconto: Number(effSubtotalComDesconto.toFixed(2)),
         rtPercStr,
         rtPercentual: Number(rtPercNum.toFixed(2)),
         rtValor: Number(rtValor.toFixed(2)),
         sinalAtivo,
         valorSinalStr,
-        valorSinal: Number(valorSinal.toFixed(2)),
-        valorAReceber: Number(valorAReceber.toFixed(2)),
+        valorSinal: Number(effValorSinal.toFixed(2)),
+        valorAReceber: Number(effValorAReceber.toFixed(2)),
         vendedorNome: (vendedorNome.trim() || activeOperator?.full_name || ""),
         arquitetoNome: arquitetoNome.trim(),
         arquitetoId: arquitetoId,
@@ -1649,7 +1663,7 @@ function NovoOrcamento() {
       const budgetPayload = {
         client_name: clienteNome.trim(),
         client_id: clienteId,
-        total_value: Number(valorTotal.toFixed(2)),
+        total_value: Number(effValorTotal.toFixed(2)),
         data_vencimento: dataVencimento || null,
         details: generalDetails as never,
         operator_id: activeOperator?.id ?? null,
@@ -1721,7 +1735,7 @@ function NovoOrcamento() {
           .maybeSingle();
         const orderPayload = {
           client_name: clienteNome.trim(),
-          total_value: Number(valorTotal.toFixed(2)),
+          total_value: Number(effValorTotal.toFixed(2)),
           status: "Aprovado",
           operator_id: activeOperator?.id ?? null,
           operator_name: activeOperator?.full_name ?? null,
@@ -1750,7 +1764,7 @@ function NovoOrcamento() {
         }
       }
 
-      if (opts.skipDiscountCheck && !approve) {
+      if ((opts.skipDiscountCheck || opts.pendingDiscount) && !approve) {
         // Silent save for discount authorization request flow
         await queryClient.invalidateQueries({ queryKey: ["budgets"] });
         return { budgetId, budgetNumber } as { budgetId: string; budgetNumber: string | null };
@@ -1783,7 +1797,10 @@ function NovoOrcamento() {
     if (!session?.user?.id || !ownerUserId) return;
     setRequestingAuth(true);
     try {
-      const result = await handleSalvar({ skipDiscountCheck: true });
+      const result = await handleSalvar({
+        skipDiscountCheck: true,
+        pendingDiscount: true,
+      });
       if (!result || !result.budgetId) {
         throw new Error("Falha ao salvar orçamento.");
       }

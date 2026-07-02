@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check, Printer, Store, Hammer, User } from "lucide-react";
-import { cn, fmtMeasure, fmtDateBR } from "@/lib/utils";
+import { cn, fmtMeasure, fmtDateBR, fmtPct } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -730,6 +730,10 @@ function ResumoDialog({
   orderNumber?: string | null;
 }) {
   const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
+  const [pendingDiscount, setPendingDiscount] = useState<{
+    percent: number;
+    potentialTotal: number;
+  } | null>(null);
   useEffect(() => {
     if (!budget?.id || orderNumber) {
       setLinkedOrderNumber(null);
@@ -751,6 +755,40 @@ function ResumoDialog({
   const general = (budget?.details ?? {}) as Record<string, unknown>;
   const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
   const gNum = (k: string) => (typeof general[k] === "number" ? (general[k] as number) : 0);
+
+  // Pending discount request (not yet applied to the total).
+  useEffect(() => {
+    if (!budget?.id) {
+      setPendingDiscount(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("discount_approval_requests")
+        .select("requested_percent")
+        .eq("budget_id", budget.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        const pct = Number((data as { requested_percent: number }).requested_percent);
+        const subtotal =
+          typeof general.subtotalSemDesconto === "number"
+            ? (general.subtotalSemDesconto as number)
+            : Number(budget.total_value);
+        const potential = Math.max(0, subtotal * (1 - pct / 100));
+        setPendingDiscount({ percent: pct, potentialTotal: potential });
+      } else {
+        setPendingDiscount(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budget?.id, general.subtotalSemDesconto, budget?.total_value]);
 
   const [items, setItems] = useState<BudgetItemRow[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -1161,7 +1199,7 @@ function ResumoDialog({
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 text-sm">
                     <span className="text-muted-foreground">
-                      Desconto aplicado ({gNum("descontoPercentual")}%)
+                      Desconto aplicado ({fmtPct(gNum("descontoPercentual"))})
                     </span>
                     <span className="font-semibold text-rose-600">
                       - {fmtMoney(gNum("descontoValor"))}
@@ -1194,6 +1232,17 @@ function ResumoDialog({
                 {fmtMoney(Number(budget.total_value))}
               </span>
             </div>
+
+            {pendingDiscount && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Possível total se o desconto de {fmtPct(pendingDiscount.percent)}{" "}
+                for aprovado:{" "}
+                <span className="font-semibold">
+                  {fmtMoney(pendingDiscount.potentialTotal)}
+                </span>
+              </div>
+            )}
+
 
             {general.sinalAtivo === "sim" && gNum("valorSinal") > 0 && (
               <div className="rounded-lg border border-border divide-y divide-border">
