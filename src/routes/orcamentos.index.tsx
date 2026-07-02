@@ -1199,7 +1199,7 @@ function ResumoDialog({
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 text-sm">
                     <span className="text-muted-foreground">
-                      Desconto aplicado ({gNum("descontoPercentual")}%)
+                      Desconto aplicado ({fmtPct(gNum("descontoPercentual"))})
                     </span>
                     <span className="font-semibold text-rose-600">
                       - {fmtMoney(gNum("descontoValor"))}
