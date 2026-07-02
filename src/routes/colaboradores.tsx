@@ -365,7 +365,7 @@ function CreateDialog({
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [pin, setPin] = useState("");
+  // PIN removido — Contas de acesso não usam PIN (apenas Operadores).
   const [perms, setPerms] = useState<Permissions>({ ...DEFAULT_PERMS, max_discount_percent: 10 });
 
   const submit = async (e: FormEvent) => {
