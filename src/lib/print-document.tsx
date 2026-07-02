@@ -417,10 +417,13 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         budget?.client_id
           ? supabase
               .from("clients")
-              .select("name, phone, email, document, address")
+              .select(
+                "name, phone, email, document, address, address_number, cep, commercial_phone, mobile_phone, whatsapp, customer_type",
+              )
               .eq("id", budget.client_id)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+
       ]);
 
       let items: Array<{ id: string; position: number; subtotal: number; data: ItemData }> = ((itemsRes as any).data ??
