@@ -538,12 +538,12 @@ function Clientes() {
               </div>
             </div>
             <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="cli-addr">Endereço</Label>
+              <Label htmlFor="cli-addr">Rua</Label>
               <Input
                 id="cli-addr"
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Rua, bairro, cidade, UF"
+                placeholder="Rua/Avenida"
               />
             </div>
             <div className="space-y-1.5 sm:col-span-1">
@@ -555,6 +555,27 @@ function Clientes() {
                   setForm({ ...form, address_number: e.target.value })
                 }
                 placeholder="123"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-4">
+              <Label htmlFor="cli-city">Cidade</Label>
+              <Input
+                id="cli-city"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                placeholder="Cidade"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="cli-uf">UF</Label>
+              <Input
+                id="cli-uf"
+                value={form.state}
+                onChange={(e) =>
+                  setForm({ ...form, state: e.target.value.toUpperCase().slice(0, 2) })
+                }
+                placeholder="SP"
+                maxLength={2}
               />
             </div>
 
