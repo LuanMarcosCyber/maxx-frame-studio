@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Truck,
   Compass,
+  UsersRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getInitials, fileToAvatarDataUrl } from "@/lib/avatar";
@@ -41,7 +42,8 @@ const arquitetos: Item = { title: "Arquitetos", url: "/arquitetos", icon: Compas
 const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras", icon: Truck };
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3, badge: "Em breve" };
 const revendedores: Item = { title: "Revendedores", url: "/revendedores", icon: Users };
-const colaboradores: Item = { title: "Colaboradores", url: "/colaboradores", icon: UserCog };
+const colaboradores: Item = { title: "Contas de acesso", url: "/colaboradores", icon: UserCog };
+const operadores: Item = { title: "Operadores", url: "/operadores", icon: UsersRound };
 
 const conta: Item = { title: "Conta", url: "/conta", icon: User };
 const configuracoes: Item = { title: "Configurações", url: "/configuracoes", icon: Settings };
@@ -57,15 +59,15 @@ function useSidebarData() {
   let bottomItems: Item[];
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, revendedores];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, operadores, revendedores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador") {
     mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras, operadores];
     bottomItems = [conta];
   } else {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, operadores];
     bottomItems = [conta, configuracoes];
   }
 
