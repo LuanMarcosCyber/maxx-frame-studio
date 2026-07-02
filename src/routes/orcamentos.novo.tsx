@@ -1556,7 +1556,9 @@ function NovoOrcamento() {
     // Validate parcelas sum if forma parcelável + condição parcelado
     const isParcelado =
       isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
-    if (isParcelado) {
+    // Skip parcelas validation on a pending-discount silent save: the effective
+    // total differs from what the user generated parcelas for.
+    if (isParcelado && !opts.pendingDiscount) {
       if (parcelas.length === 0) {
         toast.error("Gere as parcelas antes de salvar.");
         return;
