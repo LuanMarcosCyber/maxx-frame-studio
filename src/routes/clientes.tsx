@@ -245,10 +245,15 @@ function Clientes() {
         phone: commercial,
         whatsapp: mobile,
         email: form.email.trim() || null,
-        document: form.document.trim() || null,
+        document:
+          (form.customer_type === "pessoa_juridica"
+            ? fmtCNPJ(form.document.trim())
+            : fmtCPF(form.document.trim())) || form.document.trim() || null,
         cep: form.cep.trim() || null,
         address: form.address.trim() || null,
         address_number: form.address_number.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim() || null,
         notes: form.notes.trim() || null,
       };
       if (form.id) {
