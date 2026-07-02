@@ -1797,7 +1797,10 @@ function NovoOrcamento() {
     if (!session?.user?.id || !ownerUserId) return;
     setRequestingAuth(true);
     try {
-      const result = await handleSalvar({ skipDiscountCheck: true });
+      const result = await handleSalvar({
+        skipDiscountCheck: true,
+        pendingDiscount: true,
+      });
       if (!result || !result.budgetId) {
         throw new Error("Falha ao salvar orçamento.");
       }
