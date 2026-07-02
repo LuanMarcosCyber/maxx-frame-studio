@@ -511,6 +511,12 @@ function Clientes() {
                   id="cli-doc"
                   value={form.document}
                   onChange={(e) => setForm({ ...form, document: e.target.value })}
+                  onBlur={(e) => {
+                    const v = onlyDigits(e.target.value);
+                    if (v.length === 11) {
+                      setForm((f) => ({ ...f, document: fmtCPF(v) }));
+                    }
+                  }}
                   placeholder="000.000.000-00"
                 />
               </div>
