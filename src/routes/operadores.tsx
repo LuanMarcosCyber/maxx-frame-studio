@@ -275,7 +275,6 @@ function OperadoresPage() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Nome</th>
-                <th className="font-medium py-3 px-3">Apelido</th>
                 {!isOperational && (
                   <th className="font-medium py-3 px-3">Conta operacional</th>
                 )}
