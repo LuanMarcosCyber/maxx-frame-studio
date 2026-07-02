@@ -375,14 +375,12 @@ function CreateDialog({
         full_name: fullName,
         username,
         password,
-        ...(pin ? { pin } : {}),
         ...perms,
       });
       setOpen(false);
       setFullName("");
       setUsername("");
       setPassword("");
-      setPin("");
       setPerms({ ...DEFAULT_PERMS, max_discount_percent: 10 });
     } catch {
       // toast handled
