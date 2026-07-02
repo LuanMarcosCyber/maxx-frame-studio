@@ -444,24 +444,6 @@ function CreateDialog({
               placeholder="Mínimo 6 caracteres"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pin">PIN de operação (4 a 6 dígitos)</Label>
-            <Input
-              id="pin"
-              type="password"
-              inputMode="numeric"
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              pattern="\d{4,6}"
-              minLength={4}
-              maxLength={6}
-              required
-              placeholder="Ex.: 1234"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Usado para ativar o operador no balcão. Não substitui a senha de login.
-            </p>
-          </div>
           <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
