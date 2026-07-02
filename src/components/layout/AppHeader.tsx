@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/avatar";
+import { fmtPct } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   DropdownMenu,
