@@ -54,7 +54,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/colaboradores")({
-  head: () => ({ meta: [{ title: "Colaboradores — Total Maxx" }] }),
+  head: () => ({ meta: [{ title: "Contas de acesso — Total Maxx" }] }),
   component: ColaboradoresPage,
 });
 
@@ -72,7 +72,7 @@ function ColaboradoresPage() {
 
   if (loading || !role) {
     return (
-      <AppShell title="Colaboradores" subtitle="Gerenciamento da equipe">
+      <AppShell title="Contas de acesso" subtitle="Gerencie os logins da sua loja">
         <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
@@ -80,7 +80,10 @@ function ColaboradoresPage() {
   if (!canManage) return null;
 
   return (
-    <AppShell title="Colaboradores" subtitle="Gerencie os colaboradores da sua loja">
+    <AppShell
+      title="Contas de acesso"
+      subtitle="Contas operacionais que fazem login. Para cadastrar operadores (Márcia, Tânia, Thiago…), use o menu Operadores."
+    >
       <Content />
     </AppShell>
   );
@@ -200,9 +203,9 @@ function Content() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Colaboradores cadastrados</h2>
+          <h2 className="text-lg font-semibold">Contas de acesso da loja</h2>
           <p className="text-sm text-muted-foreground">
-            Os colaboradores usam os produtos da sua loja e criam orçamentos e pedidos em seu nome.
+            Cada conta faz login e representa um usuário do sistema. Os operadores que aparecem no seletor do topo são cadastrados em <strong>Operadores</strong>.
           </p>
         </div>
         <CreateDialog onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>} submitting={createMut.isPending} />
