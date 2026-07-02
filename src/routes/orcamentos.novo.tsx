@@ -1541,6 +1541,18 @@ function NovoOrcamento() {
       }
     }
 
+    // If saving with a pending discount request, do NOT apply the requested
+    // discount to totals yet — save as if no discount was applied.
+    const effDescontoPercNum = opts.pendingDiscount ? 0 : descontoPercNum;
+    const effDescontoPercStr = opts.pendingDiscount ? "" : descontoPercStr;
+    const effDescontoValor = opts.pendingDiscount ? 0 : descontoValor;
+    const effSubtotalComDesconto = opts.pendingDiscount
+      ? subtotalSemDesconto
+      : subtotalComDesconto;
+    const effValorTotal = opts.pendingDiscount ? subtotalSemDesconto : valorTotal;
+    const effValorSinal = Math.min(valorSinal, effValorTotal);
+    const effValorAReceber = Math.max(0, effValorTotal - effValorSinal);
+
     // Validate parcelas sum if forma parcelável + condição parcelado
     const isParcelado =
       isFormaParcelavel(formaPagamento) && condicaoPagamento === "Parcelado";
