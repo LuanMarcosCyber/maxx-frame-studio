@@ -120,7 +120,7 @@ function Clientes() {
       const { data, error } = await supabase
         .from("clients")
         .select(
-          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, notes, created_at",
+          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, notes, created_at",
         )
         .order("name", { ascending: true });
       if (error) throw error;
