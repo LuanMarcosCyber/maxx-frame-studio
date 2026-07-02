@@ -550,12 +550,15 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .delivery-banner .val { font-size:13px; font-weight:800; color:#000;
           font-variant-numeric: tabular-nums; }
 
-        /* === Client table === */
-        .client-table { width:100%; border-collapse:collapse; margin-top:6px;
+        /* === Client tables (side by side) === */
+        .client-wrap { display:grid; grid-template-columns:1fr 1fr; gap:6px;
+          margin-top:6px; align-items:start; }
+        .client-table { width:100%; table-layout:fixed; border-collapse:collapse;
           border:1px solid #000; font-size:10.5px; }
-        .client-table td { border:1px solid #bbb; padding:4px 7px; vertical-align:top; color:#000; }
+        .client-table td { border:1px solid #bbb; padding:4px 7px; vertical-align:top;
+          color:#000; overflow-wrap:anywhere; word-break:break-word; white-space:normal; }
         .client-table td.k { background:#f4f4f4; font-weight:700; text-transform:uppercase;
-          font-size:9px; letter-spacing:.4px; width:110px; white-space:nowrap; }
+          font-size:9px; letter-spacing:.4px; width:38%; white-space:nowrap; }
 
         .section-title { font-size:9.5px; font-weight:800; text-transform:uppercase;
           letter-spacing:1px; color:#000; margin:8px 0 3px;
