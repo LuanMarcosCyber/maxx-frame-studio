@@ -730,6 +730,10 @@ function ResumoDialog({
   orderNumber?: string | null;
 }) {
   const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
+  const [pendingDiscount, setPendingDiscount] = useState<{
+    percent: number;
+    potentialTotal: number;
+  } | null>(null);
   useEffect(() => {
     if (!budget?.id || orderNumber) {
       setLinkedOrderNumber(null);
@@ -751,6 +755,40 @@ function ResumoDialog({
   const general = (budget?.details ?? {}) as Record<string, unknown>;
   const gStr = (k: string) => (typeof general[k] === "string" ? (general[k] as string) : "");
   const gNum = (k: string) => (typeof general[k] === "number" ? (general[k] as number) : 0);
+
+  // Pending discount request (not yet applied to the total).
+  useEffect(() => {
+    if (!budget?.id) {
+      setPendingDiscount(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("discount_approval_requests")
+        .select("requested_percent")
+        .eq("budget_id", budget.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        const pct = Number((data as { requested_percent: number }).requested_percent);
+        const subtotal =
+          typeof general.subtotalSemDesconto === "number"
+            ? (general.subtotalSemDesconto as number)
+            : Number(budget.total_value);
+        const potential = Math.max(0, subtotal * (1 - pct / 100));
+        setPendingDiscount({ percent: pct, potentialTotal: potential });
+      } else {
+        setPendingDiscount(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [budget?.id, general.subtotalSemDesconto, budget?.total_value]);
 
   const [items, setItems] = useState<BudgetItemRow[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
