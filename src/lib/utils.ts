@@ -78,3 +78,48 @@ export function fmtDateBR(value: string | null | undefined): string {
   return fmtDateTime(value);
 }
 
+/** Remove todos os caracteres não numéricos. */
+export function onlyDigits(s: string | null | undefined): string {
+  return (s ?? "").replace(/\D+/g, "");
+}
+
+/** Formata CPF (000.000.000-00). Se não tiver 11 dígitos, retorna original. */
+export function fmtCPF(value: string | null | undefined): string {
+  const d = onlyDigits(value);
+  if (d.length !== 11) return value ?? "";
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+/** Formata CNPJ (00.000.000/0000-00). Se não tiver 14 dígitos, retorna original. */
+export function fmtCNPJ(value: string | null | undefined): string {
+  const d = onlyDigits(value);
+  if (d.length !== 14) return value ?? "";
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/**
+ * Formata CPF/CNPJ automaticamente pelo tamanho, ou pelo tipo informado.
+ * type "cpf"/"cnpj"/"pessoa_fisica"/"pessoa_juridica" força o formato.
+ */
+export function fmtDocument(
+  value: string | null | undefined,
+  type?: string | null,
+): string {
+  const d = onlyDigits(value);
+  if (!d) return value ?? "";
+  const t = (type ?? "").toLowerCase();
+  if (t === "cpf" || t === "pessoa_fisica") return fmtCPF(d);
+  if (t === "cnpj" || t === "pessoa_juridica") return fmtCNPJ(d);
+  if (d.length === 11) return fmtCPF(d);
+  if (d.length === 14) return fmtCNPJ(d);
+  return value ?? "";
+}
+
+/** Formata CEP (00000-000). */
+export function fmtCEP(value: string | null | undefined): string {
+  const d = onlyDigits(value);
+  if (d.length !== 8) return value ?? "";
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
+

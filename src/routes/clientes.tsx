@@ -35,6 +35,7 @@ import {
 import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { fmtCPF, fmtCNPJ } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes")({
@@ -57,6 +58,8 @@ type ClientRow = {
   cep: string | null;
   address: string | null;
   address_number: string | null;
+  city: string | null;
+  state: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -72,6 +75,8 @@ type FormState = {
   cep: string;
   address: string;
   address_number: string;
+  city: string;
+  state: string;
   notes: string;
 };
 
@@ -85,6 +90,8 @@ const emptyForm: FormState = {
   cep: "",
   address: "",
   address_number: "",
+  city: "",
+  state: "",
   notes: "",
 };
 
@@ -113,7 +120,7 @@ function Clientes() {
       const { data, error } = await supabase
         .from("clients")
         .select(
-          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, notes, created_at",
+          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, notes, created_at",
         )
         .order("name", { ascending: true });
       if (error) throw error;
@@ -151,6 +158,8 @@ function Clientes() {
       cep: c.cep ?? "",
       address: c.address ?? "",
       address_number: c.address_number ?? "",
+      city: c.city ?? "",
+      state: c.state ?? "",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
@@ -167,10 +176,12 @@ function Clientes() {
         toast.warning("CEP não encontrado.");
         return;
       }
-      const parts = [data.logradouro, data.bairro, data.localidade, data.uf]
-        .filter(Boolean)
-        .join(", ");
-      setForm((f) => ({ ...f, address: parts || f.address }));
+      setForm((f) => ({
+        ...f,
+        address: data.logradouro || f.address,
+        city: data.localidade || f.city,
+        state: data.uf || f.state,
+      }));
     } catch {
       toast.error("Não foi possível buscar o CEP.");
     } finally {
@@ -194,20 +205,15 @@ function Clientes() {
       const data = await res.json();
       const name =
         data.nome_fantasia?.trim() || data.razao_social?.trim() || "";
-      const addrParts = [
-        data.logradouro,
-        data.bairro,
-        data.municipio,
-        data.uf,
-      ]
-        .filter(Boolean)
-        .join(", ");
       setForm((f) => ({
         ...f,
         name: (name || f.name).toUpperCase(),
+        document: fmtCNPJ(cnpj),
         cep: data.cep ? String(data.cep) : f.cep,
-        address: addrParts || f.address,
+        address: data.logradouro || f.address,
         address_number: data.numero ? String(data.numero) : f.address_number,
+        city: data.municipio || f.city,
+        state: data.uf || f.state,
       }));
       toast.success("Dados do CNPJ preenchidos.");
     } catch {
@@ -239,10 +245,15 @@ function Clientes() {
         phone: commercial,
         whatsapp: mobile,
         email: form.email.trim() || null,
-        document: form.document.trim() || null,
+        document:
+          (form.customer_type === "pessoa_juridica"
+            ? fmtCNPJ(form.document.trim())
+            : fmtCPF(form.document.trim())) || form.document.trim() || null,
         cep: form.cep.trim() || null,
         address: form.address.trim() || null,
         address_number: form.address_number.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim() || null,
         notes: form.notes.trim() || null,
       };
       if (form.id) {
@@ -429,7 +440,10 @@ function Clientes() {
                     onChange={(e) => setForm({ ...form, document: e.target.value })}
                     onBlur={(e) => {
                       const v = onlyDigits(e.target.value);
-                      if (v.length === 14) lookupCnpj(v);
+                      if (v.length === 14) {
+                        setForm((f) => ({ ...f, document: fmtCNPJ(v) }));
+                        lookupCnpj(v);
+                      }
                     }}
                     placeholder="00.000.000/0000-00"
                   />
@@ -497,6 +511,12 @@ function Clientes() {
                   id="cli-doc"
                   value={form.document}
                   onChange={(e) => setForm({ ...form, document: e.target.value })}
+                  onBlur={(e) => {
+                    const v = onlyDigits(e.target.value);
+                    if (v.length === 11) {
+                      setForm((f) => ({ ...f, document: fmtCPF(v) }));
+                    }
+                  }}
                   placeholder="000.000.000-00"
                 />
               </div>
@@ -518,12 +538,12 @@ function Clientes() {
               </div>
             </div>
             <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="cli-addr">Endereço</Label>
+              <Label htmlFor="cli-addr">Rua</Label>
               <Input
                 id="cli-addr"
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Rua, bairro, cidade, UF"
+                placeholder="Rua/Avenida"
               />
             </div>
             <div className="space-y-1.5 sm:col-span-1">
@@ -535,6 +555,27 @@ function Clientes() {
                   setForm({ ...form, address_number: e.target.value })
                 }
                 placeholder="123"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-4">
+              <Label htmlFor="cli-city">Cidade</Label>
+              <Input
+                id="cli-city"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                placeholder="Cidade"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="cli-uf">UF</Label>
+              <Input
+                id="cli-uf"
+                value={form.state}
+                onChange={(e) =>
+                  setForm({ ...form, state: e.target.value.toUpperCase().slice(0, 2) })
+                }
+                placeholder="SP"
+                maxLength={2}
               />
             </div>
 

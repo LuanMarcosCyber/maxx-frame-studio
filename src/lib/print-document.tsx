@@ -1,6 +1,7 @@
 // Print document renderer — opened in a new tab. Does not auto-call window.print().
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fmtDocument, onlyDigits } from "@/lib/utils";
 
 export type Variant = "loja" | "producao" | "cliente";
 export type DocKind = "pedido" | "orcamento";
@@ -694,7 +695,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
             </div>
             <div className="company">
               <div className="name">{storeName}</div>
-              {profile?.document && <div className="line">CNPJ: {profile.document}</div>}
+              {profile?.document && <div className="line">{onlyDigits(profile.document).length === 11 ? "CPF" : "CNPJ"}: {fmtDocument(profile.document)}</div>}
               {profile?.address && <div className="line">{profile.address}</div>}
             </div>
           </div>
@@ -729,13 +730,23 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         <div className="section-title">Dados do cliente</div>
         {(() => {
           const nome = order.client_name || client?.name || "—";
-          const doc = client?.document || "—";
+          const doc = client?.document
+            ? fmtDocument(client.document, client.customer_type)
+            : "—";
           const docLbl = client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ";
           const cep = client?.cep || "—";
-          const tel =
-            [client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
-              .filter(Boolean)
-              .join(" · ") || "—";
+          const phones = [
+            client?.commercial_phone,
+            client?.mobile_phone,
+            client?.phone,
+            client?.whatsapp,
+          ]
+            .map((p) => (p ?? "").trim())
+            .filter(Boolean);
+          const uniquePhones = Array.from(
+            new Map(phones.map((p) => [onlyDigits(p), p])).values(),
+          );
+          const tel = uniquePhones.join(" · ") || "—";
           const endereco =
             [client?.address, client?.address_number].filter(Boolean).join(", ") || "—";
           const email = client?.email || "—";

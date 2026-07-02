@@ -1,21 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, ShoppingCart, Package } from "lucide-react";
+import { FileText, ShoppingCart, Package, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/avatar";
+import { fmtCPF, fmtCNPJ, onlyDigits } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/conta")({
   head: () => ({ meta: [{ title: "Conta — Total Maxx ERP" }] }),
   component: Conta,
 });
+
+type DocType = "cpf" | "cnpj";
 
 function Conta() {
   const { user, profile, refreshProfile } = useAuth();
@@ -24,19 +28,34 @@ function Conta() {
     store_name: "",
     email: "",
     phone: "",
+    document_type: "cnpj" as DocType,
     document: "",
+    cep: "",
     address: "",
+    address_number: "",
+    city: "",
+    state: "",
   });
   const [saving, setSaving] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
 
   useEffect(() => {
+    const p = profile as unknown as Record<string, string | null> | null;
+    const dt = (p?.document_type as DocType | null) ?? null;
+    const inferred: DocType =
+      dt ?? (onlyDigits(p?.document ?? "").length === 11 ? "cpf" : "cnpj");
     setForm({
       full_name: profile?.full_name ?? "",
       store_name: profile?.store_name ?? "",
       email: profile?.email ?? "",
       phone: profile?.phone ?? "",
+      document_type: inferred,
       document: profile?.document ?? "",
+      cep: (p?.cep as string | null) ?? "",
       address: profile?.address ?? "",
+      address_number: (p?.address_number as string | null) ?? "",
+      city: (p?.city as string | null) ?? "",
+      state: (p?.state as string | null) ?? "",
     });
   }, [profile]);
 
@@ -60,12 +79,49 @@ function Conta() {
     },
   });
 
-  const onChange = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const onChange =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function lookupCep(rawCep: string) {
+    const cep = onlyDigits(rawCep);
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data?.erro) {
+        toast.warning("CEP não encontrado.");
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        address: data.logradouro || f.address,
+        city: data.localidade || f.city,
+        state: data.uf || f.state,
+      }));
+    } catch {
+      toast.error("Não foi possível buscar o CEP.");
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
+  const onDocBlur = () => {
+    const formatted =
+      form.document_type === "cpf"
+        ? fmtCPF(form.document)
+        : fmtCNPJ(form.document);
+    if (formatted !== form.document) setForm((f) => ({ ...f, document: formatted }));
+  };
 
   const onSave = async () => {
     if (!user) return;
     setSaving(true);
+    const documentFormatted =
+      form.document_type === "cpf"
+        ? fmtCPF(form.document)
+        : fmtCNPJ(form.document);
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -73,8 +129,13 @@ function Conta() {
         store_name: form.store_name || null,
         email: form.email || null,
         phone: form.phone || null,
-        document: form.document || null,
+        document_type: form.document_type,
+        document: documentFormatted || null,
+        cep: form.cep || null,
         address: form.address || null,
+        address_number: form.address_number || null,
+        city: form.city || null,
+        state: form.state || null,
       })
       .eq("id", user.id);
     setSaving(false);
@@ -95,8 +156,8 @@ function Conta() {
           <p className="text-xs text-muted-foreground mb-6">
             Atualize seus dados de cadastro
           </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
+          <div className="grid sm:grid-cols-6 gap-4">
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
                 id="nome"
@@ -105,7 +166,7 @@ function Conta() {
                 placeholder="Seu nome completo"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="loja">Nome da loja</Label>
               <Input
                 id="loja"
@@ -115,7 +176,7 @@ function Conta() {
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
@@ -125,7 +186,7 @@ function Conta() {
                 placeholder="seuemail@empresa.com"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="tel">Telefone</Label>
               <Input
                 id="tel"
@@ -134,22 +195,96 @@ function Conta() {
                 placeholder="(11) 99999-9999"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="doc">CNPJ / CPF</Label>
+
+            <div className="space-y-1.5 sm:col-span-6">
+              <Label>Tipo de documento</Label>
+              <RadioGroup
+                value={form.document_type}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, document_type: v as DocType }))
+                }
+                className="flex gap-3"
+              >
+                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
+                  <RadioGroupItem value="cpf" id="dt-cpf" />
+                  <span className="text-sm">CPF</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
+                  <RadioGroupItem value="cnpj" id="dt-cnpj" />
+                  <span className="text-sm">CNPJ</span>
+                </label>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-6">
+              <Label htmlFor="doc">
+                {form.document_type === "cpf" ? "CPF" : "CNPJ"}
+              </Label>
               <Input
                 id="doc"
                 value={form.document}
                 onChange={onChange("document")}
-                placeholder="Digite seu CPF ou CNPJ"
+                onBlur={onDocBlur}
+                placeholder={
+                  form.document_type === "cpf"
+                    ? "000.000.000-00"
+                    : "00.000.000/0000-00"
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="cep">CEP</Label>
+              <div className="relative">
+                <Input
+                  id="cep"
+                  value={form.cep}
+                  onChange={onChange("cep")}
+                  onBlur={(e) => lookupCep(e.target.value)}
+                  placeholder="00000-000"
+                />
+                {cepLoading && (
+                  <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="rua">Rua</Label>
+              <Input
+                id="rua"
+                value={form.address}
+                onChange={onChange("address")}
+                placeholder="Rua/Avenida"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-1">
+              <Label htmlFor="num">Número</Label>
+              <Input
+                id="num"
+                value={form.address_number}
+                onChange={onChange("address_number")}
+                placeholder="123"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-4">
+              <Label htmlFor="cidade">Cidade</Label>
+              <Input
+                id="cidade"
+                value={form.city}
+                onChange={onChange("city")}
+                placeholder="Cidade"
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="end">Endereço</Label>
+              <Label htmlFor="uf">UF</Label>
               <Input
-                id="end"
-                value={form.address}
-                onChange={onChange("address")}
-                placeholder="Rua, número, cidade - UF"
+                id="uf"
+                value={form.state}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, state: e.target.value.toUpperCase().slice(0, 2) }))
+                }
+                placeholder="SP"
+                maxLength={2}
               />
             </div>
           </div>
