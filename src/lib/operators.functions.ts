@@ -28,21 +28,16 @@ const pinSchema = z.string().regex(/^\d{4,6}$/, "PIN deve conter 4 a 6 dígitos.
  * operational (colaborador) account.
  */
 async function resolveCaller(
-  supabaseAdmin: {
-    from: (t: string) => {
-      select: (c: string) => {
-        eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: unknown }> };
-      };
-    };
-  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabaseAdmin: any,
   userId: string,
 ): Promise<{ ownerId: string; isOperational: boolean }> {
-  const { data } = (await supabaseAdmin
+  const { data } = await supabaseAdmin
     .from("profiles")
     .select("id, parent_user_id")
     .eq("id", userId)
-    .maybeSingle()) as { data: { id: string; parent_user_id: string | null } | null };
-  const parent = data?.parent_user_id ?? null;
+    .maybeSingle();
+  const parent = (data?.parent_user_id as string | null) ?? null;
   return { ownerId: parent ?? userId, isOperational: !!parent };
 }
 
@@ -208,7 +203,7 @@ export const updateOperator = createServerFn({ method: "POST" })
       patch.operational_account_id = data.operational_account_id;
     }
 
-    const { error } = await supabaseAdmin.from("operators").update(patch).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("operators").update(patch as never).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
