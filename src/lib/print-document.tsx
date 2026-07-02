@@ -730,13 +730,23 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         <div className="section-title">Dados do cliente</div>
         {(() => {
           const nome = order.client_name || client?.name || "—";
-          const doc = client?.document || "—";
+          const doc = client?.document
+            ? fmtDocument(client.document, client.customer_type)
+            : "—";
           const docLbl = client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ";
           const cep = client?.cep || "—";
-          const tel =
-            [client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
-              .filter(Boolean)
-              .join(" · ") || "—";
+          const phones = [
+            client?.commercial_phone,
+            client?.mobile_phone,
+            client?.phone,
+            client?.whatsapp,
+          ]
+            .map((p) => (p ?? "").trim())
+            .filter(Boolean);
+          const uniquePhones = Array.from(
+            new Map(phones.map((p) => [onlyDigits(p), p])).values(),
+          );
+          const tel = uniquePhones.join(" · ") || "—";
           const endereco =
             [client?.address, client?.address_number].filter(Boolean).join(", ") || "—";
           const email = client?.email || "—";
