@@ -1233,6 +1233,17 @@ function ResumoDialog({
               </span>
             </div>
 
+            {pendingDiscount && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Possível total se o desconto de {fmtPct(pendingDiscount.percent)}{" "}
+                for aprovado:{" "}
+                <span className="font-semibold">
+                  {fmtMoney(pendingDiscount.potentialTotal)}
+                </span>
+              </div>
+            )}
+
+
             {general.sinalAtivo === "sim" && gNum("valorSinal") > 0 && (
               <div className="rounded-lg border border-border divide-y divide-border">
                 <div className="flex items-center justify-between px-4 py-3 text-sm">
