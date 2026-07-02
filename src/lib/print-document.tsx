@@ -1,6 +1,7 @@
 // Print document renderer — opened in a new tab. Does not auto-call window.print().
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fmtDocument, onlyDigits } from "@/lib/utils";
 
 export type Variant = "loja" | "producao" | "cliente";
 export type DocKind = "pedido" | "orcamento";
