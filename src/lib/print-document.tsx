@@ -349,6 +349,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         created_at: string;
         budget_id: string | null;
         user_id: string;
+        operator_name: string | null;
       } | null = null;
       let budget: {
         id: string;
@@ -359,12 +360,13 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         total_value: number;
         created_at: string;
         user_id?: string;
+        operator_name?: string | null;
       } | null = null;
 
       if (kind === "pedido") {
         const { data: o, error } = await supabase
           .from("orders")
-          .select("id, number, client_name, total_value, created_at, budget_id, user_id")
+          .select("id, number, client_name, total_value, created_at, budget_id, user_id, operator_name")
           .eq("id", id)
           .maybeSingle();
         if (error || !o) throw error ?? new Error("Pedido não encontrado");
@@ -372,7 +374,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         if (o.budget_id) {
           const { data: b } = await supabase
             .from("budgets")
-            .select("id, number, client_id, data_vencimento, details, total_value, created_at")
+            .select("id, number, client_id, data_vencimento, details, total_value, created_at, operator_name")
             .eq("id", o.budget_id)
             .maybeSingle();
           budget = b as any;
@@ -380,7 +382,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       } else {
         const { data: b, error } = await supabase
           .from("budgets")
-          .select("id, number, client_id, client_name, data_vencimento, details, total_value, created_at, user_id")
+          .select("id, number, client_id, client_name, data_vencimento, details, total_value, created_at, user_id, operator_name")
           .eq("id", id)
           .maybeSingle();
         if (error || !b) throw error ?? new Error("Orçamento não encontrado");
@@ -393,8 +395,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           created_at: b.created_at,
           budget_id: b.id,
           user_id: (b as any).user_id,
+          operator_name: (b as any).operator_name ?? null,
         };
       }
+
 
       const ownerId = order!.user_id;
       const [{ data: profile }, itemsRes, clientRes] = await Promise.all([
