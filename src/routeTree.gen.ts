@@ -16,6 +16,7 @@ import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
+import { Route as OperadoresRouteImport } from './routes/operadores'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
@@ -63,6 +64,11 @@ const PedidosRoute = PedidosRouteImport.update({
 const OrcamentosRoute = OrcamentosRouteImport.update({
   id: '/orcamentos',
   path: '/orcamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperadoresRoute = OperadoresRouteImport.update({
+  id: '/operadores',
+  path: '/operadores',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
+  '/operadores': typeof OperadoresRoute
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
+  '/operadores': typeof OperadoresRoute
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
@@ -182,6 +190,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
+  '/operadores': typeof OperadoresRoute
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/login'
+    | '/operadores'
     | '/orcamentos'
     | '/pedidos'
     | '/produtos'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/login'
+    | '/operadores'
     | '/pedidos'
     | '/produtos'
     | '/relatorios'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/login'
+    | '/operadores'
     | '/orcamentos'
     | '/pedidos'
     | '/produtos'
@@ -271,6 +283,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ContaRoute: typeof ContaRoute
   LoginRoute: typeof LoginRoute
+  OperadoresRoute: typeof OperadoresRoute
   OrcamentosRoute: typeof OrcamentosRouteWithChildren
   PedidosRoute: typeof PedidosRoute
   ProdutosRoute: typeof ProdutosRoute
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/orcamentos'
       fullPath: '/orcamentos'
       preLoaderRoute: typeof OrcamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operadores': {
+      id: '/operadores'
+      path: '/operadores'
+      fullPath: '/operadores'
+      preLoaderRoute: typeof OperadoresRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -463,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRoute,
   ContaRoute: ContaRoute,
   LoginRoute: LoginRoute,
+  OperadoresRoute: OperadoresRoute,
   OrcamentosRoute: OrcamentosRouteWithChildren,
   PedidosRoute: PedidosRoute,
   ProdutosRoute: ProdutosRoute,
