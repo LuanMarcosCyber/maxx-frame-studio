@@ -100,8 +100,13 @@ const emptyForm: FormState = {
 };
 
 function OperadoresPage() {
-  const { role, profile } = useAuth();
+  const { role, profile, loading } = useAuth();
   const isOperational = !!profile?.parent_user_id;
+  const canManage = role === "revendedor" || role === "admin";
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading && role && !canManage) navigate({ to: "/", replace: true });
+  }, [loading, role, canManage, navigate]);
   const qc = useQueryClient();
 
   const list = useServerFn(listOperators);
