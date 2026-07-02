@@ -59,10 +59,11 @@ export const Route = createFileRoute("/colaboradores")({
 });
 
 function ColaboradoresPage() {
-  const { role, loading } = useAuth();
+  const { role, profile, loading } = useAuth();
   const navigate = useNavigate();
 
-  const canManage = role === "revendedor" || role === "admin";
+  const isOperational = !!profile?.parent_user_id;
+  const canManage = (role === "revendedor" || role === "admin") && !isOperational;
 
   useEffect(() => {
     if (!loading && role && !canManage) {
@@ -77,7 +78,19 @@ function ColaboradoresPage() {
       </AppShell>
     );
   }
-  if (!canManage) return null;
+  if (!canManage) {
+    return (
+      <AppShell title="Acesso negado">
+        <div className="max-w-md mx-auto mt-10 rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+          <h2 className="text-lg font-semibold mb-2">Acesso negado</h2>
+          <p className="text-sm text-muted-foreground">
+            Você não tem permissão para acessar este módulo. Redirecionando…
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
+
 
   return (
     <AppShell

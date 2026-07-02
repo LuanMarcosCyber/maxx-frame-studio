@@ -57,11 +57,12 @@ function useSidebarData() {
   let mainItems: Item[];
   let cadastroItems: Item[];
   let bottomItems: Item[];
+  const isOperational = !!profile?.parent_user_id;
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
     cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, operadores, revendedores];
     bottomItems = [conta, configuracoes];
-  } else if (role === "colaborador") {
+  } else if (role === "colaborador" || isOperational) {
     mainItems = [dashboard, orcamentos, pedidos];
     cadastroItems = [clientes, produtos, arquitetos, transportadoras];
     bottomItems = [conta];
@@ -70,6 +71,7 @@ function useSidebarData() {
     cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, operadores];
     bottomItems = [conta, configuracoes];
   }
+
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);

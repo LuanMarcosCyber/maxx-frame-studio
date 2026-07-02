@@ -102,11 +102,12 @@ const emptyForm: FormState = {
 function OperadoresPage() {
   const { role, profile, loading } = useAuth();
   const isOperational = !!profile?.parent_user_id;
-  const canManage = role === "revendedor" || role === "admin";
+  const canManage = (role === "revendedor" || role === "admin") && !isOperational;
   const navigate = useNavigate();
   useEffect(() => {
     if (!loading && role && !canManage) navigate({ to: "/", replace: true });
   }, [loading, role, canManage, navigate]);
+
   const qc = useQueryClient();
 
   const list = useServerFn(listOperators);
@@ -259,7 +260,19 @@ function OperadoresPage() {
       </AppShell>
     );
   }
-  if (!canManage) return null;
+  if (!canManage) {
+    return (
+      <AppShell title="Acesso negado">
+        <div className="max-w-md mx-auto mt-10 rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+          <h2 className="text-lg font-semibold mb-2">Acesso negado</h2>
+          <p className="text-sm text-muted-foreground">
+            Você não tem permissão para acessar este módulo. Redirecionando…
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
+
 
   return (
     <AppShell
