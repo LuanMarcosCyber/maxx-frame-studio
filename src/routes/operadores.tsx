@@ -368,26 +368,15 @@ function OperadoresPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="op-name">Nome *</Label>
-                <Input
-                  id="op-name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
-                  placeholder="MÁRCIA"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="op-nick">Apelido</Label>
-                <Input
-                  id="op-nick"
-                  value={form.nickname}
-                  onChange={(e) => setForm({ ...form, nickname: e.target.value })}
-                  placeholder="Ma"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="op-name">Nome *</Label>
+              <Input
+                id="op-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
+                placeholder="MÁRCIA"
+                required
+              />
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
