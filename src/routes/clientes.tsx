@@ -35,6 +35,7 @@ import {
 import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { fmtCPF, fmtCNPJ } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/clientes")({
