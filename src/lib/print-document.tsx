@@ -349,6 +349,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         created_at: string;
         budget_id: string | null;
         user_id: string;
+        operator_name: string | null;
       } | null = null;
       let budget: {
         id: string;
@@ -359,12 +360,13 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         total_value: number;
         created_at: string;
         user_id?: string;
+        operator_name?: string | null;
       } | null = null;
 
       if (kind === "pedido") {
         const { data: o, error } = await supabase
           .from("orders")
-          .select("id, number, client_name, total_value, created_at, budget_id, user_id")
+          .select("id, number, client_name, total_value, created_at, budget_id, user_id, operator_name")
           .eq("id", id)
           .maybeSingle();
         if (error || !o) throw error ?? new Error("Pedido não encontrado");
@@ -372,7 +374,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         if (o.budget_id) {
           const { data: b } = await supabase
             .from("budgets")
-            .select("id, number, client_id, data_vencimento, details, total_value, created_at")
+            .select("id, number, client_id, data_vencimento, details, total_value, created_at, operator_name")
             .eq("id", o.budget_id)
             .maybeSingle();
           budget = b as any;
@@ -380,7 +382,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       } else {
         const { data: b, error } = await supabase
           .from("budgets")
-          .select("id, number, client_id, client_name, data_vencimento, details, total_value, created_at, user_id")
+          .select("id, number, client_id, client_name, data_vencimento, details, total_value, created_at, user_id, operator_name")
           .eq("id", id)
           .maybeSingle();
         if (error || !b) throw error ?? new Error("Orçamento não encontrado");
@@ -393,8 +395,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           created_at: b.created_at,
           budget_id: b.id,
           user_id: (b as any).user_id,
+          operator_name: (b as any).operator_name ?? null,
         };
       }
+
 
       const ownerId = order!.user_id;
       const [{ data: profile }, itemsRes, clientRes] = await Promise.all([
@@ -413,10 +417,13 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         budget?.client_id
           ? supabase
               .from("clients")
-              .select("name, phone, email, document, address")
+              .select(
+                "name, phone, email, document, address, address_number, cep, commercial_phone, mobile_phone, whatsapp, customer_type",
+              )
               .eq("id", budget.client_id)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+
       ]);
 
       let items: Array<{ id: string; position: number; subtotal: number; data: ItemData }> = ((itemsRes as any).data ??
@@ -504,19 +511,51 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .via-title { text-align:center; font-size:12px; font-weight:800; color:#000;
           letter-spacing:1.4px; margin:0 0 4px; }
 
-        /* Lightweight topbar: no filled bar, only thin underline */
-        .topbar { display:flex; justify-content:space-between; align-items:center; gap:8px;
-          padding:2px 2px 5px; border-bottom:1.2px solid #000; }
-        .topbar .left { display:flex; align-items:center; gap:8px; min-width:0; }
-        .avatar { height:34px; max-width:140px; color:#000;
-          display:inline-flex; align-items:center; font-weight:800; font-size:11px;
-          flex:0 0 auto; }
-        .avatar img { height:34px; max-width:140px; width:auto; object-fit:contain; display:block; }
-        .topbar h1 { margin:0; font-size:14px; font-weight:800; letter-spacing:.2px; color:#000; }
-        .topbar .right { text-align:right; font-size:9px; text-transform:uppercase;
-          letter-spacing:.6px; line-height:1.15; color:#000; }
-        .topbar .right .num { font-family: ui-monospace, Menlo, Consolas, monospace;
-          font-size:13px; font-weight:700; letter-spacing:0; color:#000; }
+        /* === Store header (emissora) === */
+        .store-header { display:flex; justify-content:space-between; align-items:flex-start;
+          gap:14px; padding:4px 2px 8px; border-bottom:1.5px solid #000; }
+        .store-header .brand { display:flex; align-items:center; gap:12px; min-width:0; flex:1; }
+        .store-header .logo { height:64px; max-width:180px; display:inline-flex;
+          align-items:center; justify-content:center; color:#000; font-weight:800;
+          font-size:22px; flex:0 0 auto; }
+        .store-header .logo img { height:64px; max-width:180px; width:auto; object-fit:contain; display:block; }
+        .store-header .company { min-width:0; }
+        .store-header .company .name { font-size:15px; font-weight:800; color:#000;
+          margin:0 0 2px; letter-spacing:.2px; line-height:1.15; }
+        .store-header .company .line { font-size:10px; color:#000; line-height:1.35; }
+        .store-header .contact { text-align:right; font-size:10px; color:#000;
+          line-height:1.35; white-space:nowrap; }
+        .store-header .contact .op { margin-top:3px; font-weight:700;
+          text-transform:uppercase; letter-spacing:.4px; font-size:9.5px; }
+
+        /* === Order banner === */
+        .order-banner { display:grid; grid-template-columns: 1fr auto 1fr;
+          align-items:center; padding:6px 8px; margin-top:6px;
+          border:1.5px solid #000; background:#fff; }
+        .order-banner .via { font-size:9.5px; font-weight:800; letter-spacing:1.4px;
+          color:#000; text-transform:uppercase; text-align:left; }
+        .order-banner .num { text-align:center; font-size:14px; font-weight:800;
+          letter-spacing:.6px; color:#000; text-transform:uppercase;
+          font-variant-numeric: tabular-nums; }
+        .order-banner .emit { text-align:right; font-size:10px; color:#000; line-height:1.25; }
+        .order-banner .emit .lbl { font-weight:700; text-transform:uppercase; letter-spacing:.4px; font-size:9px; }
+        .order-banner .emit .val { font-weight:800; font-size:11px; }
+
+        /* === Delivery === */
+        .delivery-banner { display:flex; align-items:center; gap:10px; justify-content:center;
+          padding:5px 8px; margin-top:4px; border:1.5px solid #000;
+          background:#f2f2f2; }
+        .delivery-banner .lbl { font-size:10px; font-weight:800; text-transform:uppercase;
+          letter-spacing:1px; color:#000; }
+        .delivery-banner .val { font-size:13px; font-weight:800; color:#000;
+          font-variant-numeric: tabular-nums; }
+
+        /* === Client table === */
+        .client-table { width:100%; border-collapse:collapse; margin-top:6px;
+          border:1px solid #000; font-size:10.5px; }
+        .client-table td { border:1px solid #bbb; padding:4px 7px; vertical-align:top; color:#000; }
+        .client-table td.k { background:#f4f4f4; font-weight:700; text-transform:uppercase;
+          font-size:9px; letter-spacing:.4px; width:110px; white-space:nowrap; }
 
         .section-title { font-size:9.5px; font-weight:800; text-transform:uppercase;
           letter-spacing:1px; color:#000; margin:8px 0 3px;
@@ -525,6 +564,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:2px 14px;
           font-size:10.5px; padding:2px 0; }
         .grid-2 .lbl { color:#000; font-weight:700; display:inline-block; min-width:105px; }
+
 
         /* Item block: no filled header bar, just bold title + thin underline + numbered square */
         .item-block { margin-top:6px; page-break-inside:avoid; break-inside:avoid; }
@@ -643,59 +683,121 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       </div>
 
       <div className="sheet">
-        <div className="via-title">{variantTitle}</div>
-
-        <div className="topbar">
-          <div className="left">
-            <div className="avatar">
+        {/* 1. Cabeçalho da loja (emissora) */}
+        <div className="store-header">
+          <div className="brand">
+            <div className="logo">
               {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <span>{getInitials(storeName)}</span>}
             </div>
-            <h1>{storeName}</h1>
+            <div className="company">
+              <div className="name">{storeName}</div>
+              {profile?.document && <div className="line">CNPJ: {profile.document}</div>}
+              {profile?.address && <div className="line">{profile.address}</div>}
+              {(profile?.phone || profile?.email) && (
+                <div className="line">
+                  {profile?.phone ? `Tel: ${profile.phone}` : ""}
+                  {profile?.phone && profile?.email ? " · " : ""}
+                  {profile?.email ? `E-mail: ${profile.email}` : ""}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="right">
-            <div>{docLabel}</div>
-            <div className="num">{order.number || "—"}</div>
+          <div className="contact">
+            {profile?.phone && <div>{profile.phone}</div>}
+            {profile?.email && <div>{profile.email}</div>}
+            {(order.operator_name || budget?.operator_name) && (
+              <div className="op">Colaborador: {order.operator_name || budget?.operator_name}</div>
+            )}
           </div>
         </div>
 
-        <div className="section-title">Dados do {docLabel.toLowerCase()}</div>
-        <div className="grid-2">
-          <div>
-            <span className="lbl">Cliente:</span> {order.client_name || client?.name || "—"}
+        {/* 2. Cabeçalho do pedido */}
+        <div className="order-banner">
+          <div className="via">{variantTitle}</div>
+          <div className="num">
+            {docLabel.toUpperCase()} Nº {order.number || "—"}
           </div>
-          {kind === "pedido" && budget && (
-            <div>
-              <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
-            </div>
-          )}
-          <div>
-            <span className="lbl">Data {kind === "pedido" ? "do pedido" : "do orçamento"}:</span>{" "}
-            {fmtDate(order.created_at)}
+          <div className="emit">
+            <div className="lbl">Data de emissão</div>
+            <div className="val">{fmtDate(order.created_at)}</div>
           </div>
-          <div>
-            <span className="lbl">Data de entrega:</span> {dataEntrega}
-          </div>
-          {variant !== "producao" && (
-            <>
-              {client?.phone && (
-                <div>
-                  <span className="lbl">Telefone:</span> {client.phone}
-                </div>
-              )}
-              {client?.email && (
-                <div>
-                  <span className="lbl">E-mail:</span> {client.email}
-                </div>
-              )}
-              <div>
-                <span className="lbl">Forma de pagamento:</span> {forma}
-              </div>
-              <div>
-                <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
-              </div>
-            </>
-          )}
         </div>
+
+        {/* 3. Prazo de entrega */}
+        <div className="delivery-banner">
+          <span className="lbl">Prazo de entrega:</span>
+          <span className="val">{dataEntrega}</span>
+        </div>
+
+        {/* 4. Dados do cliente */}
+        <div className="section-title">Dados do cliente</div>
+        <table className="client-table">
+          <tbody>
+            <tr>
+              <td className="k">Nome / Razão Social</td>
+              <td colSpan={3}>{order.client_name || client?.name || "—"}</td>
+            </tr>
+            {client?.document && (
+              <tr>
+                <td className="k">{client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ"}</td>
+                <td colSpan={3}>{client.document}</td>
+              </tr>
+            )}
+            {(client?.address || client?.address_number) && (
+              <tr>
+                <td className="k">Endereço</td>
+                <td colSpan={3}>
+                  {client?.address || ""}
+                  {client?.address_number ? `, ${client.address_number}` : ""}
+                </td>
+              </tr>
+            )}
+            {client?.cep && (
+              <tr>
+                <td className="k">CEP</td>
+                <td colSpan={3}>{client.cep}</td>
+              </tr>
+            )}
+            {(client?.phone || client?.mobile_phone || client?.commercial_phone || client?.whatsapp) && (
+              <tr>
+                <td className="k">Telefone</td>
+                <td colSpan={3}>
+                  {[client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </td>
+              </tr>
+            )}
+            {client?.email && (
+              <tr>
+                <td className="k">E-mail</td>
+                <td colSpan={3}>{client.email}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        {/* Informações complementares do pedido (pagamento / origem) */}
+        {(variant !== "producao" || (kind === "pedido" && budget)) && (
+          <div className="grid-2" style={{ marginTop: 6 }}>
+            {kind === "pedido" && budget && (
+              <div>
+                <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
+              </div>
+            )}
+            {variant !== "producao" && (
+              <>
+                <div>
+                  <span className="lbl">Forma de pagamento:</span> {forma}
+                </div>
+                <div>
+                  <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
 
         {/* Itens */}
         {frames.length > 0 && (
