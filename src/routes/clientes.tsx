@@ -58,6 +58,8 @@ type ClientRow = {
   cep: string | null;
   address: string | null;
   address_number: string | null;
+  city: string | null;
+  state: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -73,6 +75,8 @@ type FormState = {
   cep: string;
   address: string;
   address_number: string;
+  city: string;
+  state: string;
   notes: string;
 };
 
@@ -86,6 +90,8 @@ const emptyForm: FormState = {
   cep: "",
   address: "",
   address_number: "",
+  city: "",
+  state: "",
   notes: "",
 };
 
