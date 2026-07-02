@@ -1519,8 +1519,8 @@ function NovoOrcamento() {
       return;
     }
 
-    // Collaborator discount limit
-    if (isColaborador && !opts.skipDiscountCheck && descontoPercNum > maxDiscount + 0.001) {
+    // Discount limit (uses active operator's limit when present, else logged account's)
+    if (!opts.skipDiscountCheck && maxDiscount < 100 && descontoPercNum > maxDiscount + 0.001) {
       let approved = false;
       if (isEdit && editId) {
         const { data: req } = await supabase
@@ -3984,8 +3984,8 @@ function NovoOrcamento() {
           <AlertDialogHeader>
             <AlertDialogTitle>Desconto acima do permitido</AlertDialogTitle>
             <AlertDialogDescription>
-              Seu limite de desconto é de {maxDiscount}%. Deseja solicitar autorização
-              ao administrador para aplicar {descontoPercNum.toFixed(2)}%?
+              Este desconto ultrapassa o limite permitido para o operador atual.
+              Deseja solicitar autorização ao responsável pela loja?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useMemo, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -99,8 +100,13 @@ const emptyForm: FormState = {
 };
 
 function OperadoresPage() {
-  const { role, profile } = useAuth();
+  const { role, profile, loading } = useAuth();
   const isOperational = !!profile?.parent_user_id;
+  const canManage = role === "revendedor" || role === "admin";
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading && role && !canManage) navigate({ to: "/", replace: true });
+  }, [loading, role, canManage, navigate]);
   const qc = useQueryClient();
 
   const list = useServerFn(listOperators);
@@ -245,6 +251,15 @@ function OperadoresPage() {
   }
 
   const canPickAccount = !isOperational && (role === "admin" || role === "revendedor");
+
+  if (loading || !role) {
+    return (
+      <AppShell title="Operadores" subtitle="Pessoas que operam o sistema no dia a dia (não fazem login).">
+        <div className="text-sm text-muted-foreground">Carregando...</div>
+      </AppShell>
+    );
+  }
+  if (!canManage) return null;
 
   return (
     <AppShell
