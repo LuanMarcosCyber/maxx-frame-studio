@@ -191,6 +191,7 @@ export type Database = {
           address: string | null
           address_number: string | null
           cep: string | null
+          city: string | null
           commercial_phone: string | null
           created_at: string
           customer_type: string
@@ -201,6 +202,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          state: string | null
           updated_at: string
           user_id: string
           whatsapp: string | null
@@ -209,6 +211,7 @@ export type Database = {
           address?: string | null
           address_number?: string | null
           cep?: string | null
+          city?: string | null
           commercial_phone?: string | null
           created_at?: string
           customer_type?: string
@@ -219,6 +222,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
           whatsapp?: string | null
@@ -227,6 +231,7 @@ export type Database = {
           address?: string | null
           address_number?: string | null
           cep?: string | null
+          city?: string | null
           commercial_phone?: string | null
           created_at?: string
           customer_type?: string
@@ -237,6 +242,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          state?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
@@ -483,13 +489,17 @@ export type Database = {
           account_type: Database["public"]["Enums"]["account_type"] | null
           active: boolean
           address: string | null
+          address_number: string | null
           avatar_url: string | null
           can_create_clients: boolean
           can_create_products: boolean
           can_delete_orders: boolean
           can_edit_budgets: boolean
+          cep: string | null
+          city: string | null
           created_at: string
           document: string | null
+          document_type: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -497,6 +507,7 @@ export type Database = {
           parent_user_id: string | null
           phone: string | null
           pin_hash: string | null
+          state: string | null
           store_name: string | null
           updated_at: string
           username: string | null
@@ -505,13 +516,17 @@ export type Database = {
           account_type?: Database["public"]["Enums"]["account_type"] | null
           active?: boolean
           address?: string | null
+          address_number?: string | null
           avatar_url?: string | null
           can_create_clients?: boolean
           can_create_products?: boolean
           can_delete_orders?: boolean
           can_edit_budgets?: boolean
+          cep?: string | null
+          city?: string | null
           created_at?: string
           document?: string | null
+          document_type?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -519,6 +534,7 @@ export type Database = {
           parent_user_id?: string | null
           phone?: string | null
           pin_hash?: string | null
+          state?: string | null
           store_name?: string | null
           updated_at?: string
           username?: string | null
@@ -527,13 +543,17 @@ export type Database = {
           account_type?: Database["public"]["Enums"]["account_type"] | null
           active?: boolean
           address?: string | null
+          address_number?: string | null
           avatar_url?: string | null
           can_create_clients?: boolean
           can_create_products?: boolean
           can_delete_orders?: boolean
           can_edit_budgets?: boolean
+          cep?: string | null
+          city?: string | null
           created_at?: string
           document?: string | null
+          document_type?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -541,6 +561,7 @@ export type Database = {
           parent_user_id?: string | null
           phone?: string | null
           pin_hash?: string | null
+          state?: string | null
           store_name?: string | null
           updated_at?: string
           username?: string | null
