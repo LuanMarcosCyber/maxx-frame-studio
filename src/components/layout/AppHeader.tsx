@@ -256,7 +256,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
                     </span>{" "}
                     solicitou aprovação para aplicar{" "}
                     <span className="font-semibold">
-                      {Number(r.requested_percent).toFixed(2)}%
+                      {fmtPct(r.requested_percent)}
                     </span>{" "}
                     de desconto no orçamento{" "}
                     <span className="font-mono">{r.budget_number || "—"}</span>.
