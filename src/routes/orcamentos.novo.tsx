@@ -1764,7 +1764,7 @@ function NovoOrcamento() {
         }
       }
 
-      if (opts.skipDiscountCheck && !approve) {
+      if ((opts.skipDiscountCheck || opts.pendingDiscount) && !approve) {
         // Silent save for discount authorization request flow
         await queryClient.invalidateQueries({ queryKey: ["budgets"] });
         return { budgetId, budgetNumber } as { budgetId: string; budgetNumber: string | null };
