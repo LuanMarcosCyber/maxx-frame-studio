@@ -696,17 +696,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
               <div className="name">{storeName}</div>
               {profile?.document && <div className="line">CNPJ: {profile.document}</div>}
               {profile?.address && <div className="line">{profile.address}</div>}
-              {(profile?.phone || profile?.email) && (
-                <div className="line">
-                  {profile?.phone ? `Tel: ${profile.phone}` : ""}
-                  {profile?.phone && profile?.email ? " · " : ""}
-                  {profile?.email ? `E-mail: ${profile.email}` : ""}
-                </div>
-              )}
             </div>
           </div>
           <div className="contact">
-            {profile?.phone && <div>{profile.phone}</div>}
+            {profile?.phone && <div>Tel: {profile.phone}</div>}
             {profile?.email && <div>{profile.email}</div>}
             {(order.operator_name || budget?.operator_name) && (
               <div className="op">Colaborador: {order.operator_name || budget?.operator_name}</div>
