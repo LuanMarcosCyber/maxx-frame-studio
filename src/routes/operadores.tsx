@@ -306,7 +306,7 @@ function OperadoresPage() {
                         </Badge>
                       )}
                     </td>
-                    <td className="py-3.5 px-3 text-muted-foreground">{o.nickname || "—"}</td>
+                    
                     {!isOperational && (
                       <td className="py-3.5 px-3 text-muted-foreground">
                         {o.operational_account_id
