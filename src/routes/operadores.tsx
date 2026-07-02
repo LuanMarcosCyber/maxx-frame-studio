@@ -252,6 +252,15 @@ function OperadoresPage() {
 
   const canPickAccount = !isOperational && (role === "admin" || role === "revendedor");
 
+  if (loading || !role) {
+    return (
+      <AppShell title="Operadores" subtitle="Pessoas que operam o sistema no dia a dia (não fazem login).">
+        <div className="text-sm text-muted-foreground">Carregando...</div>
+      </AppShell>
+    );
+  }
+  if (!canManage) return null;
+
   return (
     <AppShell
       title="Operadores"
