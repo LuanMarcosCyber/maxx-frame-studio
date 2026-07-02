@@ -176,10 +176,12 @@ function Clientes() {
         toast.warning("CEP não encontrado.");
         return;
       }
-      const parts = [data.logradouro, data.bairro, data.localidade, data.uf]
-        .filter(Boolean)
-        .join(", ");
-      setForm((f) => ({ ...f, address: parts || f.address }));
+      setForm((f) => ({
+        ...f,
+        address: data.logradouro || f.address,
+        city: data.localidade || f.city,
+        state: data.uf || f.state,
+      }));
     } catch {
       toast.error("Não foi possível buscar o CEP.");
     } finally {
