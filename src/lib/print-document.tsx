@@ -727,51 +727,63 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
         {/* 4. Dados do cliente */}
         <div className="section-title">Dados do cliente</div>
-        <table className="client-table">
-          <tbody>
-            <tr>
-              <td className="k">Nome / Razão Social</td>
-              <td colSpan={3}>{order.client_name || client?.name || "—"}</td>
-            </tr>
-            {client?.document && (
-              <tr>
-                <td className="k">{client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ"}</td>
-                <td colSpan={3}>{client.document}</td>
-              </tr>
-            )}
-            {(client?.address || client?.address_number) && (
-              <tr>
-                <td className="k">Endereço</td>
-                <td colSpan={3}>
-                  {client?.address || ""}
-                  {client?.address_number ? `, ${client.address_number}` : ""}
-                </td>
-              </tr>
-            )}
-            {client?.cep && (
-              <tr>
-                <td className="k">CEP</td>
-                <td colSpan={3}>{client.cep}</td>
-              </tr>
-            )}
-            {(client?.phone || client?.mobile_phone || client?.commercial_phone || client?.whatsapp) && (
-              <tr>
-                <td className="k">Telefone</td>
-                <td colSpan={3}>
-                  {[client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </td>
-              </tr>
-            )}
-            {client?.email && (
-              <tr>
-                <td className="k">E-mail</td>
-                <td colSpan={3}>{client.email}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {(() => {
+          const nome = order.client_name || client?.name || "—";
+          const doc = client?.document || "—";
+          const docLbl = client?.customer_type === "juridica" ? "CNPJ" : "CPF/CNPJ";
+          const cep = client?.cep || "—";
+          const tel =
+            [client?.phone, client?.mobile_phone, client?.commercial_phone, client?.whatsapp]
+              .filter(Boolean)
+              .join(" · ") || "—";
+          const endereco =
+            [client?.address, client?.address_number].filter(Boolean).join(", ") || "—";
+          const email = client?.email || "—";
+          return (
+            <div className="client-wrap">
+              <table className="client-table">
+                <tbody>
+                  <tr>
+                    <td className="k">Razão Social / Nome</td>
+                    <td>{nome}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">{docLbl}</td>
+                    <td>{doc}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">CEP</td>
+                    <td>{cep}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">Telefone</td>
+                    <td>{tel}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <table className="client-table">
+                <tbody>
+                  <tr>
+                    <td className="k">Nome Fantasia</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td className="k">Endereço</td>
+                    <td>{endereco}</td>
+                  </tr>
+                  <tr>
+                    <td className="k">Cidade / UF</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td className="k">E-mail</td>
+                    <td>{email}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
 
         {/* Informações complementares do pedido (pagamento / origem) */}
         {(variant !== "producao" || (kind === "pedido" && budget)) && (
