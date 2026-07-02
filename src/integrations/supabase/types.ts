@@ -314,6 +314,57 @@ export type Database = {
         }
         Relationships: []
       }
+      operators: {
+        Row: {
+          active: boolean
+          can_create_clients: boolean
+          can_create_products: boolean
+          can_delete_orders: boolean
+          can_edit_budgets: boolean
+          created_at: string
+          id: string
+          max_discount_percent: number
+          name: string
+          nickname: string | null
+          operational_account_id: string | null
+          owner_user_id: string
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          can_create_clients?: boolean
+          can_create_products?: boolean
+          can_delete_orders?: boolean
+          can_edit_budgets?: boolean
+          created_at?: string
+          id?: string
+          max_discount_percent?: number
+          name: string
+          nickname?: string | null
+          operational_account_id?: string | null
+          owner_user_id: string
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          can_create_clients?: boolean
+          can_create_products?: boolean
+          can_delete_orders?: boolean
+          can_edit_budgets?: boolean
+          created_at?: string
+          id?: string
+          max_discount_percent?: number
+          name?: string
+          nickname?: string | null
+          operational_account_id?: string | null
+          owner_user_id?: string
+          pin_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           budget_id: string | null
@@ -429,6 +480,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
           active: boolean
           address: string | null
           avatar_url: string | null
@@ -450,6 +502,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
           active?: boolean
           address?: string | null
           avatar_url?: string | null
@@ -471,6 +524,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
           active?: boolean
           address?: string | null
           avatar_url?: string | null
@@ -531,6 +585,7 @@ export type Database = {
       owner_user_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
+      account_type: "admin" | "revendedor" | "operacional"
       app_role: "admin" | "revendedor" | "colaborador"
     }
     CompositeTypes: {
@@ -659,6 +714,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["admin", "revendedor", "operacional"],
       app_role: ["admin", "revendedor", "colaborador"],
     },
   },
