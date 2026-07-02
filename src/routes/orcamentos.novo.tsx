@@ -1735,7 +1735,7 @@ function NovoOrcamento() {
           .maybeSingle();
         const orderPayload = {
           client_name: clienteNome.trim(),
-          total_value: Number(valorTotal.toFixed(2)),
+          total_value: Number(effValorTotal.toFixed(2)),
           status: "Aprovado",
           operator_id: activeOperator?.id ?? null,
           operator_name: activeOperator?.full_name ?? null,
