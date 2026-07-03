@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, address, store_name, parent_user_id, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
+        .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -89,7 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: null,
         phone: null,
         document: null,
+        document_type: null,
         address: null,
+        cep: null,
+        address_number: null,
+        city: null,
+        state: null,
         store_name: null,
         parent_user_id: null,
         active: true,
