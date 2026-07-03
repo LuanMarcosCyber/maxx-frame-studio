@@ -23,6 +23,8 @@ type DocType = "cpf" | "cnpj";
 
 function Conta() {
   const { user, profile, refreshProfile } = useAuth();
+  const isChildAccount = !!profile?.parent_user_id;
+  const readOnly = isChildAccount;
   const [form, setForm] = useState({
     full_name: "",
     store_name: "",
@@ -40,24 +42,45 @@ function Conta() {
   const [cepLoading, setCepLoading] = useState(false);
 
   useEffect(() => {
-    const p = profile as unknown as Record<string, string | null> | null;
-    const dt = (p?.document_type as DocType | null) ?? null;
-    const inferred: DocType =
-      dt ?? (onlyDigits(p?.document ?? "").length === 11 ? "cpf" : "cnpj");
-    setForm({
-      full_name: profile?.full_name ?? "",
-      store_name: profile?.store_name ?? "",
-      email: profile?.email ?? "",
-      phone: profile?.phone ?? "",
-      document_type: inferred,
-      document: profile?.document ?? "",
-      cep: (p?.cep as string | null) ?? "",
-      address: profile?.address ?? "",
-      address_number: (p?.address_number as string | null) ?? "",
-      city: (p?.city as string | null) ?? "",
-      state: (p?.state as string | null) ?? "",
-    });
-  }, [profile]);
+    let cancelled = false;
+    async function load() {
+      let source: Record<string, string | null> | null =
+        (profile as unknown as Record<string, string | null> | null) ?? null;
+
+      if (isChildAccount && profile?.parent_user_id) {
+        const { data: parent } = await supabase
+          .from("profiles")
+          .select(
+            "full_name, store_name, email, phone, document, document_type, cep, address, address_number, city, state",
+          )
+          .eq("id", profile.parent_user_id)
+          .maybeSingle();
+        if (parent) source = parent as unknown as Record<string, string | null>;
+      }
+
+      if (cancelled) return;
+      const dt = (source?.document_type as DocType | null) ?? null;
+      const inferred: DocType =
+        dt ?? (onlyDigits(source?.document ?? "").length === 11 ? "cpf" : "cnpj");
+      setForm({
+        full_name: source?.full_name ?? "",
+        store_name: source?.store_name ?? "",
+        email: source?.email ?? "",
+        phone: source?.phone ?? "",
+        document_type: inferred,
+        document: source?.document ?? "",
+        cep: (source?.cep as string | null) ?? "",
+        address: source?.address ?? "",
+        address_number: (source?.address_number as string | null) ?? "",
+        city: (source?.city as string | null) ?? "",
+        state: (source?.state as string | null) ?? "",
+      });
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, isChildAccount]);
 
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";
