@@ -13,7 +13,12 @@ interface Profile {
   email: string | null;
   phone: string | null;
   document: string | null;
+  document_type: string | null;
   address: string | null;
+  cep: string | null;
+  address_number: string | null;
+  city: string | null;
+  state: string | null;
   store_name: string | null;
   parent_user_id: string | null;
   active: boolean;
