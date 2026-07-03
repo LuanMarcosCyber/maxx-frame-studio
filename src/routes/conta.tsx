@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { FileText, ShoppingCart, Package, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/avatar";
 import { fmtCPF, fmtCNPJ, onlyDigits } from "@/lib/utils";
+import { getInheritedStoreProfile } from "@/lib/store-profile.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/conta")({
@@ -22,8 +24,8 @@ export const Route = createFileRoute("/conta")({
 type DocType = "cpf" | "cnpj";
 
 function Conta() {
-  const { user, profile, refreshProfile } = useAuth();
-  const isChildAccount = !!profile?.parent_user_id;
+  const { user, profile, role, refreshProfile } = useAuth();
+  const isChildAccount = !!profile?.parent_user_id || profile?.account_type === "operacional" || role === "colaborador";
   const readOnly = isChildAccount;
   const [form, setForm] = useState({
     full_name: "",
@@ -37,9 +39,11 @@ function Conta() {
     address_number: "",
     city: "",
     state: "",
+    avatar_url: "",
   });
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const loadStoreProfile = useServerFn(getInheritedStoreProfile);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,13 +51,14 @@ function Conta() {
       let source: Record<string, string | null> | null =
         (profile as unknown as Record<string, string | null> | null) ?? null;
 
-      // Walk up the parent chain to the top-most ancestor (loja) for child accounts.
-      // Works whether the parent is an Admin or a Revendedor.
-      if (isChildAccount && profile?.parent_user_id) {
-        const { data: parent } = await supabase
-          .rpc("get_store_profile", { _user_id: profile.parent_user_id });
-        const row = Array.isArray(parent) ? (parent[0] as Record<string, string | null> | undefined) : null;
-        if (row) source = row;
+      if (isChildAccount && user?.id) {
+        try {
+          const inherited = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null>;
+          source = inherited ?? source;
+        } catch (error) {
+          console.error("Erro ao carregar dados comerciais herdados", error);
+          source = (profile as unknown as Record<string, string | null> | null) ?? null;
+        }
       }
 
 
@@ -74,17 +79,19 @@ function Conta() {
         address_number: (source?.address_number as string | null) ?? "",
         city: (source?.city as string | null) ?? "",
         state: (source?.state as string | null) ?? "",
+        avatar_url: (source?.avatar_url as string | null) ?? "",
       });
     }
     load();
     return () => {
       cancelled = true;
     };
-  }, [profile, isChildAccount]);
+  }, [profile, isChildAccount, user?.id, loadStoreProfile]);
 
 
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";
+  const accountCardName = readOnly ? form.store_name || form.full_name || displayName : displayName;
 
   const { data: stats } = useQuery({
     queryKey: ["conta", "stats", user?.id],
@@ -197,17 +204,18 @@ function Conta() {
                 className={roCls}
               />
             </div>
-            {!readOnly && (
-              <div className="space-y-1.5 sm:col-span-6">
-                <Label htmlFor="loja">Nome da loja</Label>
-                <Input
-                  id="loja"
-                  value={form.store_name}
-                  onChange={onChange("store_name")}
-                  placeholder="Ex.: Molduraria Silva"
-                />
-              </div>
-            )}
+            <div className="space-y-1.5 sm:col-span-6">
+              <Label htmlFor="loja">Nome da loja</Label>
+              <Input
+                id="loja"
+                value={form.store_name}
+                onChange={onChange("store_name")}
+                placeholder="Ex.: Molduraria Silva"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
 
             <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="email">E-mail</Label>
@@ -365,9 +373,13 @@ function Conta() {
           <Card className="p-6">
             <div className="flex flex-col items-center text-center">
               <div className="h-20 w-20 rounded-full bg-gradient-brand grid place-items-center text-brand-foreground text-2xl font-bold shadow-brand">
-                {getInitials(displayName || username)}
+                {form.avatar_url ? (
+                  <img src={form.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  getInitials(accountCardName || username)
+                )}
               </div>
-              {displayName && <div className="mt-4 font-semibold">{displayName}</div>}
+              {accountCardName && <div className="mt-4 font-semibold">{accountCardName}</div>}
               {username && (
                 <div className="text-xs text-muted-foreground font-mono">@{username}</div>
               )}

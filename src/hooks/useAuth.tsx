@@ -21,6 +21,7 @@ interface Profile {
   state: string | null;
   store_name: string | null;
   parent_user_id: string | null;
+  account_type: "admin" | "revendedor" | "operacional" | null;
   active: boolean;
   avatar_url: string | null;
   can_edit_budgets: boolean;
@@ -73,17 +74,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadUserData = async (userId: string) => {
-    const [{ data: roleRow }, { data: profileRow }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+    const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
+        .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, account_type, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
         .eq("id", userId)
         .maybeSingle(),
     ]);
-    setRole((roleRow?.role as AppRole) ?? "revendedor");
-    setProfile(
-      (profileRow as Profile | null) ?? {
+    const roles = new Set((roleRows ?? []).map((row) => row.role as AppRole));
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
+    const metadata = currentSession?.user?.user_metadata ?? {};
+    const rawMetadataParentId = metadata.parent_user_id ?? metadata.owner_user_id ?? metadata.created_by;
+    const fallbackParentId = typeof rawMetadataParentId === "string" && rawMetadataParentId ? rawMetadataParentId : null;
+    const parentUserId = profileRow?.parent_user_id ?? fallbackParentId;
+    const isOperationalAccount = !!parentUserId || profileRow?.account_type === "operacional";
+    const resolvedRole: AppRole = isOperationalAccount
+      ? "colaborador"
+      : roles.has("admin")
+        ? "admin"
+        : roles.has("revendedor")
+          ? "revendedor"
+          : roles.has("colaborador")
+            ? "colaborador"
+            : "revendedor";
+    setRole(resolvedRole);
+    const baseProfile = (profileRow as Profile | null) ?? {
         full_name: null,
         username: null,
         email: null,
@@ -97,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         state: null,
         store_name: null,
         parent_user_id: null,
+        account_type: null,
         active: true,
         avatar_url: null,
         can_edit_budgets: true,
@@ -104,8 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         can_create_clients: true,
         can_delete_orders: false,
         max_discount_percent: 100,
-      },
-    );
+      };
+    setProfile({ ...baseProfile, parent_user_id: parentUserId });
   };
 
 
@@ -128,8 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const ownerUserId =
-    profile?.parent_user_id ?? session?.user?.id ?? null;
+  const ownerUserId = profile?.parent_user_id ?? session?.user?.id ?? null;
   const isActive = profile?.active ?? true;
 
   return (
