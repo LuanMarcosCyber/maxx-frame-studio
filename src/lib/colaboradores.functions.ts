@@ -212,6 +212,8 @@ export const createColaborador = createServerFn({ method: "POST" })
             full_name: data.full_name,
             username,
             parent_user_id: context.userId,
+            owner_user_id: context.userId,
+            created_by: context.userId,
           },
         });
         if (error) throw new Error(error.message);
@@ -221,8 +223,19 @@ export const createColaborador = createServerFn({ method: "POST" })
     if (!userId) throw new Error("Falha ao criar usuário.");
 
     // 2. Reset password (for both new and recovered users → ensures caller's password works).
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null as any }));
     await supabaseAdmin.auth.admin
-      .updateUserById(userId, { password: data.password })
+      .updateUserById(userId, {
+        password: data.password,
+        user_metadata: {
+          ...(authUser?.user?.user_metadata ?? {}),
+          full_name: data.full_name,
+          username,
+          parent_user_id: context.userId,
+          owner_user_id: context.userId,
+          created_by: context.userId,
+        },
+      })
       .catch(() => {});
 
     // 3. Ensure profile row exists (trigger normally creates it; upsert as safety net).
