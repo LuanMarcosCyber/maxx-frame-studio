@@ -405,7 +405,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       const [{ data: profile }, itemsRes, clientRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, store_name, phone, email, address, document, avatar_url")
+          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url")
           .eq("id", ownerId)
           .maybeSingle(),
         budget?.id
