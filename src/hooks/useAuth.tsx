@@ -82,11 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle(),
     ]);
     const roles = new Set((roleRows ?? []).map((row) => row.role as AppRole));
-    const metadataParentId =
-      typeof supabase.auth.getUser === "function"
-        ? null
-        : null;
-    const rawMetadataParentId = session?.user?.user_metadata?.parent_user_id;
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession();
+    const rawMetadataParentId = currentSession?.user?.user_metadata?.parent_user_id;
     const fallbackParentId = typeof rawMetadataParentId === "string" && rawMetadataParentId ? rawMetadataParentId : null;
     const parentUserId = profileRow?.parent_user_id ?? fallbackParentId;
     const resolvedRole: AppRole = parentUserId
