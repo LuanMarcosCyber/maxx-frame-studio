@@ -406,7 +406,7 @@ function CreateDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
-          <UserPlus className="h-4 w-4 mr-2" /> Novo colaborador
+          <UserPlus className="h-4 w-4 mr-2" /> Novo Conta de Acesso
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
