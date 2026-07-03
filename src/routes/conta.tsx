@@ -47,16 +47,29 @@ function Conta() {
       let source: Record<string, string | null> | null =
         (profile as unknown as Record<string, string | null> | null) ?? null;
 
+      // Walk up the parent chain to the top-most ancestor (loja) for child accounts.
+      // Works whether the parent is an Admin or a Revendedor.
       if (isChildAccount && profile?.parent_user_id) {
-        const { data: parent } = await supabase
-          .from("profiles")
-          .select(
-            "full_name, store_name, email, phone, document, document_type, cep, address, address_number, city, state",
-          )
-          .eq("id", profile.parent_user_id)
-          .maybeSingle();
-        if (parent) source = parent as unknown as Record<string, string | null>;
+        let currentParentId: string | null = profile.parent_user_id;
+        const visited = new Set<string>();
+        let resolved: Record<string, string | null> | null = null;
+        while (currentParentId && !visited.has(currentParentId)) {
+          visited.add(currentParentId);
+          const { data: parent } = await supabase
+            .from("profiles")
+            .select(
+              "full_name, store_name, email, phone, document, document_type, cep, address, address_number, city, state, avatar_url, parent_user_id",
+            )
+            .eq("id", currentParentId)
+            .maybeSingle();
+          if (!parent) break;
+          const parentRow = parent as unknown as Record<string, string | null>;
+          resolved = parentRow;
+          currentParentId = (parentRow.parent_user_id as string | null) ?? null;
+        }
+        if (resolved) source = resolved;
       }
+
 
       if (cancelled) return;
       const dt = (source?.document_type as DocType | null) ?? null;
@@ -81,6 +94,7 @@ function Conta() {
       cancelled = true;
     };
   }, [profile, isChildAccount]);
+
 
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";

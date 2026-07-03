@@ -402,10 +402,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
 
       const ownerId = order!.user_id;
-      const [{ data: profile }, itemsRes, clientRes] = await Promise.all([
+      const [{ data: ownerProfile }, itemsRes, clientRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url")
+          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url, parent_user_id")
           .eq("id", ownerId)
           .maybeSingle(),
         budget?.id
@@ -426,6 +426,22 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           : Promise.resolve({ data: null }),
 
       ]);
+
+      // Walk up the parent chain to the top-most ancestor (loja).
+      // Works for both Admin → child and Revendedor → child hierarchies.
+      let profile: any = ownerProfile;
+      const visited = new Set<string>([ownerId]);
+      while (profile?.parent_user_id && !visited.has(profile.parent_user_id)) {
+        visited.add(profile.parent_user_id);
+        const { data: parent } = await supabase
+          .from("profiles")
+          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url, parent_user_id")
+          .eq("id", profile.parent_user_id)
+          .maybeSingle();
+        if (!parent) break;
+        profile = parent;
+      }
+
 
       let items: Array<{ id: string; position: number; subtotal: number; data: ItemData }> = ((itemsRes as any).data ??
         []) as any;
