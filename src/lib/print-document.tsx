@@ -419,7 +419,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           ? supabase
               .from("clients")
               .select(
-                "name, phone, email, document, address, address_number, cep, commercial_phone, mobile_phone, whatsapp, customer_type",
+                "name, phone, email, document, address, address_number, cep, city, state, commercial_phone, mobile_phone, whatsapp, customer_type",
               )
               .eq("id", budget.client_id)
               .maybeSingle()
