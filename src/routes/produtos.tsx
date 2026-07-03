@@ -126,8 +126,20 @@ function Produtos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+
+  const updateField = (field: keyof FormState, value: string) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
+  };
+  const errCls = (field: keyof FormState) =>
+    errors[field] ? "border-destructive focus-visible:ring-destructive" : "";
+  const FieldError = ({ field }: { field: keyof FormState }) =>
+    errors[field] ? (
+      <p className="text-xs text-destructive">{errors[field]}</p>
+    ) : null;
 
   const isDiversos = activeCategory === "produtos_diversos";
   const baseLabel =
