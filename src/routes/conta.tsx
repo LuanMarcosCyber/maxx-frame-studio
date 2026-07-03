@@ -51,7 +51,7 @@ function Conta() {
       // Works whether the parent is an Admin or a Revendedor.
       if (isChildAccount && profile?.parent_user_id) {
         let currentParentId: string | null = profile.parent_user_id;
-        const visited = new Set<string>([profile.id]);
+        const visited = new Set<string>();
         let resolved: Record<string, string | null> | null = null;
         while (currentParentId && !visited.has(currentParentId)) {
           visited.add(currentParentId);
@@ -63,11 +63,13 @@ function Conta() {
             .eq("id", currentParentId)
             .maybeSingle();
           if (!parent) break;
-          resolved = parent as unknown as Record<string, string | null>;
-          currentParentId = (parent as { parent_user_id: string | null }).parent_user_id ?? null;
+          const parentRow = parent as unknown as Record<string, string | null>;
+          resolved = parentRow;
+          currentParentId = (parentRow.parent_user_id as string | null) ?? null;
         }
         if (resolved) source = resolved;
       }
+
 
       if (cancelled) return;
       const dt = (source?.document_type as DocType | null) ?? null;
