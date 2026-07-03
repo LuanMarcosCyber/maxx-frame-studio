@@ -211,6 +211,7 @@ export const createColaborador = createServerFn({ method: "POST" })
           user_metadata: {
             full_name: data.full_name,
             username,
+            parent_user_id: context.userId,
           },
         });
         if (error) throw new Error(error.message);
