@@ -222,23 +222,26 @@ function Produtos() {
     };
 
     if (isDiversos) {
-      if (!form.name.trim() || !form.code.trim()) {
-        toast.error("Preencha nome e código interno.");
-        return;
-      }
+      req("code", "Informe o código interno.");
+      req("name", "Informe o nome.");
+      req("description", "Informe a descrição.");
+      req("supplier", "Informe o fornecedor / fabricante.");
+      req("value_per_meter", "Informe o valor.");
       const value = parseNum(form.value_per_meter || "0");
-      if (Number.isNaN(value)) {
-        toast.error("Valor inválido.");
+      if (!newErrors.value_per_meter && Number.isNaN(value)) {
+        newErrors.value_per_meter = "Valor inválido.";
+      }
+      const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+      if (form.commission_percentage.trim() !== "" && Number.isNaN(commission)) {
+        newErrors.commission_percentage = "Comissão inválida.";
+      }
+      if (Object.keys(newErrors).length) {
+        setErrors(newErrors);
+        toast.error("Preencha os campos obrigatórios.");
         return;
       }
       setSaving(true);
       try {
-        const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
-        if (Number.isNaN(commission)) {
-          toast.error("Comissão inválida.");
-          setSaving(false);
-          return;
-        }
         const payload = {
           code: form.code.trim(),
           description: form.description.trim(),
@@ -249,7 +252,7 @@ function Produtos() {
           frame_width_cm: null,
           name: form.name.trim(),
           barcode: form.barcode.trim() || null,
-          supplier: form.supplier.trim() || null,
+          supplier: form.supplier.trim(),
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
         };
@@ -271,6 +274,7 @@ function Produtos() {
         setDialogOpen(false);
         setEditing(null);
         setForm(emptyForm);
+        setErrors({});
         queryClient.invalidateQueries({ queryKey: ["products"] });
       } catch (e: any) {
         toast.error(e.message ?? "Erro ao salvar produto.");
@@ -280,35 +284,41 @@ function Produtos() {
       return;
     }
 
-    if (!form.code.trim() || !form.description.trim()) {
-      toast.error("Preencha código e descrição.");
-      return;
-    }
+    req("code", "Informe o código.");
+    req("description", "Informe a descrição.");
+    req("supplier", "Informe o fornecedor / fabricante.");
+    req("value_per_meter", "Informe o valor do metro.");
+    req("profit_margin", "Informe a margem.");
+    req("waste_percentage", "Informe a perda.");
     const value = parseNum(form.value_per_meter || "0");
     const margin = parseNum(form.profit_margin || "0");
     const waste = parseNum(form.waste_percentage || "0");
-    if ([value, margin, waste].some((n) => Number.isNaN(n))) {
-      toast.error("Valores numéricos inválidos.");
-      return;
-    }
+    if (!newErrors.value_per_meter && Number.isNaN(value)) newErrors.value_per_meter = "Valor inválido.";
+    if (!newErrors.profit_margin && Number.isNaN(margin)) newErrors.profit_margin = "Margem inválida.";
+    if (!newErrors.waste_percentage && Number.isNaN(waste)) newErrors.waste_percentage = "Perda inválida.";
+
     const isPerfil = activeCategory === "Perfil";
     let frameWidth: number | null = null;
     if (isPerfil) {
       if (form.frame_width_cm.trim() === "") {
-        frameWidth = null;
+        newErrors.frame_width_cm = "Informe a largura da moldura.";
       } else {
         const fw = parseNum(form.frame_width_cm);
         if (Number.isNaN(fw)) {
-          toast.error("Largura da moldura inválida.");
-          return;
+          newErrors.frame_width_cm = "Largura da moldura inválida.";
+        } else {
+          frameWidth = fw;
         }
-        frameWidth = fw;
       }
     }
 
     const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
-    if (Number.isNaN(commission)) {
-      toast.error("Comissão inválida.");
+    if (form.commission_percentage.trim() !== "" && Number.isNaN(commission)) {
+      newErrors.commission_percentage = "Comissão inválida.";
+    }
+    if (Object.keys(newErrors).length) {
+      setErrors(newErrors);
+      toast.error("Preencha os campos obrigatórios.");
       return;
     }
     let laborCost = 0;
