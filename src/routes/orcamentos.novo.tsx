@@ -84,6 +84,7 @@ import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
 import { toast } from "sonner";
 import { listActiveOperatorsV2 as listActiveOperators, validateOperatorPinV2 as validateOperatorPin } from "@/lib/operators.functions";
+import { nextDocumentNumber } from "@/lib/document-number.functions";
 import { OperatorSwitcher } from "@/components/layout/OperatorSwitcher";
 
 
@@ -819,6 +820,7 @@ function NovoOrcamento() {
 
   const listOperatorsFn = useServerFn(listActiveOperators);
   const validateOperatorPinFn = useServerFn(validateOperatorPin);
+  const nextDocumentNumberFn = useServerFn(nextDocumentNumber);
 
   const { data: operatorList = [] } = useQuery<
     { id: string; full_name: string; username: string | null; has_pin: boolean }[]
@@ -1687,12 +1689,7 @@ function NovoOrcamento() {
           .maybeSingle();
         budgetNumber = b?.number ?? null;
       } else {
-        const { data: nextNum, error: nErr } = await supabase.rpc(
-          "next_document_number",
-          { _kind: "budget" },
-        );
-        if (nErr) throw nErr;
-        const number = String(nextNum);
+        const number = String(await nextDocumentNumberFn({ data: { kind: "budget" } }));
         const { data: inserted, error } = await supabase
           .from("budgets")
           .insert({
@@ -1747,12 +1744,7 @@ function NovoOrcamento() {
             .eq("id", existingOrder.id);
           if (updErr) throw updErr;
         } else {
-          const { data: nextOrd, error: nOrdErr } = await supabase.rpc(
-            "next_document_number",
-            { _kind: "order" },
-          );
-          if (nOrdErr) throw nOrdErr;
-          const orderNumber = String(nextOrd);
+          const orderNumber = String(await nextDocumentNumberFn({ data: { kind: "order" } }));
           const { error: insOrdErr } = await supabase.from("orders").insert({
             user_id: ownerUserId ?? session.user.id,
             created_by: session.user.id,

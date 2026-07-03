@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { nextDocumentNumber } from "@/lib/document-number.functions";
 
 export const Route = createFileRoute("/orcamentos/")({
   head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
@@ -80,6 +82,7 @@ function Orcamentos() {
   const canEditBudgets = role !== "colaborador" || !!profile?.can_edit_budgets;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const nextDocumentNumberFn = useServerFn(nextDocumentNumber);
   const { view: viewParam } = Route.useSearch();
 
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
@@ -222,12 +225,7 @@ function Orcamentos() {
           .eq("id", existingOrder.id);
         if (upoErr) throw upoErr;
       } else {
-        const { data: nextOrd, error: nErr } = await supabase.rpc(
-          "next_document_number",
-          { _kind: "order" },
-        );
-        if (nErr) throw nErr;
-        const orderNumber = String(nextOrd);
+        const orderNumber = String(await nextDocumentNumberFn({ data: { kind: "order" } }));
         const { error: insErr } = await supabase.from("orders").insert({
           user_id: ownerUserId ?? session.user.id,
           created_by: approving.created_by ?? session.user.id,
