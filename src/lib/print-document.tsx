@@ -1,7 +1,9 @@
 // Print document renderer — opened in a new tab. Does not auto-call window.print().
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtDocument, onlyDigits } from "@/lib/utils";
+import { getInheritedStoreProfile } from "@/lib/store-profile.functions";
 
 export type Variant = "loja" | "producao" | "cliente";
 export type DocKind = "pedido" | "orcamento";
@@ -338,6 +340,7 @@ function ComponentsTable({
 
 export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; via: string }) {
   const variant: Variant = via === "producao" || via === "cliente" ? via : "loja";
+  const loadStoreProfile = useServerFn(getInheritedStoreProfile);
 
   const { data, isLoading } = useQuery({
     queryKey: ["print", kind, id],
@@ -402,8 +405,8 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
 
       const ownerId = order!.user_id;
-      const [storeRpc, itemsRes, clientRes] = await Promise.all([
-        supabase.rpc("get_store_profile", { _user_id: ownerId }),
+      const [storeProfile, itemsRes, clientRes] = await Promise.all([
+        loadStoreProfile({ data: { user_id: ownerId } }),
         budget?.id
           ? supabase
               .from("budget_items")
@@ -422,10 +425,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           : Promise.resolve({ data: null }),
       ]);
 
-      // get_store_profile walks up the parent chain server-side, returning the
-      // top-most ancestor (loja). Works for Admin → child and Revendedor → child.
-      const storeRows = (storeRpc as any).data as any[] | null;
-      const profile: any = Array.isArray(storeRows) && storeRows.length > 0 ? storeRows[0] : null;
+      const profile: any = storeProfile ?? null;
 
 
 

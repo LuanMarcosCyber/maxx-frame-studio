@@ -73,15 +73,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadUserData = async (userId: string) => {
-    const [{ data: roleRow }, { data: profileRow }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+    const [{ data: roleRows }, { data: profileRow }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("profiles")
         .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
         .eq("id", userId)
         .maybeSingle(),
     ]);
-    setRole((roleRow?.role as AppRole) ?? "revendedor");
+    const roles = new Set((roleRows ?? []).map((row) => row.role as AppRole));
+    const resolvedRole: AppRole = profileRow?.parent_user_id
+      ? "colaborador"
+      : roles.has("admin")
+        ? "admin"
+        : roles.has("revendedor")
+          ? "revendedor"
+          : roles.has("colaborador")
+            ? "colaborador"
+            : "revendedor";
+    setRole(resolvedRole);
     setProfile(
       (profileRow as Profile | null) ?? {
         full_name: null,

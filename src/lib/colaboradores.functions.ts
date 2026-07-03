@@ -230,6 +230,7 @@ export const createColaborador = createServerFn({ method: "POST" })
       full_name: data.full_name,
       username,
       parent_user_id: context.userId,
+      account_type: "operacional",
       active: true,
     };
     if (data.pin) profilePatch.pin_hash = hashPin(data.pin);
@@ -247,6 +248,12 @@ export const createColaborador = createServerFn({ method: "POST" })
         { onConflict: "user_id,role" },
       );
     if (roleErr) throw new Error(roleErr.message);
+
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role", "revendedor");
 
     return { id: userId };
   });
