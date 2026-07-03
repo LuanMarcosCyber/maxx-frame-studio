@@ -140,15 +140,15 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.owner_user_id(uuid) FROM PUBLIC, anon, authenticated;
+-- RLS policies still depend on has_role/owner_user_id/is_collaborator for authenticated users.
+-- Keep those grants, but close direct document-number generation and trigger functions.
 REVOKE EXECUTE ON FUNCTION public.next_document_number(text) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.next_document_number_for(uuid, text) FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.is_collaborator(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.prevent_profile_privilege_escalation() FROM PUBLIC, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO service_role;
-GRANT EXECUTE ON FUNCTION public.owner_user_id(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.owner_user_id(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_collaborator(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.next_document_number(text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.next_document_number_for(uuid, text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.is_collaborator(uuid) TO service_role;
