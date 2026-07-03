@@ -629,8 +629,10 @@ function Produtos() {
                   id="d-nome"
                   placeholder="Nome do produto"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => updateField("name", e.target.value)}
+                  className={errCls("name")}
                 />
+                <FieldError field="name" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -639,8 +641,10 @@ function Produtos() {
                     id="d-cod"
                     placeholder="Ex: DIV-001"
                     value={form.code}
-                    onChange={(e) => setForm({ ...form, code: e.target.value })}
+                    onChange={(e) => updateField("code", e.target.value)}
+                    className={errCls("code")}
                   />
+                  <FieldError field="code" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="d-bar">Código de Barras</Label>
@@ -648,48 +652,43 @@ function Produtos() {
                     id="d-bar"
                     placeholder="Opcional"
                     value={form.barcode}
-                    onChange={(e) =>
-                      setForm({ ...form, barcode: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="d-forn">Fornecedor</Label>
-                  <Input
-                    id="d-forn"
-                    placeholder="Opcional"
-                    value={form.supplier}
-                    onChange={(e) =>
-                      setForm({ ...form, supplier: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="d-val">Valor (R$) *</Label>
-                  <Input
-                    id="d-val"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={form.value_per_meter}
-                    onChange={(e) =>
-                      setForm({ ...form, value_per_meter: e.target.value })
-                    }
+                    onChange={(e) => updateField("barcode", e.target.value)}
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="d-desc">Descrição</Label>
+                <Label htmlFor="d-desc">Descrição *</Label>
                 <Textarea
                   id="d-desc"
-                  placeholder="Detalhes do produto (opcional)"
+                  placeholder="Detalhes do produto"
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value.toUpperCase() })
-
-                  }
+                  onChange={(e) => updateField("description", e.target.value.toUpperCase())}
+                  className={errCls("description")}
                 />
+                <FieldError field="description" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="d-forn">Fornecedor / Fabricante *</Label>
+                <Input
+                  id="d-forn"
+                  placeholder="Nome do fornecedor ou fabricante"
+                  value={form.supplier}
+                  onChange={(e) => updateField("supplier", e.target.value.toUpperCase())}
+                  className={errCls("supplier")}
+                />
+                <FieldError field="supplier" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="d-val">Valor (R$) *</Label>
+                <Input
+                  id="d-val"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={form.value_per_meter}
+                  onChange={(e) => updateField("value_per_meter", e.target.value)}
+                  className={errCls("value_per_meter")}
+                />
+                <FieldError field="value_per_meter" />
               </div>
               {showCommission && (
                 <div className="space-y-1.5">
@@ -697,12 +696,12 @@ function Produtos() {
                   <Input
                     id="d-com"
                     inputMode="decimal"
-                    placeholder="0"
+                    placeholder="0 (opcional)"
                     value={form.commission_percentage}
-                    onChange={(e) =>
-                      setForm({ ...form, commission_percentage: e.target.value })
-                    }
+                    onChange={(e) => updateField("commission_percentage", e.target.value)}
+                    className={errCls("commission_percentage")}
                   />
+                  <FieldError field="commission_percentage" />
                 </div>
               )}
               <div className="space-y-1.5">
@@ -711,7 +710,7 @@ function Produtos() {
                   id="d-ncm"
                   placeholder="Opcional"
                   value={form.ncm}
-                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                  onChange={(e) => updateField("ncm", e.target.value)}
                 />
               </div>
             </div>
@@ -719,75 +718,88 @@ function Produtos() {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="cod">Código</Label>
+                <Label htmlFor="cod">Código *</Label>
                 <Input
                   id="cod"
                   placeholder="Ex: FOAM-001"
                   value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
+                  onChange={(e) => updateField("code", e.target.value)}
+                  className={errCls("code")}
                 />
+                <FieldError field="code" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="desc">Descrição</Label>
+                <Label htmlFor="desc">Descrição *</Label>
                 <Input
                   id="desc"
                   placeholder="Descrição do produto"
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value.toUpperCase() })
-                  }
+                  onChange={(e) => updateField("description", e.target.value.toUpperCase())}
+                  className={errCls("description")}
                 />
+                <FieldError field="description" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="val">Valor do metro (R$)</Label>
+                <Label htmlFor="forn">Fornecedor / Fabricante *</Label>
+                <Input
+                  id="forn"
+                  placeholder="Nome do fornecedor ou fabricante"
+                  value={form.supplier}
+                  onChange={(e) => updateField("supplier", e.target.value.toUpperCase())}
+                  className={errCls("supplier")}
+                />
+                <FieldError field="supplier" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="val">Valor do metro (R$) *</Label>
                 <Input
                   id="val"
                   inputMode="decimal"
                   placeholder="0,00"
                   value={form.value_per_meter}
-                  onChange={(e) =>
-                    setForm({ ...form, value_per_meter: e.target.value })
-                  }
+                  onChange={(e) => updateField("value_per_meter", e.target.value)}
+                  className={errCls("value_per_meter")}
                 />
+                <FieldError field="value_per_meter" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="mar">Margem (%)</Label>
+                  <Label htmlFor="mar">Margem (%) *</Label>
                   <Input
                     id="mar"
                     inputMode="decimal"
                     placeholder="0"
                     value={form.profit_margin}
-                    onChange={(e) =>
-                      setForm({ ...form, profit_margin: e.target.value })
-                    }
+                    onChange={(e) => updateField("profit_margin", e.target.value)}
+                    className={errCls("profit_margin")}
                   />
+                  <FieldError field="profit_margin" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="per">Perda (%)</Label>
+                  <Label htmlFor="per">Perda (%) *</Label>
                   <Input
                     id="per"
                     inputMode="decimal"
                     placeholder="0"
                     value={form.waste_percentage}
-                    onChange={(e) =>
-                      setForm({ ...form, waste_percentage: e.target.value })
-                    }
+                    onChange={(e) => updateField("waste_percentage", e.target.value)}
+                    className={errCls("waste_percentage")}
                   />
+                  <FieldError field="waste_percentage" />
                 </div>
               </div>
               {activeCategory === "Perfil" && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="fw">Largura da moldura (cm)</Label>
+                  <Label htmlFor="fw">Largura da moldura (cm) *</Label>
                   <Input
                     id="fw"
                     inputMode="decimal"
                     placeholder="Ex: 3"
                     value={form.frame_width_cm}
-                    onChange={(e) =>
-                      setForm({ ...form, frame_width_cm: e.target.value })
-                    }
+                    onChange={(e) => updateField("frame_width_cm", e.target.value)}
+                    className={errCls("frame_width_cm")}
                   />
+                  <FieldError field="frame_width_cm" />
                 </div>
               )}
               {activeCategory === "Perfil" && (
@@ -798,10 +810,10 @@ function Produtos() {
                     inputMode="decimal"
                     placeholder="0,00 (opcional)"
                     value={form.labor_cost}
-                    onChange={(e) =>
-                      setForm({ ...form, labor_cost: e.target.value })
-                    }
+                    onChange={(e) => updateField("labor_cost", e.target.value)}
+                    className={errCls("labor_cost")}
                   />
+                  <FieldError field="labor_cost" />
                 </div>
               )}
               {showCommission && (
@@ -812,10 +824,10 @@ function Produtos() {
                     inputMode="decimal"
                     placeholder="0 (opcional)"
                     value={form.commission_percentage}
-                    onChange={(e) =>
-                      setForm({ ...form, commission_percentage: e.target.value })
-                    }
+                    onChange={(e) => updateField("commission_percentage", e.target.value)}
+                    className={errCls("commission_percentage")}
                   />
+                  <FieldError field="commission_percentage" />
                 </div>
               )}
               <div className="space-y-1.5">
@@ -824,7 +836,7 @@ function Produtos() {
                   id="ncm"
                   placeholder="Opcional"
                   value={form.ncm}
-                  onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                  onChange={(e) => updateField("ncm", e.target.value)}
                 />
               </div>
             </div>
