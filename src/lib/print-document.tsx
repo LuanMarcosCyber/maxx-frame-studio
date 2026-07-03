@@ -960,6 +960,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           >
             <div>
               <div className="section-title">Resumo financeiro</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 10, marginBottom: 6 }}>
+                <div><span className="lbl">Forma de pagamento:</span> {forma}</div>
+                <div><span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}</div>
+              </div>
               <div className="totals">
                 {variant === "loja" && maoObra > 0 && (
                   <div className="row muted">
