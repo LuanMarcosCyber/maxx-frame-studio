@@ -402,12 +402,8 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
 
       const ownerId = order!.user_id;
-      const [{ data: ownerProfile }, itemsRes, clientRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url, parent_user_id")
-          .eq("id", ownerId)
-          .maybeSingle(),
+      const [storeRpc, itemsRes, clientRes] = await Promise.all([
+        supabase.rpc("get_store_profile", { _user_id: ownerId }),
         budget?.id
           ? supabase
               .from("budget_items")
@@ -424,23 +420,14 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
               .eq("id", budget.client_id)
               .maybeSingle()
           : Promise.resolve({ data: null }),
-
       ]);
 
-      // Walk up the parent chain to the top-most ancestor (loja).
-      // Works for both Admin → child and Revendedor → child hierarchies.
-      let profile: any = ownerProfile;
-      const visited = new Set<string>([ownerId]);
-      while (profile?.parent_user_id && !visited.has(profile.parent_user_id)) {
-        visited.add(profile.parent_user_id);
-        const { data: parent } = await supabase
-          .from("profiles")
-          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url, parent_user_id")
-          .eq("id", profile.parent_user_id)
-          .maybeSingle();
-        if (!parent) break;
-        profile = parent;
-      }
+      // get_store_profile walks up the parent chain server-side, returning the
+      // top-most ancestor (loja). Works for Admin → child and Revendedor → child.
+      const storeRows = (storeRpc as any).data as any[] | null;
+      const profile: any = Array.isArray(storeRows) && storeRows.length > 0 ? storeRows[0] : null;
+
+
 
 
       let items: Array<{ id: string; position: number; subtotal: number; data: ItemData }> = ((itemsRes as any).data ??
