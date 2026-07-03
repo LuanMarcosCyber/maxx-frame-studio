@@ -799,7 +799,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                   </tr>
                   <tr>
                     <td className="k">Cidade / UF</td>
-                    <td>—</td>
+                    <td>{[client?.city, client?.state].filter(Boolean).join(" / ") || "—"}</td>
                   </tr>
                   <tr>
                     <td className="k">E-mail</td>
@@ -811,26 +811,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           );
         })()}
 
-        {/* Informações complementares do pedido (pagamento / origem) */}
-        {(variant !== "producao" || (kind === "pedido" && budget)) && (
-          <div className="grid-2" style={{ marginTop: 6 }}>
-            {kind === "pedido" && budget && (
-              <div>
-                <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
-              </div>
-            )}
-            {variant !== "producao" && (
-              <>
-                <div>
-                  <span className="lbl">Forma de pagamento:</span> {forma}
-                </div>
-                <div>
-                  <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+
 
 
         {/* Itens */}
