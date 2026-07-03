@@ -696,12 +696,27 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
             <div className="company">
               <div className="name">{storeName}</div>
               {profile?.document && <div className="line">{onlyDigits(profile.document).length === 11 ? "CPF" : "CNPJ"}: {fmtDocument(profile.document)}</div>}
-              {profile?.address && <div className="line">{profile.address}</div>}
+              {(profile?.address || profile?.address_number) && (
+                <div className="line">
+                  {[profile?.address, profile?.address_number].filter(Boolean).join(", ")}
+                </div>
+              )}
+              {(profile?.city || profile?.state || profile?.cep) && (
+                <div className="line">
+                  {[
+                    [profile?.city, profile?.state].filter(Boolean).join(" / "),
+                    profile?.cep ? `CEP ${profile.cep}` : null,
+                  ].filter(Boolean).join(" · ")}
+                </div>
+              )}
             </div>
           </div>
           <div className="contact">
             {profile?.phone && <div>Tel: {profile.phone}</div>}
             {profile?.email && <div>{profile.email}</div>}
+            {kind === "pedido" && budget && (
+              <div>Orçamento origem: {budget.number || "—"}</div>
+            )}
             {(order.operator_name || budget?.operator_name) && (
               <div className="op">Colaborador: {order.operator_name || budget?.operator_name}</div>
             )}
