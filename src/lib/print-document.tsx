@@ -405,7 +405,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       const [{ data: profile }, itemsRes, clientRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, store_name, phone, email, address, document, avatar_url")
+          .select("full_name, store_name, phone, email, address, address_number, cep, city, state, document, avatar_url")
           .eq("id", ownerId)
           .maybeSingle(),
         budget?.id
@@ -419,7 +419,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           ? supabase
               .from("clients")
               .select(
-                "name, phone, email, document, address, address_number, cep, commercial_phone, mobile_phone, whatsapp, customer_type",
+                "name, phone, email, document, address, address_number, cep, city, state, commercial_phone, mobile_phone, whatsapp, customer_type",
               )
               .eq("id", budget.client_id)
               .maybeSingle()
@@ -696,12 +696,27 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
             <div className="company">
               <div className="name">{storeName}</div>
               {profile?.document && <div className="line">{onlyDigits(profile.document).length === 11 ? "CPF" : "CNPJ"}: {fmtDocument(profile.document)}</div>}
-              {profile?.address && <div className="line">{profile.address}</div>}
+              {(profile?.address || profile?.address_number) && (
+                <div className="line">
+                  {[profile?.address, profile?.address_number].filter(Boolean).join(", ")}
+                </div>
+              )}
+              {(profile?.city || profile?.state || profile?.cep) && (
+                <div className="line">
+                  {[
+                    [profile?.city, profile?.state].filter(Boolean).join(" / "),
+                    profile?.cep ? `CEP ${profile.cep}` : null,
+                  ].filter(Boolean).join(" · ")}
+                </div>
+              )}
             </div>
           </div>
           <div className="contact">
             {profile?.phone && <div>Tel: {profile.phone}</div>}
             {profile?.email && <div>{profile.email}</div>}
+            {kind === "pedido" && budget && (
+              <div>Orçamento origem: {budget.number || "—"}</div>
+            )}
             {(order.operator_name || budget?.operator_name) && (
               <div className="op">Colaborador: {order.operator_name || budget?.operator_name}</div>
             )}
@@ -784,7 +799,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                   </tr>
                   <tr>
                     <td className="k">Cidade / UF</td>
-                    <td>—</td>
+                    <td>{[client?.city, client?.state].filter(Boolean).join(" / ") || "—"}</td>
                   </tr>
                   <tr>
                     <td className="k">E-mail</td>
@@ -796,26 +811,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           );
         })()}
 
-        {/* Informações complementares do pedido (pagamento / origem) */}
-        {(variant !== "producao" || (kind === "pedido" && budget)) && (
-          <div className="grid-2" style={{ marginTop: 6 }}>
-            {kind === "pedido" && budget && (
-              <div>
-                <span className="lbl">Orçamento origem:</span> {budget.number || "—"}
-              </div>
-            )}
-            {variant !== "producao" && (
-              <>
-                <div>
-                  <span className="lbl">Forma de pagamento:</span> {forma}
-                </div>
-                <div>
-                  <span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+
 
 
         {/* Itens */}
@@ -964,6 +960,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           >
             <div>
               <div className="section-title">Resumo financeiro</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 10, marginBottom: 6 }}>
+                <div><span className="lbl">Forma de pagamento:</span> {forma}</div>
+                <div><span className="lbl">Condição:</span> {isParcelado ? `Parcelado · ${parcelas.length}x` : condicao}</div>
+              </div>
               <div className="totals">
                 {variant === "loja" && maoObra > 0 && (
                   <div className="row muted">
