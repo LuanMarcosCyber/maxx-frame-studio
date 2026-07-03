@@ -62,37 +62,15 @@ REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authentic
 
 CREATE OR REPLACE FUNCTION public.owner_user_id(_user_id uuid)
 RETURNS uuid
-LANGUAGE plpgsql
+LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_current uuid := _user_id;
-  v_parent uuid;
-  v_seen uuid[] := ARRAY[]::uuid[];
-BEGIN
-  IF v_current IS NULL THEN
-    RETURN NULL;
-  END IF;
-
-  LOOP
-    IF v_current = ANY(v_seen) THEN
-      RETURN _user_id;
-    END IF;
-    v_seen := array_append(v_seen, v_current);
-
-    SELECT parent_user_id INTO v_parent
-    FROM public.profiles
-    WHERE id = v_current AND active = true;
-
-    IF v_parent IS NULL THEN
-      RETURN v_current;
-    END IF;
-
-    v_current := v_parent;
-  END LOOP;
-END;
+  SELECT COALESCE(
+    (SELECT parent_user_id FROM public.profiles WHERE id = _user_id AND active = true AND parent_user_id IS NOT NULL),
+    _user_id
+  )
 $$;
 
 CREATE OR REPLACE FUNCTION public.next_document_number_for(_caller uuid, _kind text)
