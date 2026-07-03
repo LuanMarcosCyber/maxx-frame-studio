@@ -171,33 +171,42 @@ function Conta() {
   };
 
 
+  const roCls = readOnly ? "cursor-not-allowed opacity-70 bg-muted/40" : "";
+
   return (
     <AppShell title="Minha Conta" subtitle="Dados do usuário e perfil">
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="p-6 lg:col-span-2">
           <h2 className="text-base font-semibold mb-1">Informações pessoais</h2>
           <p className="text-xs text-muted-foreground mb-6">
-            Atualize seus dados de cadastro
+            {readOnly
+              ? "Dados comerciais herdados da conta principal (somente leitura)."
+              : "Atualize seus dados de cadastro"}
           </p>
           <div className="grid sm:grid-cols-6 gap-4">
-            <div className="space-y-1.5 sm:col-span-3">
+            <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
                 id="nome"
                 value={form.full_name}
                 onChange={onChange("full_name")}
                 placeholder="Seu nome completo"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
-            <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="loja">Nome da loja</Label>
-              <Input
-                id="loja"
-                value={form.store_name}
-                onChange={onChange("store_name")}
-                placeholder="Ex.: Molduraria Silva"
-              />
-            </div>
+            {!readOnly && (
+              <div className="space-y-1.5 sm:col-span-6">
+                <Label htmlFor="loja">Nome da loja</Label>
+                <Input
+                  id="loja"
+                  value={form.store_name}
+                  onChange={onChange("store_name")}
+                  placeholder="Ex.: Molduraria Silva"
+                />
+              </div>
+            )}
 
             <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="email">E-mail</Label>
@@ -207,6 +216,9 @@ function Conta() {
                 value={form.email}
                 onChange={onChange("email")}
                 placeholder="seuemail@empresa.com"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-3">
@@ -216,28 +228,33 @@ function Conta() {
                 value={form.phone}
                 onChange={onChange("phone")}
                 placeholder="(11) 99999-9999"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
 
-            <div className="space-y-1.5 sm:col-span-6">
-              <Label>Tipo de documento</Label>
-              <RadioGroup
-                value={form.document_type}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, document_type: v as DocType }))
-                }
-                className="flex gap-3"
-              >
-                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
-                  <RadioGroupItem value="cpf" id="dt-cpf" />
-                  <span className="text-sm">CPF</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
-                  <RadioGroupItem value="cnpj" id="dt-cnpj" />
-                  <span className="text-sm">CNPJ</span>
-                </label>
-              </RadioGroup>
-            </div>
+            {!readOnly && (
+              <div className="space-y-1.5 sm:col-span-6">
+                <Label>Tipo de documento</Label>
+                <RadioGroup
+                  value={form.document_type}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, document_type: v as DocType }))
+                  }
+                  className="flex gap-3"
+                >
+                  <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
+                    <RadioGroupItem value="cpf" id="dt-cpf" />
+                    <span className="text-sm">CPF</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
+                    <RadioGroupItem value="cnpj" id="dt-cnpj" />
+                    <span className="text-sm">CNPJ</span>
+                  </label>
+                </RadioGroup>
+              </div>
+            )}
 
             <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="doc">
@@ -247,12 +264,15 @@ function Conta() {
                 id="doc"
                 value={form.document}
                 onChange={onChange("document")}
-                onBlur={onDocBlur}
+                onBlur={readOnly ? undefined : onDocBlur}
                 placeholder={
                   form.document_type === "cpf"
                     ? "000.000.000-00"
                     : "00.000.000/0000-00"
                 }
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
 
@@ -263,8 +283,11 @@ function Conta() {
                   id="cep"
                   value={form.cep}
                   onChange={onChange("cep")}
-                  onBlur={(e) => lookupCep(e.target.value)}
+                  onBlur={readOnly ? undefined : (e) => lookupCep(e.target.value)}
                   placeholder="00000-000"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  className={roCls}
                 />
                 {cepLoading && (
                   <Loader2 className="h-4 w-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -278,6 +301,9 @@ function Conta() {
                 value={form.address}
                 onChange={onChange("address")}
                 placeholder="Rua/Avenida"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-1">
@@ -287,6 +313,9 @@ function Conta() {
                 value={form.address_number}
                 onChange={onChange("address_number")}
                 placeholder="123"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-4">
@@ -296,6 +325,9 @@ function Conta() {
                 value={form.city}
                 onChange={onChange("city")}
                 placeholder="Cidade"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
@@ -308,19 +340,25 @@ function Conta() {
                 }
                 placeholder="SP"
                 maxLength={2}
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
               />
             </div>
           </div>
-          <div className="flex justify-end mt-6">
-            <Button
-              onClick={onSave}
-              disabled={saving}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-            >
-              {saving ? "Salvando..." : "Salvar alterações"}
-            </Button>
-          </div>
+          {!readOnly && (
+            <div className="flex justify-end mt-6">
+              <Button
+                onClick={onSave}
+                disabled={saving}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+              >
+                {saving ? "Salvando..." : "Salvar alterações"}
+              </Button>
+            </div>
+          )}
         </Card>
+
 
         <div className="space-y-6">
           <Card className="p-6">
