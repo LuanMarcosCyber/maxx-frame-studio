@@ -180,11 +180,13 @@ function Produtos() {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    setErrors({});
     setDialogOpen(true);
   };
 
   const openEdit = (p: Product) => {
     setEditing(p);
+    setErrors({});
     setForm({
       code: p.code,
       description: p.description ?? "",
@@ -214,6 +216,10 @@ function Produtos() {
 
   const handleSave = async () => {
     if (!user) return;
+    const newErrors: Partial<Record<keyof FormState, string>> = {};
+    const req = (field: keyof FormState, msg = "Campo obrigatório") => {
+      if (!form[field].trim()) newErrors[field] = msg;
+    };
 
     if (isDiversos) {
       if (!form.name.trim() || !form.code.trim()) {
