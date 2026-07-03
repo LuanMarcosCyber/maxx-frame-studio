@@ -59,12 +59,10 @@ async function chainContains(supabaseAdmin: any, startId: string, ids: Set<strin
 }
 
 async function fallbackParentFromMetadata(supabaseAdmin: any, userId: string): Promise<string | null> {
-  const isCollaborator = await hasRole(supabaseAdmin, userId, "colaborador");
-  if (!isCollaborator) return null;
-
   const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
-  const rawParent = data?.user?.user_metadata?.parent_user_id;
-  if (typeof rawParent !== "string") return null;
+  const metadata = data?.user?.user_metadata ?? {};
+  const rawParent = metadata.parent_user_id ?? metadata.owner_user_id ?? metadata.created_by;
+  if (typeof rawParent !== "string" || !rawParent) return null;
 
   const parent = await profileById(supabaseAdmin, rawParent);
   return parent?.id ?? null;
@@ -78,8 +76,13 @@ export const getInheritedStoreProfile = createServerFn({ method: "POST" })
     const target = await profileById(supabaseAdmin, data.user_id);
     if (!target) throw new Error("Conta não encontrada.");
 
+    const isAccessAccount = target.account_type === "operacional" || (await hasRole(supabaseAdmin, target.id, "colaborador"));
     const fallbackParent = target.parent_user_id ? null : await fallbackParentFromMetadata(supabaseAdmin, target.id);
     const storeId = target.parent_user_id ?? fallbackParent ?? target.id;
+
+    if (isAccessAccount && storeId === target.id) {
+      throw new Error("Conta de acesso sem vínculo com conta pai.");
+    }
 
     const authorized =
       context.userId === target.id ||

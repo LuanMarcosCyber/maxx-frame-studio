@@ -21,6 +21,7 @@ interface Profile {
   state: string | null;
   store_name: string | null;
   parent_user_id: string | null;
+  account_type: "admin" | "revendedor" | "operacional" | null;
   active: boolean;
   avatar_url: string | null;
   can_edit_budgets: boolean;
@@ -77,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
+        .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, account_type, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -85,10 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { session: currentSession },
     } = await supabase.auth.getSession();
-    const rawMetadataParentId = currentSession?.user?.user_metadata?.parent_user_id;
+    const metadata = currentSession?.user?.user_metadata ?? {};
+    const rawMetadataParentId = metadata.parent_user_id ?? metadata.owner_user_id ?? metadata.created_by;
     const fallbackParentId = typeof rawMetadataParentId === "string" && rawMetadataParentId ? rawMetadataParentId : null;
     const parentUserId = profileRow?.parent_user_id ?? fallbackParentId;
-    const resolvedRole: AppRole = parentUserId
+    const isOperationalAccount = !!parentUserId || profileRow?.account_type === "operacional";
+    const resolvedRole: AppRole = isOperationalAccount
       ? "colaborador"
       : roles.has("admin")
         ? "admin"
@@ -112,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         state: null,
         store_name: null,
         parent_user_id: null,
+        account_type: null,
         active: true,
         avatar_url: null,
         can_edit_budgets: true,

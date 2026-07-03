@@ -24,8 +24,8 @@ export const Route = createFileRoute("/conta")({
 type DocType = "cpf" | "cnpj";
 
 function Conta() {
-  const { user, profile, refreshProfile } = useAuth();
-  const isChildAccount = !!profile?.parent_user_id;
+  const { user, profile, role, refreshProfile } = useAuth();
+  const isChildAccount = !!profile?.parent_user_id || profile?.account_type === "operacional" || role === "colaborador";
   const readOnly = isChildAccount;
   const [form, setForm] = useState({
     full_name: "",
@@ -53,8 +53,10 @@ function Conta() {
 
       if (isChildAccount && user?.id) {
         try {
-          source = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null>;
-        } catch {
+          const inherited = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null>;
+          source = inherited ?? source;
+        } catch (error) {
+          console.error("Erro ao carregar dados comerciais herdados", error);
           source = (profile as unknown as Record<string, string | null> | null) ?? null;
         }
       }
