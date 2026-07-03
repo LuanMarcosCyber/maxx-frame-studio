@@ -325,6 +325,7 @@ function Produtos() {
     if (isPerfil && form.labor_cost.trim() !== "") {
       const lc = parseNum(form.labor_cost);
       if (Number.isNaN(lc)) {
+        setErrors({ labor_cost: "Mão de obra inválida." });
         toast.error("Mão de obra inválida.");
         return;
       }
@@ -345,6 +346,7 @@ function Produtos() {
             waste_percentage: waste,
             frame_width_cm: isPerfil ? frameWidth : null,
             labor_cost: isPerfil ? laborCost : 0,
+            supplier: form.supplier.trim(),
             commission_percentage: commission,
             ncm: form.ncm.trim() || null,
 
@@ -363,6 +365,7 @@ function Produtos() {
           waste_percentage: waste,
           frame_width_cm: isPerfil ? frameWidth : null,
           labor_cost: isPerfil ? laborCost : 0,
+          supplier: form.supplier.trim(),
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
 
@@ -373,6 +376,7 @@ function Produtos() {
       setDialogOpen(false);
       setEditing(null);
       setForm(emptyForm);
+      setErrors({});
       queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao salvar produto.");
