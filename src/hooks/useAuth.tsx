@@ -82,7 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle(),
     ]);
     const roles = new Set((roleRows ?? []).map((row) => row.role as AppRole));
-    const resolvedRole: AppRole = profileRow?.parent_user_id
+    const metadataParentId =
+      typeof supabase.auth.getUser === "function"
+        ? null
+        : null;
+    const rawMetadataParentId = session?.user?.user_metadata?.parent_user_id;
+    const fallbackParentId = typeof rawMetadataParentId === "string" && rawMetadataParentId ? rawMetadataParentId : null;
+    const parentUserId = profileRow?.parent_user_id ?? fallbackParentId;
+    const resolvedRole: AppRole = parentUserId
       ? "colaborador"
       : roles.has("admin")
         ? "admin"
@@ -92,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ? "colaborador"
             : "revendedor";
     setRole(resolvedRole);
-    setProfile(
-      (profileRow as Profile | null) ?? {
+    const baseProfile = (profileRow as Profile | null) ?? {
         full_name: null,
         username: null,
         email: null,
@@ -114,8 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         can_create_clients: true,
         can_delete_orders: false,
         max_discount_percent: 100,
-      },
-    );
+      };
+    setProfile({ ...baseProfile, parent_user_id: parentUserId });
   };
 
 
@@ -138,8 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const ownerUserId =
-    profile?.parent_user_id ?? session?.user?.id ?? null;
+  const ownerUserId = profile?.parent_user_id ?? session?.user?.id ?? null;
   const isActive = profile?.active ?? true;
 
   return (
