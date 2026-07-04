@@ -524,14 +524,14 @@ function Pedidos() {
       </Dialog>
 
       {/* Modal: mudar status do pedido */}
-      <Dialog open={statusOpen} onOpenChange={(o) => !savingStatus && setStatusOpen(o)}>
+      <Dialog open={statusOpen} onOpenChange={(o) => { if (savingStatus) return; setStatusOpen(o); if (!o) setTarget((t) => (viewing ? t : null)); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Mudar estado do pedido</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ORDER_STATUSES.map((s) => {
-              const active = viewing?.status === s;
+              const active = (target ?? viewing)?.status === s;
               return (
                 <button
                   key={s}
