@@ -225,26 +225,30 @@ function Pedidos() {
   }
 
   async function changeStatus(newStatus: string) {
-    if (!viewing) return;
+    const t = target ?? viewing;
+    if (!t) return;
     setSavingStatus(true);
-    const ok = await updateOrderStatus(viewing.id, newStatus);
+    const ok = await updateOrderStatus(t.id, newStatus);
     setSavingStatus(false);
     if (!ok) return;
-    setViewing({ ...viewing, status: newStatus });
+    if (viewing && viewing.id === t.id) setViewing({ ...viewing, status: newStatus });
     setStatusOpen(false);
+    setTarget(null);
   }
 
 
   async function handleDelete() {
-    if (!viewing) return;
-    const { error } = await supabase.from("orders").delete().eq("id", viewing.id);
+    const t = target ?? viewing;
+    if (!t) return;
+    const { error } = await supabase.from("orders").delete().eq("id", t.id);
     if (error) {
       toast.error("Não foi possível excluir o pedido.");
       return;
     }
     toast.success("Pedido excluído.");
     setDeleteOpen(false);
-    setViewing(null);
+    setTarget(null);
+    if (viewing && viewing.id === t.id) setViewing(null);
     await queryClient.invalidateQueries({ queryKey: ["orders"] });
   }
 
