@@ -77,18 +77,47 @@ export const listColaboradores = createServerFn({ method: "GET" })
     await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: profiles, error } = await supabaseAdmin
+    const callerIsAdmin = await isAdmin(supabaseAdmin, context.userId);
+
+    let query = supabaseAdmin
       .from("profiles")
-      .select("id, full_name, username, created_at, active, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent, pin_hash")
-      .eq("parent_user_id", context.userId)
+      .select("id, full_name, username, created_at, active, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent, pin_hash, parent_user_id")
       .order("created_at", { ascending: false });
+
+    if (callerIsAdmin) {
+      query = query.not("parent_user_id", "is", null);
+    } else {
+      query = query.eq("parent_user_id", context.userId);
+    }
+
+    const { data: profiles, error } = await query;
     if (error) throw new Error(error.message);
-    return (profiles ?? []).map((p: any) => ({
-      ...p,
-      has_pin: !!p.pin_hash,
-      pin_hash: undefined,
-    }));
+
+    // Resolve parent names for display
+    const parentIds = Array.from(
+      new Set(((profiles ?? []) as any[]).map((p) => p.parent_user_id).filter(Boolean)),
+    );
+    let parentMap = new Map<string, { full_name: string | null; username: string | null }>();
+    if (parentIds.length) {
+      const { data: parents } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, username")
+        .in("id", parentIds);
+      parentMap = new Map((parents ?? []).map((p: any) => [p.id, { full_name: p.full_name, username: p.username }]));
+    }
+
+    return (profiles ?? []).map((p: any) => {
+      const parent = p.parent_user_id ? parentMap.get(p.parent_user_id) : null;
+      return {
+        ...p,
+        has_pin: !!p.pin_hash,
+        pin_hash: undefined,
+        parent_name: parent ? parent.full_name ?? parent.username ?? null : null,
+      };
+    });
   });
+
+
 
 /**
  * List active collaborators of the current owner for the operator picker.
