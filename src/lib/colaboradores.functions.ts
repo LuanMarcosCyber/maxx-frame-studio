@@ -397,6 +397,7 @@ const updateSchema = z.object({
   can_delete_orders: z.boolean().optional(),
   max_discount_percent: z.number().min(0).max(100).optional(),
   pin: pinSchema.optional(),
+  parent_user_id: z.string().uuid().optional(),
 });
 
 export const updateColaborador = createServerFn({ method: "POST" })
@@ -415,13 +416,44 @@ export const updateColaborador = createServerFn({ method: "POST" })
     if (data.max_discount_percent !== undefined) patch.max_discount_percent = data.max_discount_percent;
     if (data.pin) patch.pin_hash = hashPin(data.pin);
 
+    if (data.parent_user_id !== undefined) {
+      const callerIsAdmin = await isAdmin(supabaseAdmin, context.userId);
+      if (!callerIsAdmin) {
+        throw new Error("Apenas administradores podem alterar o vínculo do revendedor.");
+      }
+      const validReseller = await isReseller(supabaseAdmin, data.parent_user_id);
+      const validAdmin = await isAdmin(supabaseAdmin, data.parent_user_id);
+      if (!validReseller && !validAdmin) {
+        throw new Error("Revendedor informado inválido.");
+      }
+      patch.parent_user_id = data.parent_user_id;
+    }
+
     const { error } = await supabaseAdmin
       .from("profiles")
       .update(patch as never)
       .eq("id", data.user_id);
     if (error) throw new Error(error.message);
+
+    if (data.parent_user_id !== undefined) {
+      // Keep auth metadata in sync so the child account resolves the new parent immediately.
+      const { data: authUser } = await supabaseAdmin.auth.admin
+        .getUserById(data.user_id)
+        .catch(() => ({ data: null as any }));
+      await supabaseAdmin.auth.admin
+        .updateUserById(data.user_id, {
+          user_metadata: {
+            ...(authUser?.user?.user_metadata ?? {}),
+            parent_user_id: data.parent_user_id,
+            owner_user_id: data.parent_user_id,
+          },
+        })
+        .catch(() => {});
+    }
+
     return { ok: true };
   });
+
 
 const deleteSchema = z.object({ user_id: z.string().uuid() });
 
