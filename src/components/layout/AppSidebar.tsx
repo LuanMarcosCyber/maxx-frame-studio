@@ -60,7 +60,7 @@ function useSidebarData() {
   const isOperational = !!profile?.parent_user_id;
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, operadores, revendedores];
+    cadastroItems = [clientes, produtos, arquitetos, transportadoras, revendedores, colaboradores, operadores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador" || isOperational) {
     mainItems = [dashboard, orcamentos, pedidos];
