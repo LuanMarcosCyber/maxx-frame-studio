@@ -124,8 +124,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         can_delete_orders: false,
         max_discount_percent: 100,
       };
-    setProfile({ ...baseProfile, parent_user_id: parentUserId });
+
+    let mergedProfile: Profile = { ...baseProfile, parent_user_id: parentUserId };
+
+    // Conta de acesso (child): herda dados comerciais da conta pai
+    if (isOperationalAccount) {
+      try {
+        const { data: storeRows } = await supabase.rpc("get_store_profile", { _user_id: userId });
+        const store = Array.isArray(storeRows) ? storeRows[0] : storeRows;
+        if (store) {
+          mergedProfile = {
+            ...mergedProfile,
+            avatar_url: store.avatar_url ?? mergedProfile.avatar_url,
+            store_name: store.store_name ?? mergedProfile.store_name,
+            email: store.email ?? mergedProfile.email,
+            phone: store.phone ?? mergedProfile.phone,
+            document: store.document ?? mergedProfile.document,
+            document_type: store.document_type ?? mergedProfile.document_type,
+            cep: store.cep ?? mergedProfile.cep,
+            address: store.address ?? mergedProfile.address,
+            address_number: store.address_number ?? mergedProfile.address_number,
+            city: store.city ?? mergedProfile.city,
+            state: store.state ?? mergedProfile.state,
+          };
+        }
+      } catch (err) {
+        console.error("Erro ao herdar dados comerciais da conta pai", err);
+      }
+    }
+
+    setProfile(mergedProfile);
   };
+
 
 
   const refreshProfile = async () => {
