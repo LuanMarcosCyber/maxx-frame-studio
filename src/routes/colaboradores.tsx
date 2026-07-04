@@ -376,19 +376,23 @@ function Content() {
 
       <EditDialog
         target={editTarget}
+        isAdmin={isAdminCaller}
+        resellers={resellerOptions}
         onOpenChange={(o) => !o && setEditTarget(null)}
-        onSubmit={(name, perms, pin) =>
+        onSubmit={(name, perms, pin, parent_user_id) =>
           editTarget
             ? updateMut.mutateAsync({
                 user_id: editTarget.id,
                 full_name: name,
                 ...perms,
                 ...(pin ? { pin } : {}),
+                ...(parent_user_id !== undefined ? { parent_user_id } : {}),
               })
             : undefined
         }
         submitting={updateMut.isPending}
       />
+
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
