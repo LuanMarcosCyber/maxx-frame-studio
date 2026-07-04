@@ -195,18 +195,21 @@ function Conta() {
               />
             </div>
 
-            <div className="space-y-1.5 sm:col-span-6">
-              <Label htmlFor="loja">Nome da loja</Label>
-              <Input
-                id="loja"
-                value={form.store_name}
-                onChange={onChange("store_name")}
-                placeholder="Ex.: Molduraria Silva"
-                readOnly={readOnly}
-                disabled={readOnly}
-                className={roCls}
-              />
-            </div>
+            {!isChildAccount && (
+              <div className="space-y-1.5 sm:col-span-6">
+                <Label htmlFor="loja">Nome da loja</Label>
+                <Input
+                  id="loja"
+                  value={form.store_name}
+                  onChange={onChange("store_name")}
+                  placeholder="Ex.: Molduraria Silva"
+                  readOnly={readOnly}
+                  disabled={readOnly}
+                  className={roCls}
+                />
+              </div>
+            )}
+
 
             <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="email">E-mail</Label>
