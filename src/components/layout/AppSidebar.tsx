@@ -81,16 +81,22 @@ function useSidebarData() {
 
 
 function ProfileAvatar() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, role, refreshProfile } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const isChildAccount =
+    !!profile?.parent_user_id || profile?.account_type === "operacional" || role === "colaborador";
+  const canEditAvatar = !isChildAccount;
 
-  const onPick = () => inputRef.current?.click();
+  const onPick = () => {
+    if (!canEditAvatar) return;
+    inputRef.current?.click();
+  };
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !user) return;
+    if (!file || !user || !canEditAvatar) return;
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Imagem muito grande (máx 5 MB).");
       return;
@@ -120,12 +126,14 @@ function ProfileAvatar() {
       <button
         type="button"
         onClick={onPick}
-        disabled={uploading}
-        aria-label="Alterar foto de perfil"
-        title="Alterar foto de perfil"
+        disabled={uploading || !canEditAvatar}
+        aria-label={canEditAvatar ? "Alterar foto de perfil" : "Foto herdada da conta principal"}
+        title={canEditAvatar ? "Alterar foto de perfil" : "Foto herdada da conta principal"}
         className={cn(
-          "h-28 w-28 rounded-full overflow-hidden bg-muted border-2 border-white shadow-md grid place-items-center cursor-pointer",
-          "transition hover:opacity-90 hover:ring-2 hover:ring-[hsl(var(--brand-end))]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand-end))]/60",
+          "h-28 w-28 rounded-full overflow-hidden bg-muted border-2 border-white shadow-md grid place-items-center",
+          canEditAvatar
+            ? "cursor-pointer transition hover:opacity-90 hover:ring-2 hover:ring-[hsl(var(--brand-end))]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand-end))]/60"
+            : "cursor-default",
           "disabled:cursor-wait",
         )}
       >
@@ -135,24 +143,26 @@ function ProfileAvatar() {
           <User className="h-12 w-12 text-muted-foreground/60" strokeWidth={1.5} />
         )}
       </button>
-      <button
-        type="button"
-        onClick={onPick}
-        disabled={uploading}
-        aria-label="Alterar foto de perfil"
-        title="Alterar foto de perfil"
-        className={cn(
-          "absolute bottom-0 right-0 h-9 w-9 rounded-full grid place-items-center cursor-pointer",
-          "bg-gradient-brand text-brand-foreground shadow-brand border-2 border-white",
-          "hover:opacity-95 hover:scale-105 transition disabled:opacity-60 disabled:cursor-wait",
-        )}
-      >
-        {uploading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Pencil className="h-4 w-4" />
-        )}
-      </button>
+      {canEditAvatar && (
+        <button
+          type="button"
+          onClick={onPick}
+          disabled={uploading}
+          aria-label="Alterar foto de perfil"
+          title="Alterar foto de perfil"
+          className={cn(
+            "absolute bottom-0 right-0 h-9 w-9 rounded-full grid place-items-center cursor-pointer",
+            "bg-gradient-brand text-brand-foreground shadow-brand border-2 border-white",
+            "hover:opacity-95 hover:scale-105 transition disabled:opacity-60 disabled:cursor-wait",
+          )}
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Pencil className="h-4 w-4" />
+          )}
+        </button>
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -163,6 +173,7 @@ function ProfileAvatar() {
     </div>
   );
 }
+
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
