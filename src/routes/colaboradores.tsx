@@ -263,8 +263,14 @@ function Content() {
             Cada conta faz login e representa um usuário do sistema. Os operadores que aparecem no seletor do topo são cadastrados em <strong>Operadores</strong>.
           </p>
         </div>
-        <CreateDialog onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>} submitting={createMut.isPending} />
+        <CreateDialog
+          isAdmin={isAdminCaller}
+          resellers={resellerOptions}
+          onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>}
+          submitting={createMut.isPending}
+        />
       </div>
+
 
       <div className="rounded-lg border bg-card -mx-4 sm:mx-0 overflow-x-auto">
         <Table>
