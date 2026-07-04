@@ -35,17 +35,41 @@ async function ensureManager(supabase: any, userId: string) {
     throw new Error("Acesso negado: apenas administradores e revendedores podem gerenciar colaboradores.");
 }
 
-async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, parentUserId: string) {
+async function isAdmin(supabase: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
+async function isReseller(supabaseAdmin: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "revendedor")
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
+async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, callerUserId: string) {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("id, parent_user_id")
     .eq("id", colaboradorId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data || data.parent_user_id !== parentUserId) {
-    throw new Error("Colaborador não pertence a este revendedor.");
-  }
+  if (!data) throw new Error("Colaborador não encontrado.");
+  if (data.parent_user_id === callerUserId) return;
+  if (await isAdmin(supabaseAdmin, callerUserId)) return;
+  throw new Error("Colaborador não pertence a este revendedor.");
 }
+
 
 export const listColaboradores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -53,18 +77,47 @@ export const listColaboradores = createServerFn({ method: "GET" })
     await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: profiles, error } = await supabaseAdmin
+    const callerIsAdmin = await isAdmin(supabaseAdmin, context.userId);
+
+    let query = supabaseAdmin
       .from("profiles")
-      .select("id, full_name, username, created_at, active, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent, pin_hash")
-      .eq("parent_user_id", context.userId)
+      .select("id, full_name, username, created_at, active, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent, pin_hash, parent_user_id")
       .order("created_at", { ascending: false });
+
+    if (callerIsAdmin) {
+      query = query.not("parent_user_id", "is", null);
+    } else {
+      query = query.eq("parent_user_id", context.userId);
+    }
+
+    const { data: profiles, error } = await query;
     if (error) throw new Error(error.message);
-    return (profiles ?? []).map((p: any) => ({
-      ...p,
-      has_pin: !!p.pin_hash,
-      pin_hash: undefined,
-    }));
+
+    // Resolve parent names for display
+    const parentIds = Array.from(
+      new Set(((profiles ?? []) as any[]).map((p) => p.parent_user_id).filter(Boolean)),
+    );
+    let parentMap = new Map<string, { full_name: string | null; username: string | null }>();
+    if (parentIds.length) {
+      const { data: parents } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, username")
+        .in("id", parentIds);
+      parentMap = new Map((parents ?? []).map((p: any) => [p.id, { full_name: p.full_name, username: p.username }]));
+    }
+
+    return (profiles ?? []).map((p: any) => {
+      const parent = p.parent_user_id ? parentMap.get(p.parent_user_id) : null;
+      return {
+        ...p,
+        has_pin: !!p.pin_hash,
+        pin_hash: undefined,
+        parent_name: parent ? parent.full_name ?? parent.username ?? null : null,
+      };
+    });
   });
+
+
 
 /**
  * List active collaborators of the current owner for the operator picker.
@@ -158,6 +211,7 @@ const createSchema = z.object({
     .regex(/^[a-z0-9._-]+$/i),
   password: z.string().min(6).max(72),
   pin: pinSchema.optional(),
+  parent_user_id: z.string().uuid().optional(),
 });
 
 /**
@@ -172,6 +226,24 @@ export const createColaborador = createServerFn({ method: "POST" })
     await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Resolve parent: admin may pick a specific reseller (or the Admin himself).
+    // Non-admin managers can only create under themselves.
+    const callerIsAdmin = await isAdmin(supabaseAdmin, context.userId);
+    let parentId = context.userId;
+    if (data.parent_user_id) {
+      if (!callerIsAdmin) {
+        throw new Error("Apenas administradores podem vincular a outro revendedor.");
+      }
+      if (data.parent_user_id !== context.userId) {
+        const validReseller = await isReseller(supabaseAdmin, data.parent_user_id);
+        const validAdmin = await isAdmin(supabaseAdmin, data.parent_user_id);
+        if (!validReseller && !validAdmin) {
+          throw new Error("Revendedor informado inválido.");
+        }
+      }
+      parentId = data.parent_user_id;
+    }
+
     const username = data.username.toLowerCase();
     const email = usernameToEmail(username);
 
@@ -184,16 +256,14 @@ export const createColaborador = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existingProfile) {
-      // If it already belongs to someone else → block.
       if (
         existingProfile.parent_user_id &&
-        existingProfile.parent_user_id !== context.userId
+        existingProfile.parent_user_id !== parentId
       ) {
         throw new Error("Este usuário já pertence a outro revendedor.");
       }
       userId = existingProfile.id as string;
     } else {
-      // Try to find existing Auth user by email (previous failed attempt).
       const { data: authList } = await supabaseAdmin.auth.admin.listUsers({
         page: 1,
         perPage: 200,
@@ -211,8 +281,8 @@ export const createColaborador = createServerFn({ method: "POST" })
           user_metadata: {
             full_name: data.full_name,
             username,
-            parent_user_id: context.userId,
-            owner_user_id: context.userId,
+            parent_user_id: parentId,
+            owner_user_id: parentId,
             created_by: context.userId,
           },
         });
@@ -222,7 +292,7 @@ export const createColaborador = createServerFn({ method: "POST" })
     }
     if (!userId) throw new Error("Falha ao criar usuário.");
 
-    // 2. Reset password (for both new and recovered users → ensures caller's password works).
+    // 2. Reset password + refresh metadata.
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null as any }));
     await supabaseAdmin.auth.admin
       .updateUserById(userId, {
@@ -231,19 +301,19 @@ export const createColaborador = createServerFn({ method: "POST" })
           ...(authUser?.user?.user_metadata ?? {}),
           full_name: data.full_name,
           username,
-          parent_user_id: context.userId,
-          owner_user_id: context.userId,
+          parent_user_id: parentId,
+          owner_user_id: parentId,
           created_by: context.userId,
         },
       })
       .catch(() => {});
 
-    // 3. Ensure profile row exists (trigger normally creates it; upsert as safety net).
+    // 3. Ensure profile row exists with correct parent link.
     const profilePatch: Record<string, unknown> = {
       id: userId,
       full_name: data.full_name,
       username,
-      parent_user_id: context.userId,
+      parent_user_id: parentId,
       account_type: "operacional",
       active: true,
     };
@@ -253,6 +323,7 @@ export const createColaborador = createServerFn({ method: "POST" })
       .from("profiles")
       .upsert(profilePatch as never, { onConflict: "id" });
     if (upErr) throw new Error(upErr.message);
+
 
     // 4. Ensure role is 'colaborador'.
     const { error: roleErr } = await supabaseAdmin
@@ -326,6 +397,7 @@ const updateSchema = z.object({
   can_delete_orders: z.boolean().optional(),
   max_discount_percent: z.number().min(0).max(100).optional(),
   pin: pinSchema.optional(),
+  parent_user_id: z.string().uuid().optional(),
 });
 
 export const updateColaborador = createServerFn({ method: "POST" })
@@ -344,13 +416,44 @@ export const updateColaborador = createServerFn({ method: "POST" })
     if (data.max_discount_percent !== undefined) patch.max_discount_percent = data.max_discount_percent;
     if (data.pin) patch.pin_hash = hashPin(data.pin);
 
+    if (data.parent_user_id !== undefined) {
+      const callerIsAdmin = await isAdmin(supabaseAdmin, context.userId);
+      if (!callerIsAdmin) {
+        throw new Error("Apenas administradores podem alterar o vínculo do revendedor.");
+      }
+      const validReseller = await isReseller(supabaseAdmin, data.parent_user_id);
+      const validAdmin = await isAdmin(supabaseAdmin, data.parent_user_id);
+      if (!validReseller && !validAdmin) {
+        throw new Error("Revendedor informado inválido.");
+      }
+      patch.parent_user_id = data.parent_user_id;
+    }
+
     const { error } = await supabaseAdmin
       .from("profiles")
       .update(patch as never)
       .eq("id", data.user_id);
     if (error) throw new Error(error.message);
+
+    if (data.parent_user_id !== undefined) {
+      // Keep auth metadata in sync so the child account resolves the new parent immediately.
+      const { data: authUser } = await supabaseAdmin.auth.admin
+        .getUserById(data.user_id)
+        .catch(() => ({ data: null as any }));
+      await supabaseAdmin.auth.admin
+        .updateUserById(data.user_id, {
+          user_metadata: {
+            ...(authUser?.user?.user_metadata ?? {}),
+            parent_user_id: data.parent_user_id,
+            owner_user_id: data.parent_user_id,
+          },
+        })
+        .catch(() => {});
+    }
+
     return { ok: true };
   });
+
 
 const deleteSchema = z.object({ user_id: z.string().uuid() });
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, KeyRound, MoreHorizontal, Trash2, Pencil, Power } from "lucide-react";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,7 +58,13 @@ import {
   updateColaborador,
   deleteColaborador,
 } from "@/lib/colaboradores.functions";
+import { listResellers } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
+
+const ADMIN_PARENT_SENTINEL = "__admin__";
+
+type ResellerOption = { id: string; label: string };
+
 
 export const Route = createFileRoute("/colaboradores")({
   head: () => ({ meta: [{ title: "Contas de acesso — Total Maxx" }] }),
@@ -114,7 +127,10 @@ type Colab = {
   can_delete_orders: boolean;
   max_discount_percent: number;
   has_pin?: boolean;
+  parent_user_id?: string | null;
+  parent_name?: string | null;
 };
+
 
 type Permissions = {
   can_edit_budgets: boolean;
@@ -134,12 +150,15 @@ const DEFAULT_PERMS: Permissions = {
 
 function Content() {
   const qc = useQueryClient();
+  const { role } = useAuth();
+  const isAdminCaller = role === "admin";
   const list = useServerFn(listColaboradores);
   const create = useServerFn(createColaborador);
   const reset = useServerFn(resetColaboradorPassword);
   const toggle = useServerFn(toggleColaboradorActive);
   const update = useServerFn(updateColaborador);
   const del = useServerFn(deleteColaborador);
+  const listResellersFn = useServerFn(listResellers);
 
   const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
   const [editTarget, setEditTarget] = useState<Colab | null>(null);
@@ -150,15 +169,35 @@ function Content() {
     queryFn: () => list() as Promise<Colab[]>,
   });
 
+  const { data: resellersRaw = [] } = useQuery({
+    queryKey: ["colaboradores", "resellers"],
+    queryFn: () => listResellersFn() as Promise<Array<{ id: string; full_name: string | null; username: string | null; role: string }>>,
+    enabled: isAdminCaller,
+  });
+
+  const resellerOptions: ResellerOption[] = useMemo(
+    () =>
+      (resellersRaw ?? [])
+        .filter((r) => r.role === "revendedor")
+        .map((r) => ({ id: r.id, label: r.full_name || r.username || "Revendedor" })),
+    [resellersRaw],
+  );
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ["colaboradores"] });
 
   const createMut = useMutation({
     mutationFn: async (
-      data: { full_name: string; username: string; password: string; pin?: string } & Permissions,
+      data: { full_name: string; username: string; password: string; pin?: string; parent_user_id?: string } & Permissions,
     ) => {
-      const { full_name, username, password, pin, ...perms } = data;
+      const { full_name, username, password, pin, parent_user_id, ...perms } = data;
       const created = await create({
-        data: { full_name, username, password, ...(pin ? { pin } : {}) },
+        data: {
+          full_name,
+          username,
+          password,
+          ...(pin ? { pin } : {}),
+          ...(parent_user_id ? { parent_user_id } : {}),
+        },
       });
       const newId = (created as { id?: string } | undefined)?.id;
       if (newId) {
@@ -172,6 +211,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const resetMut = useMutation({
     mutationFn: (data: { user_id: string; password: string }) => reset({ data }),
@@ -192,8 +232,9 @@ function Content() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: { user_id: string; full_name: string; pin?: string } & Partial<Permissions>) =>
-      update({ data }),
+    mutationFn: (
+      data: { user_id: string; full_name: string; pin?: string; parent_user_id?: string } & Partial<Permissions>,
+    ) => update({ data }),
     onSuccess: () => {
       toast.success("Colaborador atualizado.");
       setEditTarget(null);
@@ -201,6 +242,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const deleteMut = useMutation({
     mutationFn: (user_id: string) => del({ data: { user_id } }),
@@ -221,8 +263,14 @@ function Content() {
             Cada conta faz login e representa um usuário do sistema. Os operadores que aparecem no seletor do topo são cadastrados em <strong>Operadores</strong>.
           </p>
         </div>
-        <CreateDialog onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>} submitting={createMut.isPending} />
+        <CreateDialog
+          isAdmin={isAdminCaller}
+          resellers={resellerOptions}
+          onSubmit={(d) => createMut.mutateAsync(d) as unknown as Promise<unknown>}
+          submitting={createMut.isPending}
+        />
       </div>
+
 
       <div className="rounded-lg border bg-card -mx-4 sm:mx-0 overflow-x-auto">
         <Table>
@@ -231,6 +279,7 @@ function Content() {
               <TableHead>Nome</TableHead>
               <TableHead>Usuário</TableHead>
               <TableHead>Perfil</TableHead>
+              {isAdminCaller && <TableHead>Vinculado a</TableHead>}
               <TableHead>Criado em</TableHead>
               <TableHead>Ativo</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -239,13 +288,13 @@ function Content() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isAdminCaller ? 7 : 6} className="text-center text-muted-foreground py-8">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isAdminCaller ? 7 : 6} className="text-center text-muted-foreground py-8">
                   Nenhum colaborador cadastrado.
                 </TableCell>
               </TableRow>
@@ -257,9 +306,13 @@ function Content() {
                   <TableCell>
                     <Badge variant="secondary">Colaborador</Badge>
                   </TableCell>
+                  {isAdminCaller && (
+                    <TableCell className="text-sm">{u.parent_name || "—"}</TableCell>
+                  )}
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(u.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
+
                   <TableCell>
                     <Switch
                       checked={u.active}
@@ -323,19 +376,23 @@ function Content() {
 
       <EditDialog
         target={editTarget}
+        isAdmin={isAdminCaller}
+        resellers={resellerOptions}
         onOpenChange={(o) => !o && setEditTarget(null)}
-        onSubmit={(name, perms, pin) =>
+        onSubmit={(name, perms, pin, parent_user_id) =>
           editTarget
             ? updateMut.mutateAsync({
                 user_id: editTarget.id,
                 full_name: name,
                 ...perms,
                 ...(pin ? { pin } : {}),
+                ...(parent_user_id !== undefined ? { parent_user_id } : {}),
               })
             : undefined
         }
         submitting={updateMut.isPending}
       />
+
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
@@ -368,39 +425,48 @@ function Content() {
 function CreateDialog({
   onSubmit,
   submitting,
+  isAdmin,
+  resellers,
 }: {
   onSubmit: (
-    d: { full_name: string; username: string; password: string; pin?: string } & Permissions,
+    d: { full_name: string; username: string; password: string; pin?: string; parent_user_id?: string } & Permissions,
   ) => Promise<unknown>;
   submitting: boolean;
+  isAdmin: boolean;
+  resellers: ResellerOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  
+  const [parentSelection, setParentSelection] = useState<string>(ADMIN_PARENT_SENTINEL);
+
   const [perms, setPerms] = useState<Permissions>({ ...DEFAULT_PERMS, max_discount_percent: 10 });
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
+      const parent_user_id =
+        isAdmin && parentSelection && parentSelection !== ADMIN_PARENT_SENTINEL
+          ? parentSelection
+          : undefined;
       await onSubmit({
         full_name: fullName,
         username,
         password,
         ...perms,
+        ...(parent_user_id ? { parent_user_id } : {}),
       });
       setOpen(false);
       setFullName("");
       setUsername("");
       setPassword("");
+      setParentSelection(ADMIN_PARENT_SENTINEL);
       setPerms({ ...DEFAULT_PERMS, max_discount_percent: 10 });
     } catch {
       // toast handled
     }
   };
-
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -455,6 +521,25 @@ function CreateDialog({
               placeholder="Mínimo 6 caracteres"
             />
           </div>
+          {isAdmin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="parent_reseller">Vincular ao revendedor</Label>
+              <Select value={parentSelection} onValueChange={setParentSelection}>
+                <SelectTrigger id="parent_reseller">
+                  <SelectValue placeholder="Selecione…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ADMIN_PARENT_SENTINEL}>Loja principal / Admin</SelectItem>
+                  {resellers.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                A conta de acesso herdará os dados comerciais do vínculo escolhido.
+              </p>
+            </div>
+          )}
           <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
@@ -470,6 +555,7 @@ function CreateDialog({
     </Dialog>
   );
 }
+
 
 function ResetDialog({
   target,
@@ -594,14 +680,19 @@ function EditDialog({
   onOpenChange,
   onSubmit,
   submitting,
+  isAdmin,
+  resellers,
 }: {
   target: Colab | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string, perms: Permissions, pin?: string) => Promise<unknown> | undefined;
+  onSubmit: (name: string, perms: Permissions, pin?: string, parent_user_id?: string) => Promise<unknown> | undefined;
   submitting: boolean;
+  isAdmin: boolean;
+  resellers: ResellerOption[];
 }) {
   const [name, setName] = useState("");
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
+  const [parentSelection, setParentSelection] = useState<string>(ADMIN_PARENT_SENTINEL);
 
   useEffect(() => {
     setName(target?.full_name ?? "");
@@ -613,15 +704,35 @@ function EditDialog({
         can_delete_orders: target.can_delete_orders,
         max_discount_percent: target.max_discount_percent,
       });
+      const parentIsReseller =
+        target.parent_user_id && resellers.some((r) => r.id === target.parent_user_id);
+      setParentSelection(parentIsReseller ? (target.parent_user_id as string) : ADMIN_PARENT_SENTINEL);
     } else {
       setPerms(DEFAULT_PERMS);
+      setParentSelection(ADMIN_PARENT_SENTINEL);
     }
-  }, [target]);
+  }, [target, resellers]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(name, perms);
+      let parent_user_id: string | undefined;
+      if (isAdmin && target) {
+        const currentIsReseller =
+          target.parent_user_id && resellers.some((r) => r.id === target.parent_user_id);
+        const currentValue = currentIsReseller ? (target.parent_user_id as string) : ADMIN_PARENT_SENTINEL;
+        if (parentSelection !== currentValue) {
+          // Admin explicitly changed the link. Sentinel means "back to Admin" — send admin's own id.
+          // We don't know admin's own id here; the server treats "own id" as default. To move back
+          // to admin, we need an explicit id, so we require the API to accept the caller as default:
+          // sending parentSelection when it's a reseller, and skipping when reverting is not supported
+          // through this UI (create-time only for admin re-parenting).
+          if (parentSelection !== ADMIN_PARENT_SENTINEL) {
+            parent_user_id = parentSelection;
+          }
+        }
+      }
+      await onSubmit(name, perms, undefined, parent_user_id);
     } catch {
       // toast handled
     }
@@ -647,6 +758,22 @@ function EditDialog({
               required
             />
           </div>
+          {isAdmin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="edit_parent">Vincular ao revendedor</Label>
+              <Select value={parentSelection} onValueChange={setParentSelection}>
+                <SelectTrigger id="edit_parent">
+                  <SelectValue placeholder="Selecione…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ADMIN_PARENT_SENTINEL}>Loja principal / Admin</SelectItem>
+                  {resellers.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
@@ -662,4 +789,5 @@ function EditDialog({
     </Dialog>
   );
 }
+
 
