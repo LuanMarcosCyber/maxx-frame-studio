@@ -430,8 +430,9 @@ function Pedidos() {
                           type="button"
                           title="Imprimir"
                           aria-label="Imprimir"
-                          onClick={() => {
-                            setViewing(o);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTarget(o);
                             setPrintOpen(true);
                           }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
@@ -442,7 +443,10 @@ function Pedidos() {
                           type="button"
                           title="Visualizar"
                           aria-label="Visualizar"
-                          onClick={() => setViewing(o)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewing(o);
+                          }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
                         >
                           <Eye className="h-4 w-4" />
@@ -451,8 +455,9 @@ function Pedidos() {
                           type="button"
                           title="Mudar status"
                           aria-label="Mudar status"
-                          onClick={() => {
-                            setViewing(o);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTarget(o);
                             setStatusOpen(true);
                           }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
@@ -464,8 +469,9 @@ function Pedidos() {
                             type="button"
                             title="Excluir pedido"
                             aria-label="Excluir pedido"
-                            onClick={() => {
-                              setViewing(o);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTarget(o);
                               setDeleteOpen(true);
                             }}
                             className="h-8 w-8 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 transition cursor-pointer"
