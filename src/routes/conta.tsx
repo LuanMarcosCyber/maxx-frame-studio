@@ -48,35 +48,37 @@ function Conta() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      let source: Record<string, string | null> | null =
-        (profile as unknown as Record<string, string | null> | null) ?? null;
+      const own: Record<string, string | null> =
+        (profile as unknown as Record<string, string | null> | null) ?? {};
+      let inherited: Record<string, string | null> | null = null;
 
       if (isChildAccount && user?.id) {
         try {
-          const inherited = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null> | null;
-          if (inherited) source = { ...(source ?? {}), ...inherited };
+          inherited = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null> | null;
         } catch (error) {
           console.error("Erro ao carregar dados comerciais herdados", error);
         }
       }
 
       if (cancelled) return;
-      const dt = (source?.document_type as DocType | null) ?? null;
+      // Child account: own full_name/username stays; all commercial data comes from parent.
+      const commercial = isChildAccount ? (inherited ?? own) : own;
+      const dt = (commercial?.document_type as DocType | null) ?? null;
       const inferred: DocType =
-        dt ?? (onlyDigits(source?.document ?? "").length === 11 ? "cpf" : "cnpj");
+        dt ?? (onlyDigits(commercial?.document ?? "").length === 11 ? "cpf" : "cnpj");
       setForm({
-        full_name: source?.full_name ?? "",
-        store_name: source?.store_name ?? "",
-        email: source?.email ?? "",
-        phone: source?.phone ?? "",
+        full_name: own?.full_name ?? "",
+        store_name: commercial?.store_name ?? "",
+        email: commercial?.email ?? "",
+        phone: commercial?.phone ?? "",
         document_type: inferred,
-        document: source?.document ?? "",
-        cep: source?.cep ?? "",
-        address: source?.address ?? "",
-        address_number: source?.address_number ?? "",
-        city: source?.city ?? "",
-        state: source?.state ?? "",
-        avatar_url: source?.avatar_url ?? "",
+        document: commercial?.document ?? "",
+        cep: commercial?.cep ?? "",
+        address: commercial?.address ?? "",
+        address_number: commercial?.address_number ?? "",
+        city: commercial?.city ?? "",
+        state: commercial?.state ?? "",
+        avatar_url: commercial?.avatar_url ?? own?.avatar_url ?? "",
       });
     }
     load();
@@ -90,7 +92,7 @@ function Conta() {
 
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";
-  const accountCardName = readOnly ? form.store_name || form.full_name || displayName : displayName;
+  const accountCardName = displayName;
 
   const { data: stats } = useQuery({
     queryKey: ["conta", "stats", user?.id],
