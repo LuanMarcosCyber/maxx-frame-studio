@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.get_store_profile(uuid) TO authenticated;
