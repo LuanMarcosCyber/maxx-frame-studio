@@ -18,10 +18,11 @@ export const nextDocumentNumber = createServerFn({ method: "POST" })
     if (profileError) throw new Error(profileError.message);
     if (!me || me.active === false) throw new Error("Conta inativa ou não encontrada.");
 
-    const { data: number, error } = await supabaseAdmin.rpc("next_document_number_for", {
+    const { data: number, error } = await (supabaseAdmin.rpc as any)("next_document_number_for", {
       _caller: context.userId,
       _kind: data.kind,
     });
+
     if (!error) return String(number);
 
     const canFallback = /function .*next_document_number_for|schema cache|permission denied/i.test(error.message ?? "");
