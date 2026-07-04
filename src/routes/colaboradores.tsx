@@ -279,6 +279,7 @@ function Content() {
               <TableHead>Nome</TableHead>
               <TableHead>Usuário</TableHead>
               <TableHead>Perfil</TableHead>
+              {isAdminCaller && <TableHead>Vinculado a</TableHead>}
               <TableHead>Criado em</TableHead>
               <TableHead>Ativo</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -287,13 +288,13 @@ function Content() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isAdminCaller ? 7 : 6} className="text-center text-muted-foreground py-8">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={isAdminCaller ? 7 : 6} className="text-center text-muted-foreground py-8">
                   Nenhum colaborador cadastrado.
                 </TableCell>
               </TableRow>
@@ -305,9 +306,13 @@ function Content() {
                   <TableCell>
                     <Badge variant="secondary">Colaborador</Badge>
                   </TableCell>
+                  {isAdminCaller && (
+                    <TableCell className="text-sm">{u.parent_name || "—"}</TableCell>
+                  )}
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(u.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
+
                   <TableCell>
                     <Switch
                       checked={u.active}
