@@ -598,7 +598,7 @@ function Pedidos() {
       </Dialog>
 
       {/* Confirmação: excluir pedido */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o && !viewing) setTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
