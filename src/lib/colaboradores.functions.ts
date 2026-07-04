@@ -35,17 +35,41 @@ async function ensureManager(supabase: any, userId: string) {
     throw new Error("Acesso negado: apenas administradores e revendedores podem gerenciar colaboradores.");
 }
 
-async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, parentUserId: string) {
+async function isAdmin(supabase: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
+async function isReseller(supabaseAdmin: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "revendedor")
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
+}
+
+async function ensureOwnership(supabaseAdmin: any, colaboradorId: string, callerUserId: string) {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("id, parent_user_id")
     .eq("id", colaboradorId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data || data.parent_user_id !== parentUserId) {
-    throw new Error("Colaborador não pertence a este revendedor.");
-  }
+  if (!data) throw new Error("Colaborador não encontrado.");
+  if (data.parent_user_id === callerUserId) return;
+  if (await isAdmin(supabaseAdmin, callerUserId)) return;
+  throw new Error("Colaborador não pertence a este revendedor.");
 }
+
 
 export const listColaboradores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
