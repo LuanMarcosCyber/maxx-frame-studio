@@ -205,16 +205,7 @@ function Conta() {
             </div>
 
 
-              <Input
-                id="nome"
-                value={form.full_name}
-                onChange={onChange("full_name")}
-                placeholder="Seu nome completo"
-                readOnly={readOnly}
-                disabled={readOnly}
-                className={roCls}
-              />
-            </div>
+
 
             {!isChildAccount && (
               <div className="space-y-1.5 sm:col-span-6">
