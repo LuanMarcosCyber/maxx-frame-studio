@@ -171,6 +171,17 @@ function Conta() {
               : "Atualize seus dados de cadastro"}
           </p>
           <div className="grid sm:grid-cols-6 gap-4">
+            {initialLoading ? (
+              <>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="space-y-1.5 sm:col-span-3">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
+              </>
+            ) : (
+            <>
             <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
@@ -183,6 +194,7 @@ function Conta() {
                 className={roCls}
               />
             </div>
+
             <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="loja">Nome da loja</Label>
               <Input
