@@ -92,7 +92,7 @@ function Conta() {
 
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";
-  const accountCardName = readOnly ? form.store_name || form.full_name || displayName : displayName;
+  const accountCardName = displayName;
 
   const { data: stats } = useQuery({
     queryKey: ["conta", "stats", user?.id],
