@@ -493,9 +493,7 @@ function Pedidos() {
       <BudgetSummaryById
         budgetId={viewing?.budget_id ?? null}
         orderNumber={viewing?.number ?? null}
-        onClose={() => {
-          if (!statusOpen && !deleteOpen && !printOpen) setViewing(null);
-        }}
+        onClose={() => setViewing(null)}
         extraActions={actions}
       />
 
@@ -503,7 +501,7 @@ function Pedidos() {
       <Dialog
         open={!!viewing && !viewing.budget_id}
         onOpenChange={(o) => {
-          if (!o && !statusOpen && !deleteOpen && !printOpen) setViewing(null);
+          if (!o) setViewing(null);
         }}
       >
         <DialogContent>
