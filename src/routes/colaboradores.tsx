@@ -127,7 +127,10 @@ type Colab = {
   can_delete_orders: boolean;
   max_discount_percent: number;
   has_pin?: boolean;
+  parent_user_id?: string | null;
+  parent_name?: string | null;
 };
+
 
 type Permissions = {
   can_edit_budgets: boolean;
