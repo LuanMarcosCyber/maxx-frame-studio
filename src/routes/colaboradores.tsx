@@ -232,8 +232,9 @@ function Content() {
   });
 
   const updateMut = useMutation({
-    mutationFn: (data: { user_id: string; full_name: string; pin?: string } & Partial<Permissions>) =>
-      update({ data }),
+    mutationFn: (
+      data: { user_id: string; full_name: string; pin?: string; parent_user_id?: string } & Partial<Permissions>,
+    ) => update({ data }),
     onSuccess: () => {
       toast.success("Colaborador atualizado.");
       setEditTarget(null);
@@ -241,6 +242,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const deleteMut = useMutation({
     mutationFn: (user_id: string) => del({ data: { user_id } }),
