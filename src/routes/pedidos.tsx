@@ -420,45 +420,57 @@ function Pedidos() {
                     </td>
 
                     <td className="py-3.5 px-6 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          title="Imprimir"
+                          aria-label="Imprimir"
+                          onClick={() => {
+                            setViewing(o);
+                            setPrintOpen(true);
+                          }}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Visualizar"
+                          aria-label="Visualizar"
+                          onClick={() => setViewing(o)}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Mudar status"
+                          aria-label="Mudar status"
+                          onClick={() => {
+                            setViewing(o);
+                            setStatusOpen(true);
+                          }}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                        {canDelete && (
                           <button
                             type="button"
-                            aria-label="Ações"
-                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                          >
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setViewing(o)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver resumo
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
+                            title="Excluir pedido"
+                            aria-label="Excluir pedido"
                             onClick={() => {
                               setViewing(o);
-                              setStatusOpen(true);
+                              setDeleteOpen(true);
                             }}
+                            className="h-8 w-8 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 transition cursor-pointer"
                           >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Mudar estado
-                          </DropdownMenuItem>
-                          {canDelete && (
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => {
-                                setViewing(o);
-                                setDeleteOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir pedido
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
+
                   </tr>
                 ))
               )}
