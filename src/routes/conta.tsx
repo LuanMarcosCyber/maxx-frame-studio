@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { FileText, ShoppingCart, Package, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -8,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/avatar";
 import { fmtCPF, fmtCNPJ, onlyDigits } from "@/lib/utils";
+import { getInheritedStoreProfile } from "@/lib/store-profile.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/conta")({
@@ -23,10 +24,9 @@ export const Route = createFileRoute("/conta")({
 type DocType = "cpf" | "cnpj";
 
 function Conta() {
-  const { user, profile, role, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, role, refreshProfile } = useAuth();
   const isChildAccount = !!profile?.parent_user_id || profile?.account_type === "operacional" || role === "colaborador";
   const readOnly = isChildAccount;
-  const initialLoading = authLoading || !profile;
   const [form, setForm] = useState({
     full_name: "",
     store_name: "",
@@ -43,28 +43,48 @@ function Conta() {
   });
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const loadStoreProfile = useServerFn(getInheritedStoreProfile);
 
   useEffect(() => {
-    if (!profile) return;
-    const source = profile as unknown as Record<string, string | null>;
-    const dt = (source.document_type as DocType | null) ?? null;
-    const inferred: DocType =
-      dt ?? (onlyDigits(source.document ?? "").length === 11 ? "cpf" : "cnpj");
-    setForm({
-      full_name: source.full_name ?? "",
-      store_name: source.store_name ?? "",
-      email: source.email ?? "",
-      phone: source.phone ?? "",
-      document_type: inferred,
-      document: source.document ?? "",
-      cep: source.cep ?? "",
-      address: source.address ?? "",
-      address_number: source.address_number ?? "",
-      city: source.city ?? "",
-      state: source.state ?? "",
-      avatar_url: source.avatar_url ?? "",
-    });
-  }, [profile]);
+    let cancelled = false;
+    async function load() {
+      let source: Record<string, string | null> | null =
+        (profile as unknown as Record<string, string | null> | null) ?? null;
+
+      if (isChildAccount && user?.id) {
+        try {
+          const inherited = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null> | null;
+          if (inherited) source = { ...(source ?? {}), ...inherited };
+        } catch (error) {
+          console.error("Erro ao carregar dados comerciais herdados", error);
+        }
+      }
+
+      if (cancelled) return;
+      const dt = (source?.document_type as DocType | null) ?? null;
+      const inferred: DocType =
+        dt ?? (onlyDigits(source?.document ?? "").length === 11 ? "cpf" : "cnpj");
+      setForm({
+        full_name: source?.full_name ?? "",
+        store_name: source?.store_name ?? "",
+        email: source?.email ?? "",
+        phone: source?.phone ?? "",
+        document_type: inferred,
+        document: source?.document ?? "",
+        cep: source?.cep ?? "",
+        address: source?.address ?? "",
+        address_number: source?.address_number ?? "",
+        city: source?.city ?? "",
+        state: source?.state ?? "",
+        avatar_url: source?.avatar_url ?? "",
+      });
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, isChildAccount, user?.id, loadStoreProfile]);
+
 
 
 
@@ -171,17 +191,6 @@ function Conta() {
               : "Atualize seus dados de cadastro"}
           </p>
           <div className="grid sm:grid-cols-6 gap-4">
-            {initialLoading ? (
-              <>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="space-y-1.5 sm:col-span-3">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                ))}
-              </>
-            ) : (
-            <>
             <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
@@ -194,6 +203,9 @@ function Conta() {
                 className={roCls}
               />
             </div>
+
+
+
 
             {!isChildAccount && (
               <div className="space-y-1.5 sm:col-span-6">
@@ -348,9 +360,8 @@ function Conta() {
                 className={roCls}
               />
             </div>
-            </>
-            )}
           </div>
+
 
           {!readOnly && (
             <div className="flex justify-end mt-6">
