@@ -150,12 +150,15 @@ const DEFAULT_PERMS: Permissions = {
 
 function Content() {
   const qc = useQueryClient();
+  const { role } = useAuth();
+  const isAdminCaller = role === "admin";
   const list = useServerFn(listColaboradores);
   const create = useServerFn(createColaborador);
   const reset = useServerFn(resetColaboradorPassword);
   const toggle = useServerFn(toggleColaboradorActive);
   const update = useServerFn(updateColaborador);
   const del = useServerFn(deleteColaborador);
+  const listResellersFn = useServerFn(listResellers);
 
   const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
   const [editTarget, setEditTarget] = useState<Colab | null>(null);
@@ -166,15 +169,35 @@ function Content() {
     queryFn: () => list() as Promise<Colab[]>,
   });
 
+  const { data: resellersRaw = [] } = useQuery({
+    queryKey: ["colaboradores", "resellers"],
+    queryFn: () => listResellersFn() as Promise<Array<{ id: string; full_name: string | null; username: string | null; role: string }>>,
+    enabled: isAdminCaller,
+  });
+
+  const resellerOptions: ResellerOption[] = useMemo(
+    () =>
+      (resellersRaw ?? [])
+        .filter((r) => r.role === "revendedor")
+        .map((r) => ({ id: r.id, label: r.full_name || r.username || "Revendedor" })),
+    [resellersRaw],
+  );
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ["colaboradores"] });
 
   const createMut = useMutation({
     mutationFn: async (
-      data: { full_name: string; username: string; password: string; pin?: string } & Permissions,
+      data: { full_name: string; username: string; password: string; pin?: string; parent_user_id?: string } & Permissions,
     ) => {
-      const { full_name, username, password, pin, ...perms } = data;
+      const { full_name, username, password, pin, parent_user_id, ...perms } = data;
       const created = await create({
-        data: { full_name, username, password, ...(pin ? { pin } : {}) },
+        data: {
+          full_name,
+          username,
+          password,
+          ...(pin ? { pin } : {}),
+          ...(parent_user_id ? { parent_user_id } : {}),
+        },
       });
       const newId = (created as { id?: string } | undefined)?.id;
       if (newId) {
@@ -188,6 +211,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const resetMut = useMutation({
     mutationFn: (data: { user_id: string; password: string }) => reset({ data }),
