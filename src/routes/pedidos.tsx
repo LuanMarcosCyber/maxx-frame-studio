@@ -122,6 +122,7 @@ function Pedidos() {
   const navigate = useNavigate();
   const { view: viewParam } = Route.useSearch();
   const [viewing, setViewing] = useState<OrderRow | null>(null);
+  const [target, setTarget] = useState<OrderRow | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
@@ -224,26 +225,30 @@ function Pedidos() {
   }
 
   async function changeStatus(newStatus: string) {
-    if (!viewing) return;
+    const t = target ?? viewing;
+    if (!t) return;
     setSavingStatus(true);
-    const ok = await updateOrderStatus(viewing.id, newStatus);
+    const ok = await updateOrderStatus(t.id, newStatus);
     setSavingStatus(false);
     if (!ok) return;
-    setViewing({ ...viewing, status: newStatus });
+    if (viewing && viewing.id === t.id) setViewing({ ...viewing, status: newStatus });
     setStatusOpen(false);
+    setTarget(null);
   }
 
 
   async function handleDelete() {
-    if (!viewing) return;
-    const { error } = await supabase.from("orders").delete().eq("id", viewing.id);
+    const t = target ?? viewing;
+    if (!t) return;
+    const { error } = await supabase.from("orders").delete().eq("id", t.id);
     if (error) {
       toast.error("Não foi possível excluir o pedido.");
       return;
     }
     toast.success("Pedido excluído.");
     setDeleteOpen(false);
-    setViewing(null);
+    setTarget(null);
+    if (viewing && viewing.id === t.id) setViewing(null);
     await queryClient.invalidateQueries({ queryKey: ["orders"] });
   }
 
@@ -252,7 +257,7 @@ function Pedidos() {
       <Button
         type="button"
         variant="outline"
-        onClick={() => setPrintOpen(true)}
+        onClick={(e) => { e.stopPropagation(); setTarget(viewing); setPrintOpen(true); }}
         className="h-auto py-3 flex flex-col items-center gap-1"
       >
         <Printer className="h-5 w-5" />
@@ -260,7 +265,7 @@ function Pedidos() {
       </Button>
       <Button
         type="button"
-        onClick={() => setStatusOpen(true)}
+        onClick={(e) => { e.stopPropagation(); setTarget(viewing); setStatusOpen(true); }}
         className="h-auto py-3 flex flex-col items-center gap-1 bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
       >
         <RefreshCw className="h-5 w-5" />
@@ -271,7 +276,7 @@ function Pedidos() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => setDeleteOpen(true)}
+          onClick={(e) => { e.stopPropagation(); setTarget(viewing); setDeleteOpen(true); }}
           className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="h-5 w-5" />
@@ -425,8 +430,9 @@ function Pedidos() {
                           type="button"
                           title="Imprimir"
                           aria-label="Imprimir"
-                          onClick={() => {
-                            setViewing(o);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTarget(o);
                             setPrintOpen(true);
                           }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
@@ -437,7 +443,10 @@ function Pedidos() {
                           type="button"
                           title="Visualizar"
                           aria-label="Visualizar"
-                          onClick={() => setViewing(o)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewing(o);
+                          }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
                         >
                           <Eye className="h-4 w-4" />
@@ -446,8 +455,9 @@ function Pedidos() {
                           type="button"
                           title="Mudar status"
                           aria-label="Mudar status"
-                          onClick={() => {
-                            setViewing(o);
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTarget(o);
                             setStatusOpen(true);
                           }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
@@ -459,8 +469,9 @@ function Pedidos() {
                             type="button"
                             title="Excluir pedido"
                             aria-label="Excluir pedido"
-                            onClick={() => {
-                              setViewing(o);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTarget(o);
                               setDeleteOpen(true);
                             }}
                             className="h-8 w-8 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 transition cursor-pointer"
@@ -482,9 +493,7 @@ function Pedidos() {
       <BudgetSummaryById
         budgetId={viewing?.budget_id ?? null}
         orderNumber={viewing?.number ?? null}
-        onClose={() => {
-          if (!statusOpen && !deleteOpen && !printOpen) setViewing(null);
-        }}
+        onClose={() => setViewing(null)}
         extraActions={actions}
       />
 
@@ -492,7 +501,7 @@ function Pedidos() {
       <Dialog
         open={!!viewing && !viewing.budget_id}
         onOpenChange={(o) => {
-          if (!o && !statusOpen && !deleteOpen && !printOpen) setViewing(null);
+          if (!o) setViewing(null);
         }}
       >
         <DialogContent>
@@ -515,14 +524,14 @@ function Pedidos() {
       </Dialog>
 
       {/* Modal: mudar status do pedido */}
-      <Dialog open={statusOpen} onOpenChange={(o) => !savingStatus && setStatusOpen(o)}>
+      <Dialog open={statusOpen} onOpenChange={(o) => { if (savingStatus) return; setStatusOpen(o); if (!o) setTarget((t) => (viewing ? t : null)); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Mudar estado do pedido</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ORDER_STATUSES.map((s) => {
-              const active = viewing?.status === s;
+              const active = (target ?? viewing)?.status === s;
               return (
                 <button
                   key={s}
@@ -555,7 +564,7 @@ function Pedidos() {
       </Dialog>
 
       {/* Modal: imprimir via para */}
-      <Dialog open={printOpen} onOpenChange={setPrintOpen}>
+      <Dialog open={printOpen} onOpenChange={(o) => { setPrintOpen(o); if (!o && !viewing) setTarget(null); }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Imprimir via para:</DialogTitle>
@@ -570,9 +579,10 @@ function Pedidos() {
                 key={key}
                 type="button"
                 onClick={() => {
-                  if (!viewing) return;
+                  const t = target ?? viewing;
+                  if (!t) return;
                   setPrintOpen(false);
-                  window.open(`/pedidos/${viewing.id}/imprimir/${key}`, "_blank");
+                  window.open(`/pedidos/${t.id}/imprimir/${key}`, "_blank");
                 }}
                 className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border bg-card px-4 py-8 sm:py-10 shadow-sm transition-all hover:border-brand hover:bg-brand/5 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
               >
@@ -588,7 +598,7 @@ function Pedidos() {
       </Dialog>
 
       {/* Confirmação: excluir pedido */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o && !viewing) setTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>

@@ -348,7 +348,7 @@ function Orcamentos() {
                           type="button"
                           title="Visualizar"
                           aria-label="Visualizar"
-                          onClick={() => setViewing(b)}
+                          onClick={(e) => { e.stopPropagation(); setViewing(b); }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
                         >
                           <Eye className="h-4 w-4" />
@@ -358,12 +358,13 @@ function Orcamentos() {
                             type="button"
                             title="Editar"
                             aria-label="Editar"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               navigate({
                                 to: "/orcamentos/novo",
                                 search: { id: b.id },
-                              })
-                            }
+                              });
+                            }}
                             className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
                           >
                             <Pencil className="h-4 w-4" />
@@ -373,14 +374,14 @@ function Orcamentos() {
                           type="button"
                           title="Imprimir"
                           aria-label="Imprimir"
-                          onClick={() => setPrintingFor(b)}
+                          onClick={(e) => { e.stopPropagation(); setPrintingFor(b); }}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
                         >
                           <Printer className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => tryApprove(b)}
+                          onClick={(e) => { e.stopPropagation(); tryApprove(b); }}
                           title={
                             b.client_id
                               ? "Aprovar orçamento"
@@ -395,7 +396,7 @@ function Orcamentos() {
                           type="button"
                           title="Excluir orçamento"
                           aria-label="Excluir orçamento"
-                          onClick={() => setDeleting(b)}
+                          onClick={(e) => { e.stopPropagation(); setDeleting(b); }}
                           className="h-8 w-8 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 transition cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
