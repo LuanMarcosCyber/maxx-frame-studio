@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { UserPlus, KeyRound, MoreHorizontal, Trash2, Pencil, Power } from "lucide-react";
@@ -9,6 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,7 +58,13 @@ import {
   updateColaborador,
   deleteColaborador,
 } from "@/lib/colaboradores.functions";
+import { listResellers } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
+
+const ADMIN_PARENT_SENTINEL = "__admin__";
+
+type ResellerOption = { id: string; label: string };
+
 
 export const Route = createFileRoute("/colaboradores")({
   head: () => ({ meta: [{ title: "Contas de acesso — Total Maxx" }] }),
