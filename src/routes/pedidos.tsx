@@ -122,6 +122,7 @@ function Pedidos() {
   const navigate = useNavigate();
   const { view: viewParam } = Route.useSearch();
   const [viewing, setViewing] = useState<OrderRow | null>(null);
+  const [target, setTarget] = useState<OrderRow | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
