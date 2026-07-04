@@ -211,6 +211,7 @@ const createSchema = z.object({
     .regex(/^[a-z0-9._-]+$/i),
   password: z.string().min(6).max(72),
   pin: pinSchema.optional(),
+  parent_user_id: z.string().uuid().optional(),
 });
 
 /**
@@ -225,6 +226,24 @@ export const createColaborador = createServerFn({ method: "POST" })
     await ensureManager(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Resolve parent: admin may pick a specific reseller (or the Admin himself).
+    // Non-admin managers can only create under themselves.
+    const callerIsAdmin = await isAdmin(supabaseAdmin, context.userId);
+    let parentId = context.userId;
+    if (data.parent_user_id) {
+      if (!callerIsAdmin) {
+        throw new Error("Apenas administradores podem vincular a outro revendedor.");
+      }
+      if (data.parent_user_id !== context.userId) {
+        const validReseller = await isReseller(supabaseAdmin, data.parent_user_id);
+        const validAdmin = await isAdmin(supabaseAdmin, data.parent_user_id);
+        if (!validReseller && !validAdmin) {
+          throw new Error("Revendedor informado inválido.");
+        }
+      }
+      parentId = data.parent_user_id;
+    }
+
     const username = data.username.toLowerCase();
     const email = usernameToEmail(username);
 
@@ -237,16 +256,14 @@ export const createColaborador = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existingProfile) {
-      // If it already belongs to someone else → block.
       if (
         existingProfile.parent_user_id &&
-        existingProfile.parent_user_id !== context.userId
+        existingProfile.parent_user_id !== parentId
       ) {
         throw new Error("Este usuário já pertence a outro revendedor.");
       }
       userId = existingProfile.id as string;
     } else {
-      // Try to find existing Auth user by email (previous failed attempt).
       const { data: authList } = await supabaseAdmin.auth.admin.listUsers({
         page: 1,
         perPage: 200,
@@ -264,8 +281,8 @@ export const createColaborador = createServerFn({ method: "POST" })
           user_metadata: {
             full_name: data.full_name,
             username,
-            parent_user_id: context.userId,
-            owner_user_id: context.userId,
+            parent_user_id: parentId,
+            owner_user_id: parentId,
             created_by: context.userId,
           },
         });
@@ -275,7 +292,7 @@ export const createColaborador = createServerFn({ method: "POST" })
     }
     if (!userId) throw new Error("Falha ao criar usuário.");
 
-    // 2. Reset password (for both new and recovered users → ensures caller's password works).
+    // 2. Reset password + refresh metadata.
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null as any }));
     await supabaseAdmin.auth.admin
       .updateUserById(userId, {
@@ -284,19 +301,19 @@ export const createColaborador = createServerFn({ method: "POST" })
           ...(authUser?.user?.user_metadata ?? {}),
           full_name: data.full_name,
           username,
-          parent_user_id: context.userId,
-          owner_user_id: context.userId,
+          parent_user_id: parentId,
+          owner_user_id: parentId,
           created_by: context.userId,
         },
       })
       .catch(() => {});
 
-    // 3. Ensure profile row exists (trigger normally creates it; upsert as safety net).
+    // 3. Ensure profile row exists with correct parent link.
     const profilePatch: Record<string, unknown> = {
       id: userId,
       full_name: data.full_name,
       username,
-      parent_user_id: context.userId,
+      parent_user_id: parentId,
       account_type: "operacional",
       active: true,
     };
@@ -306,6 +323,7 @@ export const createColaborador = createServerFn({ method: "POST" })
       .from("profiles")
       .upsert(profilePatch as never, { onConflict: "id" });
     if (upErr) throw new Error(upErr.message);
+
 
     // 4. Ensure role is 'colaborador'.
     const { error: roleErr } = await supabaseAdmin
