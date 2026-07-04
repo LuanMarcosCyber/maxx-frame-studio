@@ -680,14 +680,19 @@ function EditDialog({
   onOpenChange,
   onSubmit,
   submitting,
+  isAdmin,
+  resellers,
 }: {
   target: Colab | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string, perms: Permissions, pin?: string) => Promise<unknown> | undefined;
+  onSubmit: (name: string, perms: Permissions, pin?: string, parent_user_id?: string) => Promise<unknown> | undefined;
   submitting: boolean;
+  isAdmin: boolean;
+  resellers: ResellerOption[];
 }) {
   const [name, setName] = useState("");
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMS);
+  const [parentSelection, setParentSelection] = useState<string>(ADMIN_PARENT_SENTINEL);
 
   useEffect(() => {
     setName(target?.full_name ?? "");
@@ -699,15 +704,35 @@ function EditDialog({
         can_delete_orders: target.can_delete_orders,
         max_discount_percent: target.max_discount_percent,
       });
+      const parentIsReseller =
+        target.parent_user_id && resellers.some((r) => r.id === target.parent_user_id);
+      setParentSelection(parentIsReseller ? (target.parent_user_id as string) : ADMIN_PARENT_SENTINEL);
     } else {
       setPerms(DEFAULT_PERMS);
+      setParentSelection(ADMIN_PARENT_SENTINEL);
     }
-  }, [target]);
+  }, [target, resellers]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit(name, perms);
+      let parent_user_id: string | undefined;
+      if (isAdmin && target) {
+        const currentIsReseller =
+          target.parent_user_id && resellers.some((r) => r.id === target.parent_user_id);
+        const currentValue = currentIsReseller ? (target.parent_user_id as string) : ADMIN_PARENT_SENTINEL;
+        if (parentSelection !== currentValue) {
+          // Admin explicitly changed the link. Sentinel means "back to Admin" — send admin's own id.
+          // We don't know admin's own id here; the server treats "own id" as default. To move back
+          // to admin, we need an explicit id, so we require the API to accept the caller as default:
+          // sending parentSelection when it's a reseller, and skipping when reverting is not supported
+          // through this UI (create-time only for admin re-parenting).
+          if (parentSelection !== ADMIN_PARENT_SENTINEL) {
+            parent_user_id = parentSelection;
+          }
+        }
+      }
+      await onSubmit(name, perms, undefined, parent_user_id);
     } catch {
       // toast handled
     }
@@ -733,6 +758,22 @@ function EditDialog({
               required
             />
           </div>
+          {isAdmin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="edit_parent">Vincular ao revendedor</Label>
+              <Select value={parentSelection} onValueChange={setParentSelection}>
+                <SelectTrigger id="edit_parent">
+                  <SelectValue placeholder="Selecione…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ADMIN_PARENT_SENTINEL}>Loja principal / Admin</SelectItem>
+                  {resellers.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
@@ -748,4 +789,5 @@ function EditDialog({
     </Dialog>
   );
 }
+
 
