@@ -346,6 +346,40 @@ function Orcamentos() {
                       <div className="inline-flex items-center gap-1">
                         <button
                           type="button"
+                          title="Visualizar"
+                          aria-label="Visualizar"
+                          onClick={() => setViewing(b)}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        {canEditBudgets && (
+                          <button
+                            type="button"
+                            title="Editar"
+                            aria-label="Editar"
+                            onClick={() =>
+                              navigate({
+                                to: "/orcamentos/novo",
+                                search: { id: b.id },
+                              })
+                            }
+                            className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          title="Imprimir"
+                          aria-label="Imprimir"
+                          onClick={() => setPrintingFor(b)}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => tryApprove(b)}
                           title={
                             b.client_id
@@ -353,48 +387,22 @@ function Orcamentos() {
                               : "Selecione um cliente cadastrado para aprovar"
                           }
                           aria-label="Aprovar orçamento"
-                          className="h-8 w-8 grid place-items-center rounded-md bg-muted text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700 transition"
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700 transition cursor-pointer"
                         >
                           <Check className="h-4 w-4" />
                         </button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                              aria-label="Ações"
-                            >
-                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setViewing(b)}>
-                              <Eye className="h-4 w-4 mr-2" /> Visualizar
-                            </DropdownMenuItem>
-                            {canEditBudgets && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  navigate({
-                                    to: "/orcamentos/novo",
-                                    search: { id: b.id },
-                                  })
-                                }
-                              >
-                                <Pencil className="h-4 w-4 mr-2" /> Editar
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => setPrintingFor(b)}>
-                              <Printer className="h-4 w-4 mr-2" /> Imprimir
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setDeleting(b)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <button
+                          type="button"
+                          title="Excluir orçamento"
+                          aria-label="Excluir orçamento"
+                          onClick={() => setDeleting(b)}
+                          className="h-8 w-8 grid place-items-center rounded-md text-destructive hover:bg-destructive/10 transition cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
+
 
                   </tr>
                 ))
