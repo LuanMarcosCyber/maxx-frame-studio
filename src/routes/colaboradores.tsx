@@ -425,39 +425,48 @@ function Content() {
 function CreateDialog({
   onSubmit,
   submitting,
+  isAdmin,
+  resellers,
 }: {
   onSubmit: (
-    d: { full_name: string; username: string; password: string; pin?: string } & Permissions,
+    d: { full_name: string; username: string; password: string; pin?: string; parent_user_id?: string } & Permissions,
   ) => Promise<unknown>;
   submitting: boolean;
+  isAdmin: boolean;
+  resellers: ResellerOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  
+  const [parentSelection, setParentSelection] = useState<string>(ADMIN_PARENT_SENTINEL);
+
   const [perms, setPerms] = useState<Permissions>({ ...DEFAULT_PERMS, max_discount_percent: 10 });
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
+      const parent_user_id =
+        isAdmin && parentSelection && parentSelection !== ADMIN_PARENT_SENTINEL
+          ? parentSelection
+          : undefined;
       await onSubmit({
         full_name: fullName,
         username,
         password,
         ...perms,
+        ...(parent_user_id ? { parent_user_id } : {}),
       });
       setOpen(false);
       setFullName("");
       setUsername("");
       setPassword("");
+      setParentSelection(ADMIN_PARENT_SENTINEL);
       setPerms({ ...DEFAULT_PERMS, max_discount_percent: 10 });
     } catch {
       // toast handled
     }
   };
-
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -512,6 +521,25 @@ function CreateDialog({
               placeholder="Mínimo 6 caracteres"
             />
           </div>
+          {isAdmin && (
+            <div className="space-y-1.5">
+              <Label htmlFor="parent_reseller">Vincular ao revendedor</Label>
+              <Select value={parentSelection} onValueChange={setParentSelection}>
+                <SelectTrigger id="parent_reseller">
+                  <SelectValue placeholder="Selecione…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ADMIN_PARENT_SENTINEL}>Loja principal / Admin</SelectItem>
+                  {resellers.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                A conta de acesso herdará os dados comerciais do vínculo escolhido.
+              </p>
+            </div>
+          )}
           <PermissionsFields perms={perms} setPerms={setPerms} />
           <DialogFooter>
             <Button
@@ -527,6 +555,7 @@ function CreateDialog({
     </Dialog>
   );
 }
+
 
 function ResetDialog({
   target,
