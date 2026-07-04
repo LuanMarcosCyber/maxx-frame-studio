@@ -257,7 +257,7 @@ function Pedidos() {
       <Button
         type="button"
         variant="outline"
-        onClick={() => setPrintOpen(true)}
+        onClick={(e) => { e.stopPropagation(); setTarget(viewing); setPrintOpen(true); }}
         className="h-auto py-3 flex flex-col items-center gap-1"
       >
         <Printer className="h-5 w-5" />
@@ -265,7 +265,7 @@ function Pedidos() {
       </Button>
       <Button
         type="button"
-        onClick={() => setStatusOpen(true)}
+        onClick={(e) => { e.stopPropagation(); setTarget(viewing); setStatusOpen(true); }}
         className="h-auto py-3 flex flex-col items-center gap-1 bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
       >
         <RefreshCw className="h-5 w-5" />
@@ -276,7 +276,7 @@ function Pedidos() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => setDeleteOpen(true)}
+          onClick={(e) => { e.stopPropagation(); setTarget(viewing); setDeleteOpen(true); }}
           className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="h-5 w-5" />
