@@ -363,6 +363,14 @@ function ReportResults({
     return <VendasReportView filters={filters} search={search} />;
   }
 
+  if (selected === "fornecedores") {
+    return <FornecedoresReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "produtos") {
+    return <ProdutosReportView filters={filters} search={search} />;
+  }
+
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
   return (
     <Card className="p-10 text-center">
