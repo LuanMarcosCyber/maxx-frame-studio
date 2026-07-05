@@ -102,15 +102,24 @@ export const getVendasOptions = createServerFn({ method: "GET" })
     let empresas: { id: string; name: string }[] = [];
     if (isAdmin) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: profs } = await supabaseAdmin
-        .from("profiles")
-        .select("id, full_name, store_name")
-        .is("parent_user_id", null)
-        .order("store_name", { nullsFirst: false });
-      empresas = (profs ?? []).map((p) => ({
-        id: p.id,
-        name: p.store_name || p.full_name || "—",
-      }));
+      // Empresas = usuários com role 'revendedor' e sem parent (contas raiz).
+      const { data: revRoles } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "revendedor");
+      const revIds = Array.from(new Set((revRoles ?? []).map((r) => r.user_id)));
+      if (revIds.length) {
+        const { data: profs } = await supabaseAdmin
+          .from("profiles")
+          .select("id, full_name, store_name, parent_user_id")
+          .in("id", revIds)
+          .is("parent_user_id", null)
+          .order("store_name", { nullsFirst: false });
+        empresas = (profs ?? []).map((p) => ({
+          id: p.id,
+          name: p.store_name || p.full_name || "—",
+        }));
+      }
     }
 
     return {
