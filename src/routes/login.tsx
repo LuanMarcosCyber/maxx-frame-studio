@@ -28,6 +28,7 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { signIn, session, loading } = useAuth();
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -36,8 +37,11 @@ function Login() {
   const sidePanelBg = "bg-white";
 
   useEffect(() => {
-    if (!loading && session) navigate({ to: "/", replace: true });
-  }, [session, loading, navigate]);
+    if (!loading && session) {
+      if (next) window.location.href = next;
+      else navigate({ to: "/", replace: true });
+    }
+  }, [session, loading, navigate, next]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -46,6 +50,7 @@ function Login() {
     const { error } = await signIn(username, password);
     setSubmitting(false);
     if (error) toast.error(error);
+    else if (next) window.location.href = next;
     else navigate({ to: "/", replace: true });
   };
 
