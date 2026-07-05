@@ -162,7 +162,16 @@ export const getVendasReport = createServerFn({ method: "POST" })
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
-    if (isAdmin && data.empresaUserId) q = q.eq("user_id", data.empresaUserId);
+    if (isAdmin && data.empresaUserId) {
+      // Inclui pedidos criados pela própria Empresa e por suas contas de acesso (filhos).
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: children } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("parent_user_id", data.empresaUserId);
+      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
+      q = q.in("user_id", ids);
+    }
 
     const { data: rows, error } = await q;
     if (error) throw error;
