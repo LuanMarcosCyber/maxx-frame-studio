@@ -17,6 +17,7 @@ import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OperadoresRouteImport } from './routes/operadores'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
@@ -28,6 +29,10 @@ import { Route as RevendedoresIndexRouteImport } from './routes/revendedores.ind
 import { Route as OrcamentosIndexRouteImport } from './routes/orcamentos.index'
 import { Route as RevendedoresIdRouteImport } from './routes/revendedores.$id'
 import { Route as OrcamentosNovoRouteImport } from './routes/orcamentos.novo'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as PedidosIdImprimirViaRouteImport } from './routes/pedidos_.$id.imprimir.$via'
 import { Route as OrcamentosIdImprimirViaRouteImport } from './routes/orcamentos_.$id.imprimir.$via'
 
@@ -69,6 +74,11 @@ const OrcamentosRoute = OrcamentosRouteImport.update({
 const OperadoresRoute = OperadoresRouteImport.update({
   id: '/operadores',
   path: '/operadores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -126,6 +136,29 @@ const OrcamentosNovoRoute = OrcamentosNovoRouteImport.update({
   path: '/novo',
   getParentRoute: () => OrcamentosRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PedidosIdImprimirViaRoute = PedidosIdImprimirViaRouteImport.update({
   id: '/pedidos_/$id/imprimir/$via',
   path: '/pedidos/$id/imprimir/$via',
@@ -145,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/operadores': typeof OperadoresRoute
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
@@ -153,10 +187,14 @@ export interface FileRoutesByFullPath {
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/transportadoras': typeof TransportadorasRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
   '/revendedores/': typeof RevendedoresIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/orcamentos/$id/imprimir/$via': typeof OrcamentosIdImprimirViaRoute
   '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
@@ -168,16 +206,21 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/operadores': typeof OperadoresRoute
   '/pedidos': typeof PedidosRoute
   '/produtos': typeof ProdutosRoute
   '/relatorios': typeof RelatoriosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/transportadoras': typeof TransportadorasRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos': typeof OrcamentosIndexRoute
   '/revendedores': typeof RevendedoresIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/orcamentos/$id/imprimir/$via': typeof OrcamentosIdImprimirViaRoute
   '/pedidos/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
@@ -190,6 +233,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/operadores': typeof OperadoresRoute
   '/orcamentos': typeof OrcamentosRouteWithChildren
   '/pedidos': typeof PedidosRoute
@@ -198,10 +242,14 @@ export interface FileRoutesById {
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/transportadoras': typeof TransportadorasRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
   '/revendedores/$id': typeof RevendedoresIdRoute
   '/orcamentos/': typeof OrcamentosIndexRoute
   '/revendedores/': typeof RevendedoresIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/orcamentos_/$id/imprimir/$via': typeof OrcamentosIdImprimirViaRoute
   '/pedidos_/$id/imprimir/$via': typeof PedidosIdImprimirViaRoute
 }
@@ -215,6 +263,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/login'
+    | '/mcp'
     | '/operadores'
     | '/orcamentos'
     | '/pedidos'
@@ -223,10 +272,14 @@ export interface FileRouteTypes {
     | '/revendedores'
     | '/sitemap.xml'
     | '/transportadoras'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
     | '/revendedores/'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/orcamentos/$id/imprimir/$via'
     | '/pedidos/$id/imprimir/$via'
   fileRoutesByTo: FileRoutesByTo
@@ -238,16 +291,21 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/login'
+    | '/mcp'
     | '/operadores'
     | '/pedidos'
     | '/produtos'
     | '/relatorios'
     | '/sitemap.xml'
     | '/transportadoras'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos'
     | '/revendedores'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/orcamentos/$id/imprimir/$via'
     | '/pedidos/$id/imprimir/$via'
   id:
@@ -259,6 +317,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/login'
+    | '/mcp'
     | '/operadores'
     | '/orcamentos'
     | '/pedidos'
@@ -267,10 +326,14 @@ export interface FileRouteTypes {
     | '/revendedores'
     | '/sitemap.xml'
     | '/transportadoras'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/orcamentos/novo'
     | '/revendedores/$id'
     | '/orcamentos/'
     | '/revendedores/'
+    | '/.lovable/oauth/consent'
+    | '/.mcp/invoke-tool/$tool'
     | '/orcamentos_/$id/imprimir/$via'
     | '/pedidos_/$id/imprimir/$via'
   fileRoutesById: FileRoutesById
@@ -283,6 +346,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ContaRoute: typeof ContaRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   OperadoresRoute: typeof OperadoresRoute
   OrcamentosRoute: typeof OrcamentosRouteWithChildren
   PedidosRoute: typeof PedidosRoute
@@ -291,6 +355,10 @@ export interface RootRouteChildren {
   RevendedoresRoute: typeof RevendedoresRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TransportadorasRoute: typeof TransportadorasRoute
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   OrcamentosIdImprimirViaRoute: typeof OrcamentosIdImprimirViaRoute
   PedidosIdImprimirViaRoute: typeof PedidosIdImprimirViaRoute
 }
@@ -351,6 +419,13 @@ declare module '@tanstack/react-router' {
       path: '/operadores'
       fullPath: '/operadores'
       preLoaderRoute: typeof OperadoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -430,6 +505,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrcamentosNovoRouteImport
       parentRoute: typeof OrcamentosRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pedidos_/$id/imprimir/$via': {
       id: '/pedidos_/$id/imprimir/$via'
       path: '/pedidos/$id/imprimir/$via'
@@ -483,6 +586,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRoute,
   ContaRoute: ContaRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   OperadoresRoute: OperadoresRoute,
   OrcamentosRoute: OrcamentosRouteWithChildren,
   PedidosRoute: PedidosRoute,
@@ -491,6 +595,11 @@ const rootRouteChildren: RootRouteChildren = {
   RevendedoresRoute: RevendedoresRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TransportadorasRoute: TransportadorasRoute,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   OrcamentosIdImprimirViaRoute: OrcamentosIdImprimirViaRoute,
   PedidosIdImprimirViaRoute: PedidosIdImprimirViaRoute,
 }
