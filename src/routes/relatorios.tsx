@@ -110,9 +110,15 @@ function Relatorios() {
   const [clientId, setClientId] = useState<string>("todos");
   const [operatorId, setOperatorId] = useState<string>("todos");
   const [empresaUserId, setEmpresaUserId] = useState<string>("todos");
+  const [category, setCategory] = useState<string>("todos");
+  const [supplier, setSupplier] = useState<string>("todos");
+  const [productId, setProductId] = useState<string>("todos");
   const [search, setSearch] = useState("");
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
+  const showCategoryFilter = selected === "produtos" || selected === "fornecedores";
+  const showSupplierFilter = selected === "produtos";
+  const showProductFilter = selected === "produtos";
 
   const fetchOptions = useServerFn(getVendasOptions);
   const optionsQuery = useQuery({
