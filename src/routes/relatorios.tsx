@@ -122,24 +122,24 @@ function Relatorios() {
       title="Relatórios"
       subtitle="Consulte informações, acompanhe indicadores e pesquise qualquer dado cadastrado no sistema."
     >
-      <div className="space-y-8">
-        <Card className="p-4">
+      <div className="space-y-4">
+        <Card className="p-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Pesquisar cliente, pedido, orçamento, produto, fornecedor, colaborador..."
-              className="pl-11 h-12 text-base"
+              className="pl-10 h-10 text-sm border-0 shadow-none focus-visible:ring-0"
             />
           </div>
         </Card>
 
         <section>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
+          <h2 className="text-sm font-semibold text-foreground mb-2">
             O que você deseja analisar?
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {visibleCards.map((c) => {
               const Icon = c.icon;
               const active = selected === c.key;
@@ -149,25 +149,25 @@ function Relatorios() {
                   type="button"
                   onClick={() => setSelected(c.key)}
                   className={cn(
-                    "group text-left rounded-xl border bg-card p-5 shadow-sm cursor-pointer transition-all",
+                    "group text-left rounded-xl border bg-card p-3 shadow-sm cursor-pointer transition-all",
                     "hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40",
                     active && "border-primary ring-1 ring-primary shadow-md",
                   )}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     <div
                       className={cn(
-                        "h-11 w-11 rounded-lg grid place-items-center shrink-0 transition-colors",
+                        "h-9 w-9 rounded-lg grid place-items-center shrink-0 transition-colors",
                         active
                           ? "bg-gradient-brand text-brand-foreground shadow-brand"
                           : "bg-muted text-foreground group-hover:bg-gradient-brand group-hover:text-brand-foreground",
                       )}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-semibold text-foreground">{c.title}</div>
-                      <div className="text-sm text-muted-foreground mt-1 leading-snug">
+                      <div className="font-semibold text-sm text-foreground">{c.title}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-2">
                         {c.description}
                       </div>
                     </div>
@@ -179,12 +179,13 @@ function Relatorios() {
         </section>
 
         <section>
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-4">
+          <Card className="p-3">
+            <div className="flex items-center gap-2 mb-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-base font-semibold text-foreground">Filtros</h2>
+              <h2 className="text-sm font-semibold text-foreground">Filtros</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+
               <div className="space-y-1.5">
                 <Label>Período</Label>
                 <Select value={period} onValueChange={setPeriod}>
