@@ -9,6 +9,9 @@ import { Eye, EyeOff } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" && s.next.startsWith("/") ? s.next : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Entrar — Total Maxx ERP" },
