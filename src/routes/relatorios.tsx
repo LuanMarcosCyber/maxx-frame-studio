@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +13,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { fmtMoney, fmtDateTime, cn } from "@/lib/utils";
+import {
+  getVendasOptions,
+  getVendasReport,
+  type VendasFilters,
+} from "@/lib/reports.functions";
 import {
   Search,
   BarChart3,
@@ -23,8 +39,12 @@ import {
   UserCog,
   Building2,
   Filter,
+  DollarSign,
+  ShoppingCart,
+  Receipt,
+  Percent,
+  Wallet,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -49,7 +69,7 @@ type ReportKey =
   | "colaboradores"
   | "empresas";
 
-interface ReportCard {
+interface ReportCardDef {
   key: ReportKey;
   title: string;
   description: string;
@@ -57,50 +77,24 @@ interface ReportCard {
   adminOnly?: boolean;
 }
 
-const REPORT_CARDS: ReportCard[] = [
-  {
-    key: "vendas",
-    title: "Vendas",
-    description: "Analise faturamento, pedidos e desempenho de vendas.",
-    icon: TrendingUp,
-  },
-  {
-    key: "orcamentos",
-    title: "Orçamentos",
-    description: "Consulte orçamentos criados, aprovados e pendentes.",
-    icon: FileText,
-  },
-  {
-    key: "produtos",
-    title: "Produtos",
-    description: "Veja utilização, vendas e desempenho dos produtos.",
-    icon: Package,
-  },
-  {
-    key: "fornecedores",
-    title: "Fornecedores",
-    description: "Analise quanto cada fornecedor representa nas vendas.",
-    icon: Factory,
-  },
-  {
-    key: "clientes",
-    title: "Clientes",
-    description: "Consulte histórico e ranking dos clientes.",
-    icon: Users,
-  },
-  {
-    key: "colaboradores",
-    title: "Colaboradores",
-    description: "Acompanhe produtividade, descontos e desempenho.",
-    icon: UserCog,
-  },
-  {
-    key: "empresas",
-    title: "Empresas",
-    description: "Visualize indicadores das empresas/revendedores.",
-    icon: Building2,
-    adminOnly: true,
-  },
+const REPORT_CARDS: ReportCardDef[] = [
+  { key: "vendas", title: "Vendas", description: "Analise faturamento, pedidos e desempenho de vendas.", icon: TrendingUp },
+  { key: "orcamentos", title: "Orçamentos", description: "Consulte orçamentos criados, aprovados e pendentes.", icon: FileText },
+  { key: "produtos", title: "Produtos", description: "Veja utilização, vendas e desempenho dos produtos.", icon: Package },
+  { key: "fornecedores", title: "Fornecedores", description: "Analise quanto cada fornecedor representa nas vendas.", icon: Factory },
+  { key: "clientes", title: "Clientes", description: "Consulte histórico e ranking dos clientes.", icon: Users },
+  { key: "colaboradores", title: "Colaboradores", description: "Acompanhe produtividade, descontos e desempenho.", icon: UserCog },
+  { key: "empresas", title: "Empresas", description: "Visualize indicadores das empresas/revendedores.", icon: Building2, adminOnly: true },
+];
+
+const STATUS_OPTIONS = [
+  "Aguardando",
+  "Aguardando pagamento",
+  "Aprovado",
+  "Em produção",
+  "Finalizado",
+  "Entregue",
+  "Cancelado",
 ];
 
 function Relatorios() {
@@ -109,9 +103,19 @@ function Relatorios() {
   const [selected, setSelected] = useState<ReportKey | null>(null);
   const [period, setPeriod] = useState<string>("mes");
   const [status, setStatus] = useState<string>("todos");
+  const [clientId, setClientId] = useState<string>("todos");
+  const [operatorId, setOperatorId] = useState<string>("todos");
+  const [empresaUserId, setEmpresaUserId] = useState<string>("todos");
   const [search, setSearch] = useState("");
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
+
+  const fetchOptions = useServerFn(getVendasOptions);
+  const optionsQuery = useQuery({
+    queryKey: ["relatorios", "options"],
+    queryFn: () => fetchOptions(),
+    staleTime: 60_000,
+  });
 
   return (
     <AppShell
@@ -119,7 +123,6 @@ function Relatorios() {
       subtitle="Consulte informações, acompanhe indicadores e pesquise qualquer dado cadastrado no sistema."
     >
       <div className="space-y-8">
-        {/* Pesquisa global */}
         <Card className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -132,7 +135,6 @@ function Relatorios() {
           </div>
         </Card>
 
-        {/* Seleção de relatório */}
         <section>
           <h2 className="text-lg font-semibold text-foreground mb-4">
             O que você deseja analisar?
@@ -176,7 +178,6 @@ function Relatorios() {
           </div>
         </section>
 
-        {/* Filtros */}
         <section>
           <Card className="p-5">
             <div className="flex items-center gap-2 mb-4">
@@ -187,16 +188,14 @@ function Relatorios() {
               <div className="space-y-1.5">
                 <Label>Período</Label>
                 <Select value={period} onValueChange={setPeriod}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="hoje">Hoje</SelectItem>
                     <SelectItem value="ontem">Ontem</SelectItem>
-                    <SelectItem value="semana">Esta semana</SelectItem>
+                    <SelectItem value="semana">Últimos 7 dias</SelectItem>
                     <SelectItem value="mes">Este mês</SelectItem>
                     <SelectItem value="ano">Este ano</SelectItem>
-                    <SelectItem value="custom">Personalizado</SelectItem>
+                    <SelectItem value="todos">Todos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -204,78 +203,53 @@ function Relatorios() {
               <div className="space-y-1.5">
                 <Label>Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="aprovado">Aprovado</SelectItem>
-                    <SelectItem value="producao">Produção</SelectItem>
-                    <SelectItem value="finalizado">Finalizado</SelectItem>
-                    <SelectItem value="entregue">Entregue</SelectItem>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
                 <Label>Cliente</Label>
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent />
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Fornecedor</Label>
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent />
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Produto</Label>
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent />
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Categoria</Label>
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent />
+                <Select value={clientId} onValueChange={setClientId}>
+                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {(optionsQuery.data?.clients ?? []).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
                 <Label>Colaborador</Label>
-                <Select disabled>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent />
+                <Select value={operatorId} onValueChange={setOperatorId}>
+                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {(optionsQuery.data?.operators ?? []).map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
 
               {isAdmin && (
                 <div className="space-y-1.5">
                   <Label>Empresa</Label>
-                  <Select disabled>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas" />
-                    </SelectTrigger>
-                    <SelectContent />
+                  <Select value={empresaUserId} onValueChange={setEmpresaUserId}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas</SelectItem>
+                      {(optionsQuery.data?.empresas ?? []).map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
               )}
@@ -283,16 +257,33 @@ function Relatorios() {
           </Card>
         </section>
 
-        {/* Resultados */}
         <section>
-          <ReportResults selected={selected} />
+          <ReportResults
+            selected={selected}
+            filters={{
+              period,
+              status,
+              clientId: clientId === "todos" ? undefined : clientId,
+              operatorId: operatorId === "todos" ? undefined : operatorId,
+              empresaUserId: empresaUserId === "todos" ? undefined : empresaUserId,
+            }}
+            search={search}
+          />
         </section>
       </div>
     </AppShell>
   );
 }
 
-function ReportResults({ selected }: { selected: ReportKey | null }) {
+function ReportResults({
+  selected,
+  filters,
+  search,
+}: {
+  selected: ReportKey | null;
+  filters: VendasFilters;
+  search: string;
+}) {
   if (!selected) {
     return (
       <Card className="p-12 text-center">
@@ -309,6 +300,10 @@ function ReportResults({ selected }: { selected: ReportKey | null }) {
     );
   }
 
+  if (selected === "vendas") {
+    return <VendasReportView filters={filters} search={search} />;
+  }
+
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
   return (
     <Card className="p-10 text-center">
@@ -319,5 +314,161 @@ function ReportResults({ selected }: { selected: ReportKey | null }) {
         Em breve: indicadores, gráficos, rankings e exportação (PDF/Excel).
       </p>
     </Card>
+  );
+}
+
+function VendasReportView({
+  filters,
+  search,
+}: {
+  filters: VendasFilters;
+  search: string;
+}) {
+  const fetchReport = useServerFn(getVendasReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "vendas", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  const filteredOrders = useMemo(() => {
+    const list = query.data?.orders ?? [];
+    const s = search.trim().toLowerCase();
+    if (!s) return list;
+    return list.filter(
+      (o) =>
+        o.number.toLowerCase().includes(s) ||
+        o.client_name.toLowerCase().includes(s) ||
+        (o.operator_name ?? "").toLowerCase().includes(s),
+    );
+  }, [query.data, search]);
+
+  // Recompute summary reflecting the search filter (so numbers match the visible table)
+  const summary = useMemo(() => {
+    if (!query.data) {
+      return { faturamento: 0, totalPedidos: 0, ticketMedio: 0, totalDescontos: 0, valorRecebido: 0 };
+    }
+    if (!search.trim()) return query.data.summary;
+    const faturamento = filteredOrders.reduce((s, o) => s + o.total_value, 0);
+    const totalDescontos = filteredOrders.reduce((s, o) => s + o.discount_value, 0);
+    return {
+      faturamento,
+      totalPedidos: filteredOrders.length,
+      ticketMedio: filteredOrders.length ? faturamento / filteredOrders.length : 0,
+      totalDescontos,
+      valorRecebido: query.data.summary.valorRecebido,
+    };
+  }, [filteredOrders, search, query.data]);
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Carregando relatório de vendas...
+      </Card>
+    );
+  }
+
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar dados. Tente novamente.
+      </Card>
+    );
+  }
+
+  const cards = [
+    { label: "Faturamento total", value: fmtMoney(summary.faturamento), icon: DollarSign },
+    { label: "Total de pedidos", value: String(summary.totalPedidos), icon: ShoppingCart },
+    { label: "Ticket médio", value: fmtMoney(summary.ticketMedio), icon: Receipt },
+    { label: "Total de descontos", value: fmtMoney(summary.totalDescontos), icon: Percent },
+    { label: "Valor recebido / sinal", value: fmtMoney(summary.valorRecebido), icon: Wallet },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <Card key={c.label} className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                  {c.label}
+                </div>
+                <div className="h-9 w-9 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+                  <Icon className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-foreground tracking-tight">
+                {c.value}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">
+            Pedidos do período
+          </h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {filteredOrders.length} pedido(s) encontrado(s)
+          </p>
+        </div>
+
+        {filteredOrders.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="mx-auto h-14 w-14 rounded-full bg-muted grid place-items-center text-muted-foreground mb-3">
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Nenhum pedido encontrado para os filtros selecionados.
+            </p>
+          </div>
+        ) : (
+          <div className="p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nº Pedido</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Colaborador</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="text-right">Desconto</TableHead>
+                  <TableHead>Pagamento</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((o) => (
+                  <TableRow key={o.id}>
+                    <TableCell className="font-medium">{o.number}</TableCell>
+                    <TableCell>{o.client_name}</TableCell>
+                    <TableCell>{o.operator_name ?? "—"}</TableCell>
+                    <TableCell>{fmtDateTime(o.created_at)}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
+                        {o.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {fmtMoney(o.total_value)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {o.discount_value > 0 ? fmtMoney(o.discount_value) : "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {o.payment_method ?? "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
