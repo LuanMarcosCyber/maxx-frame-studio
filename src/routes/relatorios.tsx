@@ -22,10 +22,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { fmtMoney, fmtDateTime, cn } from "@/lib/utils";
+import { fmtMoney, fmtDateTime, fmtPct, cn } from "@/lib/utils";
 import {
   getVendasOptions,
   getVendasReport,
+  getProdutosFornecedoresReport,
   type VendasFilters,
 } from "@/lib/reports.functions";
 import {
@@ -44,6 +45,9 @@ import {
   Receipt,
   Percent,
   Wallet,
+  Trophy,
+  Boxes,
+  Tag,
 } from "lucide-react";
 
 export const Route = createFileRoute("/relatorios")({
