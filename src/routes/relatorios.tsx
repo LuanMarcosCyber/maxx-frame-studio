@@ -264,6 +264,51 @@ function Relatorios() {
                   </Select>
                 </div>
               )}
+
+              {showCategoryFilter && (
+                <div className="space-y-1.5">
+                  <Label>Categoria</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas</SelectItem>
+                      {(optionsQuery.data?.categories ?? []).map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {showSupplierFilter && (
+                <div className="space-y-1.5">
+                  <Label>Fornecedor</Label>
+                  <Select value={supplier} onValueChange={setSupplier}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {(optionsQuery.data?.suppliers ?? []).map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {showProductFilter && (
+                <div className="space-y-1.5">
+                  <Label>Produto</Label>
+                  <Select value={productId} onValueChange={setProductId}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {(optionsQuery.data?.products ?? []).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </Card>
         </section>
@@ -277,6 +322,9 @@ function Relatorios() {
               clientId: clientId === "todos" ? undefined : clientId,
               operatorId: operatorId === "todos" ? undefined : operatorId,
               empresaUserId: empresaUserId === "todos" ? undefined : empresaUserId,
+              category: category === "todos" ? undefined : category,
+              supplier: supplier === "todos" ? undefined : supplier,
+              productId: productId === "todos" ? undefined : productId,
             }}
             search={search}
           />
