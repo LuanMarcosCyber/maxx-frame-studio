@@ -122,15 +122,15 @@ function Relatorios() {
       title="Relatórios"
       subtitle="Consulte informações, acompanhe indicadores e pesquise qualquer dado cadastrado no sistema."
     >
-      <div className="space-y-8">
-        <Card className="p-4">
+      <div className="space-y-4">
+        <Card className="p-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Pesquisar cliente, pedido, orçamento, produto, fornecedor, colaborador..."
-              className="pl-11 h-12 text-base"
+              className="pl-10 h-10 text-sm border-0 shadow-none focus-visible:ring-0"
             />
           </div>
         </Card>
