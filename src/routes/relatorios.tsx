@@ -22,10 +22,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { fmtMoney, fmtDateTime, cn } from "@/lib/utils";
+import { fmtMoney, fmtDateTime, fmtPct, cn } from "@/lib/utils";
 import {
   getVendasOptions,
   getVendasReport,
+  getProdutosFornecedoresReport,
   type VendasFilters,
 } from "@/lib/reports.functions";
 import {
@@ -44,6 +45,9 @@ import {
   Receipt,
   Percent,
   Wallet,
+  Trophy,
+  Boxes,
+  Tag,
 } from "lucide-react";
 
 export const Route = createFileRoute("/relatorios")({
@@ -106,9 +110,15 @@ function Relatorios() {
   const [clientId, setClientId] = useState<string>("todos");
   const [operatorId, setOperatorId] = useState<string>("todos");
   const [empresaUserId, setEmpresaUserId] = useState<string>("todos");
+  const [category, setCategory] = useState<string>("todos");
+  const [supplier, setSupplier] = useState<string>("todos");
+  const [productId, setProductId] = useState<string>("todos");
   const [search, setSearch] = useState("");
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
+  const showCategoryFilter = selected === "produtos" || selected === "fornecedores";
+  const showSupplierFilter = selected === "produtos";
+  const showProductFilter = selected === "produtos";
 
   const fetchOptions = useServerFn(getVendasOptions);
   const optionsQuery = useQuery({
@@ -254,6 +264,51 @@ function Relatorios() {
                   </Select>
                 </div>
               )}
+
+              {showCategoryFilter && (
+                <div className="space-y-1.5">
+                  <Label>Categoria</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas</SelectItem>
+                      {(optionsQuery.data?.categories ?? []).map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {showSupplierFilter && (
+                <div className="space-y-1.5">
+                  <Label>Fornecedor</Label>
+                  <Select value={supplier} onValueChange={setSupplier}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {(optionsQuery.data?.suppliers ?? []).map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {showProductFilter && (
+                <div className="space-y-1.5">
+                  <Label>Produto</Label>
+                  <Select value={productId} onValueChange={setProductId}>
+                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {(optionsQuery.data?.products ?? []).map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </Card>
         </section>
@@ -267,6 +322,9 @@ function Relatorios() {
               clientId: clientId === "todos" ? undefined : clientId,
               operatorId: operatorId === "todos" ? undefined : operatorId,
               empresaUserId: empresaUserId === "todos" ? undefined : empresaUserId,
+              category: category === "todos" ? undefined : category,
+              supplier: supplier === "todos" ? undefined : supplier,
+              productId: productId === "todos" ? undefined : productId,
             }}
             search={search}
           />
@@ -303,6 +361,14 @@ function ReportResults({
 
   if (selected === "vendas") {
     return <VendasReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "fornecedores") {
+    return <FornecedoresReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "produtos") {
+    return <ProdutosReportView filters={filters} search={search} />;
   }
 
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
@@ -463,6 +529,256 @@ function VendasReportView({
                     <TableCell className="text-muted-foreground">
                       {o.payment_method ?? "—"}
                     </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function EmptyResults({ label }: { label: string }) {
+  return (
+    <div className="p-12 text-center">
+      <div className="mx-auto h-14 w-14 rounded-full bg-muted grid place-items-center text-muted-foreground mb-3">
+        <BarChart3 className="h-6 w-6" />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Nenhum resultado encontrado para os filtros selecionados.
+      </p>
+      {label && <p className="text-xs text-muted-foreground/70 mt-1">{label}</p>}
+    </div>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  icon: Icon,
+  sub,
+}: {
+  label: string;
+  value: string;
+  icon: typeof BarChart3;
+  sub?: string;
+}) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+          {label}
+        </div>
+        <div className="h-9 w-9 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+      <div className="text-xl font-bold text-foreground tracking-tight break-words">
+        {value}
+      </div>
+      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+    </Card>
+  );
+}
+
+function FornecedoresReportView({
+  filters,
+  search,
+}: {
+  filters: VendasFilters;
+  search: string;
+}) {
+  const fetchReport = useServerFn(getProdutosFornecedoresReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "fornecedores", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  const suppliers = useMemo(() => {
+    const list = query.data?.suppliers ?? [];
+    const s = search.trim().toLowerCase();
+    if (!s) return list;
+    return list.filter((r) => r.supplier.toLowerCase().includes(s));
+  }, [query.data, search]);
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Carregando relatório de fornecedores...
+      </Card>
+    );
+  }
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar dados. Tente novamente.
+      </Card>
+    );
+  }
+
+  const data = query.data;
+  const topSupplier = data?.topSupplier;
+  const topProdOfTopSupplier =
+    topSupplier && data?.topProductPerSupplier[topSupplier.supplier];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard label="Total vendido (fornecedores)" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
+        <SummaryCard label="Fornecedores vendidos" value={String(data?.suppliers.length ?? 0)} icon={Factory} />
+        <SummaryCard
+          label="Maior faturamento"
+          value={topSupplier?.supplier ?? "—"}
+          icon={Trophy}
+          sub={topSupplier ? fmtMoney(topSupplier.value) : undefined}
+        />
+        <SummaryCard
+          label="Produto mais vendido do fornecedor"
+          value={topProdOfTopSupplier?.name ?? "—"}
+          icon={Package}
+          sub={topProdOfTopSupplier ? fmtMoney(topProdOfTopSupplier.value) : undefined}
+        />
+      </div>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Desempenho por fornecedor</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {suppliers.length} fornecedor(es) encontrado(s)
+          </p>
+        </div>
+        {suppliers.length === 0 ? (
+          <EmptyResults label="Ajuste os filtros para visualizar dados." />
+        ) : (
+          <div className="p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fornecedor/Fabricante</TableHead>
+                  <TableHead className="text-right">Qtd. produtos vendidos</TableHead>
+                  <TableHead className="text-right">Qtd. pedidos</TableHead>
+                  <TableHead className="text-right">Valor vendido</TableHead>
+                  <TableHead className="text-right">Participação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map((s) => (
+                  <TableRow key={s.supplier}>
+                    <TableCell className="font-medium">{s.supplier}</TableCell>
+                    <TableCell className="text-right">{s.quantity}</TableCell>
+                    <TableCell className="text-right">{s.orders}</TableCell>
+                    <TableCell className="text-right font-medium">{fmtMoney(s.value)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{fmtPct(s.share)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function ProdutosReportView({
+  filters,
+  search,
+}: {
+  filters: VendasFilters;
+  search: string;
+}) {
+  const fetchReport = useServerFn(getProdutosFornecedoresReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "produtos", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  const products = useMemo(() => {
+    const list = query.data?.products ?? [];
+    const s = search.trim().toLowerCase();
+    if (!s) return list;
+    return list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(s) ||
+        (p.code ?? "").toLowerCase().includes(s) ||
+        (p.category ?? "").toLowerCase().includes(s) ||
+        (p.supplier ?? "").toLowerCase().includes(s),
+    );
+  }, [query.data, search]);
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Carregando relatório de produtos...
+      </Card>
+    );
+  }
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar dados. Tente novamente.
+      </Card>
+    );
+  }
+
+  const data = query.data;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <SummaryCard label="Produtos vendidos" value={String(data?.totalQuantity ?? 0)} icon={Boxes} />
+        <SummaryCard
+          label="Produto mais vendido"
+          value={data?.topProduct?.name ?? "—"}
+          icon={Trophy}
+          sub={data?.topProduct ? fmtMoney(data.topProduct.value) : undefined}
+        />
+        <SummaryCard
+          label="Categoria mais vendida"
+          value={data?.topCategory?.category ?? "—"}
+          icon={Tag}
+          sub={data?.topCategory ? fmtMoney(data.topCategory.value) : undefined}
+        />
+        <SummaryCard label="Valor total em produtos" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
+      </div>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Produtos mais vendidos</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {products.length} produto(s) encontrado(s)
+          </p>
+        </div>
+        {products.length === 0 ? (
+          <EmptyResults label="Ajuste os filtros para visualizar dados." />
+        ) : (
+          <div className="p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead className="text-right">Qtd. vendida</TableHead>
+                  <TableHead className="text-right">Valor vendido</TableHead>
+                  <TableHead className="text-right">Nº pedidos</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((p) => (
+                  <TableRow key={p.productId ?? p.code + p.name}>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.code || "—"}</TableCell>
+                    <TableCell>{p.category}</TableCell>
+                    <TableCell>{p.supplier}</TableCell>
+                    <TableCell className="text-right">{p.quantity}</TableCell>
+                    <TableCell className="text-right font-medium">{fmtMoney(p.value)}</TableCell>
+                    <TableCell className="text-right">{p.orders}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
