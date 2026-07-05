@@ -7,6 +7,9 @@ export interface VendasFilters {
   clientId?: string;
   operatorId?: string;
   empresaUserId?: string; // admin only
+  category?: string;
+  supplier?: string;
+  productId?: string;
 }
 
 export interface VendasOrder {
@@ -37,6 +40,39 @@ export interface VendasOptions {
   clients: { id: string; name: string }[];
   operators: { id: string; name: string }[];
   empresas: { id: string; name: string }[];
+  categories: string[];
+  suppliers: string[];
+  products: { id: string; label: string }[];
+}
+
+export interface SupplierRow {
+  supplier: string;
+  quantity: number;
+  orders: number;
+  value: number;
+  share: number; // %
+}
+export interface ProductRow {
+  productId: string | null;
+  name: string;
+  code: string;
+  category: string;
+  supplier: string;
+  quantity: number;
+  value: number;
+  orders: number;
+}
+
+export interface ProdutosFornecedoresReport {
+  totalValue: number;
+  totalQuantity: number;
+  totalOrders: number;
+  suppliers: SupplierRow[];
+  products: ProductRow[];
+  topSupplier: SupplierRow | null;
+  topProduct: ProductRow | null;
+  topCategory: { category: string; value: number; quantity: number } | null;
+  topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }>;
 }
 
 function periodRange(period: string): { from?: string; to?: string } {
