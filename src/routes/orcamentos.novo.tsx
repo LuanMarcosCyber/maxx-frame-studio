@@ -1653,6 +1653,8 @@ function NovoOrcamento() {
         valorInstalacaoStr,
         valorInstalacao: Number(valorInstalacao.toFixed(2)),
         tipoEntrega,
+        aplicativoEntrega:
+          tipoEntrega === "Aplicativo de Entrega" ? aplicativoEntrega : null,
         valorEntregaStr,
         valorEntrega: Number(valorEntrega.toFixed(2)),
         transportadoraId: tipoEntrega === "Transportadora" ? transportadoraId : null,
