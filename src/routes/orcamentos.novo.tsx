@@ -775,6 +775,8 @@ function NovoOrcamento() {
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
   const [valorInstalacaoStr, setValorInstalacaoStr] = useState<string>("");
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
+  const [aplicativoEntrega, setAplicativoEntrega] =
+    useState<AplicativoEntrega>("Uber Flash");
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
   const [transportadoraId, setTransportadoraId] = useState<string | null>(null);
   const [transportadoraNome, setTransportadoraNome] = useState<string>("");
