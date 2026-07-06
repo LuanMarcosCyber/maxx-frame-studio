@@ -3248,6 +3248,29 @@ function NovoOrcamento() {
                 )}
               </div>
 
+              {tipoEntrega === "Aplicativo de Entrega" && (
+                <div className="mt-6 max-w-2xl space-y-2">
+                  <Label>Aplicativo</Label>
+                  <RadioGroup
+                    value={aplicativoEntrega}
+                    onValueChange={(v) => setAplicativoEntrega(v as AplicativoEntrega)}
+                    className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+                  >
+                    {(["Uber Flash", "99 Entrega", "Lalamove"] as AplicativoEntrega[]).map(
+                      (opt) => (
+                        <div key={opt} className="flex items-center gap-2">
+                          <RadioGroupItem value={opt} id={`app-${opt}`} />
+                          <Label htmlFor={`app-${opt}`} className="font-normal cursor-pointer">
+                            {opt}
+                          </Label>
+                        </div>
+                      ),
+                    )}
+                  </RadioGroup>
+                </div>
+              )}
+
+
               {tipoEntrega === "Transportadora" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 max-w-2xl">
                   <div className="space-y-1.5">
