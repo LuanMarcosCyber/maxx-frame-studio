@@ -3230,7 +3230,7 @@ function NovoOrcamento() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Retirada">Retirada</SelectItem>
-                      <SelectItem value="Motoboy">Motoboy</SelectItem>
+                      <SelectItem value="Aplicativo de Entrega">Aplicativo de Entrega</SelectItem>
                       <SelectItem value="Sedex">Sedex</SelectItem>
                       <SelectItem value="Transportadora">Transportadora</SelectItem>
                       <SelectItem value="Outro">Outro</SelectItem>
