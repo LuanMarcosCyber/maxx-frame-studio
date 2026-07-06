@@ -153,33 +153,51 @@ export type Database = {
       carriers: {
         Row: {
           address: string | null
+          address_number: string | null
+          cep: string | null
+          city: string | null
           created_at: string
+          document: string | null
           email: string | null
           id: string
           name: string
           phone: string | null
+          state: string | null
+          state_registration: string | null
           updated_at: string
           user_id: string
           whatsapp: string | null
         }
         Insert: {
           address?: string | null
+          address_number?: string | null
+          cep?: string | null
+          city?: string | null
           created_at?: string
+          document?: string | null
           email?: string | null
           id?: string
           name: string
           phone?: string | null
+          state?: string | null
+          state_registration?: string | null
           updated_at?: string
           user_id: string
           whatsapp?: string | null
         }
         Update: {
           address?: string | null
+          address_number?: string | null
+          cep?: string | null
+          city?: string | null
           created_at?: string
+          document?: string | null
           email?: string | null
           id?: string
           name?: string
           phone?: string | null
+          state?: string | null
+          state_registration?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
