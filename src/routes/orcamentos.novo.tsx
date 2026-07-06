@@ -1440,7 +1440,16 @@ function NovoOrcamento() {
       setObservacoes(s("observacoes"));
       setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
       setValorInstalacaoStr(s("valorInstalacaoStr"));
-      setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
+      const rawTipoEntrega = (d.tipoEntrega as string | undefined) ?? "Retirada";
+      const normalizedTipoEntrega: TipoEntrega =
+        rawTipoEntrega === "Motoboy"
+          ? "Aplicativo de Entrega"
+          : (rawTipoEntrega as TipoEntrega);
+      setTipoEntrega(normalizedTipoEntrega);
+      const rawApp = d.aplicativoEntrega as string | undefined;
+      if (rawApp === "Uber Flash" || rawApp === "99 Entrega" || rawApp === "Lalamove") {
+        setAplicativoEntrega(rawApp);
+      }
       setValorEntregaStr(s("valorEntregaStr"));
       setTransportadoraId(
         typeof d.transportadoraId === "string" ? (d.transportadoraId as string) : null,
