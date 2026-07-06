@@ -168,7 +168,13 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
   });
 }
 
-type TipoEntrega = "Retirada" | "Motoboy" | "Sedex" | "Transportadora" | "Outro";
+type TipoEntrega =
+  | "Retirada"
+  | "Aplicativo de Entrega"
+  | "Sedex"
+  | "Transportadora"
+  | "Outro";
+type AplicativoEntrega = "Uber Flash" | "99 Entrega" | "Lalamove";
 type FormaPagto =
   | "Dinheiro"
   | "Pix"
