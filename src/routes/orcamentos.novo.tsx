@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover";
 import {
   AlertDialog,
@@ -168,7 +169,13 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
   });
 }
 
-type TipoEntrega = "Retirada" | "Motoboy" | "Sedex" | "Transportadora" | "Outro";
+type TipoEntrega =
+  | "Retirada"
+  | "Aplicativo de Entrega"
+  | "Sedex"
+  | "Transportadora"
+  | "Outro";
+type AplicativoEntrega = "Uber Flash" | "99 Entrega" | "Lalamove";
 type FormaPagto =
   | "Dinheiro"
   | "Pix"
@@ -769,6 +776,8 @@ function NovoOrcamento() {
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
   const [valorInstalacaoStr, setValorInstalacaoStr] = useState<string>("");
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>("Retirada");
+  const [aplicativoEntrega, setAplicativoEntrega] =
+    useState<AplicativoEntrega>("Uber Flash");
   const [valorEntregaStr, setValorEntregaStr] = useState<string>("");
   const [transportadoraId, setTransportadoraId] = useState<string | null>(null);
   const [transportadoraNome, setTransportadoraNome] = useState<string>("");
@@ -1431,7 +1440,16 @@ function NovoOrcamento() {
       setObservacoes(s("observacoes"));
       setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
       setValorInstalacaoStr(s("valorInstalacaoStr"));
-      setTipoEntrega((d.tipoEntrega as TipoEntrega) ?? "Retirada");
+      const rawTipoEntrega = (d.tipoEntrega as string | undefined) ?? "Retirada";
+      const normalizedTipoEntrega: TipoEntrega =
+        rawTipoEntrega === "Motoboy"
+          ? "Aplicativo de Entrega"
+          : (rawTipoEntrega as TipoEntrega);
+      setTipoEntrega(normalizedTipoEntrega);
+      const rawApp = d.aplicativoEntrega as string | undefined;
+      if (rawApp === "Uber Flash" || rawApp === "99 Entrega" || rawApp === "Lalamove") {
+        setAplicativoEntrega(rawApp);
+      }
       setValorEntregaStr(s("valorEntregaStr"));
       setTransportadoraId(
         typeof d.transportadoraId === "string" ? (d.transportadoraId as string) : null,
@@ -1635,6 +1653,8 @@ function NovoOrcamento() {
         valorInstalacaoStr,
         valorInstalacao: Number(valorInstalacao.toFixed(2)),
         tipoEntrega,
+        aplicativoEntrega:
+          tipoEntrega === "Aplicativo de Entrega" ? aplicativoEntrega : null,
         valorEntregaStr,
         valorEntrega: Number(valorEntrega.toFixed(2)),
         transportadoraId: tipoEntrega === "Transportadora" ? transportadoraId : null,
@@ -3210,7 +3230,7 @@ function NovoOrcamento() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Retirada">Retirada</SelectItem>
-                      <SelectItem value="Motoboy">Motoboy</SelectItem>
+                      <SelectItem value="Aplicativo de Entrega">Aplicativo de Entrega</SelectItem>
                       <SelectItem value="Sedex">Sedex</SelectItem>
                       <SelectItem value="Transportadora">Transportadora</SelectItem>
                       <SelectItem value="Outro">Outro</SelectItem>
@@ -3227,6 +3247,29 @@ function NovoOrcamento() {
                   />
                 )}
               </div>
+
+              {tipoEntrega === "Aplicativo de Entrega" && (
+                <div className="mt-6 max-w-2xl space-y-2">
+                  <Label>Aplicativo</Label>
+                  <RadioGroup
+                    value={aplicativoEntrega}
+                    onValueChange={(v) => setAplicativoEntrega(v as AplicativoEntrega)}
+                    className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+                  >
+                    {(["Uber Flash", "99 Entrega", "Lalamove"] as AplicativoEntrega[]).map(
+                      (opt) => (
+                        <div key={opt} className="flex items-center gap-2">
+                          <RadioGroupItem value={opt} id={`app-${opt}`} />
+                          <Label htmlFor={`app-${opt}`} className="font-normal cursor-pointer">
+                            {opt}
+                          </Label>
+                        </div>
+                      ),
+                    )}
+                  </RadioGroup>
+                </div>
+              )}
+
 
               {tipoEntrega === "Transportadora" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 max-w-2xl">
