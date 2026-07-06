@@ -986,6 +986,20 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                     <span>{fmtMoney(dNum(general, "valorEntrega"))}</span>
                   </div>
                 )}
+                {variant === "loja" && dStr(general, "tipoEntrega") === "Aplicativo de Entrega" && (
+                  <>
+                    <div className="row muted">
+                      <span>Tipo de entrega</span>
+                      <span>Aplicativo de Entrega</span>
+                    </div>
+                    {dStr(general, "aplicativoEntrega") && (
+                      <div className="row muted">
+                        <span>Aplicativo</span>
+                        <span>{dStr(general, "aplicativoEntrega")}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 {variant === "loja" && (rtValor > 0 || rtPerc > 0) && (
                   <div className="row muted">
                     <span>RT / Comissão Técnica</span>
