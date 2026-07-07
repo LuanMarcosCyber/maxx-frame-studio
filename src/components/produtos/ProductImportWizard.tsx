@@ -352,13 +352,32 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         {/* STEP 3 */}
         {!result && step === 3 && (
           <div className="space-y-4 py-2">
-            <div className="rounded-md bg-accent/40 p-3 text-sm">
+            <div className="rounded-md bg-accent/40 p-3 text-sm space-y-2">
               <div className="flex items-center gap-2 font-medium">
                 <FileSpreadsheet className="h-4 w-4" /> {fileName}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Detectamos <b>{rows.length}</b> produto(s) e <b>{columns.length}</b> coluna(s):{" "}
-                {columns.join(", ")}
+              <div className="text-xs text-muted-foreground">
+                Cabeçalho detectado na linha <b>{headerRow + 1}</b>. Detectamos <b>{rows.length}</b> produto(s) e{" "}
+                <b>{columns.length}</b> coluna(s).
+              </div>
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <Label className="text-xs">Alterar linha do cabeçalho:</Label>
+                <Select value={String(headerRow)} onValueChange={(v) => changeHeaderRow(Number(v))}>
+                  <SelectTrigger className="h-8 max-w-[420px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {rawMatrix.slice(0, 20).map((r, i) => {
+                      const preview = r.filter((c) => String(c ?? "").trim() !== "").slice(0, 6).join(" | ") || "(linha vazia)";
+                      return (
+                        <SelectItem key={i} value={String(i)}>
+                          Linha {i + 1}: {preview.length > 80 ? preview.slice(0, 80) + "…" : preview}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-xs text-muted-foreground break-words">
+                Colunas: {columns.join(", ")}
               </div>
             </div>
 
