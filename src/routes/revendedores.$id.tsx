@@ -738,14 +738,14 @@ function CompanyGroupCard({ resellerId }: { resellerId: string }) {
     <Card className="p-5 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold">Vínculo com outras empresas</h3>
+          <h3 className="text-sm font-semibold">Vinculado com</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Empresas do mesmo grupo compartilham produtos, clientes, arquitetos e transportadoras.
-            Orçamentos, pedidos e relatórios continuam separados por empresa.
+            Empresas vinculadas compartilham cadastros como produtos, clientes, arquitetos e transportadoras.
+            Pedidos e orçamentos continuam separados por empresa.
           </p>
         </div>
         <div className="sm:w-80 shrink-0 space-y-1.5">
-          <Label className="text-xs">Empresa principal / Grupo</Label>
+          <Label className="text-xs">Vinculado com</Label>
           <Select
             value={currentValue}
             onValueChange={(v) => mut.mutate(v === "__none__" ? null : v)}
@@ -771,6 +771,7 @@ function CompanyGroupCard({ resellerId }: { resellerId: string }) {
         </div>
       </div>
     </Card>
+
   );
 }
 
