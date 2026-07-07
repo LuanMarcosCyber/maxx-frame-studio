@@ -107,7 +107,10 @@ function ResellerDetailPage() {
         </Button>
       </div>
 
+      <CompanyGroupCard resellerId={id} />
+
       <Tabs defaultValue="produtos" className="w-full">
+
         <div className="-mx-4 sm:mx-0 overflow-x-auto">
           <TabsList className="w-max">
             <TabsTrigger value="produtos" className="whitespace-nowrap">Produtos</TabsTrigger>
