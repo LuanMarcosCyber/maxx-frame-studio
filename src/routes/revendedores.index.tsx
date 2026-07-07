@@ -49,22 +49,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { listResellers, createUser, resetPassword, deleteUser } from "@/lib/admin-users.functions";
+import { listResellers, createUser, resetPassword, deleteUser, listAllCompanies } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/")({
   head: () => ({
     meta: [
-      { title: "Revendedores — Total Maxx ERP" },
-      { name: "description", content: "Área administrativa do Total Maxx ERP para gerenciar revendedores: criar contas, redefinir senhas e visualizar dados por loja." },
-      { property: "og:title", content: "Revendedores — Total Maxx ERP" },
-      { property: "og:description", content: "Gestão de revendedores no Total Maxx ERP." },
+      { title: "Empresas — Total Maxx ERP" },
+      { name: "description", content: "Área administrativa do Total Maxx ERP para gerenciar empresas: criar contas, redefinir senhas e visualizar dados por loja." },
+      { property: "og:title", content: "Empresas — Total Maxx ERP" },
+      { property: "og:description", content: "Gestão de empresas no Total Maxx ERP." },
       { property: "og:url", content: "https://maxx-frame-studio.lovable.app/revendedores" },
     ],
     links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/revendedores" }],
   }),
   component: RevendedoresPage,
 });
+
 
 function RevendedoresPage() {
   const { role, loading } = useAuth();
@@ -78,7 +79,7 @@ function RevendedoresPage() {
 
   if (loading || !role) {
     return (
-      <AppShell title="Revendedores" subtitle="Gerenciamento de usuários">
+      <AppShell title="Empresas" subtitle="Gerenciamento de usuários">
         <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
@@ -86,7 +87,8 @@ function RevendedoresPage() {
   if (role !== "admin") return null;
 
   return (
-    <AppShell title="Revendedores" subtitle="Gerenciar usuários do sistema">
+    <AppShell title="Empresas" subtitle="Gerenciar usuários do sistema">
+
       <Content />
     </AppShell>
   );
@@ -115,6 +117,7 @@ function Content() {
       username: string;
       password: string;
       role: "admin" | "revendedor";
+      company_group_id: string | null;
     }) => create({ data }),
     onSuccess: () => {
       toast.success("Usuário criado com sucesso.");
@@ -122,6 +125,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
 
   const resetMut = useMutation({
@@ -157,8 +161,9 @@ function Content() {
         <div className="min-w-0">
           <h2 className="text-lg font-semibold">Usuários cadastrados</h2>
           <p className="text-sm text-muted-foreground">
-            Crie revendedores e administradores. O acesso é feito apenas por usuário e senha.
+            Crie empresas e administradores. O acesso é feito apenas por usuário e senha.
           </p>
+
         </div>
         <CreateUserDialog onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
       </div>
@@ -199,7 +204,7 @@ function Content() {
                       </Badge>
                     ) : (
                       <Badge variant="secondary">
-                        <UserIcon className="h-3 w-3 mr-1" /> Revendedor
+                        <UserIcon className="h-3 w-3 mr-1" /> Empresa
                       </Badge>
                     )}
                   </TableCell>
@@ -290,6 +295,7 @@ function CreateUserDialog({
     username: string;
     password: string;
     role: "admin" | "revendedor";
+    company_group_id: string | null;
   }) => Promise<unknown>;
   submitting: boolean;
 }) {
@@ -299,17 +305,44 @@ function CreateUserDialog({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "revendedor">("revendedor");
+  const [companyGroupId, setCompanyGroupId] = useState<string | null>(null);
+  const [companyQuery, setCompanyQuery] = useState("");
+  const [companyOpen, setCompanyOpen] = useState(false);
+
+  const listCompanies = useServerFn(listAllCompanies);
+  const { data: companies = [] } = useQuery({
+    queryKey: ["admin", "companies-for-group"],
+    queryFn: () => listCompanies(),
+    enabled: open && role === "revendedor",
+  });
+
+  const selectedCompany = companies.find((c) => c.id === companyGroupId);
+  const filteredCompanies = companyQuery.trim()
+    ? companies.filter((c) => {
+        const label = (c.store_name || c.full_name || "").toLowerCase();
+        return label.includes(companyQuery.trim().toLowerCase());
+      })
+    : companies;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await onSubmit({ full_name: fullName, store_name: storeName, username, password, role });
+      await onSubmit({
+        full_name: fullName,
+        store_name: storeName,
+        username,
+        password,
+        role,
+        company_group_id: role === "revendedor" ? companyGroupId : null,
+      });
       setOpen(false);
       setFullName("");
       setStoreName("");
       setUsername("");
       setPassword("");
       setRole("revendedor");
+      setCompanyGroupId(null);
+      setCompanyQuery("");
     } catch {
       // toast handled in mutation
     }
@@ -326,12 +359,12 @@ function CreateUserDialog({
         <DialogHeader>
           <DialogTitle>Novo usuário</DialogTitle>
           <DialogDescription>
-            Cadastre um revendedor ou administrador. O acesso é apenas por usuário e senha.
+            Cadastre uma empresa ou administrador. O acesso é apenas por usuário e senha.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="full_name">Nome do revendedor</Label>
+            <Label htmlFor="full_name">Nome</Label>
             <Input
               id="full_name"
               value={fullName}
@@ -384,11 +417,84 @@ function CreateUserDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="revendedor">Revendedor</SelectItem>
+                <SelectItem value="revendedor">Empresa</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {role === "revendedor" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="company_link">Vinculado com</Label>
+              <div className="relative">
+                <Input
+                  id="company_link"
+                  value={
+                    companyOpen
+                      ? companyQuery
+                      : selectedCompany
+                        ? selectedCompany.store_name || selectedCompany.full_name || ""
+                        : companyGroupId === null && !companyOpen
+                          ? ""
+                          : companyQuery
+                  }
+                  placeholder="Nenhum vínculo"
+                  onFocus={() => {
+                    setCompanyOpen(true);
+                    setCompanyQuery("");
+                  }}
+                  onChange={(e) => {
+                    setCompanyOpen(true);
+                    setCompanyQuery(e.target.value);
+                  }}
+                  onBlur={() => setTimeout(() => setCompanyOpen(false), 150)}
+                  autoComplete="off"
+                />
+                {companyOpen && (
+                  <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setCompanyGroupId(null);
+                        setCompanyQuery("");
+                        setCompanyOpen(false);
+                      }}
+                    >
+                      Nenhum vínculo
+                    </button>
+                    {filteredCompanies.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        Nenhuma empresa encontrada.
+                      </div>
+                    ) : (
+                      filteredCompanies.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setCompanyGroupId(c.id);
+                            setCompanyQuery("");
+                            setCompanyOpen(false);
+                          }}
+                        >
+                          {c.store_name || c.full_name || "—"}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Empresas vinculadas compartilham cadastros como produtos, clientes, arquitetos e transportadoras.
+                Pedidos e orçamentos continuam separados por empresa.
+              </p>
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               type="submit"
@@ -403,6 +509,7 @@ function CreateUserDialog({
     </Dialog>
   );
 }
+
 
 
 function ResetPasswordDialog({

@@ -44,7 +44,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/$id")({
-  head: () => ({ meta: [{ title: "Detalhes do revendedor — Total Maxx" }] }),
+  head: () => ({ meta: [{ title: "Detalhes da empresa — Total Maxx" }] }),
+
   component: ResellerDetailPage,
 });
 
@@ -87,14 +88,14 @@ function ResellerDetailPage() {
 
   if (loading || !role) {
     return (
-      <AppShell title="Revendedor" subtitle="Carregando...">
+      <AppShell title="Empresa" subtitle="Carregando...">
         <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
   }
   if (role !== "admin") return null;
 
-  const title = info?.full_name || "Revendedor";
+  const title = info?.full_name || "Empresa";
   const subtitle = info?.username ? `@${info.username}` : "Visualização administrativa";
 
   return (
@@ -102,10 +103,11 @@ function ResellerDetailPage() {
       <div className="mb-4">
         <Button asChild variant="outline" size="sm">
           <Link to="/revendedores">
-            <ArrowLeft className="h-4 w-4 mr-1.5" /> Voltar para Revendedores
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Voltar para Empresas
           </Link>
         </Button>
       </div>
+
 
       <CompanyGroupCard resellerId={id} />
 
@@ -738,14 +740,14 @@ function CompanyGroupCard({ resellerId }: { resellerId: string }) {
     <Card className="p-5 mb-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold">Vínculo com outras empresas</h3>
+          <h3 className="text-sm font-semibold">Vinculado com</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Empresas do mesmo grupo compartilham produtos, clientes, arquitetos e transportadoras.
-            Orçamentos, pedidos e relatórios continuam separados por empresa.
+            Empresas vinculadas compartilham cadastros como produtos, clientes, arquitetos e transportadoras.
+            Pedidos e orçamentos continuam separados por empresa.
           </p>
         </div>
         <div className="sm:w-80 shrink-0 space-y-1.5">
-          <Label className="text-xs">Empresa principal / Grupo</Label>
+          <Label className="text-xs">Vinculado com</Label>
           <Select
             value={currentValue}
             onValueChange={(v) => mut.mutate(v === "__none__" ? null : v)}
@@ -771,6 +773,7 @@ function CompanyGroupCard({ resellerId }: { resellerId: string }) {
         </div>
       </div>
     </Card>
+
   );
 }
 
