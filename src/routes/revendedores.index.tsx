@@ -117,6 +117,7 @@ function Content() {
       username: string;
       password: string;
       role: "admin" | "revendedor";
+      company_group_id: string | null;
     }) => create({ data }),
     onSuccess: () => {
       toast.success("Usuário criado com sucesso.");
@@ -124,6 +125,7 @@ function Content() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
 
   const resetMut = useMutation({
