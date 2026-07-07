@@ -88,14 +88,14 @@ function ResellerDetailPage() {
 
   if (loading || !role) {
     return (
-      <AppShell title="Revendedor" subtitle="Carregando...">
+      <AppShell title="Empresa" subtitle="Carregando...">
         <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
   }
   if (role !== "admin") return null;
 
-  const title = info?.full_name || "Revendedor";
+  const title = info?.full_name || "Empresa";
   const subtitle = info?.username ? `@${info.username}` : "Visualização administrativa";
 
   return (
@@ -103,10 +103,11 @@ function ResellerDetailPage() {
       <div className="mb-4">
         <Button asChild variant="outline" size="sm">
           <Link to="/revendedores">
-            <ArrowLeft className="h-4 w-4 mr-1.5" /> Voltar para Revendedores
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Voltar para Empresas
           </Link>
         </Button>
       </div>
+
 
       <CompanyGroupCard resellerId={id} />
 
