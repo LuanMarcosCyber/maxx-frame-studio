@@ -79,7 +79,7 @@ function RevendedoresPage() {
 
   if (loading || !role) {
     return (
-      <AppShell title="Revendedores" subtitle="Gerenciamento de usuários">
+      <AppShell title="Empresas" subtitle="Gerenciamento de usuários">
         <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
@@ -87,7 +87,8 @@ function RevendedoresPage() {
   if (role !== "admin") return null;
 
   return (
-    <AppShell title="Revendedores" subtitle="Gerenciar usuários do sistema">
+    <AppShell title="Empresas" subtitle="Gerenciar usuários do sistema">
+
       <Content />
     </AppShell>
   );
