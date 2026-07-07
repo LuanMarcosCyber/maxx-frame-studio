@@ -94,6 +94,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [category, setCategory] = useState(defaultCategory);
   const [fileName, setFileName] = useState("");
+  const [rawMatrix, setRawMatrix] = useState<string[][]>([]);
+  const [headerRow, setHeaderRow] = useState<number>(0); // 0-indexed
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [mapping, setMapping] = useState<Mapping>(initialMapping());
@@ -105,6 +107,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setStep(1);
     setCategory(defaultCategory);
     setFileName("");
+    setRawMatrix([]);
+    setHeaderRow(0);
     setColumns([]);
     setRows([]);
     setMapping(initialMapping());
@@ -116,44 +120,95 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     onOpenChange(o);
   };
 
+  const HEADER_KEYWORDS = [
+    "codigo","código","perfil","descricao","descrição","acabamento","status",
+    "alt","altura","larg","largura","valor","preco","preço","custo","a vista","à vista",
+    "ncm","fornecedor","fabricante","tipo","madeira","margem","comissao","comissão","perda"
+  ];
+
+  const normalize = (s: string) =>
+    String(s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+  const detectHeaderRow = (matrix: string[][]): number => {
+    const limit = Math.min(20, matrix.length);
+    let bestIdx = 0;
+    let bestScore = -1;
+    for (let i = 0; i < limit; i++) {
+      const row = matrix[i] ?? [];
+      const filled = row.filter((c) => String(c ?? "").trim() !== "").length;
+      if (filled < 2) continue;
+      let kw = 0;
+      for (const cell of row) {
+        const n = normalize(String(cell));
+        if (!n) continue;
+        if (HEADER_KEYWORDS.some((k) => n.includes(k))) kw++;
+      }
+      const score = kw * 10 + filled;
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  };
+
+  const buildFromMatrix = (matrix: string[][], hRow: number) => {
+    const headerCells = matrix[hRow] ?? [];
+    const maxLen = Math.max(headerCells.length, ...matrix.slice(hRow + 1).map((r) => r.length), 0);
+    const seen = new Map<string, number>();
+    const cols: string[] = [];
+    for (let i = 0; i < maxLen; i++) {
+      let name = String(headerCells[i] ?? "").trim();
+      if (!name || /^__empty/i.test(name)) name = `Coluna ${i + 1}`;
+      const n = seen.get(name) ?? 0;
+      seen.set(name, n + 1);
+      cols.push(n === 0 ? name : `${name} (${n + 1})`);
+    }
+    const dataRows: Row[] = [];
+    for (let r = hRow + 1; r < matrix.length; r++) {
+      const rowArr = matrix[r] ?? [];
+      const filled = rowArr.filter((c) => String(c ?? "").trim() !== "").length;
+      if (filled === 0) continue;
+      const isRepeat = cols.every((c, i) => normalize(String(rowArr[i] ?? "")) === normalize(c));
+      if (isRepeat) continue;
+      const o: Row = {};
+      cols.forEach((c, i) => (o[c] = String(rowArr[i] ?? "").trim()));
+      dataRows.push(o);
+    }
+    return { cols, dataRows };
+  };
+
+  const applyHeader = (matrix: string[][], hRow: number) => {
+    const { cols, dataRows } = buildFromMatrix(matrix, hRow);
+    setColumns(cols);
+    setRows(dataRows);
+  };
+
+  const changeHeaderRow = (idx: number) => {
+    setHeaderRow(idx);
+    applyHeader(rawMatrix, idx);
+    setMapping(initialMapping());
+  };
+
   const handleFile = async (file: File) => {
     setFileName(file.name);
     try {
+      let matrix: string[][] = [];
       if (file.name.toLowerCase().endsWith(".csv")) {
         const text = await file.text();
-        const parsed = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true });
-        const cols = parsed.meta.fields ?? [];
-        setColumns(cols);
-        setRows((parsed.data as Row[]).map((r) => {
-          const o: Row = {};
-          cols.forEach((c) => (o[c] = String(r[c] ?? "").trim()));
-          return o;
-        }));
+        const parsed = Papa.parse<string[]>(text, { header: false, skipEmptyLines: false });
+        matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
         const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "", raw: false });
-        const cols = json.length ? Object.keys(json[0]) : [];
-        setColumns(cols);
-        setRows(json.map((r) => {
-          const o: Row = {};
-          cols.forEach((c) => (o[c] = String(r[c] ?? "").trim()));
-          return o;
-        }));
+        const aoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "", raw: false, blankrows: true });
+        matrix = aoa.map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
       }
-      // Auto-guess mapping by fuzzy name match
-      setMapping((prev) => {
-        const next = { ...prev };
-        const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-        const findCol = (aliases: string[]) => {
-          const cs = columns.length ? columns : [];
-          const source = cs.length ? cs : (rows.length ? Object.keys(rows[0]) : []);
-          return source.find((c) => aliases.some((a) => norm(c).includes(norm(a)))) ?? "";
-        };
-        // recompute using freshly parsed cols
-        return next;
-      });
+      setRawMatrix(matrix);
+      const detected = detectHeaderRow(matrix);
+      setHeaderRow(detected);
+      applyHeader(matrix, detected);
       setStep(3);
     } catch (e: any) {
       toast.error("Erro ao ler planilha: " + (e?.message ?? "desconhecido"));
@@ -297,13 +352,32 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         {/* STEP 3 */}
         {!result && step === 3 && (
           <div className="space-y-4 py-2">
-            <div className="rounded-md bg-accent/40 p-3 text-sm">
+            <div className="rounded-md bg-accent/40 p-3 text-sm space-y-2">
               <div className="flex items-center gap-2 font-medium">
                 <FileSpreadsheet className="h-4 w-4" /> {fileName}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Detectamos <b>{rows.length}</b> produto(s) e <b>{columns.length}</b> coluna(s):{" "}
-                {columns.join(", ")}
+              <div className="text-xs text-muted-foreground">
+                Cabeçalho detectado na linha <b>{headerRow + 1}</b>. Detectamos <b>{rows.length}</b> produto(s) e{" "}
+                <b>{columns.length}</b> coluna(s).
+              </div>
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <Label className="text-xs">Alterar linha do cabeçalho:</Label>
+                <Select value={String(headerRow)} onValueChange={(v) => changeHeaderRow(Number(v))}>
+                  <SelectTrigger className="h-8 max-w-[420px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {rawMatrix.slice(0, 20).map((r, i) => {
+                      const preview = r.filter((c) => String(c ?? "").trim() !== "").slice(0, 6).join(" | ") || "(linha vazia)";
+                      return (
+                        <SelectItem key={i} value={String(i)}>
+                          Linha {i + 1}: {preview.length > 80 ? preview.slice(0, 80) + "…" : preview}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-xs text-muted-foreground break-words">
+                Colunas: {columns.join(", ")}
               </div>
             </div>
 
