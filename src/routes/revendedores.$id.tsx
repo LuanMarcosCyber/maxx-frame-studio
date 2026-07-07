@@ -29,7 +29,19 @@ import {
   getResellerBudgetItems,
   listResellerOrders,
   listResellerCollaborators,
+  listCompaniesForGroup,
+  updateResellerCompanyGroup,
 } from "@/lib/admin-reseller.functions";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/$id")({
   head: () => ({ meta: [{ title: "Detalhes do revendedor — Total Maxx" }] }),
@@ -95,7 +107,10 @@ function ResellerDetailPage() {
         </Button>
       </div>
 
+      <CompanyGroupCard resellerId={id} />
+
       <Tabs defaultValue="produtos" className="w-full">
+
         <div className="-mx-4 sm:mx-0 overflow-x-auto">
           <TabsList className="w-max">
             <TabsTrigger value="produtos" className="whitespace-nowrap">Produtos</TabsTrigger>
@@ -689,3 +704,73 @@ function Info({ label, value, mono }: { label: string; value: string; mono?: boo
     </div>
   );
 }
+
+// ============ VÍNCULO ENTRE EMPRESAS (Admin) ============
+function CompanyGroupCard({ resellerId }: { resellerId: string }) {
+  const queryClient = useQueryClient();
+  const getInfo = useServerFn(getResellerInfo);
+  const listCompanies = useServerFn(listCompaniesForGroup);
+  const updateGroup = useServerFn(updateResellerCompanyGroup);
+
+  const { data: info } = useQuery({
+    queryKey: ["admin", "reseller", resellerId, "info"],
+    queryFn: () => getInfo({ data: { reseller_id: resellerId } }),
+  });
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["admin", "reseller", resellerId, "companies-for-group"],
+    queryFn: () => listCompanies({ data: { reseller_id: resellerId } }),
+  });
+
+  const mut = useMutation({
+    mutationFn: (company_group_id: string | null) =>
+      updateGroup({ data: { reseller_id: resellerId, company_group_id } }),
+    onSuccess: () => {
+      toast.success("Vínculo atualizado.");
+      queryClient.invalidateQueries({ queryKey: ["admin", "reseller", resellerId] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro ao atualizar vínculo."),
+  });
+
+  const currentValue = info?.company_group_id ?? "__none__";
+
+  return (
+    <Card className="p-5 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold">Vínculo com outras empresas</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Empresas do mesmo grupo compartilham produtos, clientes, arquitetos e transportadoras.
+            Orçamentos, pedidos e relatórios continuam separados por empresa.
+          </p>
+        </div>
+        <div className="sm:w-80 shrink-0 space-y-1.5">
+          <Label className="text-xs">Empresa principal / Grupo</Label>
+          <Select
+            value={currentValue}
+            onValueChange={(v) => mut.mutate(v === "__none__" ? null : v)}
+            disabled={mut.isPending}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Nenhum vínculo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Nenhum vínculo</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.store_name || c.full_name || "—"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {info?.group_name && (
+            <p className="text-[11px] text-muted-foreground">
+              Vinculada a: <span className="font-medium text-foreground">{info.group_name}</span>
+            </p>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
