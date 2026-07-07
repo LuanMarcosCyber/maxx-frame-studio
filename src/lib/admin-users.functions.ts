@@ -27,7 +27,30 @@ const createUserSchema = z.object({
     .regex(/^[a-z0-9._-]+$/i, "Use letras, números, ponto, hífen ou underscore."),
   password: z.string().min(6).max(72),
   role: z.enum(["admin", "revendedor"]),
+  company_group_id: z.string().uuid().nullable().optional(),
 });
+
+export const listAllCompanies = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { data: roles, error: rErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "revendedor");
+    if (rErr) throw new Error(rErr.message);
+    const ids = (roles ?? []).map((r) => r.user_id);
+    if (ids.length === 0) return [];
+    const { data: profs, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, store_name, company_group_id")
+      .in("id", ids)
+      .order("store_name", { ascending: true, nullsFirst: false });
+    if (error) throw new Error(error.message);
+    // Só empresas raiz (não filiais) podem ser matriz
+    return (profs ?? []).filter((p) => !p.company_group_id);
+  });
+
 
 
 export const listResellers = createServerFn({ method: "GET" })
