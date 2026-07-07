@@ -161,8 +161,9 @@ function Content() {
         <div className="min-w-0">
           <h2 className="text-lg font-semibold">Usuários cadastrados</h2>
           <p className="text-sm text-muted-foreground">
-            Crie revendedores e administradores. O acesso é feito apenas por usuário e senha.
+            Crie empresas e administradores. O acesso é feito apenas por usuário e senha.
           </p>
+
         </div>
         <CreateUserDialog onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
       </div>
