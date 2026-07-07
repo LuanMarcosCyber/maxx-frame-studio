@@ -515,6 +515,7 @@ export type Database = {
           can_edit_budgets: boolean
           cep: string | null
           city: string | null
+          company_group_id: string | null
           created_at: string
           document: string | null
           document_type: string | null
@@ -542,6 +543,7 @@ export type Database = {
           can_edit_budgets?: boolean
           cep?: string | null
           city?: string | null
+          company_group_id?: string | null
           created_at?: string
           document?: string | null
           document_type?: string | null
@@ -569,6 +571,7 @@ export type Database = {
           can_edit_budgets?: boolean
           cep?: string | null
           city?: string | null
+          company_group_id?: string | null
           created_at?: string
           document?: string | null
           document_type?: string | null
@@ -584,7 +587,15 @@ export type Database = {
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_group_id_fkey"
+            columns: ["company_group_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -612,6 +623,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
       get_store_profile: {
         Args: { _user_id: string }
         Returns: {
