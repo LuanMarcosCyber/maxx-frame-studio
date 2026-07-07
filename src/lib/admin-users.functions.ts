@@ -113,11 +113,29 @@ export const createUser = createServerFn({ method: "POST" })
     // the service-role client so client-supplied metadata can never elevate.
     const createdId = created.user?.id;
     if (createdId) {
+      const profileUpdate: { store_name: string; company_group_id?: string | null } = {
+        store_name: data.store_name,
+      };
+      if (data.role === "revendedor" && data.company_group_id) {
+        // Validar: candidata a matriz precisa ser revendedor e não ser filial
+        const { data: parent, error: pErr } = await supabaseAdmin
+          .from("profiles")
+          .select("id, company_group_id")
+          .eq("id", data.company_group_id)
+          .maybeSingle();
+        if (pErr) throw new Error(pErr.message);
+        if (!parent) throw new Error("Empresa principal não encontrada.");
+        if (parent.company_group_id) {
+          throw new Error("A empresa escolhida já é filial de outra.");
+        }
+        profileUpdate.company_group_id = data.company_group_id;
+      }
       const { error: storeErr } = await supabaseAdmin
         .from("profiles")
-        .update({ store_name: data.store_name })
+        .update(profileUpdate)
         .eq("id", createdId);
       if (storeErr) throw new Error(storeErr.message);
+
 
       if (data.role !== "revendedor") {
         const { error: roleErr } = await supabaseAdmin
