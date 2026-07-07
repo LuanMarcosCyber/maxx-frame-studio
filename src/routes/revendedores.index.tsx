@@ -55,16 +55,17 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/revendedores/")({
   head: () => ({
     meta: [
-      { title: "Revendedores — Total Maxx ERP" },
-      { name: "description", content: "Área administrativa do Total Maxx ERP para gerenciar revendedores: criar contas, redefinir senhas e visualizar dados por loja." },
-      { property: "og:title", content: "Revendedores — Total Maxx ERP" },
-      { property: "og:description", content: "Gestão de revendedores no Total Maxx ERP." },
+      { title: "Empresas — Total Maxx ERP" },
+      { name: "description", content: "Área administrativa do Total Maxx ERP para gerenciar empresas: criar contas, redefinir senhas e visualizar dados por loja." },
+      { property: "og:title", content: "Empresas — Total Maxx ERP" },
+      { property: "og:description", content: "Gestão de empresas no Total Maxx ERP." },
       { property: "og:url", content: "https://maxx-frame-studio.lovable.app/revendedores" },
     ],
     links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/revendedores" }],
   }),
   component: RevendedoresPage,
 });
+
 
 function RevendedoresPage() {
   const { role, loading } = useAuth();
