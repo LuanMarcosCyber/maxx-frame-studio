@@ -44,7 +44,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/$id")({
-  head: () => ({ meta: [{ title: "Detalhes do revendedor — Total Maxx" }] }),
+  head: () => ({ meta: [{ title: "Detalhes da empresa — Total Maxx" }] }),
+
   component: ResellerDetailPage,
 });
 
