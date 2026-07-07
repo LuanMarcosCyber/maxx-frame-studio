@@ -24,7 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -129,6 +130,7 @@ function Produtos() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -442,12 +444,20 @@ function Produtos() {
               />
             </div>
             {canEdit && (
-              <Button
-                onClick={openCreate}
-                className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-              >
-                <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setImportOpen(true)}
+                >
+                  <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
+                </Button>
+                <Button
+                  onClick={openCreate}
+                  className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -881,6 +891,14 @@ function Produtos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProductImportWizard
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        categories={CATEGORIES.map((c) => ({ key: c.key, label: c.label }))}
+        defaultCategory={activeCategory}
+        onImported={() => queryClient.invalidateQueries({ queryKey: ["products"] })}
+      />
     </AppShell>
   );
 }
