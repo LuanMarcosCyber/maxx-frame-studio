@@ -891,6 +891,14 @@ function Produtos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ProductImportWizard
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        categories={CATEGORIES.map((c) => ({ key: c.key, label: c.label }))}
+        defaultCategory={activeCategory}
+        onImported={() => queryClient.invalidateQueries({ queryKey: ["products"] })}
+      />
     </AppShell>
   );
 }
