@@ -444,12 +444,20 @@ function Produtos() {
               />
             </div>
             {canEdit && (
-              <Button
-                onClick={openCreate}
-                className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-              >
-                <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setImportOpen(true)}
+                >
+                  <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
+                </Button>
+                <Button
+                  onClick={openCreate}
+                  className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
+                </Button>
+              </>
             )}
           </div>
         </div>
