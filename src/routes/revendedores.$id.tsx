@@ -29,7 +29,19 @@ import {
   getResellerBudgetItems,
   listResellerOrders,
   listResellerCollaborators,
+  listCompaniesForGroup,
+  updateResellerCompanyGroup,
 } from "@/lib/admin-reseller.functions";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/$id")({
   head: () => ({ meta: [{ title: "Detalhes do revendedor — Total Maxx" }] }),
