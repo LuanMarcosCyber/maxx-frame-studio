@@ -3704,13 +3704,56 @@ function NovoOrcamento() {
 
                 {/* Campos finais */}
                 <div className="space-y-4">
-
-
-
-
+                  <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-1.5">
+                    <Label htmlFor="quantidade-item" className="text-sm font-semibold">
+                      Quantidade{" "}
+                      <span className="font-normal text-muted-foreground">
+                        ({activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1})
+                      </span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Quantas unidades deste item serão feitas. Multiplica o subtotal do item.
+                    </p>
+                    <div className="inline-flex items-stretch rounded-md border border-input bg-background overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantidadeStr(String(Math.max(1, activeQuantidade - 1)))
+                        }
+                        className="px-3 text-lg font-semibold hover:bg-accent transition-colors"
+                        aria-label="Diminuir"
+                      >
+                        −
+                      </button>
+                      <input
+                        id="quantidade-item"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={quantidadeStr}
+                        onChange={(e) => setQuantidadeStr(e.target.value)}
+                        onBlur={() => {
+                          const n = Math.max(1, Math.floor(Number(quantidadeStr || "1")) || 1);
+                          setQuantidadeStr(String(n));
+                        }}
+                        className="w-16 text-center text-base font-semibold bg-transparent border-x border-input focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantidadeStr(String(Math.max(1, activeQuantidade + 1)))
+                        }
+                        className="px-3 text-lg font-semibold hover:bg-accent transition-colors"
+                        aria-label="Aumentar"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="forma-pagto">Forma de pagamento</Label>
+
                     <Select
                       value={formaPagamento}
                       onValueChange={(v) => setFormaPagamento(v as FormaPagto)}
