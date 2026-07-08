@@ -2607,7 +2607,7 @@ function NovoOrcamento() {
                   </div>
 
                   {paspaturAdicionalAtivo === "sim" && (
-                    <div className="mt-6 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
+                    <div className="mt-4 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
                       <div className="space-y-1.5">
                         <Label htmlFor="paspatur-adic-obs">
                           Observação do paspatur interno
@@ -2914,7 +2914,7 @@ function NovoOrcamento() {
 
               {vidroTipo === "sim" && (
                 <>
-                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
                     <div className="space-y-1.5">
                       <Label htmlFor="vidro">Espessura do Vidro</Label>
                       <ProductSelect
@@ -3083,7 +3083,7 @@ function NovoOrcamento() {
                     />
                   </div>
 
-                  <div className="mt-6 max-w-md">
+                  <div className="mt-4 max-w-md">
                     <Label>Arquivo da impressão</Label>
                     <label
                       htmlFor="impressao-arquivo"
@@ -3430,7 +3430,7 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md text-sm">
+              <div className="mt-4 rounded-md border border-border bg-muted/30 p-4 max-w-md text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Instalação:</span>
                   <span className="font-semibold">{fmtMoney(valorInstalacao)}</span>
