@@ -277,6 +277,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
       const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
       payloads.push({
         user_id: user.id,
         code: built.code,
@@ -287,6 +288,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         waste_percentage: Number.isFinite(waste) ? waste : 0,
         commission_percentage: Number.isFinite(commission) ? commission : 0,
         frame_width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
+        labor_cost: Number.isFinite(laborCost) ? laborCost : 0,
         supplier: built.supplier || null,
         ncm: built.ncm || null,
       });
