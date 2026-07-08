@@ -44,6 +44,7 @@ type FieldKey =
   | "profit_margin"
   | "waste_percentage"
   | "commission_percentage"
+  | "frame_width_cm"
   | "ncm";
 
 type FieldDef = {
@@ -52,6 +53,7 @@ type FieldDef = {
   required: boolean;
   numeric?: boolean;
   allowManualEmpty?: boolean;
+  placeholder?: string;
 };
 
 const FIELDS: FieldDef[] = [
@@ -59,9 +61,10 @@ const FIELDS: FieldDef[] = [
   { key: "description", label: "Descrição", required: true },
   { key: "value_per_meter", label: "Valor do metro", required: true, numeric: true },
   { key: "supplier", label: "Fornecedor / Fabricante", required: false },
-  { key: "profit_margin", label: "Margem de lucro (%)", required: false, numeric: true },
-  { key: "waste_percentage", label: "Perda (%)", required: false, numeric: true },
-  { key: "commission_percentage", label: "Comissão (%)", required: false, numeric: true },
+  { key: "profit_margin", label: "Margem de lucro (%)", required: false, numeric: true, placeholder: "Ex: 100" },
+  { key: "waste_percentage", label: "Perda (%)", required: false, numeric: true, placeholder: "20" },
+  { key: "commission_percentage", label: "Comissão (%)", required: false, numeric: true, placeholder: "5" },
+  { key: "frame_width_cm", label: "Largura (cm) — usado em Perfil", required: false, numeric: true, placeholder: "Ex: 3" },
   { key: "ncm", label: "NCM", required: false, allowManualEmpty: true },
 ];
 
@@ -73,7 +76,7 @@ type Mapping = Record<
 const initialMapping = (): Mapping =>
   FIELDS.reduce((acc, f) => {
     acc[f.key] = {
-      origin: ["supplier", "profit_margin", "waste_percentage", "commission_percentage", "ncm"].includes(f.key)
+      origin: ["supplier", "profit_margin", "waste_percentage", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key)
         ? "manual"
         : "column",
       column: "",
