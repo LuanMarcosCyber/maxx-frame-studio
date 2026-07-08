@@ -243,7 +243,9 @@ function Orcamentos() {
       await queryClient.invalidateQueries({ queryKey: ["orders"] });
     } catch (e) {
       console.error(e);
-      toast.error("Não foi possível aprovar o orçamento.");
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Não foi possível aprovar o orçamento.${msg ? ` (${msg})` : ""}`);
+
     } finally {
       setApproveLoading(false);
     }
