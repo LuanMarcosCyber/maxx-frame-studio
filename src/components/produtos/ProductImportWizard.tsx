@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, DragEvent } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import {
@@ -43,6 +43,7 @@ type FieldKey =
   | "supplier"
   | "profit_margin"
   | "waste_percentage"
+  | "labor_cost"
   | "commission_percentage"
   | "frame_width_cm"
   | "ncm";
@@ -63,6 +64,7 @@ const FIELDS: FieldDef[] = [
   { key: "supplier", label: "Fornecedor / Fabricante", required: false },
   { key: "profit_margin", label: "Margem de lucro (%)", required: false, numeric: true, placeholder: "Ex: 100" },
   { key: "waste_percentage", label: "Perda (%)", required: false, numeric: true, placeholder: "20" },
+  { key: "labor_cost", label: "Mão de obra (R$) — usado em Perfil", required: false, numeric: true, placeholder: "15,00" },
   { key: "commission_percentage", label: "Comissão (%)", required: false, numeric: true, placeholder: "5" },
   { key: "frame_width_cm", label: "Largura (cm) — usado em Perfil", required: false, numeric: true, placeholder: "Ex: 3" },
   { key: "ncm", label: "NCM", required: false, allowManualEmpty: true },
@@ -73,14 +75,13 @@ type Mapping = Record<
   { origin: "column" | "manual"; column: string; manual: string }
 >;
 
-const initialMapping = (): Mapping =>
+const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
+    const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key);
     acc[f.key] = {
-      origin: ["supplier", "profit_margin", "waste_percentage", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key)
-        ? "manual"
-        : "column",
+      origin: isDefaultManual ? "manual" : "column",
       column: "",
-      manual: "",
+      manual: f.key === "labor_cost" && category === "Perfil" ? "15,00" : "",
     };
     return acc;
   }, {} as Mapping);
@@ -101,9 +102,10 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [headerRow, setHeaderRow] = useState<number>(0); // 0-indexed
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
-  const [mapping, setMapping] = useState<Mapping>(initialMapping());
+  const [mapping, setMapping] = useState<Mapping>(initialMapping(defaultCategory));
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: { line: number; reason: string }[] } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -114,7 +116,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setHeaderRow(0);
     setColumns([]);
     setRows([]);
-    setMapping(initialMapping());
+    setMapping(initialMapping(defaultCategory));
     setResult(null);
   };
 
@@ -190,14 +192,19 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const changeHeaderRow = (idx: number) => {
     setHeaderRow(idx);
     applyHeader(rawMatrix, idx);
-    setMapping(initialMapping());
+    setMapping(initialMapping(category));
   };
 
   const handleFile = async (file: File) => {
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith(".xlsx") && !lower.endsWith(".csv")) {
+      toast.error("Formato inválido. Envie um arquivo .xlsx ou .csv.");
+      return;
+    }
     setFileName(file.name);
     try {
       let matrix: string[][] = [];
-      if (file.name.toLowerCase().endsWith(".csv")) {
+      if (lower.endsWith(".csv")) {
         const text = await file.text();
         const parsed = Papa.parse<string[]>(text, { header: false, skipEmptyLines: false });
         matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
@@ -212,10 +219,18 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const detected = detectHeaderRow(matrix);
       setHeaderRow(detected);
       applyHeader(matrix, detected);
+      setMapping(initialMapping(category));
       setStep(3);
     } catch (e: any) {
       toast.error("Erro ao ler planilha: " + (e?.message ?? "desconhecido"));
     }
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   };
 
   const previewRows = useMemo(() => {
@@ -262,6 +277,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
       const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
       payloads.push({
         user_id: user.id,
         code: built.code,
@@ -272,6 +288,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         waste_percentage: Number.isFinite(waste) ? waste : 0,
         commission_percentage: Number.isFinite(commission) ? commission : 0,
         frame_width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
+        labor_cost: Number.isFinite(laborCost) ? laborCost : 0,
         supplier: built.supplier || null,
         ncm: built.ncm || null,
       });
@@ -334,11 +351,20 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               Envie sua planilha nos formatos <b>.xlsx</b> ou <b>.csv</b>.
             </p>
             <Card
-              className="p-8 border-dashed border-2 flex flex-col items-center gap-3 cursor-pointer hover:bg-accent/40"
+              className={cn(
+                "p-8 border-dashed border-2 flex flex-col items-center gap-3 cursor-pointer transition-colors",
+                isDragging ? "bg-accent/60 border-primary" : "hover:bg-accent/40",
+              )}
               onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
             >
               <Upload className="h-10 w-10 text-muted-foreground" />
-              <div className="text-sm">Clique para selecionar o arquivo</div>
+              <div className="text-sm">
+                {isDragging ? "Solte o arquivo aqui" : "Clique ou arraste o arquivo para esta área"}
+              </div>
               <div className="text-xs text-muted-foreground">{fileName || "Nenhum arquivo selecionado"}</div>
             </Card>
             <input
@@ -444,7 +470,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Comissão", "Largura", "NCM"].map((h) => (
+                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Mão de obra", "Comissão", "Largura", "NCM"].map((h) => (
                       <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
                     ))}
                   </tr>
@@ -458,6 +484,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                       <td className="px-3 py-2">{r.value_per_meter}</td>
                       <td className="px-3 py-2">{r.profit_margin}</td>
                       <td className="px-3 py-2">{r.waste_percentage}</td>
+                      <td className="px-3 py-2">{r.labor_cost}</td>
                       <td className="px-3 py-2">{r.commission_percentage}</td>
                       <td className="px-3 py-2">{r.frame_width_cm}</td>
                       <td className="px-3 py-2">{r.ncm}</td>
