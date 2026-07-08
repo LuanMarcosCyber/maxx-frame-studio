@@ -767,16 +767,27 @@ function Produtos() {
 
           ) : (
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="cod">Código *</Label>
-                <Input
-                  id="cod"
-                  placeholder="Ex: FOAM-001"
-                  value={form.code}
-                  onChange={(e) => updateField("code", e.target.value)}
-                  className={errCls("code")}
-                />
-                <FieldError field="code" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cod">Código *</Label>
+                  <Input
+                    id="cod"
+                    placeholder="Ex: FOAM-001"
+                    value={form.code}
+                    onChange={(e) => updateField("code", e.target.value)}
+                    className={errCls("code")}
+                  />
+                  <FieldError field="code" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ncm">NCM</Label>
+                  <Input
+                    id="ncm"
+                    placeholder="Opcional"
+                    value={form.ncm}
+                    onChange={(e) => updateField("ncm", e.target.value)}
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="desc">Descrição *</Label>
@@ -800,17 +811,33 @@ function Produtos() {
                 />
                 <FieldError field="supplier" />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="val">Valor do metro (R$) *</Label>
-                <Input
-                  id="val"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={form.value_per_meter}
-                  onChange={(e) => updateField("value_per_meter", e.target.value)}
-                  className={errCls("value_per_meter")}
-                />
-                <FieldError field="value_per_meter" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="val">Valor do metro (R$) *</Label>
+                  <Input
+                    id="val"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={form.value_per_meter}
+                    onChange={(e) => updateField("value_per_meter", e.target.value)}
+                    className={errCls("value_per_meter")}
+                  />
+                  <FieldError field="value_per_meter" />
+                </div>
+                {activeCategory === "Perfil" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fw">Largura da moldura (cm) *</Label>
+                    <Input
+                      id="fw"
+                      inputMode="decimal"
+                      placeholder="Ex: 3"
+                      value={form.frame_width_cm}
+                      onChange={(e) => updateField("frame_width_cm", e.target.value)}
+                      className={errCls("frame_width_cm")}
+                    />
+                    <FieldError field="frame_width_cm" />
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -838,57 +865,38 @@ function Produtos() {
                   <FieldError field="waste_percentage" />
                 </div>
               </div>
-              {activeCategory === "Perfil" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="fw">Largura da moldura (cm) *</Label>
-                  <Input
-                    id="fw"
-                    inputMode="decimal"
-                    placeholder="Ex: 3"
-                    value={form.frame_width_cm}
-                    onChange={(e) => updateField("frame_width_cm", e.target.value)}
-                    className={errCls("frame_width_cm")}
-                  />
-                  <FieldError field="frame_width_cm" />
+              {(activeCategory === "Perfil" || showCommission) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {activeCategory === "Perfil" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="lc">Mão de obra (R$)</Label>
+                      <Input
+                        id="lc"
+                        inputMode="decimal"
+                        placeholder="15,00"
+                        value={form.labor_cost}
+                        onChange={(e) => updateField("labor_cost", e.target.value)}
+                        className={errCls("labor_cost")}
+                      />
+                      <FieldError field="labor_cost" />
+                    </div>
+                  )}
+                  {showCommission && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="com">Comissão (%)</Label>
+                      <Input
+                        id="com"
+                        inputMode="decimal"
+                        placeholder="0 (opcional)"
+                        value={form.commission_percentage}
+                        onChange={(e) => updateField("commission_percentage", e.target.value)}
+                        className={errCls("commission_percentage")}
+                      />
+                      <FieldError field="commission_percentage" />
+                    </div>
+                  )}
                 </div>
               )}
-              {activeCategory === "Perfil" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="lc">Mão de obra (R$)</Label>
-                  <Input
-                    id="lc"
-                    inputMode="decimal"
-                    placeholder="0,00 (opcional)"
-                    value={form.labor_cost}
-                    onChange={(e) => updateField("labor_cost", e.target.value)}
-                    className={errCls("labor_cost")}
-                  />
-                  <FieldError field="labor_cost" />
-                </div>
-              )}
-              {showCommission && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="com">Comissão (%)</Label>
-                  <Input
-                    id="com"
-                    inputMode="decimal"
-                    placeholder="0 (opcional)"
-                    value={form.commission_percentage}
-                    onChange={(e) => updateField("commission_percentage", e.target.value)}
-                    className={errCls("commission_percentage")}
-                  />
-                  <FieldError field="commission_percentage" />
-                </div>
-              )}
-              <div className="space-y-1.5">
-                <Label htmlFor="ncm">NCM</Label>
-                <Input
-                  id="ncm"
-                  placeholder="Opcional"
-                  value={form.ncm}
-                  onChange={(e) => updateField("ncm", e.target.value)}
-                />
-              </div>
             </div>
 
           )}
