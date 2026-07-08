@@ -1041,6 +1041,7 @@ function NovoOrcamento() {
       impressaoAtivo,
       impressaoId,
       produtosDiversos,
+      quantidade: quantidadeStr,
     }),
     [
       altura,
@@ -1070,8 +1071,10 @@ function NovoOrcamento() {
       impressaoAtivo,
       impressaoId,
       produtosDiversos,
+      quantidadeStr,
     ],
   );
+
 
   const activeProducts = useMemo(
     () => resolveProducts(activeSnap),
