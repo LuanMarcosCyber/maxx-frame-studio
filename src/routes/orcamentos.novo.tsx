@@ -1136,10 +1136,28 @@ function NovoOrcamento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, activeIndex, activeValues, perfis, vidros, foams, paspaturs, colagens, impressoes]);
 
-  const subtotalItens = useMemo(
-    () => itemSubtotals.reduce((a, b) => a + b, 0),
-    [itemSubtotals],
+  const itemQuantities = useMemo(
+    () =>
+      items.map((snap, i) => {
+        const raw = i === activeIndex ? quantidadeStr : snap.quantidade;
+        const n = Math.floor(Number(raw || "1"));
+        return Math.max(1, Number.isFinite(n) ? n : 1);
+      }),
+    [items, activeIndex, quantidadeStr],
   );
+
+  const itemTotals = useMemo(
+    () => itemSubtotals.map((s, i) => s * (itemQuantities[i] ?? 1)),
+    [itemSubtotals, itemQuantities],
+  );
+
+  const activeQuantidade = itemQuantities[activeIndex] ?? 1;
+
+  const subtotalItens = useMemo(
+    () => itemTotals.reduce((a, b) => a + b, 0),
+    [itemTotals],
+  );
+
 
   const valorInstalacao =
     instalacaoAtivo === "sim" ? parseNum(valorInstalacaoStr) : 0;
