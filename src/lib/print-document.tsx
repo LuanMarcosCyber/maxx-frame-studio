@@ -828,21 +828,23 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
               const itemObs = dStr(d, "observacoes");
               const W = fmtM(dNum(d, "larguraFinal"));
               const H = fmtM(dNum(d, "alturaFinal"));
+              const qty = Math.max(1, Math.floor(Number(d.quantidade) || 1));
               return (
                 <div className="item-block" key={it.id}>
                   <div className="item-head">
                     <div className="left">
                       <span className="idx">{idx + 1}</span>
                       <span className="title">
-                        ITEM {idx + 1} — Quadro {W} x {H} cm
+                        {qty > 1 ? `${qty}x ` : ""}ITEM {idx + 1} — Quadro {W} x {H} cm
                       </span>
                     </div>
                     {showFinance && (
                       <div className="total">
-                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d)) * rtMult)}
+                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d) * qty) * rtMult)}
                       </div>
                     )}
                   </div>
+
                   {showPreview ? (
                     <div className="prod-row">
                       <div className="col-preview">
