@@ -183,7 +183,10 @@ function Produtos() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      labor_cost: activeCategory === "Perfil" ? "15,00" : "",
+    });
     setErrors({});
     setDialogOpen(true);
   };
