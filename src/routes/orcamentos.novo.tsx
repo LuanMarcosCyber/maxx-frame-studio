@@ -1665,12 +1665,14 @@ function NovoOrcamento() {
     const itemsPayload = allItems.map((snap, idx) => {
       const P = resolveProducts(snap);
       const v = computeItemValues(snap, P);
+      const qty = Math.max(1, Math.floor(Number(snap.quantidade || "1")) || 1);
       return {
         position: idx + 1,
-        subtotal: Number(v.subtotal.toFixed(2)),
+        subtotal: Number((v.subtotal * qty).toFixed(2)),
         data: buildItemDetails(snap, v, P),
       };
     });
+
 
     if (approve) setAprovando(true);
     else setSalvando(true);
