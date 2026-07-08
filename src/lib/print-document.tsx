@@ -566,25 +566,29 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .client-table td.k { background:#f4f4f4; font-weight:700; text-transform:uppercase;
           font-size:9px; letter-spacing:.4px; width:38%; white-space:nowrap; }
 
-        .section-title { font-size:9.5px; font-weight:800; text-transform:uppercase;
-          letter-spacing:1px; color:#000; margin:8px 0 3px;
-          border-bottom:1px solid #000; padding-bottom:2px; }
+        .section-title { font-size:10px; font-weight:800; text-transform:uppercase;
+          letter-spacing:1px; color:#000; margin:8px 0 4px;
+          border:1.5px solid #000; background:#f2f2f2;
+          padding:5px 8px; text-align:center; }
 
         .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:2px 14px;
           font-size:10.5px; padding:2px 0; }
         .grid-2 .lbl { color:#000; font-weight:700; display:inline-block; min-width:105px; }
 
 
-        /* Item block: no filled header bar, just bold title + thin underline + numbered square */
+        /* Item block: header rendered as a highlighted banner (matches delivery banner) */
         .item-block { margin-top:6px; page-break-inside:avoid; break-inside:avoid; }
-        .item-head { padding:2px 0 3px; display:flex; justify-content:space-between;
-          align-items:center; font-size:11.5px; border-bottom:1px solid #000; margin-bottom:0; }
+        .item-head { padding:5px 8px; display:flex; justify-content:space-between;
+          align-items:center; gap:10px; font-size:11.5px;
+          border:1.5px solid #000; background:#f2f2f2; margin-bottom:4px; }
         .item-head .left { display:flex; align-items:center; gap:6px; min-width:0; }
+        .item-head .right { display:flex; align-items:center; gap:12px; white-space:nowrap; }
         .item-head .idx { background:#fff; color:#000; width:16px; height:16px;
           border:1.2px solid #000; border-radius:2px; display:inline-grid; place-items:center;
           font-weight:800; font-size:10px; }
-        .item-head .title { font-weight:800; color:#000; }
-        .item-head .total { font-weight:700; font-size:11px; color:#000; }
+        .item-head .title { font-weight:800; color:#000; text-transform:uppercase; letter-spacing:.5px; }
+        .item-head .qty { font-weight:800; font-size:11px; color:#000; text-transform:uppercase; letter-spacing:.5px; }
+        .item-head .total { font-weight:800; font-size:11px; color:#000; }
 
         .kv-table { width:100%; border-collapse:collapse; font-size:10.5px; }
         .kv-table td { padding:2.5px 7px; border-bottom:1px solid #ddd; vertical-align:top; }
@@ -837,14 +841,17 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                     <div className="left">
                       <span className="idx">{idx + 1}</span>
                       <span className="title">
-                        {qty > 1 ? `${qty}x ` : ""}ITEM {idx + 1} — Quadro {W} x {H} cm
+                        ITEM {idx + 1} — Quadro {W} x {H} cm
                       </span>
                     </div>
-                    {showFinance && (
-                      <div className="total">
-                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d) * qty) * rtMult)}
-                      </div>
-                    )}
+                    <div className="right">
+                      <span className="qty">Quantidade: {qty}</span>
+                      {showFinance && (
+                        <span className="total">
+                          Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d) * qty) * rtMult)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {showPreview ? (
@@ -906,7 +913,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                         {frames.length > 0 ? ` (ref. Item ${p.itemPos})` : ""}
                       </span>
                     </div>
-                    {showFinance && <div className="total">Total: {fmtMoney(totalDiv)}</div>}
+                    <div className="right">
+                      <span className="qty">Quantidade: {p.quantidade}</span>
+                      {showFinance && <span className="total">Total: {fmtMoney(totalDiv)}</span>}
+                    </div>
                   </div>
                   <table className="kv-table">
                     <tbody>
