@@ -841,14 +841,17 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                     <div className="left">
                       <span className="idx">{idx + 1}</span>
                       <span className="title">
-                        {qty > 1 ? `${qty}x ` : ""}ITEM {idx + 1} — Quadro {W} x {H} cm
+                        ITEM {idx + 1} — Quadro {W} x {H} cm
                       </span>
                     </div>
-                    {showFinance && (
-                      <div className="total">
-                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d) * qty) * rtMult)}
-                      </div>
-                    )}
+                    <div className="right">
+                      <span className="qty">Quantidade: {qty}</span>
+                      {showFinance && (
+                        <span className="total">
+                          Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d) * qty) * rtMult)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {showPreview ? (
