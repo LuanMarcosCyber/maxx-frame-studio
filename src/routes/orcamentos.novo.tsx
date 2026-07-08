@@ -588,8 +588,10 @@ function buildItemDetails(
     })),
     valorDiversos: Number(v.valorDiversos.toFixed(2)),
     subtotal: Number(v.subtotal.toFixed(2)),
+    quantidade: Math.max(1, Math.floor(Number(snap.quantidade || "1")) || 1),
   };
 }
+
 
 // Hydrate an ItemSnapshot from a saved details jsonb (used for legacy details and budget_items.data)
 function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
