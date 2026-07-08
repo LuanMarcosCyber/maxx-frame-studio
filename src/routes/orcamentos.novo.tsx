@@ -319,6 +319,7 @@ type ItemSnapshot = {
   impressaoAtivo: "sim" | "nao";
   impressaoId: string;
   produtosDiversos: DiversoItem[];
+  quantidade: string;
 };
 
 const emptyItem: ItemSnapshot = {
@@ -349,7 +350,9 @@ const emptyItem: ItemSnapshot = {
   impressaoAtivo: "nao",
   impressaoId: "",
   produtosDiversos: [],
+  quantidade: "1",
 };
+
 
 type ItemValues = ReturnType<typeof computeItemValues>;
 
