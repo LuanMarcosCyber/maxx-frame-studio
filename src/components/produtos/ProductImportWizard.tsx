@@ -192,14 +192,19 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const changeHeaderRow = (idx: number) => {
     setHeaderRow(idx);
     applyHeader(rawMatrix, idx);
-    setMapping(initialMapping());
+    setMapping(initialMapping(category));
   };
 
   const handleFile = async (file: File) => {
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith(".xlsx") && !lower.endsWith(".csv")) {
+      toast.error("Formato inválido. Envie um arquivo .xlsx ou .csv.");
+      return;
+    }
     setFileName(file.name);
     try {
       let matrix: string[][] = [];
-      if (file.name.toLowerCase().endsWith(".csv")) {
+      if (lower.endsWith(".csv")) {
         const text = await file.text();
         const parsed = Papa.parse<string[]>(text, { header: false, skipEmptyLines: false });
         matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
@@ -214,10 +219,18 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const detected = detectHeaderRow(matrix);
       setHeaderRow(detected);
       applyHeader(matrix, detected);
+      setMapping(initialMapping(category));
       setStep(3);
     } catch (e: any) {
       toast.error("Erro ao ler planilha: " + (e?.message ?? "desconhecido"));
     }
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   };
 
   const previewRows = useMemo(() => {
