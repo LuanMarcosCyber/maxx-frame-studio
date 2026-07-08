@@ -2398,7 +2398,7 @@ function NovoOrcamento() {
           </Card>
 
           {active === "tamanho" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">
                 Qual o tamanho do que deseja emoldurar?
               </h2>
@@ -2406,7 +2406,7 @@ function NovoOrcamento() {
                 Lembre-se de utilizar os tamanhos sempre em centímetros
               </p>
 
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
                   <div className="space-y-1.5">
                     <Label htmlFor="altura">Altura (cm)</Label>
@@ -2482,7 +2482,7 @@ function NovoOrcamento() {
           )}
 
           {active === "paspatur" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Paspatur</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Defina as margens do paspatur. As medidas finais serão utilizadas pelos
@@ -2496,7 +2496,7 @@ function NovoOrcamento() {
                 </p>
               )}
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="paspatur-ativo">Paspatur Externo</Label>
                 <Select
                   value={paspaturAtivo}
@@ -2567,7 +2567,7 @@ function NovoOrcamento() {
                     />
                   </div>
 
-                  <div className="mt-6 max-w-md space-y-1.5">
+                  <div className="mt-4 max-w-md space-y-1.5">
                     <Label htmlFor="paspatur">Produto Paspatur / Sanduíche de Vidro</Label>
                     <ProductSelect
                       id="paspatur"
@@ -2588,7 +2588,7 @@ function NovoOrcamento() {
                     )}
                   </div>
 
-                  <div className="mt-6 max-w-md space-y-1.5">
+                  <div className="mt-4 max-w-md space-y-1.5">
                     <Label htmlFor="paspatur-adic-ativo">Incluir paspatur interno</Label>
                     <Select
                       value={paspaturAdicionalAtivo}
@@ -2736,7 +2736,7 @@ function NovoOrcamento() {
               )}
 
               {paspaturAtivo === "sim" && (valorPaspaturPrincipal > 0 || valorPaspaturAdicional > 0) && (
-                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                <div className="mt-4 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
                   {paspaturAdicionalAtivo === "sim" ? (
                     <>
                       <div className="flex justify-between gap-3">
@@ -2784,13 +2784,13 @@ function NovoOrcamento() {
 
 
           {active === "perfil" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Qual perfil será utilizado?</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 O cálculo usa as medidas finais (com paspatur quando aplicado).
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="perfil">Perfil</Label>
                 <ProductSelect
                   id="perfil"
@@ -2804,7 +2804,7 @@ function NovoOrcamento() {
                 />
               </div>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="perfil-adicional-ativo">Adicionar um segundo perfil?</Label>
                 <Select
                   value={perfilAdicionalAtivo}
@@ -2841,7 +2841,7 @@ function NovoOrcamento() {
               )}
 
               {perfilSelecionado && valorPerfilPrincipal > 0 && (
-                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                <div className="mt-4 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
                   {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
                     <>
                       <div className="flex justify-between gap-3">
@@ -2890,13 +2890,13 @@ function NovoOrcamento() {
           )}
 
           {active === "vidro" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Vidro / Espelho</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Informe se o pedido terá vidro ou espelho
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="vidro-tipo">Vidro</Label>
                 <Select
                   value={vidroTipo}
@@ -2954,7 +2954,7 @@ function NovoOrcamento() {
                   </div>
 
                   {vidroSelecionado && valorVidroUnit > 0 && (
-                    <div className="mt-6 max-w-md rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1">
+                    <div className="mt-4 max-w-md rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1">
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Vidro ({vidroSelecionado.code})
@@ -2981,13 +2981,13 @@ function NovoOrcamento() {
           )}
 
           {active === "foam" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Foam / MDF</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Selecione o produto de Foam ou MDF utilizado
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="foam">Produto</Label>
                 <ProductSelect
                   id="foam"
@@ -3005,13 +3005,13 @@ function NovoOrcamento() {
           )}
 
           {active === "colagem" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Colagem</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Informe se o orçamento incluirá colagem.
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="colagem-ativo">Colagem</Label>
                 <Select
                   value={colagemAtivo}
@@ -3028,7 +3028,7 @@ function NovoOrcamento() {
               </div>
 
               {colagemAtivo === "sim" && (
-                <div className="mt-6 max-w-md space-y-1.5">
+                <div className="mt-4 max-w-md space-y-1.5">
                   <Label htmlFor="colagem">Produto de colagem</Label>
                   <ProductSelect
                     id="colagem"
@@ -3046,13 +3046,13 @@ function NovoOrcamento() {
           )}
 
           {active === "impressao" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Impressão</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Configure a impressão e envie o arquivo.
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="impressao-ativo">Impressão</Label>
                 <Select
                   value={impressaoAtivo}
@@ -3070,7 +3070,7 @@ function NovoOrcamento() {
 
               {impressaoAtivo === "sim" && (
                 <>
-                  <div className="mt-6 max-w-md space-y-1.5">
+                  <div className="mt-4 max-w-md space-y-1.5">
                     <Label htmlFor="impressao">Tipo de impressão</Label>
                     <ProductSelect
                       id="impressao"
@@ -3114,13 +3114,13 @@ function NovoOrcamento() {
           )}
 
           {active === "diversos" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Produtos Diversos</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Adicione produtos diversos vinculados a este item. Eles somam ao subtotal do item.
               </p>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-4 space-y-3">
                 {produtosDiversos.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     Nenhum produto diverso adicionado.
@@ -3243,7 +3243,7 @@ function NovoOrcamento() {
           )}
 
           {active === "instalacao" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Instalação / Frete</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Defina valores manuais de instalação e entrega. Estes valores são gerais
@@ -3308,7 +3308,7 @@ function NovoOrcamento() {
               </div>
 
               {tipoEntrega === "Aplicativo de Entrega" && (
-                <div className="mt-6 max-w-2xl space-y-2">
+                <div className="mt-4 max-w-2xl space-y-2">
                   <Label>Aplicativo</Label>
                   <RadioGroup
                     value={aplicativoEntrega}
@@ -3444,13 +3444,13 @@ function NovoOrcamento() {
           )}
 
           {active === "finalizacao" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Finalização</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Revise o resumo e finalize o orçamento.
               </p>
 
-              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Resumo */}
                 <div className="rounded-md border border-border bg-muted/30 p-5 space-y-2 text-sm">
                   <h3 className="font-semibold text-base text-foreground mb-2">
