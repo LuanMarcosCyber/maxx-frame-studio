@@ -131,6 +131,8 @@ function Produtos() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
