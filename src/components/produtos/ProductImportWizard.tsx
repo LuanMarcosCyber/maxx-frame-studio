@@ -423,7 +423,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                     </Select>
                   ) : (
                     <Input
-                      placeholder={f.numeric ? "Ex: 300" : "Digite o valor"}
+                      placeholder={f.placeholder ?? (f.numeric ? "Ex: 300" : "Digite o valor")}
                       value={cfg.manual}
                       onChange={(e) => updateMap(f.key, { manual: e.target.value })}
                     />
