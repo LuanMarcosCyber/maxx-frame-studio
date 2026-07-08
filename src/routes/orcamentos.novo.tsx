@@ -2003,7 +2003,7 @@ function NovoOrcamento() {
         <div id="step-content" className="space-y-4 scroll-mt-4">
 
           {/* Identificação (Colaborador, Cliente, Arquiteto) */}
-          <Card className="p-5">
+          <Card className="p-4">
             <div className="text-sm font-semibold text-foreground mb-3">
               Identificação
             </div>
@@ -2358,7 +2358,7 @@ function NovoOrcamento() {
 
 
           {/* Totals header */}
-          <Card className="p-5">
+          <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium text-foreground">
                 {activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1}{" "}
@@ -3452,7 +3452,7 @@ function NovoOrcamento() {
 
               <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Resumo */}
-                <div className="rounded-md border border-border bg-muted/30 p-5 space-y-2 text-sm">
+                <div className="rounded-md border border-border bg-muted/30 p-4 space-y-1.5 text-sm">
                   <h3 className="font-semibold text-base text-foreground mb-2">
                     Resumo do orçamento
                   </h3>
