@@ -1920,10 +1920,13 @@ function NovoOrcamento() {
                           onClick={() => selectItem(i)}
                           className="flex-1 flex items-center justify-between px-3 py-2 text-sm text-left min-w-0"
                         >
-                          <span>Item {i + 1}</span>
-                          <span className="text-xs font-medium text-muted-foreground ml-2">
-                            {fmtMoney(itemSubtotals[i] ?? 0)}
+                          <span>
+                            {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                           </span>
+                          <span className="text-xs font-medium text-muted-foreground ml-2">
+                            {fmtMoney(itemTotals[i] ?? 0)}
+                          </span>
+
                         </button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
