@@ -3467,17 +3467,18 @@ function NovoOrcamento() {
                         )}
                       >
                         <ImageIcon className="h-3.5 w-3.5" />
-                        Item {i + 1}
+                        {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                         <span className="text-muted-foreground font-normal">
-                          {fmtMoney(itemSubtotals[i] ?? 0)}
+                          {fmtMoney(itemTotals[i] ?? 0)}
                         </span>
                       </button>
                     ))}
                   </div>
 
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Item {activeIndex + 1}
+                    {activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1}
                   </div>
+
                   <Row
                     label="Tamanho original"
                     value={`${fmtMeasure(larguraNum)} × ${fmtMeasure(alturaNum)} cm`}
