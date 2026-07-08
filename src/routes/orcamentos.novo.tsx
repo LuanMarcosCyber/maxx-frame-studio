@@ -1336,7 +1336,9 @@ function NovoOrcamento() {
     setImpressaoId(s.impressaoId);
     setImpressaoArquivo(null);
     setProdutosDiversos(s.produtosDiversos ?? []);
+    setQuantidadeStr(s.quantidade || "1");
   }
+
 
   function selectItem(index: number, opts: { keepStep?: boolean } = {}) {
     if (index === activeIndex) return;
