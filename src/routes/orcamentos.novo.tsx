@@ -640,8 +640,15 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     impressaoAtivo: d.impressaoAtivo === "sim" ? "sim" : "nao",
     impressaoId: s("impressaoId"),
     produtosDiversos,
+    quantidade:
+      typeof d.quantidade === "number"
+        ? String(Math.max(1, Math.floor(d.quantidade)))
+        : typeof d.quantidade === "string"
+          ? (d.quantidade as string) || "1"
+          : "1",
   };
 }
+
 
 function NovoOrcamento() {
   const navigate = useNavigate();
