@@ -913,7 +913,10 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                         {frames.length > 0 ? ` (ref. Item ${p.itemPos})` : ""}
                       </span>
                     </div>
-                    {showFinance && <div className="total">Total: {fmtMoney(totalDiv)}</div>}
+                    <div className="right">
+                      <span className="qty">Quantidade: {p.quantidade}</span>
+                      {showFinance && <span className="total">Total: {fmtMoney(totalDiv)}</span>}
+                    </div>
                   </div>
                   <table className="kv-table">
                     <tbody>
