@@ -429,21 +429,32 @@ function Produtos() {
   return (
     <AppShell title="Produtos" subtitle="Gerencie produtos por categoria">
       <Card className="p-4 mb-6">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => setActiveCategory(c.key)}
-              className={cn(
-                "px-4 py-2 rounded-md text-sm font-medium transition-colors border",
-                activeCategory === c.key
-                  ? "bg-gradient-brand text-brand-foreground border-transparent shadow-brand"
-                  : "bg-background text-foreground border-border hover:bg-accent",
-              )}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setActiveCategory(c.key)}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm font-medium transition-colors border",
+                  activeCategory === c.key
+                    ? "bg-gradient-brand text-brand-foreground border-transparent shadow-brand"
+                    : "bg-background text-foreground border-border hover:bg-accent",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {canEdit && (
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="sm:ml-auto"
             >
-              {c.label}
-            </button>
-          ))}
+              <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
+            </Button>
+          )}
         </div>
       </Card>
 
