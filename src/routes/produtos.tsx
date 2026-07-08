@@ -131,6 +131,8 @@ function Produtos() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -404,24 +406,55 @@ function Produtos() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (!user) return;
+    setBulkDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("category", activeCategory)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      toast.success(`Todos os produtos de ${activeLabel} foram excluídos.`);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao excluir produtos.");
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
   return (
     <AppShell title="Produtos" subtitle="Gerencie produtos por categoria">
       <Card className="p-4 mb-6">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => setActiveCategory(c.key)}
-              className={cn(
-                "px-4 py-2 rounded-md text-sm font-medium transition-colors border",
-                activeCategory === c.key
-                  ? "bg-gradient-brand text-brand-foreground border-transparent shadow-brand"
-                  : "bg-background text-foreground border-border hover:bg-accent",
-              )}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setActiveCategory(c.key)}
+                className={cn(
+                  "px-4 py-2 rounded-md text-sm font-medium transition-colors border",
+                  activeCategory === c.key
+                    ? "bg-gradient-brand text-brand-foreground border-transparent shadow-brand"
+                    : "bg-background text-foreground border-border hover:bg-accent",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {canEdit && (
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="sm:ml-auto"
             >
-              {c.label}
-            </button>
-          ))}
+              <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -446,17 +479,21 @@ function Produtos() {
             {canEdit && (
               <>
                 <Button
-                  variant="outline"
-                  onClick={() => setImportOpen(true)}
-                >
-                  <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
-                </Button>
-                <Button
                   onClick={openCreate}
                   className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                 >
                   <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
                 </Button>
+                {filtered.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBulkDeleteOpen(true)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1.5" /> Excluir todos
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -887,6 +924,33 @@ function Produtos() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Excluir todos os produtos de {activeLabel}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir todos os produtos da categoria{" "}
+              <b>{activeLabel}</b>? Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleBulkDelete();
+              }}
+              disabled={bulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleting ? "Excluindo..." : "Sim, excluir todos"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

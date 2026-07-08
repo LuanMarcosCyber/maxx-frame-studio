@@ -44,6 +44,7 @@ type FieldKey =
   | "profit_margin"
   | "waste_percentage"
   | "commission_percentage"
+  | "frame_width_cm"
   | "ncm";
 
 type FieldDef = {
@@ -52,6 +53,7 @@ type FieldDef = {
   required: boolean;
   numeric?: boolean;
   allowManualEmpty?: boolean;
+  placeholder?: string;
 };
 
 const FIELDS: FieldDef[] = [
@@ -59,9 +61,10 @@ const FIELDS: FieldDef[] = [
   { key: "description", label: "Descrição", required: true },
   { key: "value_per_meter", label: "Valor do metro", required: true, numeric: true },
   { key: "supplier", label: "Fornecedor / Fabricante", required: false },
-  { key: "profit_margin", label: "Margem de lucro (%)", required: false, numeric: true },
-  { key: "waste_percentage", label: "Perda (%)", required: false, numeric: true },
-  { key: "commission_percentage", label: "Comissão (%)", required: false, numeric: true },
+  { key: "profit_margin", label: "Margem de lucro (%)", required: false, numeric: true, placeholder: "Ex: 100" },
+  { key: "waste_percentage", label: "Perda (%)", required: false, numeric: true, placeholder: "20" },
+  { key: "commission_percentage", label: "Comissão (%)", required: false, numeric: true, placeholder: "5" },
+  { key: "frame_width_cm", label: "Largura (cm) — usado em Perfil", required: false, numeric: true, placeholder: "Ex: 3" },
   { key: "ncm", label: "NCM", required: false, allowManualEmpty: true },
 ];
 
@@ -73,7 +76,7 @@ type Mapping = Record<
 const initialMapping = (): Mapping =>
   FIELDS.reduce((acc, f) => {
     acc[f.key] = {
-      origin: ["supplier", "profit_margin", "waste_percentage", "commission_percentage", "ncm"].includes(f.key)
+      origin: ["supplier", "profit_margin", "waste_percentage", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key)
         ? "manual"
         : "column",
       column: "",
@@ -258,6 +261,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const margin = built.profit_margin ? parseNum(built.profit_margin) : 0;
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
+      const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
       payloads.push({
         user_id: user.id,
         code: built.code,
@@ -267,6 +271,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         profit_margin: Number.isFinite(margin) ? margin : 0,
         waste_percentage: Number.isFinite(waste) ? waste : 0,
         commission_percentage: Number.isFinite(commission) ? commission : 0,
+        frame_width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
         supplier: built.supplier || null,
         ncm: built.ncm || null,
       });
@@ -418,7 +423,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                     </Select>
                   ) : (
                     <Input
-                      placeholder={f.numeric ? "Ex: 300" : "Digite o valor"}
+                      placeholder={f.placeholder ?? (f.numeric ? "Ex: 300" : "Digite o valor")}
                       value={cfg.manual}
                       onChange={(e) => updateMap(f.key, { manual: e.target.value })}
                     />
@@ -439,7 +444,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Comissão", "NCM"].map((h) => (
+                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Comissão", "Largura", "NCM"].map((h) => (
                       <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
                     ))}
                   </tr>
@@ -454,6 +459,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                       <td className="px-3 py-2">{r.profit_margin}</td>
                       <td className="px-3 py-2">{r.waste_percentage}</td>
                       <td className="px-3 py-2">{r.commission_percentage}</td>
+                      <td className="px-3 py-2">{r.frame_width_cm}</td>
                       <td className="px-3 py-2">{r.ncm}</td>
                     </tr>
                   ))}
