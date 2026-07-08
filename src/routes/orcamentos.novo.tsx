@@ -2000,7 +2000,7 @@ function NovoOrcamento() {
         </div>
 
         {/* Content area */}
-        <div id="step-content" className="space-y-6 scroll-mt-4">
+        <div id="step-content" className="space-y-4 scroll-mt-4">
 
           {/* Identificação (Colaborador, Cliente, Arquiteto) */}
           <Card className="p-5">
