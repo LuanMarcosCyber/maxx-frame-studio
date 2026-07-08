@@ -2357,10 +2357,11 @@ function NovoOrcamento() {
           <Card className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium text-foreground">
-                Item {activeIndex + 1}{" "}
+                {activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1}{" "}
                 <span className="text-muted-foreground font-normal">
-                  · Subtotal {fmtMoney(activeValues.subtotal)}
+                  · Subtotal {fmtMoney(activeValues.subtotal * activeQuantidade)}
                 </span>
+
               </div>
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
