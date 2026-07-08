@@ -152,6 +152,7 @@ function extractDiversos(items: Array<{ position: number; data: ItemData }>): Di
   for (const it of items) {
     const raw = it.data.produtosDiversos;
     if (!Array.isArray(raw)) continue;
+    const itemQty = Math.max(1, Math.floor(Number(it.data.quantidade) || 1));
     for (const p of raw as Array<Record<string, unknown>>) {
       const qtd = Number(p.quantidade) || 1;
       const valorUnit = Number(p.valorUnitario) || Number(p.valor) || Number(p.preco) || 0;
@@ -161,15 +162,16 @@ function extractDiversos(items: Array<{ position: number; data: ItemData }>): Di
         nome: typeof p.nome === "string" ? p.nome : typeof p.descricao === "string" ? p.descricao : "Produto",
         descricao: typeof p.descricao === "string" ? p.descricao : undefined,
         fornecedor: typeof p.fornecedor === "string" ? p.fornecedor : undefined,
-        quantidade: qtd,
+        quantidade: qtd * itemQty,
         valorUnitario: valorUnit,
-        valorTotal,
+        valorTotal: valorTotal * itemQty,
         itemPos: it.position,
       });
     }
   }
   return out;
 }
+
 
 function diversosTotalForItem(d: ItemData): number {
   const raw = d.produtosDiversos;
@@ -828,21 +830,23 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
               const itemObs = dStr(d, "observacoes");
               const W = fmtM(dNum(d, "larguraFinal"));
               const H = fmtM(dNum(d, "alturaFinal"));
+              const qty = Math.max(1, Math.floor(Number(d.quantidade) || 1));
               return (
                 <div className="item-block" key={it.id}>
                   <div className="item-head">
                     <div className="left">
                       <span className="idx">{idx + 1}</span>
                       <span className="title">
-                        ITEM {idx + 1} — Quadro {W} x {H} cm
+                        {qty > 1 ? `${qty}x ` : ""}ITEM {idx + 1} — Quadro {W} x {H} cm
                       </span>
                     </div>
                     {showFinance && (
                       <div className="total">
-                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d)) * rtMult)}
+                        Total: {fmtMoney((Number(it.subtotal) - diversosTotalForItem(d) * qty) * rtMult)}
                       </div>
                     )}
                   </div>
+
                   {showPreview ? (
                     <div className="prod-row">
                       <div className="col-preview">

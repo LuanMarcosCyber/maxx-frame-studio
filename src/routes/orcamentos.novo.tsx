@@ -319,6 +319,7 @@ type ItemSnapshot = {
   impressaoAtivo: "sim" | "nao";
   impressaoId: string;
   produtosDiversos: DiversoItem[];
+  quantidade: string;
 };
 
 const emptyItem: ItemSnapshot = {
@@ -349,7 +350,9 @@ const emptyItem: ItemSnapshot = {
   impressaoAtivo: "nao",
   impressaoId: "",
   produtosDiversos: [],
+  quantidade: "1",
 };
+
 
 type ItemValues = ReturnType<typeof computeItemValues>;
 
@@ -585,8 +588,10 @@ function buildItemDetails(
     })),
     valorDiversos: Number(v.valorDiversos.toFixed(2)),
     subtotal: Number(v.subtotal.toFixed(2)),
+    quantidade: Math.max(1, Math.floor(Number(snap.quantidade || "1")) || 1),
   };
 }
+
 
 // Hydrate an ItemSnapshot from a saved details jsonb (used for legacy details and budget_items.data)
 function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
@@ -637,8 +642,15 @@ function snapshotFromDetails(d: Record<string, unknown>): ItemSnapshot {
     impressaoAtivo: d.impressaoAtivo === "sim" ? "sim" : "nao",
     impressaoId: s("impressaoId"),
     produtosDiversos,
+    quantidade:
+      typeof d.quantidade === "number"
+        ? String(Math.max(1, Math.floor(d.quantidade)))
+        : typeof d.quantidade === "string"
+          ? (d.quantidade as string) || "1"
+          : "1",
   };
 }
+
 
 function NovoOrcamento() {
   const navigate = useNavigate();
@@ -777,6 +789,8 @@ function NovoOrcamento() {
   const [impressaoId, setImpressaoId] = useState<string>("");
   const [impressaoArquivo, setImpressaoArquivo] = useState<File | null>(null);
   const [produtosDiversos, setProdutosDiversos] = useState<DiversoItem[]>([]);
+  const [quantidadeStr, setQuantidadeStr] = useState<string>("1");
+
 
   // Budget-level (geral)
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
@@ -1029,6 +1043,7 @@ function NovoOrcamento() {
       impressaoAtivo,
       impressaoId,
       produtosDiversos,
+      quantidade: quantidadeStr,
     }),
     [
       altura,
@@ -1058,8 +1073,10 @@ function NovoOrcamento() {
       impressaoAtivo,
       impressaoId,
       produtosDiversos,
+      quantidadeStr,
     ],
   );
+
 
   const activeProducts = useMemo(
     () => resolveProducts(activeSnap),
@@ -1121,10 +1138,28 @@ function NovoOrcamento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, activeIndex, activeValues, perfis, vidros, foams, paspaturs, colagens, impressoes]);
 
-  const subtotalItens = useMemo(
-    () => itemSubtotals.reduce((a, b) => a + b, 0),
-    [itemSubtotals],
+  const itemQuantities = useMemo(
+    () =>
+      items.map((snap, i) => {
+        const raw = i === activeIndex ? quantidadeStr : snap.quantidade;
+        const n = Math.floor(Number(raw || "1"));
+        return Math.max(1, Number.isFinite(n) ? n : 1);
+      }),
+    [items, activeIndex, quantidadeStr],
   );
+
+  const itemTotals = useMemo(
+    () => itemSubtotals.map((s, i) => s * (itemQuantities[i] ?? 1)),
+    [itemSubtotals, itemQuantities],
+  );
+
+  const activeQuantidade = itemQuantities[activeIndex] ?? 1;
+
+  const subtotalItens = useMemo(
+    () => itemTotals.reduce((a, b) => a + b, 0),
+    [itemTotals],
+  );
+
 
   const valorInstalacao =
     instalacaoAtivo === "sim" ? parseNum(valorInstalacaoStr) : 0;
@@ -1321,7 +1356,9 @@ function NovoOrcamento() {
     setImpressaoId(s.impressaoId);
     setImpressaoArquivo(null);
     setProdutosDiversos(s.produtosDiversos ?? []);
+    setQuantidadeStr(s.quantidade || "1");
   }
+
 
   function selectItem(index: number, opts: { keepStep?: boolean } = {}) {
     if (index === activeIndex) return;
@@ -1628,12 +1665,14 @@ function NovoOrcamento() {
     const itemsPayload = allItems.map((snap, idx) => {
       const P = resolveProducts(snap);
       const v = computeItemValues(snap, P);
+      const qty = Math.max(1, Math.floor(Number(snap.quantidade || "1")) || 1);
       return {
         position: idx + 1,
-        subtotal: Number(v.subtotal.toFixed(2)),
+        subtotal: Number((v.subtotal * qty).toFixed(2)),
         data: buildItemDetails(snap, v, P),
       };
     });
+
 
     if (approve) setAprovando(true);
     else setSalvando(true);
@@ -1885,10 +1924,13 @@ function NovoOrcamento() {
                           onClick={() => selectItem(i)}
                           className="flex-1 flex items-center justify-between px-3 py-2 text-sm text-left min-w-0"
                         >
-                          <span>Item {i + 1}</span>
-                          <span className="text-xs font-medium text-muted-foreground ml-2">
-                            {fmtMoney(itemSubtotals[i] ?? 0)}
+                          <span>
+                            {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                           </span>
+                          <span className="text-xs font-medium text-muted-foreground ml-2">
+                            {fmtMoney(itemTotals[i] ?? 0)}
+                          </span>
+
                         </button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1958,10 +2000,10 @@ function NovoOrcamento() {
         </div>
 
         {/* Content area */}
-        <div id="step-content" className="space-y-6 scroll-mt-4">
+        <div id="step-content" className="space-y-4 scroll-mt-4">
 
           {/* Identificação (Colaborador, Cliente, Arquiteto) */}
-          <Card className="p-5">
+          <Card className="p-4">
             <div className="text-sm font-semibold text-foreground mb-3">
               Identificação
             </div>
@@ -2316,13 +2358,14 @@ function NovoOrcamento() {
 
 
           {/* Totals header */}
-          <Card className="p-5">
+          <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm font-medium text-foreground">
-                Item {activeIndex + 1}{" "}
+                {activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1}{" "}
                 <span className="text-muted-foreground font-normal">
-                  · Subtotal {fmtMoney(activeValues.subtotal)}
+                  · Subtotal {fmtMoney(activeValues.subtotal * activeQuantidade)}
                 </span>
+
               </div>
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -2355,7 +2398,7 @@ function NovoOrcamento() {
           </Card>
 
           {active === "tamanho" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">
                 Qual o tamanho do que deseja emoldurar?
               </h2>
@@ -2363,7 +2406,7 @@ function NovoOrcamento() {
                 Lembre-se de utilizar os tamanhos sempre em centímetros
               </p>
 
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
                   <div className="space-y-1.5">
                     <Label htmlFor="altura">Altura (cm)</Label>
@@ -2439,7 +2482,7 @@ function NovoOrcamento() {
           )}
 
           {active === "paspatur" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Paspatur</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Defina as margens do paspatur. As medidas finais serão utilizadas pelos
@@ -2453,7 +2496,7 @@ function NovoOrcamento() {
                 </p>
               )}
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="paspatur-ativo">Paspatur Externo</Label>
                 <Select
                   value={paspaturAtivo}
@@ -2524,7 +2567,7 @@ function NovoOrcamento() {
                     />
                   </div>
 
-                  <div className="mt-6 max-w-md space-y-1.5">
+                  <div className="mt-4 max-w-md space-y-1.5">
                     <Label htmlFor="paspatur">Produto Paspatur / Sanduíche de Vidro</Label>
                     <ProductSelect
                       id="paspatur"
@@ -2545,7 +2588,7 @@ function NovoOrcamento() {
                     )}
                   </div>
 
-                  <div className="mt-6 max-w-md space-y-1.5">
+                  <div className="mt-4 max-w-md space-y-1.5">
                     <Label htmlFor="paspatur-adic-ativo">Incluir paspatur interno</Label>
                     <Select
                       value={paspaturAdicionalAtivo}
@@ -2564,7 +2607,7 @@ function NovoOrcamento() {
                   </div>
 
                   {paspaturAdicionalAtivo === "sim" && (
-                    <div className="mt-6 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
+                    <div className="mt-4 rounded-md border border-border bg-muted/20 p-4 space-y-4 max-w-2xl">
                       <div className="space-y-1.5">
                         <Label htmlFor="paspatur-adic-obs">
                           Observação do paspatur interno
@@ -2693,7 +2736,7 @@ function NovoOrcamento() {
               )}
 
               {paspaturAtivo === "sim" && (valorPaspaturPrincipal > 0 || valorPaspaturAdicional > 0) && (
-                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                <div className="mt-4 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
                   {paspaturAdicionalAtivo === "sim" ? (
                     <>
                       <div className="flex justify-between gap-3">
@@ -2741,13 +2784,13 @@ function NovoOrcamento() {
 
 
           {active === "perfil" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Qual perfil será utilizado?</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 O cálculo usa as medidas finais (com paspatur quando aplicado).
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="perfil">Perfil</Label>
                 <ProductSelect
                   id="perfil"
@@ -2761,7 +2804,7 @@ function NovoOrcamento() {
                 />
               </div>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="perfil-adicional-ativo">Adicionar um segundo perfil?</Label>
                 <Select
                   value={perfilAdicionalAtivo}
@@ -2798,7 +2841,7 @@ function NovoOrcamento() {
               )}
 
               {perfilSelecionado && valorPerfilPrincipal > 0 && (
-                <div className="mt-6 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
+                <div className="mt-4 max-w-2xl rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1.5">
                   {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
                     <>
                       <div className="flex justify-between gap-3">
@@ -2847,13 +2890,13 @@ function NovoOrcamento() {
           )}
 
           {active === "vidro" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Vidro / Espelho</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Informe se o pedido terá vidro ou espelho
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="vidro-tipo">Vidro</Label>
                 <Select
                   value={vidroTipo}
@@ -2871,7 +2914,7 @@ function NovoOrcamento() {
 
               {vidroTipo === "sim" && (
                 <>
-                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
                     <div className="space-y-1.5">
                       <Label htmlFor="vidro">Espessura do Vidro</Label>
                       <ProductSelect
@@ -2911,7 +2954,7 @@ function NovoOrcamento() {
                   </div>
 
                   {vidroSelecionado && valorVidroUnit > 0 && (
-                    <div className="mt-6 max-w-md rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1">
+                    <div className="mt-4 max-w-md rounded-md border border-border bg-muted/30 p-4 text-sm space-y-1">
                       <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">
                           Vidro ({vidroSelecionado.code})
@@ -2938,13 +2981,13 @@ function NovoOrcamento() {
           )}
 
           {active === "foam" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Foam / MDF</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Selecione o produto de Foam ou MDF utilizado
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="foam">Produto</Label>
                 <ProductSelect
                   id="foam"
@@ -2962,13 +3005,13 @@ function NovoOrcamento() {
           )}
 
           {active === "colagem" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Colagem</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Informe se o orçamento incluirá colagem.
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="colagem-ativo">Colagem</Label>
                 <Select
                   value={colagemAtivo}
@@ -2985,7 +3028,7 @@ function NovoOrcamento() {
               </div>
 
               {colagemAtivo === "sim" && (
-                <div className="mt-6 max-w-md space-y-1.5">
+                <div className="mt-4 max-w-md space-y-1.5">
                   <Label htmlFor="colagem">Produto de colagem</Label>
                   <ProductSelect
                     id="colagem"
@@ -3003,13 +3046,13 @@ function NovoOrcamento() {
           )}
 
           {active === "impressao" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Impressão</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Configure a impressão e envie o arquivo.
               </p>
 
-              <div className="mt-6 max-w-md space-y-1.5">
+              <div className="mt-4 max-w-md space-y-1.5">
                 <Label htmlFor="impressao-ativo">Impressão</Label>
                 <Select
                   value={impressaoAtivo}
@@ -3027,7 +3070,7 @@ function NovoOrcamento() {
 
               {impressaoAtivo === "sim" && (
                 <>
-                  <div className="mt-6 max-w-md space-y-1.5">
+                  <div className="mt-4 max-w-md space-y-1.5">
                     <Label htmlFor="impressao">Tipo de impressão</Label>
                     <ProductSelect
                       id="impressao"
@@ -3040,7 +3083,7 @@ function NovoOrcamento() {
                     />
                   </div>
 
-                  <div className="mt-6 max-w-md">
+                  <div className="mt-4 max-w-md">
                     <Label>Arquivo da impressão</Label>
                     <label
                       htmlFor="impressao-arquivo"
@@ -3071,13 +3114,13 @@ function NovoOrcamento() {
           )}
 
           {active === "diversos" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Produtos Diversos</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Adicione produtos diversos vinculados a este item. Eles somam ao subtotal do item.
               </p>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-4 space-y-3">
                 {produtosDiversos.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     Nenhum produto diverso adicionado.
@@ -3200,7 +3243,7 @@ function NovoOrcamento() {
           )}
 
           {active === "instalacao" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Instalação / Frete</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Defina valores manuais de instalação e entrega. Estes valores são gerais
@@ -3265,7 +3308,7 @@ function NovoOrcamento() {
               </div>
 
               {tipoEntrega === "Aplicativo de Entrega" && (
-                <div className="mt-6 max-w-2xl space-y-2">
+                <div className="mt-4 max-w-2xl space-y-2">
                   <Label>Aplicativo</Label>
                   <RadioGroup
                     value={aplicativoEntrega}
@@ -3387,7 +3430,7 @@ function NovoOrcamento() {
                 </div>
               )}
 
-              <div className="mt-6 rounded-md border border-border bg-muted/30 p-4 max-w-md text-sm">
+              <div className="mt-4 rounded-md border border-border bg-muted/30 p-4 max-w-md text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Instalação:</span>
                   <span className="font-semibold">{fmtMoney(valorInstalacao)}</span>
@@ -3401,15 +3444,15 @@ function NovoOrcamento() {
           )}
 
           {active === "finalizacao" && (
-            <Card className="p-6">
+            <Card className="p-4">
               <h2 className="text-xl font-semibold">Finalização</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Revise o resumo e finalize o orçamento.
               </p>
 
-              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Resumo */}
-                <div className="rounded-md border border-border bg-muted/30 p-5 space-y-2 text-sm">
+                <div className="rounded-md border border-border bg-muted/30 p-4 space-y-1.5 text-sm">
                   <h3 className="font-semibold text-base text-foreground mb-2">
                     Resumo do orçamento
                   </h3>
@@ -3429,17 +3472,18 @@ function NovoOrcamento() {
                         )}
                       >
                         <ImageIcon className="h-3.5 w-3.5" />
-                        Item {i + 1}
+                        {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                         <span className="text-muted-foreground font-normal">
-                          {fmtMoney(itemSubtotals[i] ?? 0)}
+                          {fmtMoney(itemTotals[i] ?? 0)}
                         </span>
                       </button>
                     ))}
                   </div>
 
                   <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Item {activeIndex + 1}
+                    {activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1}
                   </div>
+
                   <Row
                     label="Tamanho original"
                     value={`${fmtMeasure(larguraNum)} × ${fmtMeasure(alturaNum)} cm`}
@@ -3538,9 +3582,18 @@ function NovoOrcamento() {
                       />
                     </>
                   )}
+                  {activeQuantidade > 1 && (
+                    <>
+                      <Row
+                        label="Subtotal unitário"
+                        value={fmtMoney(activeValues.subtotal)}
+                      />
+                      <Row label="Quantidade" value={`${activeQuantidade}x`} />
+                    </>
+                  )}
                   <Row
-                    label={`Subtotal Item ${activeIndex + 1}`}
-                    value={fmtMoney(activeValues.subtotal)}
+                    label={`Subtotal Item ${activeIndex + 1}${activeQuantidade > 1 ? " (total)" : ""}`}
+                    value={fmtMoney(activeValues.subtotal * activeQuantidade)}
                   />
 
                   {/* Other items */}
@@ -3551,13 +3604,14 @@ function NovoOrcamento() {
                         i === activeIndex ? null : (
                           <Row
                             key={i}
-                            label={`Item ${i + 1}`}
-                            value={fmtMoney(itemSubtotals[i] ?? 0)}
+                            label={`${(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item ${i + 1}`}
+                            value={fmtMoney(itemTotals[i] ?? 0)}
                           />
                         ),
                       )}
                     </>
                   )}
+
 
                   <hr className="my-2 border-border" />
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
@@ -3650,13 +3704,56 @@ function NovoOrcamento() {
 
                 {/* Campos finais */}
                 <div className="space-y-4">
-
-
-
-
+                  <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-1.5">
+                    <Label htmlFor="quantidade-item" className="text-sm font-semibold">
+                      Quantidade{" "}
+                      <span className="font-normal text-muted-foreground">
+                        ({activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1})
+                      </span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Quantas unidades deste item serão feitas. Multiplica o subtotal do item.
+                    </p>
+                    <div className="inline-flex items-stretch rounded-md border border-input bg-background overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantidadeStr(String(Math.max(1, activeQuantidade - 1)))
+                        }
+                        className="px-3 text-lg font-semibold hover:bg-accent transition-colors"
+                        aria-label="Diminuir"
+                      >
+                        −
+                      </button>
+                      <input
+                        id="quantidade-item"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={quantidadeStr}
+                        onChange={(e) => setQuantidadeStr(e.target.value)}
+                        onBlur={() => {
+                          const n = Math.max(1, Math.floor(Number(quantidadeStr || "1")) || 1);
+                          setQuantidadeStr(String(n));
+                        }}
+                        className="w-16 text-center text-base font-semibold bg-transparent border-x border-input focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantidadeStr(String(Math.max(1, activeQuantidade + 1)))
+                        }
+                        className="px-3 text-lg font-semibold hover:bg-accent transition-colors"
+                        aria-label="Aumentar"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="forma-pagto">Forma de pagamento</Label>
+
                     <Select
                       value={formaPagamento}
                       onValueChange={(v) => setFormaPagamento(v as FormaPagto)}
@@ -4157,10 +4254,13 @@ function NovoOrcamento() {
                 }}
                 className="w-full flex items-center justify-between rounded-md border border-border px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left"
               >
-                <span className="font-medium">Item {i + 1}</span>
-                <span className="text-muted-foreground">
-                  {fmtMoney(itemSubtotals[i] ?? 0)}
+                <span className="font-medium">
+                  {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                 </span>
+                <span className="text-muted-foreground">
+                  {fmtMoney(itemTotals[i] ?? 0)}
+                </span>
+
               </button>
             ))}
           </div>
