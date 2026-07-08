@@ -43,6 +43,7 @@ type FieldKey =
   | "supplier"
   | "profit_margin"
   | "waste_percentage"
+  | "labor_cost"
   | "commission_percentage"
   | "frame_width_cm"
   | "ncm";
@@ -63,6 +64,7 @@ const FIELDS: FieldDef[] = [
   { key: "supplier", label: "Fornecedor / Fabricante", required: false },
   { key: "profit_margin", label: "Margem de lucro (%)", required: false, numeric: true, placeholder: "Ex: 100" },
   { key: "waste_percentage", label: "Perda (%)", required: false, numeric: true, placeholder: "20" },
+  { key: "labor_cost", label: "Mão de obra (R$) — usado em Perfil", required: false, numeric: true, placeholder: "15,00" },
   { key: "commission_percentage", label: "Comissão (%)", required: false, numeric: true, placeholder: "5" },
   { key: "frame_width_cm", label: "Largura (cm) — usado em Perfil", required: false, numeric: true, placeholder: "Ex: 3" },
   { key: "ncm", label: "NCM", required: false, allowManualEmpty: true },
@@ -73,14 +75,13 @@ type Mapping = Record<
   { origin: "column" | "manual"; column: string; manual: string }
 >;
 
-const initialMapping = (): Mapping =>
+const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
+    const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key);
     acc[f.key] = {
-      origin: ["supplier", "profit_margin", "waste_percentage", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key)
-        ? "manual"
-        : "column",
+      origin: isDefaultManual ? "manual" : "column",
       column: "",
-      manual: "",
+      manual: f.key === "labor_cost" && category === "Perfil" ? "15,00" : "",
     };
     return acc;
   }, {} as Mapping);
