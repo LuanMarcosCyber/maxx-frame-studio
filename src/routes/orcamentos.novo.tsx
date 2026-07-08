@@ -787,6 +787,8 @@ function NovoOrcamento() {
   const [impressaoId, setImpressaoId] = useState<string>("");
   const [impressaoArquivo, setImpressaoArquivo] = useState<File | null>(null);
   const [produtosDiversos, setProdutosDiversos] = useState<DiversoItem[]>([]);
+  const [quantidadeStr, setQuantidadeStr] = useState<string>("1");
+
 
   // Budget-level (geral)
   const [instalacaoAtivo, setInstalacaoAtivo] = useState<"sim" | "nao">("nao");
