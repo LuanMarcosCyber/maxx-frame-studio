@@ -479,17 +479,21 @@ function Produtos() {
             {canEdit && (
               <>
                 <Button
-                  variant="outline"
-                  onClick={() => setImportOpen(true)}
-                >
-                  <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
-                </Button>
-                <Button
                   onClick={openCreate}
                   className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
                 >
                   <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
                 </Button>
+                {filtered.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBulkDeleteOpen(true)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1.5" /> Excluir todos
+                  </Button>
+                )}
               </>
             )}
           </div>
