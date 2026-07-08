@@ -411,7 +411,9 @@ function computeItemValues(
     const perim = ((alturaFinal + larguraFinal) * 2) / 100;
     const base = perim * Number(P.perfil.value_per_meter);
     const cp = base * (1 + Number(P.perfil.waste_percentage) / 100);
-    valorPerfilPrincipal = cp * (1 + Number(P.perfil.profit_margin) / 100);
+    valorPerfilPrincipal =
+      cp * (1 + Number(P.perfil.profit_margin) / 100) +
+      Number(P.perfil.labor_cost ?? 0);
   }
 
   // Perfil adicional: usa medidas finais + largura da moldura do perfil principal nos 2 lados
@@ -428,8 +430,11 @@ function computeItemValues(
     const perim = ((alturaPerfilAdicional + larguraPerfilAdicional) * 2) / 100;
     const base = perim * Number(P.perfilAdicional.value_per_meter);
     const cp = base * (1 + Number(P.perfilAdicional.waste_percentage) / 100);
-    valorPerfilAdicional = cp * (1 + Number(P.perfilAdicional.profit_margin) / 100);
+    valorPerfilAdicional =
+      cp * (1 + Number(P.perfilAdicional.profit_margin) / 100) +
+      Number(P.perfilAdicional.labor_cost ?? 0);
   }
+
   const valorPerfil = valorPerfilPrincipal + valorPerfilAdicional;
 
   const vidroQuantidade = Math.max(1, Math.floor(parseNum(snap.vidroQuantidade || "1")) || 1);
