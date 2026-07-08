@@ -406,6 +406,26 @@ function Produtos() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (!user) return;
+    setBulkDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("category", activeCategory)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      toast.success(`Todos os produtos de ${activeLabel} foram excluídos.`);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao excluir produtos.");
+    } finally {
+      setBulkDeleting(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
   return (
     <AppShell title="Produtos" subtitle="Gerencie produtos por categoria">
       <Card className="p-4 mb-6">
