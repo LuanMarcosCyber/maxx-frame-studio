@@ -131,6 +131,7 @@ type Produto = {
   waste_percentage: number;
   category: string | null;
   frame_width_cm: number | null;
+  labor_cost: number | null;
 };
 
 const fmtMoney = (n: number) =>
