@@ -102,9 +102,10 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [headerRow, setHeaderRow] = useState<number>(0); // 0-indexed
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
-  const [mapping, setMapping] = useState<Mapping>(initialMapping());
+  const [mapping, setMapping] = useState<Mapping>(initialMapping(defaultCategory));
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: { line: number; reason: string }[] } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -115,7 +116,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setHeaderRow(0);
     setColumns([]);
     setRows([]);
-    setMapping(initialMapping());
+    setMapping(initialMapping(defaultCategory));
     setResult(null);
   };
 
