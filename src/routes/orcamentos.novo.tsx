@@ -1839,11 +1839,19 @@ function NovoOrcamento() {
       navigate({ to: approve ? "/pedidos" : "/orcamentos" });
     } catch (e) {
       console.error(e);
+      const raw =
+        e instanceof Error
+          ? e.message
+          : typeof e === "object" && e && "message" in e
+            ? String((e as { message: unknown }).message)
+            : String(e);
+      const detail = raw ? ` (${raw})` : "";
       toast.error(
-        approve
+        (approve
           ? "Não foi possível aprovar o orçamento."
-          : "Não foi possível salvar o orçamento.",
+          : "Não foi possível salvar o orçamento.") + detail,
       );
+
     } finally {
       setSalvando(false);
       setAprovando(false);
