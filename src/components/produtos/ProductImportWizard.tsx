@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, DragEvent } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import {
