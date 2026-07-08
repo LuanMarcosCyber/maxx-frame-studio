@@ -3577,9 +3577,18 @@ function NovoOrcamento() {
                       />
                     </>
                   )}
+                  {activeQuantidade > 1 && (
+                    <>
+                      <Row
+                        label="Subtotal unitário"
+                        value={fmtMoney(activeValues.subtotal)}
+                      />
+                      <Row label="Quantidade" value={`${activeQuantidade}x`} />
+                    </>
+                  )}
                   <Row
-                    label={`Subtotal Item ${activeIndex + 1}`}
-                    value={fmtMoney(activeValues.subtotal)}
+                    label={`Subtotal Item ${activeIndex + 1}${activeQuantidade > 1 ? " (total)" : ""}`}
+                    value={fmtMoney(activeValues.subtotal * activeQuantidade)}
                   />
 
                   {/* Other items */}
@@ -3590,13 +3599,14 @@ function NovoOrcamento() {
                         i === activeIndex ? null : (
                           <Row
                             key={i}
-                            label={`Item ${i + 1}`}
-                            value={fmtMoney(itemSubtotals[i] ?? 0)}
+                            label={`${(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item ${i + 1}`}
+                            value={fmtMoney(itemTotals[i] ?? 0)}
                           />
                         ),
                       )}
                     </>
                   )}
+
 
                   <hr className="my-2 border-border" />
                   <Row label="Instalação" value={fmtMoney(valorInstalacao)} />
