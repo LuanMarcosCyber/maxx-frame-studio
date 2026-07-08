@@ -3788,13 +3788,7 @@ function NovoOrcamento() {
 
 
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FieldNum
-                      id="mao-obra"
-                      label="Mão de obra extra (R$)"
-                      value={maoDeObraExtraStr}
-                      onChange={setMaoDeObraExtraStr}
-                    />
+                  <div className="max-w-md">
                     <div className="space-y-1.5">
                       <Label htmlFor="desconto">Desconto (%)</Label>
                       <Input
