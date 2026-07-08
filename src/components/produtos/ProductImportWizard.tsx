@@ -351,11 +351,20 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               Envie sua planilha nos formatos <b>.xlsx</b> ou <b>.csv</b>.
             </p>
             <Card
-              className="p-8 border-dashed border-2 flex flex-col items-center gap-3 cursor-pointer hover:bg-accent/40"
+              className={cn(
+                "p-8 border-dashed border-2 flex flex-col items-center gap-3 cursor-pointer transition-colors",
+                isDragging ? "bg-accent/60 border-primary" : "hover:bg-accent/40",
+              )}
               onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
             >
               <Upload className="h-10 w-10 text-muted-foreground" />
-              <div className="text-sm">Clique para selecionar o arquivo</div>
+              <div className="text-sm">
+                {isDragging ? "Solte o arquivo aqui" : "Clique ou arraste o arquivo para esta área"}
+              </div>
               <div className="text-xs text-muted-foreground">{fileName || "Nenhum arquivo selecionado"}</div>
             </Card>
             <input
