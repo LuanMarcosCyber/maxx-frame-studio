@@ -444,7 +444,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Comissão", "NCM"].map((h) => (
+                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Comissão", "Largura", "NCM"].map((h) => (
                       <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
                     ))}
                   </tr>
@@ -459,6 +459,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                       <td className="px-3 py-2">{r.profit_margin}</td>
                       <td className="px-3 py-2">{r.waste_percentage}</td>
                       <td className="px-3 py-2">{r.commission_percentage}</td>
+                      <td className="px-3 py-2">{r.frame_width_cm}</td>
                       <td className="px-3 py-2">{r.ncm}</td>
                     </tr>
                   ))}
