@@ -4206,10 +4206,13 @@ function NovoOrcamento() {
                 }}
                 className="w-full flex items-center justify-between rounded-md border border-border px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left"
               >
-                <span className="font-medium">Item {i + 1}</span>
-                <span className="text-muted-foreground">
-                  {fmtMoney(itemSubtotals[i] ?? 0)}
+                <span className="font-medium">
+                  {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                 </span>
+                <span className="text-muted-foreground">
+                  {fmtMoney(itemTotals[i] ?? 0)}
+                </span>
+
               </button>
             ))}
           </div>
