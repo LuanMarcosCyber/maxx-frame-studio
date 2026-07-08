@@ -2357,38 +2357,48 @@ function NovoOrcamento() {
                 Lembre-se de utilizar os tamanhos sempre em centímetros
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 max-w-md">
-                <div className="space-y-1.5">
-                  <Label htmlFor="altura">Altura (cm)</Label>
-                  <Input
-                    id="altura"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={altura}
-                    onChange={(e) => setAltura(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        document.getElementById("largura")?.focus();
-                      }
-                    }}
-                  />
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="altura">Altura (cm)</Label>
+                    <Input
+                      id="altura"
+                      inputMode="decimal"
+                      placeholder="0"
+                      value={altura}
+                      onChange={(e) => setAltura(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("largura")?.focus();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="largura">Largura (cm)</Label>
+                    <Input
+                      id="largura"
+                      inputMode="decimal"
+                      placeholder="0"
+                      value={largura}
+                      onChange={(e) => setLargura(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          (e.target as HTMLInputElement).blur();
+                          setActive("paspatur");
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="largura">Largura (cm)</Label>
-                  <Input
-                    id="largura"
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={largura}
-                    onChange={(e) => setLargura(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        (e.target as HTMLInputElement).blur();
-                        setActive("paspatur");
-                      }
-                    }}
+                <div className="w-full sm:w-56 sm:ml-auto">
+                  <FieldNum
+                    id="mao-obra-extra"
+                    label="Mão de obra extra (R$)"
+                    value={maoDeObraExtraStr}
+                    onChange={setMaoDeObraExtraStr}
                   />
                 </div>
               </div>
