@@ -375,14 +375,62 @@ export const deleteProductById = createServerFn({ method: "POST" })
         : message;
     };
 
-    // Autorização: precisa poder ver este produto via RLS
-    const { data: visible, error: visibleError } = await context.supabase
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("id, active, parent_user_id, can_create_products, account_type")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profileError) throw new Error(profileError.message);
+    if (!profile || profile.active === false) throw new Error("Conta inativa ou não encontrada.");
+
+    const { data: roles, error: rolesError } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    if (rolesError) throw new Error(rolesError.message);
+    const roleSet = new Set((roles ?? []).map((row: { role: string }) => row.role));
+    const isAdmin = roleSet.has("admin") || profile.account_type === "admin";
+    const isRevendedor = roleSet.has("revendedor") || profile.account_type === "revendedor";
+    const isColaborador = roleSet.has("colaborador") || !!profile.parent_user_id;
+    if (!(isAdmin || isRevendedor || (isColaborador && profile.can_create_products))) {
+      throw new Error("Você não tem permissão para excluir produtos.");
+    }
+
+    const { data: ownerId, error: ownerError } = await admin.rpc("owner_user_id", {
+      _user_id: context.userId,
+    });
+    if (ownerError) throw new Error(ownerError.message);
+    if (!ownerId) throw new Error("Não foi possível identificar a empresa atual.");
+
+    const { data: groupOwnerRows, error: groupError } = await admin.rpc("company_group_owner_ids", {
+      _owner: ownerId,
+    });
+    if (groupError) throw new Error(groupError.message);
+    const groupOwnerIds = (groupOwnerRows ?? []).map((row: unknown) =>
+      typeof row === "string" ? row : String((row as { company_group_owner_ids?: string })?.company_group_owner_ids ?? ""),
+    );
+    const ownerScopeIds = Array.from(new Set([ownerId, ...groupOwnerIds].filter(Boolean)));
+
+    const { data: collaboratorRows, error: collaboratorsError } = ownerScopeIds.length
+      ? await admin.from("profiles").select("id").in("parent_user_id", ownerScopeIds)
+      : { data: [], error: null };
+    if (collaboratorsError) throw new Error(collaboratorsError.message);
+    const scopeUserIds = Array.from(
+      new Set([
+        context.userId,
+        ...ownerScopeIds,
+        ...((collaboratorRows ?? []).map((row: { id: string }) => row.id)),
+      ].filter(Boolean)),
+    );
+
+    const { data: scopedProduct, error: scopedProductError } = await admin
       .from("products")
       .select("id")
       .eq("id", data.id)
+      .in("user_id", scopeUserIds)
       .maybeSingle();
-    if (visibleError) throw new Error(visibleError.message);
-    if (!visible) throw new Error("Produto não encontrado ou sem permissão.");
+    if (scopedProductError) throw new Error(scopedProductError.message);
+    if (!scopedProduct) throw new Error("Produto não encontrado ou sem permissão.");
 
     const productIdSet = new Set<string>([data.id]);
 
@@ -391,6 +439,7 @@ export const deleteProductById = createServerFn({ method: "POST" })
       const { data: rows, error } = await admin
         .from("budget_items")
         .select("id, budget_id, data")
+        .in("user_id", scopeUserIds)
         .order("id", { ascending: true })
         .range(from, from + PAGE - 1);
       if (error) throw new Error(error.message);
@@ -424,6 +473,7 @@ export const deleteProductById = createServerFn({ method: "POST" })
       const { data: rows, error } = await admin
         .from("budgets")
         .select("id, details")
+        .in("user_id", scopeUserIds)
         .order("id", { ascending: true })
         .range(from, from + PAGE - 1);
       if (error) throw new Error(error.message);
