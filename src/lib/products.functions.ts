@@ -274,15 +274,15 @@ export const bulkDeleteProductsByCategory = createServerFn({ method: "POST" })
       deleted += count ?? ids.length;
     }
 
-    const { count: remaining, error: remainingError } = await admin
+    const { count: remaining, error: remainingError } = await context.supabase
       .from("products")
       .select("id", { count: "exact", head: true })
-      .eq("category", data.category)
-      .in("user_id", scopeUserIds);
+      .eq("category", data.category);
     if (remainingError) throw new Error(remainingError.message);
     if ((remaining ?? 0) > 0) {
       throw new Error(`Ainda restaram ${remaining} produto(s) na categoria após a exclusão.`);
     }
+
 
     return {
       found: productIds.length,
