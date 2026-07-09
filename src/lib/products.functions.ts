@@ -142,7 +142,22 @@ export const bulkDeleteProductsByCategory = createServerFn({ method: "POST" })
       ].filter(Boolean)),
     );
 
-    const productIds: string[] = [];
+    // Gather product ids from BOTH the user-scoped view (RLS, matches what the
+    // UI shows the user) and the owner/group scope via admin. Union both so we
+    // never leave behind products the user can see or that belong to the group.
+    const productIdSetAll = new Set<string>();
+    for (let from = 0; ; from += PAGE) {
+      const { data: rows, error } = await context.supabase
+        .from("products")
+        .select("id")
+        .eq("category", data.category)
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      const pageRows = (rows ?? []) as Array<{ id: string }>;
+      for (const row of pageRows) productIdSetAll.add(row.id);
+      if (pageRows.length < PAGE) break;
+    }
     for (let from = 0; ; from += PAGE) {
       const { data: rows, error } = await admin
         .from("products")
@@ -153,9 +168,11 @@ export const bulkDeleteProductsByCategory = createServerFn({ method: "POST" })
         .range(from, from + PAGE - 1);
       if (error) throw new Error(error.message);
       const pageRows = (rows ?? []) as Array<{ id: string }>;
-      productIds.push(...pageRows.map((row) => row.id));
+      for (const row of pageRows) productIdSetAll.add(row.id);
       if (pageRows.length < PAGE) break;
     }
+    const productIds: string[] = Array.from(productIdSetAll);
+
 
     if (productIds.length === 0) {
       return {
