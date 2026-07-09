@@ -292,3 +292,175 @@ export const bulkDeleteProductsByCategory = createServerFn({ method: "POST" })
       deletedLinkedRows,
     };
   });
+export const deleteProductById = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+    const PAGE = 500;
+    const DIRECT_REF_COLUMNS = [
+      "product_id",
+      "produto_id",
+      "perfil_id",
+      "perfil_adicional_id",
+      "vidro_id",
+      "foam_id",
+      "paspatur_id",
+      "paspatur_adicional_id",
+      "colagem_id",
+      "impressao_id",
+    ];
+    const OPTIONAL_LINK_TABLES = [
+      "budget_items",
+      "order_items",
+      "budget_item_components",
+      "order_item_components",
+      "budget_components",
+      "order_components",
+      "orcamento_items",
+      "pedido_items",
+      "orcamento_componentes",
+      "pedido_componentes",
+    ];
+    const JSON_REF_FIELDS = new Set([
+      "productId",
+      "produtoId",
+      "produto_id",
+      "idProduto",
+      "perfilId",
+      "perfilAdicionalId",
+      "paspaturId",
+      "paspaturAdicionalId",
+      "vidroId",
+      "foamId",
+      "colagemId",
+      "impressaoId",
+    ]);
+
+    const isMissingSchemaError = (message: string) =>
+      /schema cache|could not find|does not exist|column .* not found|column .* does not exist|relation .* does not exist/i.test(
+        message,
+      );
+    const hasProductReference = (value: unknown, productIds: Set<string>): boolean => {
+      if (Array.isArray(value)) return value.some((entry) => hasProductReference(entry, productIds));
+      if (!value || typeof value !== "object") return false;
+      for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+        if (JSON_REF_FIELDS.has(key) && productIds.has(String(entry ?? ""))) return true;
+        if (entry && typeof entry === "object" && hasProductReference(entry, productIds)) return true;
+      }
+      return false;
+    };
+    const scrubProductReferences = (value: unknown, productIds: Set<string>): unknown => {
+      if (Array.isArray(value)) return value.map((entry) => scrubProductReferences(entry, productIds));
+      if (!value || typeof value !== "object") return value;
+      const next: Record<string, unknown> = {};
+      for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+        if (JSON_REF_FIELDS.has(key) && productIds.has(String(entry ?? ""))) {
+          next[key] = "";
+        } else if (entry && typeof entry === "object") {
+          next[key] = scrubProductReferences(entry, productIds);
+        } else {
+          next[key] = entry;
+        }
+      }
+      return next;
+    };
+    const formatDeleteError = (message: string) => {
+      const relation = message.match(/table "([^"]+)"/i)?.[1] ?? message.match(/relation "([^"]+)"/i)?.[1];
+      return relation
+        ? `Ainda existe vínculo na tabela ${relation}. Motivo: ${message}`
+        : message;
+    };
+
+    // Autorização: precisa poder ver este produto via RLS
+    const { data: visible, error: visibleError } = await context.supabase
+      .from("products")
+      .select("id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (visibleError) throw new Error(visibleError.message);
+    if (!visible) throw new Error("Produto não encontrado ou sem permissão.");
+
+    const productIdSet = new Set<string>([data.id]);
+
+    // Limpa referências em budget_items (JSON) — remove órfãos, atualiza os demais
+    for (let from = 0; ; from += PAGE) {
+      const { data: rows, error } = await admin
+        .from("budget_items")
+        .select("id, budget_id, data")
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      const pageRows = (rows ?? []) as Array<{ id: string; budget_id: string; data: unknown }>;
+      if (pageRows.length === 0) break;
+      const budgetIds = Array.from(new Set(pageRows.map((r) => r.budget_id).filter(Boolean)));
+      const existing = new Set<string>();
+      if (budgetIds.length) {
+        const { data: bs, error: bsErr } = await admin.from("budgets").select("id").in("id", budgetIds);
+        if (bsErr) throw new Error(bsErr.message);
+        for (const b of bs ?? []) existing.add((b as { id: string }).id);
+      }
+      for (const row of pageRows) {
+        if (!hasProductReference(row.data, productIdSet)) continue;
+        if (!existing.has(row.budget_id)) {
+          const { error: delErr } = await admin.from("budget_items").delete().eq("id", row.id);
+          if (delErr) throw new Error(delErr.message);
+        } else {
+          const { error: updErr } = await admin
+            .from("budget_items")
+            .update({ data: scrubProductReferences(row.data, productIdSet) })
+            .eq("id", row.id);
+          if (updErr) throw new Error(updErr.message);
+        }
+      }
+      if (pageRows.length < PAGE) break;
+    }
+
+    // Limpa referências em budgets.details (JSON)
+    for (let from = 0; ; from += PAGE) {
+      const { data: rows, error } = await admin
+        .from("budgets")
+        .select("id, details")
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      const pageRows = (rows ?? []) as Array<{ id: string; details: unknown }>;
+      if (pageRows.length === 0) break;
+      for (const row of pageRows) {
+        if (!hasProductReference(row.details, productIdSet)) continue;
+        const { error: updErr } = await admin
+          .from("budgets")
+          .update({ details: scrubProductReferences(row.details, productIdSet) })
+          .eq("id", row.id);
+        if (updErr) throw new Error(updErr.message);
+      }
+      if (pageRows.length < PAGE) break;
+    }
+
+    // Remove vínculos diretos em tabelas opcionais
+    for (const table of OPTIONAL_LINK_TABLES) {
+      for (const column of DIRECT_REF_COLUMNS) {
+        const { error } = await admin.from(table).delete().eq(column, data.id);
+        if (error) {
+          if (isMissingSchemaError(error.message ?? "")) continue;
+          throw new Error(`Não foi possível limpar vínculo em ${table}.${column}: ${error.message}`);
+        }
+      }
+    }
+
+    const { error: delError } = await admin.from("products").delete().eq("id", data.id);
+    if (delError) throw new Error(formatDeleteError(delError.message));
+
+    const { data: still, error: stillError } = await context.supabase
+      .from("products")
+      .select("id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (stillError) throw new Error(stillError.message);
+    if (still) throw new Error("Produto ainda existe após a exclusão.");
+
+    return { deleted: true };
+  });
