@@ -31,7 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { bulkDeleteProductsByCategory } from "@/lib/products.functions";
+import { bulkDeleteProductsByCategory, deleteProductById } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
