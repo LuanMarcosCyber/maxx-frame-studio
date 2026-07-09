@@ -31,7 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { bulkDeleteProductsByCategory } from "@/lib/products.functions";
+import { bulkDeleteProductsByCategory, deleteProductById } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
@@ -120,6 +120,8 @@ function Produtos() {
   const { session, user, role, profile } = useAuth();
   const queryClient = useQueryClient();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
+  const deleteProductByIdFn = useServerFn(deleteProductById);
+
   const isColaborador = role === "colaborador";
   const canEdit = role === "admin" || role === "revendedor" || (isColaborador && !!profile?.can_create_products);
   const showInternal = !isColaborador;
@@ -398,19 +400,21 @@ function Produtos() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", deleteTarget.id);
-      if (error) throw error;
+      await deleteProductByIdFn({ data: { id: deleteTarget.id } });
+      queryClient.setQueryData<Product[]>(["products"], (current = []) =>
+        current.filter((p) => p.id !== deleteTarget.id),
+      );
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Produto excluído.");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao excluir produto.");
     } finally {
       setDeleteTarget(null);
     }
   };
+
 
   const handleBulkDelete = async () => {
     if (!user) return;
