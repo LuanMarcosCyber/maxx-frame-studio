@@ -2142,7 +2142,9 @@ function NovoOrcamento() {
                         id="top-cliente"
                         placeholder="Nome do cliente"
                         value={clienteNome}
+                        className="uppercase"
                         autoComplete="off"
+
                         onFocus={() => {
                           if (!naoVincularCliente && clienteNome.trim().length > 0) {
                             setClienteSugestoesOpen(true);
