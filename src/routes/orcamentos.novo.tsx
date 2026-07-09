@@ -2411,13 +2411,14 @@ function NovoOrcamento() {
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
-              <Total label="Paspatur" value={valorPaspatur} />
-              <Total label="Perfil" value={valorPerfil} />
-              <Total label="Vidro" value={valorVidro} />
-              <Total label="Foam/MDF" value={valorFoam} />
-              <Total label="Colagem" value={valorColagem} />
-              <Total label="Impressão" value={valorImpressao} />
-              <Total label="Diversos" value={valorDiversos} />
+              <Total label="Paspatur" value={valorPaspatur * rtMult} />
+              <Total label="Perfil" value={valorPerfil * rtMult} />
+              <Total label="Vidro" value={valorVidro * rtMult} />
+              <Total label="Foam/MDF" value={valorFoam * rtMult} />
+              <Total label="Colagem" value={valorColagem * rtMult} />
+              <Total label="Impressão" value={valorImpressao * rtMult} />
+              <Total label="Diversos" value={valorDiversos * rtMult} />
+
             </div>
             {(mEsq > 0 || mDir > 0 || mSup > 0 || mInf > 0) &&
               alturaNum > 0 &&
