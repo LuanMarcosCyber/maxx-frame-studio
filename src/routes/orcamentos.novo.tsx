@@ -921,6 +921,21 @@ function NovoOrcamento() {
   const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
   const [arquitetoSugestoesOpen, setArquitetoSugestoesOpen] = useState(false);
 
+  // Força CAPS LOCK nos campos Colaborador / Cliente / Arquiteto
+  useEffect(() => {
+    const up = vendedorNome.toUpperCase();
+    if (up !== vendedorNome) setVendedorNome(up);
+  }, [vendedorNome]);
+  useEffect(() => {
+    const up = clienteNome.toUpperCase();
+    if (up !== clienteNome) setClienteNome(up);
+  }, [clienteNome]);
+  useEffect(() => {
+    const up = arquitetoNome.toUpperCase();
+    if (up !== arquitetoNome) setArquitetoNome(up);
+  }, [arquitetoNome]);
+
+
   const [paspaturProdutoError, setPaspaturProdutoError] = useState(false);
   const [paspaturAdicProdutoError, setPaspaturAdicProdutoError] = useState(false);
   const [discountAuthOpen, setDiscountAuthOpen] = useState(false);
