@@ -120,6 +120,8 @@ function Produtos() {
   const { session, user, role, profile } = useAuth();
   const queryClient = useQueryClient();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
+  const deleteProductByIdFn = useServerFn(deleteProductById);
+
   const isColaborador = role === "colaborador";
   const canEdit = role === "admin" || role === "revendedor" || (isColaborador && !!profile?.can_create_products);
   const showInternal = !isColaborador;
