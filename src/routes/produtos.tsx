@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { bulkDeleteProductsByCategory } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
@@ -117,6 +119,7 @@ const emptyForm: FormState = {
 function Produtos() {
   const { session, user, role, profile } = useAuth();
   const queryClient = useQueryClient();
+  const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
   const isColaborador = role === "colaborador";
   const canEdit = role === "admin" || role === "revendedor" || (isColaborador && !!profile?.can_create_products);
   const showInternal = !isColaborador;
@@ -413,52 +416,19 @@ function Produtos() {
     if (!user) return;
     setBulkDeleting(true);
     try {
-      // Fetch every product id in this category the current user can see via RLS
-      // (covers products owned by the store owner AND by collaborators in the group).
-      const { data: allInCategory, error: fetchErr } = await supabase
-        .from("products")
-        .select("id")
-        .eq("category", activeCategory);
-      if (fetchErr) throw fetchErr;
-
-      const ids = (allInCategory ?? []).map((r) => r.id);
-      if (ids.length === 0) {
+      const result = await bulkDeleteProductsByCategoryFn({ data: { category: activeCategory } });
+      if (result.found === 0) {
         toast.info("Nenhum produto para excluir nesta categoria.");
         return;
       }
 
-      // Delete in batches to avoid URL/statement limits on very large sets.
-      const BATCH = 300;
-      let deleted = 0;
-      let lastError: string | null = null;
-      for (let i = 0; i < ids.length; i += BATCH) {
-        const chunk = ids.slice(i, i + BATCH);
-        const { error: delErr, count } = await supabase
-          .from("products")
-          .delete({ count: "exact" })
-          .in("id", chunk);
-        if (delErr) {
-          lastError = delErr.message;
-          break;
-        }
-        deleted += count ?? chunk.length;
-      }
-
+      queryClient.setQueryData<Product[]>(["products"], (current = []) =>
+        current.filter((product) => product.category !== activeCategory),
+      );
       await queryClient.invalidateQueries({ queryKey: ["products"] });
-
-      if (lastError) {
-        toast.error(
-          `Alguns produtos não puderam ser excluídos (${deleted}/${ids.length}). Motivo: ${lastError}`,
-        );
-      } else if (deleted < ids.length) {
-        toast.warning(
-          `Foram excluídos ${deleted} de ${ids.length} produtos. Os demais podem estar vinculados a pedidos/orçamentos.`,
-        );
-      } else {
-        toast.success(
-          `Todos os produtos da categoria ${activeLabel} foram excluídos com sucesso.`,
-        );
-      }
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast.success("Todos os produtos da categoria foram excluídos com sucesso.");
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao excluir produtos.");
     } finally {
