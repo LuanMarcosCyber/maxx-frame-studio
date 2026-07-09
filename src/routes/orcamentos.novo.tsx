@@ -1183,7 +1183,12 @@ function NovoOrcamento() {
   const maoDeObraExtra = parseNum(maoDeObraExtraStr);
 
   const rtPercNum = Math.min(1000, Math.max(0, parseNum(rtPercStr)));
+  const rtMult = 1 + rtPercNum / 100;
+  // Formata valores de componentes/itens já com o RT aplicado, para que os
+  // resumos individuais fiquem coerentes com o total geral.
+  const fmtMoneyRt = (n: number) => fmtMoney(n * rtMult);
   const rtValor = subtotalItens * (rtPercNum / 100);
+
 
   const subtotalSemDesconto =
     subtotalItens + rtValor + valorInstalacao + valorEntrega + maoDeObraExtra;
