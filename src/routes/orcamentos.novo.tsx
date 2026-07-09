@@ -1956,7 +1956,7 @@ function NovoOrcamento() {
                             {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                           </span>
                           <span className="text-xs font-medium text-muted-foreground ml-2">
-                            {fmtMoney(itemTotals[i] ?? 0)}
+                            {fmtMoneyRt(itemTotals[i] ?? 0)}
                           </span>
 
                         </button>
@@ -2397,7 +2397,7 @@ function NovoOrcamento() {
               <div className="text-sm font-medium text-foreground">
                 {activeQuantidade > 1 ? `${activeQuantidade}x ` : ""}Item {activeIndex + 1}{" "}
                 <span className="text-muted-foreground font-normal">
-                  · Subtotal {fmtMoney(activeValues.subtotal * activeQuantidade)}
+                  · Subtotal {fmtMoneyRt(activeValues.subtotal * activeQuantidade)}
                 </span>
 
               </div>
@@ -2780,7 +2780,7 @@ function NovoOrcamento() {
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorPaspaturPrincipal)}
+                          {fmtMoneyRt(valorPaspaturPrincipal)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3">
@@ -2790,12 +2790,12 @@ function NovoOrcamento() {
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraAdicional)} × {fmtMeasure(alturaAdicional)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorPaspaturAdicional)}
+                          {fmtMoneyRt(valorPaspaturAdicional)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
                         <span className="font-semibold text-foreground">Total paspatur</span>
-                        <span className="font-semibold text-foreground">{fmtMoney(valorPaspatur)}</span>
+                        <span className="font-semibold text-foreground">{fmtMoneyRt(valorPaspatur)}</span>
                       </div>
                     </>
                   ) : (
@@ -2806,7 +2806,7 @@ function NovoOrcamento() {
                         <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                       </span>
                       <span className="font-semibold text-foreground whitespace-nowrap">
-                        {fmtMoney(valorPaspaturPrincipal)}
+                        {fmtMoneyRt(valorPaspaturPrincipal)}
                       </span>
                     </div>
                   )}
@@ -2884,7 +2884,7 @@ function NovoOrcamento() {
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorPerfilPrincipal)}
+                          {fmtMoneyRt(valorPerfilPrincipal)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3">
@@ -2893,12 +2893,12 @@ function NovoOrcamento() {
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorPerfilAdicional)}
+                          {fmtMoneyRt(valorPerfilAdicional)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
                         <span className="font-semibold text-foreground">Total perfil</span>
-                        <span className="font-semibold text-foreground">{fmtMoney(valorPerfil)}</span>
+                        <span className="font-semibold text-foreground">{fmtMoneyRt(valorPerfil)}</span>
                       </div>
                     </>
                   ) : (
@@ -2908,7 +2908,7 @@ function NovoOrcamento() {
                         <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                       </span>
                       <span className="font-semibold text-foreground whitespace-nowrap">
-                        {fmtMoney(valorPerfilPrincipal)}
+                        {fmtMoneyRt(valorPerfilPrincipal)}
                       </span>
                     </div>
                   )}
@@ -2995,7 +2995,7 @@ function NovoOrcamento() {
                           <span className="block text-xs">Medida usada: {fmtMeasure(larguraFinal)} × {fmtMeasure(alturaFinal)} cm</span>
                         </span>
                         <span className="font-medium text-foreground whitespace-nowrap">
-                          {fmtMoney(valorVidroUnit)}
+                          {fmtMoneyRt(valorVidroUnit)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-3">
@@ -3004,7 +3004,7 @@ function NovoOrcamento() {
                       </div>
                       <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
                         <span className="font-semibold text-foreground">Total vidro</span>
-                        <span className="font-semibold text-foreground">{fmtMoney(valorVidro)}</span>
+                        <span className="font-semibold text-foreground">{fmtMoneyRt(valorVidro)}</span>
                       </div>
                     </div>
                   )}
@@ -3268,7 +3268,7 @@ function NovoOrcamento() {
                     ))}
                     <div className="flex justify-between gap-3 border-t border-border pt-1.5 mt-1">
                       <span className="font-semibold text-foreground">Total Produtos Diversos</span>
-                      <span className="font-semibold text-foreground">{fmtMoney(valorDiversos)}</span>
+                      <span className="font-semibold text-foreground">{fmtMoneyRt(valorDiversos)}</span>
                     </div>
                   </div>
                 )}
@@ -3508,7 +3508,7 @@ function NovoOrcamento() {
                         <ImageIcon className="h-3.5 w-3.5" />
                         {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                         <span className="text-muted-foreground font-normal">
-                          {fmtMoney(itemTotals[i] ?? 0)}
+                          {fmtMoneyRt(itemTotals[i] ?? 0)}
                         </span>
                       </button>
                     ))}
@@ -3531,14 +3531,14 @@ function NovoOrcamento() {
                     <>
                       <Row
                         label={`Paspatur externo${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
-                        value={fmtMoney(valorPaspaturPrincipal)}
+                        value={fmtMoneyRt(valorPaspaturPrincipal)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
                         Margens: E {fmtMeasure(mEsq)} · D {fmtMeasure(mDir)} · S {fmtMeasure(mSup)} · I {fmtMeasure(mInf)} cm
                       </div>
                       <Row
                         label={`Paspatur interno${paspaturAdicionalSelecionado ? ` (${paspaturAdicionalSelecionado.code})` : ""}`}
-                        value={fmtMoney(valorPaspaturAdicional)}
+                        value={fmtMoneyRt(valorPaspaturAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
                         Margens: E {fmtMeasure(mEsqA)} · D {fmtMeasure(mDirA)} · S {fmtMeasure(mSupA)} · I {fmtMeasure(mInfA)} cm
@@ -3546,56 +3546,56 @@ function NovoOrcamento() {
                       </div>
                       <Row
                         label="Total Paspatur"
-                        value={fmtMoney(valorPaspatur)}
+                        value={fmtMoneyRt(valorPaspatur)}
                       />
                     </>
                   ) : (
                     <Row
                       label={`Paspatur${paspaturSelecionado ? ` (${paspaturSelecionado.code})` : ""}`}
-                      value={fmtMoney(valorPaspatur)}
+                      value={fmtMoneyRt(valorPaspatur)}
                     />
                   )}
                   {perfilAdicionalAtivo === "sim" && perfilAdicionalSelecionado ? (
                     <>
                       <Row
                         label={`Perfil interno${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
-                        value={fmtMoney(valorPerfilPrincipal)}
+                        value={fmtMoneyRt(valorPerfilPrincipal)}
                       />
                       <Row
                         label={`Perfil externo${perfilAdicionalSelecionado ? ` (${perfilAdicionalSelecionado.code})` : ""}`}
-                        value={fmtMoney(valorPerfilAdicional)}
+                        value={fmtMoneyRt(valorPerfilAdicional)}
                       />
                       <div className="text-xs text-muted-foreground pl-2">
                         Medida usada no cálculo: {fmtMeasure(larguraPerfilAdicional)} × {fmtMeasure(alturaPerfilAdicional)} cm
                       </div>
-                      <Row label="Total Perfil" value={fmtMoney(valorPerfil)} />
+                      <Row label="Total Perfil" value={fmtMoneyRt(valorPerfil)} />
                     </>
                   ) : (
                     <Row
                       label={`Perfil${perfilSelecionado ? ` (${perfilSelecionado.code})` : ""}`}
-                      value={fmtMoney(valorPerfil)}
+                      value={fmtMoneyRt(valorPerfil)}
                     />
                   )}
                   <Row
                     label={`Vidro${vidroSelecionado && vidroTipo === "sim" ? ` (${vidroSelecionado.code})` : ""}`}
-                    value={fmtMoney(valorVidro)}
+                    value={fmtMoneyRt(valorVidro)}
                   />
                   {vidroTipo === "sim" && vidroSelecionado && vidroQuantidadeNum > 1 && (
                     <div className="text-xs text-muted-foreground pl-2">
-                      {vidroQuantidadeNum}× {fmtMoney(valorVidroUnit)}
+                      {vidroQuantidadeNum}× {fmtMoneyRt(valorVidroUnit)}
                     </div>
                   )}
                   <Row
                     label={`Foam/MDF${foamSelecionado ? ` (${foamSelecionado.code})` : ""}`}
-                    value={fmtMoney(valorFoam)}
+                    value={fmtMoneyRt(valorFoam)}
                   />
                   <Row
                     label={`Colagem${colagemSelecionada && colagemAtivo === "sim" ? ` (${colagemSelecionada.code})` : ""}`}
-                    value={fmtMoney(valorColagem)}
+                    value={fmtMoneyRt(valorColagem)}
                   />
                   <Row
                     label={`Impressão${impressaoSelecionada && impressaoAtivo === "sim" ? ` (${impressaoSelecionada.code})` : ""}`}
-                    value={fmtMoney(valorImpressao)}
+                    value={fmtMoneyRt(valorImpressao)}
                   />
                   {diversosItens.length > 0 && (
                     <>
@@ -3612,7 +3612,7 @@ function NovoOrcamento() {
                       ))}
                       <Row
                         label="Total Produtos Diversos"
-                        value={fmtMoney(valorDiversos)}
+                        value={fmtMoneyRt(valorDiversos)}
                       />
                     </>
                   )}
@@ -3627,7 +3627,7 @@ function NovoOrcamento() {
                   )}
                   <Row
                     label={`Subtotal Item ${activeIndex + 1}${activeQuantidade > 1 ? " (total)" : ""}`}
-                    value={fmtMoney(activeValues.subtotal * activeQuantidade)}
+                    value={fmtMoneyRt(activeValues.subtotal * activeQuantidade)}
                   />
 
                   {/* Other items */}
@@ -3639,7 +3639,7 @@ function NovoOrcamento() {
                           <Row
                             key={i}
                             label={`${(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item ${i + 1}`}
-                            value={fmtMoney(itemTotals[i] ?? 0)}
+                            value={fmtMoneyRt(itemTotals[i] ?? 0)}
                           />
                         ),
                       )}
@@ -4292,7 +4292,7 @@ function NovoOrcamento() {
                   {(itemQuantities[i] ?? 1) > 1 ? `${itemQuantities[i]}x ` : ""}Item {i + 1}
                 </span>
                 <span className="text-muted-foreground">
-                  {fmtMoney(itemTotals[i] ?? 0)}
+                  {fmtMoneyRt(itemTotals[i] ?? 0)}
                 </span>
 
               </button>
