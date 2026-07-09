@@ -2049,7 +2049,9 @@ function NovoOrcamento() {
                         id="top-colaborador"
                         placeholder="Nome do colaborador"
                         value={vendedorNome}
+                        className="uppercase"
                         autoComplete="off"
+
                         onFocus={() => {
                           if (vendedorNome.trim().length > 0) setColabSugestoesOpen(true);
                         }}
