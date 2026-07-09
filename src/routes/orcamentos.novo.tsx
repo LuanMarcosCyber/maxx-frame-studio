@@ -2275,7 +2275,9 @@ function NovoOrcamento() {
                         id="top-arquiteto"
                         placeholder="Buscar arquiteto cadastrado"
                         value={arquitetoNome}
+                        className="uppercase"
                         autoComplete="off"
+
                         onFocus={() => {
                           if (arquitetoNome.trim().length > 0) {
                             setArquitetoSugestoesOpen(true);
