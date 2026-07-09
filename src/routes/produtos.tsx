@@ -400,19 +400,21 @@ function Produtos() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", deleteTarget.id);
-      if (error) throw error;
+      await deleteProductByIdFn({ data: { id: deleteTarget.id } });
+      queryClient.setQueryData<Product[]>(["products"], (current = []) =>
+        current.filter((p) => p.id !== deleteTarget.id),
+      );
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Produto excluído.");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao excluir produto.");
     } finally {
       setDeleteTarget(null);
     }
   };
+
 
   const handleBulkDelete = async () => {
     if (!user) return;
