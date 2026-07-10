@@ -33,8 +33,7 @@ type DiscountRequest = {
 };
 
 export function AppHeader({ title, subtitle }: AppHeaderProps) {
-  const { profile, role, session, signOut } = useAuth();
-  const displayName = profile?.full_name || profile?.username || "Usuário";
+  const { profile, role, session } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const navigate = useNavigate();
