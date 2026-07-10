@@ -267,6 +267,30 @@ export type Database = {
         }
         Relationships: []
       }
+      company_switch_audit: {
+        Row: {
+          from_company_id: string | null
+          id: string
+          switched_at: string
+          to_company_id: string | null
+          user_id: string
+        }
+        Insert: {
+          from_company_id?: string | null
+          id?: string
+          switched_at?: string
+          to_company_id?: string | null
+          user_id: string
+        }
+        Update: {
+          from_company_id?: string | null
+          id?: string
+          switched_at?: string
+          to_company_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       discount_approval_requests: {
         Row: {
           budget_id: string | null
@@ -506,6 +530,7 @@ export type Database = {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null
           active: boolean
+          active_company_id: string | null
           address: string | null
           address_number: string | null
           avatar_url: string | null
@@ -534,6 +559,7 @@ export type Database = {
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
           active?: boolean
+          active_company_id?: string | null
           address?: string | null
           address_number?: string | null
           avatar_url?: string | null
@@ -562,6 +588,7 @@ export type Database = {
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
           active?: boolean
+          active_company_id?: string | null
           address?: string | null
           address_number?: string | null
           avatar_url?: string | null
@@ -588,6 +615,13 @@ export type Database = {
           username?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_active_company_id_fkey"
+            columns: ["active_company_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_company_group_id_fkey"
             columns: ["company_group_id"]
@@ -623,6 +657,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_switch_to_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      clear_active_company: { Args: never; Returns: undefined }
       company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
       get_store_profile: {
         Args: { _user_id: string }
@@ -650,8 +689,20 @@ export type Database = {
         Returns: boolean
       }
       is_collaborator: { Args: { _user_id: string }; Returns: boolean }
+      list_switchable_companies: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          is_active: boolean
+          is_self: boolean
+          store_name: string
+        }[]
+      }
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
+      switch_active_company: { Args: { _company_id: string }; Returns: string }
     }
     Enums: {
       account_type: "admin" | "revendedor" | "operacional"
