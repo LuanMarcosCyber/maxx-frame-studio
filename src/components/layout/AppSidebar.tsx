@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
@@ -15,15 +15,34 @@ import {
   Loader2,
   FolderPlus,
   ChevronDown,
+  ChevronUp,
   Truck,
   Compass,
   UsersRound,
+  LogOut,
+  Building2,
+  Check,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
 import { getInitials, fileToAvatarDataUrl } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  listSwitchableCompanies,
+  switchActiveCompany,
+  clearActiveCompany,
+} from "@/lib/company-switch.functions";
 
 
 type Item = {
@@ -177,7 +196,61 @@ function ProfileAvatar() {
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
-  const { profile } = useAuth();
+  const { profile, role, signOut } = useAuth();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [switching, setSwitching] = useState<string | null>(null);
+
+  // Só contas do tipo Empresa (revendedor sem parent) podem trocar de empresa
+  const canSwitchCompany = role === "revendedor" && !profile?.parent_user_id;
+
+  const listSwitchableFn = useServerFn(listSwitchableCompanies);
+  const switchCompanyFn = useServerFn(switchActiveCompany);
+  const clearActiveFn = useServerFn(clearActiveCompany);
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["switchable-companies"],
+    enabled: canSwitchCompany,
+    queryFn: () => listSwitchableFn() as Promise<Array<{
+      id: string;
+      full_name: string | null;
+      store_name: string | null;
+      avatar_url: string | null;
+      is_active: boolean;
+      is_self: boolean;
+    }>>,
+  });
+
+  const activeCompany = companies.find((c) => c.is_active) ?? companies.find((c) => c.is_self);
+  const hasLinkedCompanies = companies.length > 1;
+
+  async function handleSwitchCompany(companyId: string) {
+    setSwitching(companyId);
+    try {
+      await switchCompanyFn({ data: { company_id: companyId } });
+      // Recarrega tudo para refletir o novo escopo de dados
+      await qc.invalidateQueries();
+      toast.success("Empresa ativa alterada.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Falha ao trocar de empresa (${msg})`);
+    } finally {
+      setSwitching(null);
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await clearActiveFn();
+    } catch {
+      // Best-effort — não bloqueia o logout se a chamada falhar
+    }
+    await qc.cancelQueries();
+    qc.clear();
+    await signOut();
+    navigate({ to: "/login", replace: true });
+  }
+
 
   const cadastroHasActive = cadastroItems.some((i) => isActive(i.url));
   const [cadastroOpen, setCadastroOpen] = useState(cadastroHasActive);
@@ -267,30 +340,94 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
 
 
       <div className="p-4 border-t border-border">
-        <div className="flex items-center gap-3 rounded-md bg-card border border-border p-3">
-          <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile?.full_name || "Usuário"}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              getInitials(profile?.full_name || profile?.username)
-            )}
-          </div>
-          <div className="leading-tight min-w-0">
-            <div className="text-sm font-semibold truncate text-foreground">
-              {profile?.full_name || profile?.username || "Usuário"}
-            </div>
-            {profile?.username && (
-              <div className="text-[11px] text-muted-foreground font-mono truncate">
-                @{profile.username}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="w-full flex items-center gap-3 rounded-md bg-card border border-border p-3 text-left hover:bg-accent hover:border-accent-foreground/20 transition outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand-end))]/40"
+              aria-label="Menu da conta"
+            >
+              <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile?.full_name || "Usuário"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  getInitials(profile?.full_name || profile?.username)
+                )}
               </div>
+              <div className="leading-tight min-w-0 flex-1">
+                <div className="text-sm font-semibold truncate text-foreground">
+                  {profile?.full_name || profile?.username || "Usuário"}
+                </div>
+                {canSwitchCompany && activeCompany ? (
+                  <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                    <Building2 className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{activeCompany.store_name || activeCompany.full_name || "Empresa"}</span>
+                  </div>
+                ) : profile?.username ? (
+                  <div className="text-[11px] text-muted-foreground font-mono truncate">
+                    @{profile.username}
+                  </div>
+                ) : null}
+              </div>
+              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-56 mb-1">
+            <DropdownMenuLabel className="flex flex-col gap-0.5">
+              <span className="text-sm">{profile?.full_name || profile?.username || "Usuário"}</span>
+              {profile?.username && (
+                <span className="text-[11px] text-muted-foreground font-normal font-mono">
+                  @{profile.username}
+                </span>
+              )}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {canSwitchCompany && hasLinkedCompanies && (
+              <>
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  Trocar de empresa
+                </DropdownMenuLabel>
+                {companies.map((c) => (
+                  <DropdownMenuItem
+                    key={c.id}
+                    disabled={c.is_active || switching === c.id}
+                    onClick={() => handleSwitchCompany(c.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Building2 className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 truncate">
+                      {c.store_name || c.full_name || "Empresa"}
+                    </span>
+                    {c.is_active && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                    {switching === c.id && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </>
             )}
-          </div>
-        </div>
+            <DropdownMenuItem onClick={() => { onNavigate?.(); navigate({ to: "/conta" }); }}>
+              <User className="h-4 w-4 mr-2" /> Minha conta
+            </DropdownMenuItem>
+            {(role === "admin" || role === "revendedor") && (
+              <DropdownMenuItem onClick={() => { onNavigate?.(); navigate({ to: "/configuracoes" }); }}>
+                <Settings className="h-4 w-4 mr-2" /> Configurações
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut className="h-4 w-4 mr-2" /> Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
     </div>
   );
 }
