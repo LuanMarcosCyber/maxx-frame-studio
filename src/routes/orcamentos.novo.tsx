@@ -1575,7 +1575,8 @@ function NovoOrcamento() {
     }
     // If the operator was auto-filled from the active session and never confirmed
     // via the PIN switch flow, require the PIN before saving.
-    if (!operatorConfirmed && activeOperator) {
+    // Admins: bypass — o campo Colaborador aceita nome livre sem PIN.
+    if (!operatorConfirmed && activeOperator && role !== "admin") {
       setPendingOperator({
         id: activeOperator.id,
         full_name: activeOperator.full_name,
