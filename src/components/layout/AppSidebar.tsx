@@ -196,7 +196,61 @@ function ProfileAvatar() {
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
-  const { profile } = useAuth();
+  const { profile, role, signOut } = useAuth();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [switching, setSwitching] = useState<string | null>(null);
+
+  // Só contas do tipo Empresa (revendedor sem parent) podem trocar de empresa
+  const canSwitchCompany = role === "revendedor" && !profile?.parent_user_id;
+
+  const listSwitchableFn = useServerFn(listSwitchableCompanies);
+  const switchCompanyFn = useServerFn(switchActiveCompany);
+  const clearActiveFn = useServerFn(clearActiveCompany);
+
+  const { data: companies = [] } = useQuery({
+    queryKey: ["switchable-companies"],
+    enabled: canSwitchCompany,
+    queryFn: () => listSwitchableFn() as Promise<Array<{
+      id: string;
+      full_name: string | null;
+      store_name: string | null;
+      avatar_url: string | null;
+      is_active: boolean;
+      is_self: boolean;
+    }>>,
+  });
+
+  const activeCompany = companies.find((c) => c.is_active) ?? companies.find((c) => c.is_self);
+  const hasLinkedCompanies = companies.length > 1;
+
+  async function handleSwitchCompany(companyId: string) {
+    setSwitching(companyId);
+    try {
+      await switchCompanyFn({ data: { company_id: companyId } });
+      // Recarrega tudo para refletir o novo escopo de dados
+      await qc.invalidateQueries();
+      toast.success("Empresa ativa alterada.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Falha ao trocar de empresa (${msg})`);
+    } finally {
+      setSwitching(null);
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await clearActiveFn();
+    } catch {
+      // Best-effort — não bloqueia o logout se a chamada falhar
+    }
+    await qc.cancelQueries();
+    qc.clear();
+    await signOut();
+    navigate({ to: "/login", replace: true });
+  }
+
 
   const cadastroHasActive = cadastroItems.some((i) => isActive(i.url));
   const [cadastroOpen, setCadastroOpen] = useState(cadastroHasActive);
