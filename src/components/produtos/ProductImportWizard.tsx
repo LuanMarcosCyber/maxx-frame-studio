@@ -75,6 +75,10 @@ type Mapping = Record<
   { origin: "column" | "manual"; column: string; manual: string }
 >;
 
+const isPerfilOnly = (k: FieldKey) => k === "labor_cost" || k === "frame_width_cm";
+const fieldsForCategory = (category: string): FieldDef[] =>
+  category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+
 const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
     const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key);
