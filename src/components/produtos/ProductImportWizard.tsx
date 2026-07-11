@@ -103,6 +103,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [category, setCategory] = useState(defaultCategory);
   const [fileName, setFileName] = useState("");
   const [rawMatrix, setRawMatrix] = useState<string[][]>([]);
+  const [sheets, setSheets] = useState<{ name: string; matrix: string[][]; dataRowCount: number }[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string>("");
   const [headerRow, setHeaderRow] = useState<number>(0); // 0-indexed
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
@@ -117,6 +119,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setCategory(defaultCategory);
     setFileName("");
     setRawMatrix([]);
+    setSheets([]);
+    setSelectedSheet("");
     setHeaderRow(0);
     setColumns([]);
     setRows([]);
@@ -199,6 +203,22 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setMapping(initialMapping(category));
   };
 
+  const countDataRows = (matrix: string[][]) =>
+    matrix.filter((r) => (r ?? []).some((c) => String(c ?? "").trim() !== "")).length;
+
+  const loadSheet = (name: string, all: { name: string; matrix: string[][]; dataRowCount: number }[]) => {
+    const s = all.find((x) => x.name === name);
+    if (!s) return;
+    setSelectedSheet(name);
+    setRawMatrix(s.matrix);
+    const detected = detectHeaderRow(s.matrix);
+    setHeaderRow(detected);
+    applyHeader(s.matrix, detected);
+    setMapping(initialMapping(category));
+  };
+
+  const changeSheet = (name: string) => loadSheet(name, sheets);
+
   const handleFile = async (file: File) => {
     const lower = file.name.toLowerCase();
     if (!lower.endsWith(".xlsx") && !lower.endsWith(".csv")) {
@@ -207,23 +227,29 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     }
     setFileName(file.name);
     try {
-      let matrix: string[][] = [];
+      let allSheets: { name: string; matrix: string[][]; dataRowCount: number }[] = [];
       if (lower.endsWith(".csv")) {
         const text = await file.text();
         const parsed = Papa.parse<string[]>(text, { header: false, skipEmptyLines: false });
-        matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+        const matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+        allSheets = [{ name: "CSV", matrix, dataRowCount: countDataRows(matrix) }];
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const aoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "", raw: false, blankrows: true });
-        matrix = aoa.map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+        allSheets = wb.SheetNames.map((sn) => {
+          const sheet = wb.Sheets[sn];
+          const aoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "", raw: false, blankrows: true });
+          const matrix = aoa.map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+          return { name: sn, matrix, dataRowCount: countDataRows(matrix) };
+        });
       }
-      setRawMatrix(matrix);
-      const detected = detectHeaderRow(matrix);
-      setHeaderRow(detected);
-      applyHeader(matrix, detected);
-      setMapping(initialMapping(category));
+      setSheets(allSheets);
+      const firstNonEmpty = allSheets.find((s) => s.dataRowCount > 0) ?? allSheets[0];
+      if (!firstNonEmpty) {
+        toast.error("Nenhuma aba com dados encontrada.");
+        return;
+      }
+      loadSheet(firstNonEmpty.name, allSheets);
       setStep(3);
     } catch (e: any) {
       toast.error("Erro ao ler planilha: " + (e?.message ?? "desconhecido"));
@@ -391,7 +417,23 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <div className="flex items-center gap-2 font-medium">
                 <FileSpreadsheet className="h-4 w-4" /> {fileName}
               </div>
+              {sheets.length > 1 && (
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <Label className="text-xs">Aba:</Label>
+                  <Select value={selectedSheet} onValueChange={changeSheet}>
+                    <SelectTrigger className="h-8 max-w-[420px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {sheets.map((s) => (
+                        <SelectItem key={s.name} value={s.name} disabled={s.dataRowCount === 0}>
+                          {s.name} — {s.dataRowCount === 0 ? "aba vazia" : `${s.dataRowCount} linha(s) com dados`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="text-xs text-muted-foreground">
+                {sheets.length > 1 && <>Aba <b>{selectedSheet}</b> · </>}
                 Cabeçalho detectado na linha <b>{headerRow + 1}</b>. Detectamos <b>{rows.length}</b> produto(s) e{" "}
                 <b>{columns.length}</b> coluna(s).
               </div>
