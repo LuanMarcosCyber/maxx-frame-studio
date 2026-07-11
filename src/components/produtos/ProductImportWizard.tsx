@@ -474,24 +474,17 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Mão de obra", "Comissão", "Largura", "NCM"].map((h) => (
-                      <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
+                    {fieldsForCategory(category).map((f) => (
+                      <th key={f.key} className="text-left font-medium px-3 py-2">{f.label.split(" —")[0].split(" (")[0]}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {previewRows.map((r, i) => (
                     <tr key={i} className="border-t">
-                      <td className="px-3 py-2">{r.code}</td>
-                      <td className="px-3 py-2">{r.description}</td>
-                      <td className="px-3 py-2">{r.supplier}</td>
-                      <td className="px-3 py-2">{r.value_per_meter}</td>
-                      <td className="px-3 py-2">{r.profit_margin}</td>
-                      <td className="px-3 py-2">{r.waste_percentage}</td>
-                      <td className="px-3 py-2">{r.labor_cost}</td>
-                      <td className="px-3 py-2">{r.commission_percentage}</td>
-                      <td className="px-3 py-2">{r.frame_width_cm}</td>
-                      <td className="px-3 py-2">{r.ncm}</td>
+                      {fieldsForCategory(category).map((f) => (
+                        <td key={f.key} className="px-3 py-2">{r[f.key]}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
