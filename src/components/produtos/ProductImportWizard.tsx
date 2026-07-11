@@ -417,7 +417,23 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <div className="flex items-center gap-2 font-medium">
                 <FileSpreadsheet className="h-4 w-4" /> {fileName}
               </div>
+              {sheets.length > 1 && (
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <Label className="text-xs">Aba:</Label>
+                  <Select value={selectedSheet} onValueChange={changeSheet}>
+                    <SelectTrigger className="h-8 max-w-[420px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {sheets.map((s) => (
+                        <SelectItem key={s.name} value={s.name} disabled={s.dataRowCount === 0}>
+                          {s.name} — {s.dataRowCount === 0 ? "aba vazia" : `${s.dataRowCount} linha(s) com dados`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="text-xs text-muted-foreground">
+                {sheets.length > 1 && <>Aba <b>{selectedSheet}</b> · </>}
                 Cabeçalho detectado na linha <b>{headerRow + 1}</b>. Detectamos <b>{rows.length}</b> produto(s) e{" "}
                 <b>{columns.length}</b> coluna(s).
               </div>
