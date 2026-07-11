@@ -421,7 +421,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               (todos os produtos recebem o mesmo valor).
             </p>
 
-            {FIELDS.map((f) => {
+            {fieldsForCategory(category).map((f) => {
               const cfg = mapping[f.key];
               return (
                 <Card key={f.key} className="p-4 space-y-3">
