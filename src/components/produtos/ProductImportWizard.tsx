@@ -75,6 +75,10 @@ type Mapping = Record<
   { origin: "column" | "manual"; column: string; manual: string }
 >;
 
+const isPerfilOnly = (k: FieldKey) => k === "labor_cost" || k === "frame_width_cm";
+const fieldsForCategory = (category: string): FieldDef[] =>
+  category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+
 const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
     const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key);
@@ -417,7 +421,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               (todos os produtos recebem o mesmo valor).
             </p>
 
-            {FIELDS.map((f) => {
+            {fieldsForCategory(category).map((f) => {
               const cfg = mapping[f.key];
               return (
                 <Card key={f.key} className="p-4 space-y-3">
@@ -470,24 +474,17 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {["Código", "Descrição", "Fornecedor", "Valor/m", "Margem", "Perda", "Mão de obra", "Comissão", "Largura", "NCM"].map((h) => (
-                      <th key={h} className="text-left font-medium px-3 py-2">{h}</th>
+                    {fieldsForCategory(category).map((f) => (
+                      <th key={f.key} className="text-left font-medium px-3 py-2">{f.label.split(" —")[0].split(" (")[0]}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {previewRows.map((r, i) => (
                     <tr key={i} className="border-t">
-                      <td className="px-3 py-2">{r.code}</td>
-                      <td className="px-3 py-2">{r.description}</td>
-                      <td className="px-3 py-2">{r.supplier}</td>
-                      <td className="px-3 py-2">{r.value_per_meter}</td>
-                      <td className="px-3 py-2">{r.profit_margin}</td>
-                      <td className="px-3 py-2">{r.waste_percentage}</td>
-                      <td className="px-3 py-2">{r.labor_cost}</td>
-                      <td className="px-3 py-2">{r.commission_percentage}</td>
-                      <td className="px-3 py-2">{r.frame_width_cm}</td>
-                      <td className="px-3 py-2">{r.ncm}</td>
+                      {fieldsForCategory(category).map((f) => (
+                        <td key={f.key} className="px-3 py-2">{r[f.key]}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
