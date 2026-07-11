@@ -203,6 +203,22 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setMapping(initialMapping(category));
   };
 
+  const countDataRows = (matrix: string[][]) =>
+    matrix.filter((r) => (r ?? []).some((c) => String(c ?? "").trim() !== "")).length;
+
+  const loadSheet = (name: string, all: { name: string; matrix: string[][]; dataRowCount: number }[]) => {
+    const s = all.find((x) => x.name === name);
+    if (!s) return;
+    setSelectedSheet(name);
+    setRawMatrix(s.matrix);
+    const detected = detectHeaderRow(s.matrix);
+    setHeaderRow(detected);
+    applyHeader(s.matrix, detected);
+    setMapping(initialMapping(category));
+  };
+
+  const changeSheet = (name: string) => loadSheet(name, sheets);
+
   const handleFile = async (file: File) => {
     const lower = file.name.toLowerCase();
     if (!lower.endsWith(".xlsx") && !lower.endsWith(".csv")) {
@@ -211,23 +227,29 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     }
     setFileName(file.name);
     try {
-      let matrix: string[][] = [];
+      let allSheets: { name: string; matrix: string[][]; dataRowCount: number }[] = [];
       if (lower.endsWith(".csv")) {
         const text = await file.text();
         const parsed = Papa.parse<string[]>(text, { header: false, skipEmptyLines: false });
-        matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+        const matrix = (parsed.data as any[][]).map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+        allSheets = [{ name: "CSV", matrix, dataRowCount: countDataRows(matrix) }];
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const aoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "", raw: false, blankrows: true });
-        matrix = aoa.map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+        allSheets = wb.SheetNames.map((sn) => {
+          const sheet = wb.Sheets[sn];
+          const aoa = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "", raw: false, blankrows: true });
+          const matrix = aoa.map((r) => (r ?? []).map((c) => String(c ?? "").trim()));
+          return { name: sn, matrix, dataRowCount: countDataRows(matrix) };
+        });
       }
-      setRawMatrix(matrix);
-      const detected = detectHeaderRow(matrix);
-      setHeaderRow(detected);
-      applyHeader(matrix, detected);
-      setMapping(initialMapping(category));
+      setSheets(allSheets);
+      const firstNonEmpty = allSheets.find((s) => s.dataRowCount > 0) ?? allSheets[0];
+      if (!firstNonEmpty) {
+        toast.error("Nenhuma aba com dados encontrada.");
+        return;
+      }
+      loadSheet(firstNonEmpty.name, allSheets);
       setStep(3);
     } catch (e: any) {
       toast.error("Erro ao ler planilha: " + (e?.message ?? "desconhecido"));
