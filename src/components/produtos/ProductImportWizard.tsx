@@ -103,6 +103,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [category, setCategory] = useState(defaultCategory);
   const [fileName, setFileName] = useState("");
   const [rawMatrix, setRawMatrix] = useState<string[][]>([]);
+  const [sheets, setSheets] = useState<{ name: string; matrix: string[][]; dataRowCount: number }[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string>("");
   const [headerRow, setHeaderRow] = useState<number>(0); // 0-indexed
   const [columns, setColumns] = useState<string[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
@@ -117,6 +119,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setCategory(defaultCategory);
     setFileName("");
     setRawMatrix([]);
+    setSheets([]);
+    setSelectedSheet("");
     setHeaderRow(0);
     setColumns([]);
     setRows([]);
