@@ -226,14 +226,16 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
 
   async function handleSwitchCompany(companyId: string) {
     setSwitching(companyId);
+    const target = companies.find((c) => c.id === companyId);
+    const name = target?.store_name || target?.full_name || "empresa";
+    const toastId = toast.loading(`Entrando na empresa ${name}…`);
     try {
       await switchCompanyFn({ data: { company_id: companyId } });
-      // Recarrega tudo para refletir o novo escopo de dados
       await qc.invalidateQueries();
-      toast.success("Empresa ativa alterada.");
+      toast.success(`Você está na empresa ${name}.`, { id: toastId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Falha ao trocar de empresa (${msg})`);
+      toast.error(`Falha ao trocar de empresa (${msg})`, { id: toastId });
     } finally {
       setSwitching(null);
     }
