@@ -663,6 +663,25 @@ export type Database = {
       }
       clear_active_company: { Args: never; Returns: undefined }
       company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
+      get_effective_profile: {
+        Args: never
+        Returns: {
+          address: string
+          address_number: string
+          avatar_url: string
+          cep: string
+          city: string
+          document: string
+          document_type: string
+          email: string
+          full_name: string
+          id: string
+          is_switched: boolean
+          phone: string
+          state: string
+          store_name: string
+        }[]
+      }
       get_store_profile: {
         Args: { _user_id: string }
         Returns: {
