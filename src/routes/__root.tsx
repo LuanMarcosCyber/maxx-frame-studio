@@ -196,10 +196,12 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <OperatorProvider>
-          <AuthGate>
-            <Outlet />
-          </AuthGate>
-          <Toaster />
+          <CompanySwitchProvider>
+            <AuthGate>
+              <Outlet />
+            </AuthGate>
+            <Toaster />
+          </CompanySwitchProvider>
         </OperatorProvider>
       </AuthProvider>
     </QueryClientProvider>
