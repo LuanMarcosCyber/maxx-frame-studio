@@ -205,8 +205,8 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
   const canSwitchCompany = role === "revendedor" && !profile?.parent_user_id;
 
   const listSwitchableFn = useServerFn(listSwitchableCompanies);
-  const switchCompanyFn = useServerFn(switchActiveCompany);
   const clearActiveFn = useServerFn(clearActiveCompany);
+  const { switchToCompany } = useCompanySwitch();
 
   const { data: companies = [] } = useQuery({
     queryKey: ["switchable-companies"],
@@ -225,20 +225,13 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
   
 
   async function handleSwitchCompany(companyId: string) {
-    setSwitching(companyId);
     const target = companies.find((c) => c.id === companyId);
-    const name = target?.store_name || target?.full_name || "empresa";
-    const toastId = toast.loading(`Entrando na empresa ${name}…`);
-    try {
-      await switchCompanyFn({ data: { company_id: companyId } });
-      await qc.invalidateQueries();
-      toast.success(`Você está na empresa ${name}.`, { id: toastId });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`Falha ao trocar de empresa (${msg})`, { id: toastId });
-    } finally {
-      setSwitching(null);
-    }
+    if (!target) return;
+    setSwitching(companyId);
+    const name = target.store_name || target.full_name || "empresa";
+    await switchToCompany({ id: companyId, name, avatar_url: target.avatar_url });
+    // Se retornar (erro), reabilita
+    setSwitching(null);
   }
 
   async function handleSignOut() {
