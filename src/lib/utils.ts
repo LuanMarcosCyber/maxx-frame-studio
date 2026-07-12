@@ -6,6 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Comparador alfanumérico natural (case- e whitespace-insensitive).
+ * Ordena "NS 381 < NS 920 < SG 201MB" e "001 < 002 < 010 < 100"
+ * corretamente, comparando trechos numéricos como números.
+ */
+export function naturalCompare(a: string | null | undefined, b: string | null | undefined): number {
+  const sa = (a ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  const sb = (b ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return sa.localeCompare(sb, "pt-BR", { numeric: true, sensitivity: "base" });
+}
+
+/**
  * Arredonda uma medida para no máximo 2 casas decimais,
  * eliminando ruído de ponto flutuante (ex.: 51.599999999999994 → 51.6).
  * Mantém o valor como Number para cálculos posteriores.
