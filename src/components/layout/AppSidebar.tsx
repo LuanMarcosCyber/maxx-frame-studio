@@ -40,9 +40,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   listSwitchableCompanies,
-  switchActiveCompany,
   clearActiveCompany,
 } from "@/lib/company-switch.functions";
+import { useCompanySwitch } from "@/components/layout/CompanySwitchOverlay";
 
 
 type Item = {
