@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // e parent_user_id para contas de acesso). Sobrescreve identidade visual + dados
     // comerciais para refletir a empresa ativa.
     try {
-      const { data: effRows } = await supabase.rpc("get_effective_profile");
+      const { data: effRows } = await (supabase.rpc as any)("get_effective_profile");
       const eff = Array.isArray(effRows) ? effRows[0] : effRows;
       if (eff) {
         mergedProfile = {
