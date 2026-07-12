@@ -346,10 +346,10 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="w-full flex items-center gap-3 rounded-md bg-card border border-border p-3 text-left hover:bg-accent hover:border-accent-foreground/20 transition outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand-end))]/40"
+              className="w-full flex items-center gap-3 rounded-md bg-gradient-brand text-brand-foreground border border-black/10 shadow-brand p-3 text-left transition outline-none hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white/40"
               aria-label="Menu da conta"
             >
-              <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-gradient-brand grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
+              <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-white/15 ring-1 ring-white/25 grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
                 {profile?.avatar_url ? (
                   <img
                     src={profile.avatar_url}
@@ -361,24 +361,24 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
                 )}
               </div>
               <div className="leading-tight min-w-0 flex-1">
-                <div className="text-sm font-semibold truncate text-foreground">
+                <div className="text-sm font-semibold truncate text-brand-foreground">
                   {profile?.full_name || profile?.username || "Usuário"}
                 </div>
                 {canSwitchCompany && activeCompany ? (
-                  <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                  <div className="text-[11px] text-brand-foreground/80 truncate flex items-center gap-1">
                     <Building2 className="h-3 w-3 shrink-0" />
                     <span className="truncate">{activeCompany.store_name || activeCompany.full_name || "Empresa"}</span>
                   </div>
                 ) : profile?.username ? (
-                  <div className="text-[11px] text-muted-foreground font-mono truncate">
+                  <div className="text-[11px] text-brand-foreground/80 font-mono truncate">
                     @{profile.username}
                   </div>
                 ) : null}
               </div>
-              <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+              <ChevronUp className="h-4 w-4 text-brand-foreground shrink-0" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-56 mb-1">
+          <DropdownMenuContent side="top" align="start" className="w-64 mb-1">
             <DropdownMenuLabel className="flex flex-col gap-0.5">
               <span className="text-sm">{profile?.full_name || profile?.username || "Usuário"}</span>
               {profile?.username && (
@@ -388,26 +388,36 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
               )}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {canSwitchCompany && hasLinkedCompanies && (
+            {canSwitchCompany && companies.filter((c) => !c.is_active).length > 0 && (
               <>
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                  Trocar de empresa
+                  Empresas vinculadas
                 </DropdownMenuLabel>
-                {companies.map((c) => (
-                  <DropdownMenuItem
-                    key={c.id}
-                    disabled={c.is_active || switching === c.id}
-                    onClick={() => handleSwitchCompany(c.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <Building2 className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 truncate">
-                      {c.store_name || c.full_name || "Empresa"}
-                    </span>
-                    {c.is_active && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
-                    {switching === c.id && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />}
-                  </DropdownMenuItem>
-                ))}
+                {companies
+                  .filter((c) => !c.is_active)
+                  .map((c) => {
+                    const label = c.store_name || c.full_name || "Empresa";
+                    return (
+                      <DropdownMenuItem
+                        key={c.id}
+                        disabled={switching === c.id}
+                        onClick={() => handleSwitchCompany(c.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="h-6 w-6 shrink-0 rounded-full overflow-hidden bg-muted grid place-items-center">
+                          {c.avatar_url ? (
+                            <img src={c.avatar_url} alt={label} className="h-full w-full object-cover" />
+                          ) : (
+                            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <span className="flex-1 truncate text-sm">
+                          Entrar na empresa {label}
+                        </span>
+                        {switching === c.id && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
                 <DropdownMenuSeparator />
               </>
             )}
