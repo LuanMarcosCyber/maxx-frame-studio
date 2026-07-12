@@ -127,30 +127,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let mergedProfile: Profile = { ...baseProfile, parent_user_id: parentUserId };
 
-    // Conta de acesso (child): herda dados comerciais da conta pai
-    if (isOperationalAccount) {
-      try {
-        const { data: storeRows } = await supabase.rpc("get_store_profile", { _user_id: userId });
-        const store = Array.isArray(storeRows) ? storeRows[0] : storeRows;
-        if (store) {
-          mergedProfile = {
-            ...mergedProfile,
-            avatar_url: store.avatar_url ?? mergedProfile.avatar_url,
-            store_name: store.store_name ?? mergedProfile.store_name,
-            email: store.email ?? mergedProfile.email,
-            phone: store.phone ?? mergedProfile.phone,
-            document: store.document ?? mergedProfile.document,
-            document_type: store.document_type ?? mergedProfile.document_type,
-            cep: store.cep ?? mergedProfile.cep,
-            address: store.address ?? mergedProfile.address,
-            address_number: store.address_number ?? mergedProfile.address_number,
-            city: store.city ?? mergedProfile.city,
-            state: store.state ?? mergedProfile.state,
-          };
-        }
-      } catch (err) {
-        console.error("Erro ao herdar dados comerciais da conta pai", err);
+    // Perfil efetivo (respeita active_company_id para trocas entre empresas vinculadas
+    // e parent_user_id para contas de acesso). Sobrescreve identidade visual + dados
+    // comerciais para refletir a empresa ativa.
+    try {
+      const { data: effRows } = await supabase.rpc("get_effective_profile");
+      const eff = Array.isArray(effRows) ? effRows[0] : effRows;
+      if (eff) {
+        mergedProfile = {
+          ...mergedProfile,
+          avatar_url: eff.avatar_url ?? mergedProfile.avatar_url,
+          store_name: eff.store_name ?? mergedProfile.store_name,
+          email: eff.email ?? mergedProfile.email,
+          phone: eff.phone ?? mergedProfile.phone,
+          document: eff.document ?? mergedProfile.document,
+          document_type: eff.document_type ?? mergedProfile.document_type,
+          cep: eff.cep ?? mergedProfile.cep,
+          address: eff.address ?? mergedProfile.address,
+          address_number: eff.address_number ?? mergedProfile.address_number,
+          city: eff.city ?? mergedProfile.city,
+          state: eff.state ?? mergedProfile.state,
+          // Quando é uma troca (Juliane atuando como Sulamérica), exibe o nome
+          // da empresa ativa também no campo `full_name` do card.
+          full_name: eff.is_switched
+            ? (eff.full_name ?? mergedProfile.full_name)
+            : mergedProfile.full_name,
+        };
       }
+    } catch (err) {
+      console.error("Erro ao carregar perfil efetivo", err);
     }
 
     setProfile(mergedProfile);
