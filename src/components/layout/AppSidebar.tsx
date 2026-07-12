@@ -222,7 +222,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
   });
 
   const activeCompany = companies.find((c) => c.is_active) ?? companies.find((c) => c.is_self);
-  const hasLinkedCompanies = companies.length > 1;
+  
 
   async function handleSwitchCompany(companyId: string) {
     setSwitching(companyId);
