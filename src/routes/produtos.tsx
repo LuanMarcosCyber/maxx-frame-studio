@@ -30,7 +30,7 @@ import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, naturalCompare } from "@/lib/utils";
 import { bulkDeleteProductsByCategory, deleteProductById } from "@/lib/products.functions";
 
 export const Route = createFileRoute("/produtos")({
