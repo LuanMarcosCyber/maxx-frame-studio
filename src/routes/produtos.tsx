@@ -183,7 +183,8 @@ function Produtos() {
           (r.name ?? "").toLowerCase().includes(q) ||
           (r.supplier ?? "").toLowerCase().includes(q) ||
           (r.barcode ?? "").toLowerCase().includes(q),
-      );
+      )
+      .sort((a, b) => naturalCompare(a.code, b.code));
   }, [rows, activeCategory, search]);
 
   const openCreate = () => {
