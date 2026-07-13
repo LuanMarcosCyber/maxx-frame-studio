@@ -221,6 +221,7 @@ function Produtos() {
       name: p.name ?? "",
       barcode: p.barcode ?? "",
       supplier: p.supplier ?? "",
+      supplier_id: p.supplier_id ?? null,
       labor_cost:
         p.labor_cost == null || Number(p.labor_cost) === 0
           ? ""
