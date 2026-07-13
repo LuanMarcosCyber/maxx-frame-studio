@@ -450,6 +450,10 @@ function ReportResults({
     return <ClientesReportView filters={{ ...filters, cityFilter }} search={search} />;
   }
 
+  if (selected === "colaboradores") {
+    return <ColaboradoresReportView filters={filters} search={search} />;
+  }
+
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
   return (
     <Card className="p-10 text-center">
@@ -462,6 +466,7 @@ function ReportResults({
     </Card>
   );
 }
+
 
 function VendasReportView({
   filters,
