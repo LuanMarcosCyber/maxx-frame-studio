@@ -585,7 +585,16 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       : null;
 
     const topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }> = {};
-    for (const [s, v] of supplierTopProduct.entries()) topProductPerSupplier[s] = v;
+    const topProductsPerSupplier: Record<string, Array<{ name: string; quantity: number; value: number }>> = {};
+    for (const [s, m] of supplierProductAgg.entries()) {
+      const arr = Array.from(m.values()).sort((a, b) => b.value - a.value);
+      topProductsPerSupplier[s] = arr.slice(0, 5);
+      if (arr[0]) topProductPerSupplier[s] = arr[0];
+    }
+    const supplierCategories: Record<string, string[]> = {};
+    for (const [s, set] of supplierCategoriesSet.entries()) {
+      supplierCategories[s] = Array.from(set).sort();
+    }
 
     return {
       totalValue,
@@ -597,6 +606,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       topProduct,
       topCategory,
       topProductPerSupplier,
+      supplierCategories,
+      topProductsPerSupplier,
     };
   });
 
