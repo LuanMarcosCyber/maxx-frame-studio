@@ -40,6 +40,7 @@ export interface VendasOptions {
   clients: { id: string; name: string }[];
   operators: { id: string; name: string }[];
   empresas: { id: string; name: string }[];
+  activeEmpresaId: string | null;
   categories: string[];
   suppliers: string[];
   products: { id: string; label: string }[];
