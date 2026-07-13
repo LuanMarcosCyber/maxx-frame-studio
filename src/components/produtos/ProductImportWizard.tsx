@@ -25,6 +25,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  SupplierPicker,
+  useSuppliersQuery,
+  normalizeSupplierName,
+  supplierLabel,
+  productCategoryToSupplierCategory,
+} from "@/components/suppliers/SupplierPicker";
 
 type Props = {
   open: boolean;
@@ -112,7 +119,26 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: { line: number; reason: string }[] } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [manualSupplierId, setManualSupplierId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: allSuppliers = [] } = useSuppliersQuery();
+
+  const supplierByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of allSuppliers) {
+      const label = supplierLabel(s);
+      const keys = [label, s.legal_name, s.trade_name].filter(Boolean) as string[];
+      for (const k of keys) {
+        const nk = normalizeSupplierName(k);
+        if (nk && !m.has(nk)) m.set(nk, s.id);
+      }
+    }
+    return m;
+  }, [allSuppliers]);
+  const manualSupplier = useMemo(
+    () => allSuppliers.find((s) => s.id === manualSupplierId) ?? null,
+    [allSuppliers, manualSupplierId],
+  );
 
   const reset = () => {
     setStep(1);
@@ -126,6 +152,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setRows([]);
     setMapping(initialMapping(defaultCategory));
     setResult(null);
+    setManualSupplierId(null);
   };
 
   const handleClose = (o: boolean) => {
@@ -284,8 +311,11 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       if (cfg.origin === "column" && !cfg.column) return false;
       if (cfg.origin === "manual" && !cfg.manual.trim()) return false;
     }
+    // Se supplier for manual, exigir picker OU texto livre
+    const sup = mapping.supplier;
+    if (sup.origin === "manual" && !sup.manual.trim() && !manualSupplierId) return false;
     return true;
-  }, [mapping]);
+  }, [mapping, manualSupplierId]);
 
   const doImport = async () => {
     if (!user) return;
@@ -308,6 +338,17 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
       const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
       const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
+
+      // Resolve supplier text and supplier_id
+      let supplierText = built.supplier || null;
+      let supplierId: string | null = null;
+      if (mapping.supplier.origin === "manual" && manualSupplier) {
+        supplierText = supplierLabel(manualSupplier).toUpperCase();
+        supplierId = manualSupplier.id;
+      } else if (supplierText) {
+        supplierId = supplierByName.get(normalizeSupplierName(supplierText)) ?? null;
+      }
+
       payloads.push({
         user_id: user.id,
         code: built.code,
@@ -319,7 +360,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         commission_percentage: Number.isFinite(commission) ? commission : 0,
         frame_width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
         labor_cost: Number.isFinite(laborCost) ? laborCost : 0,
-        supplier: built.supplier || null,
+        supplier: supplierText,
+        supplier_id: supplierId,
         ncm: built.ncm || null,
       });
     });
@@ -493,6 +535,32 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                         ))}
                       </SelectContent>
                     </Select>
+                  ) : f.key === "supplier" ? (
+                    <div className="space-y-2">
+                      <SupplierPicker
+                        value={manualSupplierId}
+                        legacyText={cfg.manual}
+                        preferredCategory={productCategoryToSupplierCategory(category)}
+                        onChange={(id, opt) => {
+                          setManualSupplierId(id);
+                          if (opt) updateMap(f.key, { manual: supplierLabel(opt).toUpperCase() });
+                        }}
+                        placeholder="Vincular ao fornecedor cadastrado..."
+                      />
+                      <Input
+                        placeholder="Ou digite um nome livre (sem vínculo)"
+                        value={cfg.manual}
+                        onChange={(e) => {
+                          setManualSupplierId(null);
+                          updateMap(f.key, { manual: e.target.value.toUpperCase() });
+                        }}
+                      />
+                      {manualSupplierId && (
+                        <p className="text-[11px] text-emerald-700">
+                          Todos os produtos ficarão vinculados ao fornecedor selecionado.
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <Input
                       placeholder={f.placeholder ?? (f.numeric ? "Ex: 300" : "Digite o valor")}

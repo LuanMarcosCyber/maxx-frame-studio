@@ -27,6 +27,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+import {
+  SupplierPicker,
+  productCategoryToSupplierCategory,
+  supplierLabel,
+} from "@/components/suppliers/SupplierPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -80,6 +85,7 @@ type Product = {
   name: string | null;
   barcode: string | null;
   supplier: string | null;
+  supplier_id: string | null;
   labor_cost: number | null;
   commission_percentage: number | null;
   ncm: string | null;
@@ -95,6 +101,7 @@ type FormState = {
   name: string;
   barcode: string;
   supplier: string;
+  supplier_id: string | null;
   labor_cost: string;
   commission_percentage: string;
   ncm: string;
@@ -110,6 +117,7 @@ const emptyForm: FormState = {
   name: "",
   barcode: "",
   supplier: "",
+  supplier_id: null,
   labor_cost: "",
   commission_percentage: "",
   ncm: "",
@@ -163,7 +171,7 @@ function Produtos() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, labor_cost, commission_percentage, ncm",
+          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, supplier_id, labor_cost, commission_percentage, ncm",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -213,6 +221,7 @@ function Produtos() {
       name: p.name ?? "",
       barcode: p.barcode ?? "",
       supplier: p.supplier ?? "",
+      supplier_id: p.supplier_id ?? null,
       labor_cost:
         p.labor_cost == null || Number(p.labor_cost) === 0
           ? ""
@@ -231,7 +240,8 @@ function Produtos() {
     if (!user) return;
     const newErrors: Partial<Record<keyof FormState, string>> = {};
     const req = (field: keyof FormState, msg = "Campo obrigatório") => {
-      if (!form[field].trim()) newErrors[field] = msg;
+      const v = form[field];
+      if (typeof v !== "string" || !v.trim()) newErrors[field] = msg;
     };
 
     if (isDiversos) {
@@ -266,6 +276,7 @@ function Produtos() {
           name: form.name.trim(),
           barcode: form.barcode.trim() || null,
           supplier: form.supplier.trim(),
+          supplier_id: form.supplier_id,
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
         };
@@ -360,6 +371,7 @@ function Produtos() {
             frame_width_cm: isPerfil ? frameWidth : null,
             labor_cost: isPerfil ? laborCost : 0,
             supplier: form.supplier.trim(),
+            supplier_id: form.supplier_id,
             commission_percentage: commission,
             ncm: form.ncm.trim() || null,
 
@@ -379,6 +391,7 @@ function Produtos() {
           frame_width_cm: isPerfil ? frameWidth : null,
           labor_cost: isPerfil ? laborCost : 0,
           supplier: form.supplier.trim(),
+          supplier_id: form.supplier_id,
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
 
@@ -733,11 +746,17 @@ function Produtos() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="d-forn">Fornecedor / Fabricante *</Label>
-                <Input
-                  id="d-forn"
-                  placeholder="Nome do fornecedor ou fabricante"
-                  value={form.supplier}
-                  onChange={(e) => updateField("supplier", e.target.value.toUpperCase())}
+                <SupplierPicker
+                  value={form.supplier_id}
+                  legacyText={form.supplier}
+                  preferredCategory={productCategoryToSupplierCategory("produtos_diversos")}
+                  onChange={(id, opt) =>
+                    setForm((f) => ({
+                      ...f,
+                      supplier_id: id,
+                      supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
+                    }))
+                  }
                   className={errCls("supplier")}
                 />
                 <FieldError field="supplier" />
@@ -816,11 +835,17 @@ function Produtos() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="forn">Fornecedor / Fabricante *</Label>
-                <Input
-                  id="forn"
-                  placeholder="Nome do fornecedor ou fabricante"
-                  value={form.supplier}
-                  onChange={(e) => updateField("supplier", e.target.value.toUpperCase())}
+                <SupplierPicker
+                  value={form.supplier_id}
+                  legacyText={form.supplier}
+                  preferredCategory={productCategoryToSupplierCategory(activeCategory)}
+                  onChange={(id, opt) =>
+                    setForm((f) => ({
+                      ...f,
+                      supplier_id: id,
+                      supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
+                    }))
+                  }
                   className={errCls("supplier")}
                 />
                 <FieldError field="supplier" />

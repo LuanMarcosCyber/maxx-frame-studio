@@ -57,6 +57,7 @@ const orcamentos: Item = { title: "Orçamentos", url: "/orcamentos", icon: FileT
 const pedidos: Item = { title: "Pedidos", url: "/pedidos", icon: ShoppingCart };
 const clientes: Item = { title: "Clientes", url: "/clientes", icon: Contact };
 const produtos: Item = { title: "Produtos", url: "/produtos", icon: Package };
+const fornecedores: Item = { title: "Fornecedores", url: "/fornecedores", icon: Building2 };
 const arquitetos: Item = { title: "Arquitetos", url: "/arquitetos", icon: Compass };
 const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras", icon: Truck };
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3 };
@@ -79,15 +80,15 @@ function useSidebarData() {
   const isOperational = !!profile?.parent_user_id;
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras, revendedores, colaboradores, operadores];
+    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, revendedores, colaboradores, operadores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador" || isOperational) {
     mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras];
+    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras];
     bottomItems = [conta];
   } else {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, arquitetos, transportadoras, colaboradores, operadores];
+    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, colaboradores, operadores];
     bottomItems = [conta, configuracoes];
   }
 
