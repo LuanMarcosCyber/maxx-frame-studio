@@ -471,7 +471,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
     const productAgg = new Map<string, ProductRow & { orderSet: Set<string> }>();
     const supplierAgg = new Map<string, SupplierRow & { orderSet: Set<string> }>();
     const categoryAgg = new Map<string, { value: number; quantity: number }>();
-    const supplierTopProduct = new Map<string, { name: string; quantity: number; value: number }>();
+    const supplierCategoriesSet = new Map<string, Set<string>>();
+    const supplierProductAgg = new Map<string, Map<string, { name: string; quantity: number; value: number }>>();
 
     for (const it of itemRows ?? []) {
       const parts = extractParts((it.data ?? {}) as Record<string, unknown>);
