@@ -43,6 +43,7 @@ export interface VendasOptions {
   categories: string[];
   suppliers: string[];
   products: { id: string; label: string }[];
+  cities: string[];
 }
 
 export interface SupplierRow {
@@ -177,6 +178,14 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       new Set((prods ?? []).map((p) => (p.supplier ?? "").trim()).filter(Boolean)),
     ).sort();
 
+    const clientClient = isAdmin
+      ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
+      : supabase;
+    const { data: cityRows } = await clientClient.from("clients").select("city");
+    const cities = Array.from(
+      new Set(((cityRows ?? []) as Array<{ city: string | null }>).map((r) => (r.city ?? "").trim()).filter(Boolean)),
+    ).sort();
+
     return {
       isAdmin,
       clients: clients ?? [],
@@ -185,6 +194,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       categories,
       suppliers,
       products,
+      cities,
     };
   });
 
@@ -574,5 +584,554 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       topProduct,
       topCategory,
       topProductPerSupplier,
+    };
+  });
+
+// ============================================================================
+// Orçamentos
+// ============================================================================
+
+export interface OrcamentoRow {
+  id: string;
+  number: string;
+  client_name: string;
+  operator_name: string | null;
+  user_id: string;
+  empresa_name: string | null;
+  status: string;
+  total_value: number;
+  created_at: string;
+  approved_at: string | null;
+  has_order: boolean;
+}
+
+export interface OrcamentosReport {
+  summary: {
+    total: number;
+    valorTotal: number;
+    aprovados: number;
+    pendentes: number;
+    cancelados: number;
+    taxaAprovacao: number; // %
+    ticketMedio: number;
+    maior: number;
+    menor: number;
+    tempoMedioAprovacaoDias: number;
+  };
+  funnel: {
+    criados: { qtd: number; valor: number };
+    pendentes: { qtd: number; valor: number };
+    aprovados: { qtd: number; valor: number };
+    transformados: { qtd: number; valor: number };
+  };
+  evolution: { bucket: string; qtd: number; valor: number }[];
+  ranking: { id: string; number: string; client_name: string; value: number; status: string }[];
+  rows: OrcamentoRow[];
+}
+
+function bucketKey(iso: string, granularity: string): string {
+  const d = new Date(iso);
+  if (granularity === "dia") return d.toISOString().slice(0, 10);
+  if (granularity === "semana") {
+    const day = d.getUTCDay();
+    const monday = new Date(d);
+    monday.setUTCDate(d.getUTCDate() - ((day + 6) % 7));
+    return monday.toISOString().slice(0, 10);
+  }
+  if (granularity === "ano") return String(d.getUTCFullYear());
+  // mes
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function isAprovadoStatus(s: string): boolean {
+  const v = (s || "").toLowerCase();
+  return (
+    v === "aprovado" ||
+    v === "em produção" ||
+    v === "em producao" ||
+    v === "finalizado" ||
+    v === "entregue" ||
+    v === "aguardando pagamento"
+  );
+}
+function isPendenteStatus(s: string): boolean {
+  const v = (s || "").toLowerCase();
+  return v === "aguardando" || v === "pendente" || v === "";
+}
+function isCanceladoStatus(s: string): boolean {
+  return (s || "").toLowerCase() === "cancelado";
+}
+
+export interface OrcamentosFilters extends VendasFilters {
+  granularity?: string; // dia|semana|mes|ano
+}
+
+export const getOrcamentosReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: OrcamentosFilters) => data)
+  .handler(async ({ data, context }): Promise<OrcamentosReport> => {
+    const { supabase, userId } = context;
+    const { data: adminRow } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    const isAdmin = adminRow === true;
+
+    let client = supabase;
+    if (isAdmin) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      client = supabaseAdmin as unknown as typeof supabase;
+    }
+
+    let q = client
+      .from("budgets")
+      .select(
+        "id, number, client_name, client_id, operator_name, operator_id, user_id, status, total_value, created_at, updated_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    const { from, to } = periodRange(data.period || "mes");
+    if (from) q = q.gte("created_at", from);
+    if (to) q = q.lt("created_at", to);
+    if (data.status && data.status !== "todos") q = q.eq("status", data.status);
+    if (data.operatorId) q = q.eq("operator_id", data.operatorId);
+    if (data.clientId) q = q.eq("client_id", data.clientId);
+    if (isAdmin && data.empresaUserId) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: children } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("parent_user_id", data.empresaUserId);
+      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
+      q = q.in("user_id", ids);
+    }
+
+    const { data: budgets, error } = await q;
+    if (error) throw error;
+
+    const list = (budgets ?? []) as Array<{
+      id: string;
+      number: string;
+      client_name: string;
+      client_id: string | null;
+      operator_name: string | null;
+      operator_id: string | null;
+      user_id: string;
+      status: string;
+      total_value: number | string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    // Companies map (admin)
+    let empresaMap = new Map<string, string>();
+    if (isAdmin && list.length) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const uids = Array.from(new Set(list.map((b) => b.user_id)));
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id, store_name, full_name, parent_user_id")
+        .in("id", uids);
+      for (const p of profs ?? []) {
+        empresaMap.set(p.id, p.store_name || p.full_name || "—");
+      }
+    }
+
+    // Orders referencing these budgets
+    const budgetIds = list.map((b) => b.id);
+    let orderMap = new Map<string, string>(); // budget_id -> order created_at
+    if (budgetIds.length) {
+      const { data: ords } = await client
+        .from("orders")
+        .select("budget_id, created_at")
+        .in("budget_id", budgetIds);
+      for (const o of ords ?? []) {
+        if (o.budget_id && !orderMap.has(o.budget_id)) orderMap.set(o.budget_id, o.created_at);
+      }
+    }
+
+    const rows: OrcamentoRow[] = list.map((b) => {
+      const v = Number(b.total_value) || 0;
+      const aprovado = isAprovadoStatus(b.status);
+      return {
+        id: b.id,
+        number: b.number,
+        client_name: b.client_name,
+        operator_name: b.operator_name,
+        user_id: b.user_id,
+        empresa_name: empresaMap.get(b.user_id) ?? null,
+        status: b.status,
+        total_value: v,
+        created_at: b.created_at,
+        approved_at: aprovado ? b.updated_at : null,
+        has_order: orderMap.has(b.id),
+      };
+    });
+
+    const total = rows.length;
+    const valorTotal = rows.reduce((s, r) => s + r.total_value, 0);
+    const aprovadosArr = rows.filter((r) => isAprovadoStatus(r.status));
+    const pendentesArr = rows.filter((r) => isPendenteStatus(r.status));
+    const canceladosArr = rows.filter((r) => isCanceladoStatus(r.status));
+    const transformadosArr = rows.filter((r) => r.has_order);
+    const values = rows.map((r) => r.total_value).filter((v) => v > 0);
+    const maior = values.length ? Math.max(...values) : 0;
+    const menor = values.length ? Math.min(...values) : 0;
+    const ticketMedio = total ? valorTotal / total : 0;
+    const taxaAprovacao = total ? (aprovadosArr.length / total) * 100 : 0;
+
+    // Tempo médio criação → aprovação (approved_at - created_at)
+    const diffs = aprovadosArr
+      .map((r) =>
+        r.approved_at
+          ? (new Date(r.approved_at).getTime() - new Date(r.created_at).getTime()) /
+            (1000 * 60 * 60 * 24)
+          : null,
+      )
+      .filter((x): x is number => x !== null && x >= 0);
+    const tempoMedioAprovacaoDias = diffs.length
+      ? diffs.reduce((s, d) => s + d, 0) / diffs.length
+      : 0;
+
+    // Evolution
+    const granularity = data.granularity || "mes";
+    const buckets = new Map<string, { qtd: number; valor: number }>();
+    for (const r of rows) {
+      const k = bucketKey(r.created_at, granularity);
+      const b = buckets.get(k) ?? { qtd: 0, valor: 0 };
+      b.qtd += 1;
+      b.valor += r.total_value;
+      buckets.set(k, b);
+    }
+    const evolution = Array.from(buckets.entries())
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([bucket, v]) => ({ bucket, ...v }));
+
+    const ranking = [...rows]
+      .sort((a, b) => b.total_value - a.total_value)
+      .slice(0, 10)
+      .map((r) => ({
+        id: r.id,
+        number: r.number,
+        client_name: r.client_name,
+        value: r.total_value,
+        status: r.status,
+      }));
+
+    return {
+      summary: {
+        total,
+        valorTotal,
+        aprovados: aprovadosArr.length,
+        pendentes: pendentesArr.length,
+        cancelados: canceladosArr.length,
+        taxaAprovacao,
+        ticketMedio,
+        maior,
+        menor,
+        tempoMedioAprovacaoDias,
+      },
+      funnel: {
+        criados: { qtd: total, valor: valorTotal },
+        pendentes: {
+          qtd: pendentesArr.length,
+          valor: pendentesArr.reduce((s, r) => s + r.total_value, 0),
+        },
+        aprovados: {
+          qtd: aprovadosArr.length,
+          valor: aprovadosArr.reduce((s, r) => s + r.total_value, 0),
+        },
+        transformados: {
+          qtd: transformadosArr.length,
+          valor: transformadosArr.reduce((s, r) => s + r.total_value, 0),
+        },
+      },
+      evolution,
+      ranking,
+      rows,
+    };
+  });
+
+// ============================================================================
+// Clientes
+// ============================================================================
+
+export interface ClienteRow {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  qtdPedidos: number;
+  qtdOrcamentos: number;
+  valorComprado: number;
+  ultimaCompra: string | null;
+  ticketMedio: number;
+  createdAt: string;
+}
+
+export interface ClientesFilters extends VendasFilters {
+  cityFilter?: string;
+  inactivityDays?: number; // default 90
+}
+
+export interface ClientesReport {
+  summary: {
+    totalClientes: number;
+    ativos: number;
+    inativos: number;
+    novosNoPeriodo: number;
+    ticketMedio: number;
+    valorTotal: number;
+  };
+  topFaturamento: ClienteRow[];
+  topPedidos: ClienteRow[];
+  topOrcamentos: ClienteRow[];
+  semComprar: ClienteRow[];
+  recorrentes: ClienteRow[];
+  novos: ClienteRow[];
+  maisCresceram: ClienteRow[];
+  rows: ClienteRow[];
+  cities: string[];
+  inactivityDays: number;
+}
+
+export const getClientesReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: ClientesFilters) => data)
+  .handler(async ({ data, context }): Promise<ClientesReport> => {
+    const { supabase, userId } = context;
+    const { data: adminRow } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    const isAdmin = adminRow === true;
+
+    let client = supabase;
+    if (isAdmin) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      client = supabaseAdmin as unknown as typeof supabase;
+    }
+
+    // Companies scope
+    let userIds: string[] | null = null;
+    if (isAdmin && data.empresaUserId) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: children } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("parent_user_id", data.empresaUserId);
+      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
+    }
+
+    // Clients (all cadastrados)
+    let cq = client
+      .from("clients")
+      .select("id, name, city, state, created_at, user_id")
+      .order("name")
+      .limit(5000);
+    if (userIds) cq = cq.in("user_id", userIds);
+    const { data: clientsData, error: cErr } = await cq;
+    if (cErr) throw cErr;
+
+    // Orders (todos, para calcular pedidos por cliente — sempre em janela ampla)
+    let oq = client
+      .from("orders")
+      .select("id, client_name, total_value, created_at, operator_id, user_id, budget_id, budgets:budget_id(client_id)")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (userIds) oq = oq.in("user_id", userIds);
+    if (data.operatorId) oq = oq.eq("operator_id", data.operatorId);
+    const { data: ordersData, error: oErr } = await oq;
+    if (oErr) throw oErr;
+
+    // Budgets
+    let bq = client
+      .from("budgets")
+      .select("id, client_id, total_value, created_at, operator_id, user_id")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (userIds) bq = bq.in("user_id", userIds);
+    if (data.operatorId) bq = bq.eq("operator_id", data.operatorId);
+    const { data: budgetsData, error: bErr } = await bq;
+    if (bErr) throw bErr;
+
+    const { from, to } = periodRange(data.period || "mes");
+    const fromTs = from ? new Date(from).getTime() : null;
+    const toTs = to ? new Date(to).getTime() : null;
+    const inRange = (iso: string) => {
+      const t = new Date(iso).getTime();
+      if (fromTs !== null && t < fromTs) return false;
+      if (toTs !== null && t >= toTs) return false;
+      return true;
+    };
+
+    const clientsList = (clientsData ?? []) as Array<{
+      id: string;
+      name: string;
+      city: string | null;
+      state: string | null;
+      created_at: string;
+      user_id: string;
+    }>;
+    const orders = (ordersData ?? []) as Array<{
+      id: string;
+      client_name: string;
+      total_value: number | string;
+      created_at: string;
+      budgets: { client_id: string | null } | null;
+    }>;
+    const budgets = (budgetsData ?? []) as Array<{
+      id: string;
+      client_id: string | null;
+      total_value: number | string;
+      created_at: string;
+    }>;
+
+    const cityFilter = (data.cityFilter && data.cityFilter !== "todos") ? data.cityFilter : null;
+
+    // Aggregate per client
+    type Agg = {
+      qtdPedidos: number;
+      qtdOrcamentos: number;
+      valorComprado: number;
+      ultimaCompra: string | null;
+      valorAnterior: number; // for growth
+      valorPeriodo: number;
+    };
+    const agg = new Map<string, Agg>();
+    const ensure = (id: string): Agg => {
+      let a = agg.get(id);
+      if (!a) {
+        a = { qtdPedidos: 0, qtdOrcamentos: 0, valorComprado: 0, ultimaCompra: null, valorAnterior: 0, valorPeriodo: 0 };
+        agg.set(id, a);
+      }
+      return a;
+    };
+
+    for (const o of orders) {
+      const cid = o.budgets?.client_id;
+      if (!cid) continue;
+      if (data.clientId && data.clientId !== cid) continue;
+      const a = ensure(cid);
+      const v = Number(o.total_value) || 0;
+      a.qtdPedidos += 1;
+      a.valorComprado += v;
+      if (!a.ultimaCompra || o.created_at > a.ultimaCompra) a.ultimaCompra = o.created_at;
+      if (inRange(o.created_at)) a.valorPeriodo += v;
+      else if (fromTs !== null) {
+        // previous window of same length
+        const t = new Date(o.created_at).getTime();
+        const windowSize = (toTs ?? Date.now()) - fromTs;
+        if (t >= fromTs - windowSize && t < fromTs) a.valorAnterior += v;
+      }
+    }
+    for (const b of budgets) {
+      if (!b.client_id) continue;
+      if (data.clientId && data.clientId !== b.client_id) continue;
+      const a = ensure(b.client_id);
+      a.qtdOrcamentos += 1;
+    }
+
+    // Build rows
+    const clientMap = new Map(clientsList.map((c) => [c.id, c]));
+    const now = Date.now();
+    const inactivityDays = data.inactivityDays ?? 90;
+
+    let rows: ClienteRow[] = clientsList
+      .filter((c) => !cityFilter || (c.city ?? "") === cityFilter)
+      .filter((c) => !data.clientId || c.id === data.clientId)
+      .map((c) => {
+        const a = agg.get(c.id) ?? {
+          qtdPedidos: 0,
+          qtdOrcamentos: 0,
+          valorComprado: 0,
+          ultimaCompra: null,
+          valorAnterior: 0,
+          valorPeriodo: 0,
+        };
+        return {
+          id: c.id,
+          name: c.name,
+          city: c.city,
+          state: c.state,
+          qtdPedidos: a.qtdPedidos,
+          qtdOrcamentos: a.qtdOrcamentos,
+          valorComprado: a.valorComprado,
+          ultimaCompra: a.ultimaCompra,
+          ticketMedio: a.qtdPedidos ? a.valorComprado / a.qtdPedidos : 0,
+          createdAt: c.created_at,
+        };
+      });
+
+    const totalClientes = rows.length;
+    const ativos = rows.filter(
+      (r) => r.ultimaCompra && (now - new Date(r.ultimaCompra).getTime()) / 86400000 <= inactivityDays,
+    ).length;
+    const inativos = totalClientes - ativos;
+    const novosNoPeriodo = rows.filter((r) => inRange(r.createdAt)).length;
+    const valorTotal = rows.reduce((s, r) => s + r.valorComprado, 0);
+    const totalPedidos = rows.reduce((s, r) => s + r.qtdPedidos, 0);
+    const ticketMedio = totalPedidos ? valorTotal / totalPedidos : 0;
+
+    const topFaturamento = [...rows].sort((a, b) => b.valorComprado - a.valorComprado).slice(0, 10);
+    const topPedidos = [...rows].sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
+    const topOrcamentos = [...rows].sort((a, b) => b.qtdOrcamentos - a.qtdOrcamentos).slice(0, 10);
+
+    const semComprar = rows
+      .filter(
+        (r) =>
+          !r.ultimaCompra ||
+          (now - new Date(r.ultimaCompra).getTime()) / 86400000 > inactivityDays,
+      )
+      .sort((a, b) => {
+        const ta = a.ultimaCompra ? new Date(a.ultimaCompra).getTime() : 0;
+        const tb = b.ultimaCompra ? new Date(b.ultimaCompra).getTime() : 0;
+        return ta - tb;
+      })
+      .slice(0, 10);
+
+    const recorrentes = rows.filter((r) => r.qtdPedidos > 1).sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
+    const novos = rows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 10);
+
+    // Cresceram: comparação valorPeriodo vs valorAnterior
+    const growthList = clientsList
+      .map((c) => {
+        const a = agg.get(c.id);
+        if (!a) return null;
+        const growth = a.valorPeriodo - a.valorAnterior;
+        return { id: c.id, growth, atual: a.valorPeriodo, anterior: a.valorAnterior };
+      })
+      .filter((x): x is { id: string; growth: number; atual: number; anterior: number } => x !== null && x.growth > 0)
+      .sort((a, b) => b.growth - a.growth)
+      .slice(0, 10);
+    const rowIndex = new Map(rows.map((r) => [r.id, r]));
+    const maisCresceram = growthList
+      .map((g) => rowIndex.get(g.id))
+      .filter((r): r is ClienteRow => !!r);
+
+    const cities = Array.from(
+      new Set(clientsList.map((c) => (c.city ?? "").trim()).filter(Boolean)),
+    ).sort();
+
+    return {
+      summary: {
+        totalClientes,
+        ativos,
+        inativos,
+        novosNoPeriodo,
+        ticketMedio,
+        valorTotal,
+      },
+      topFaturamento,
+      topPedidos,
+      topOrcamentos,
+      semComprar,
+      recorrentes,
+      novos,
+      maisCresceram,
+      rows: rows.sort((a, b) => b.valorComprado - a.valorComprado),
+      cities,
+      inactivityDays,
     };
   });
