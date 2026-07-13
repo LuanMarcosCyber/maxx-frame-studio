@@ -240,7 +240,8 @@ function Produtos() {
     if (!user) return;
     const newErrors: Partial<Record<keyof FormState, string>> = {};
     const req = (field: keyof FormState, msg = "Campo obrigatório") => {
-      if (!form[field].trim()) newErrors[field] = msg;
+      const v = form[field];
+      if (typeof v !== "string" || !v.trim()) newErrors[field] = msg;
     };
 
     if (isDiversos) {
