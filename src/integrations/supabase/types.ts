@@ -807,6 +807,7 @@ export type Database = {
       }
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
+      set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
     }
     Enums: {
