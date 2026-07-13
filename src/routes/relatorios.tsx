@@ -416,7 +416,7 @@ function Relatorios() {
               status,
               clientId: clientId === "todos" ? undefined : clientId,
               operatorId: operatorId === "todos" ? undefined : operatorId,
-              empresaUserId: empresaUserId === "todos" ? undefined : empresaUserId,
+              empresaUserId: empresaUserId || undefined,
               category: category === "todos" ? undefined : category,
               supplier: supplier === "todos" ? undefined : supplier,
               productId: productId === "todos" ? undefined : productId,
