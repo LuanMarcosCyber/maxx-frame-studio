@@ -29,6 +29,7 @@ import {
   getProdutosFornecedoresReport,
   getOrcamentosReport,
   getClientesReport,
+  getColaboradoresReport,
   type VendasFilters,
   type OrcamentosFilters,
   type ClientesFilters,
@@ -58,6 +59,7 @@ import {
   UserPlus,
   Repeat,
   TrendingDown,
+  Award,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -67,7 +69,14 @@ import {
   YAxis,
   Tooltip as RTooltip,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend,
 } from "recharts";
+
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
@@ -441,6 +450,10 @@ function ReportResults({
     return <ClientesReportView filters={{ ...filters, cityFilter }} search={search} />;
   }
 
+  if (selected === "colaboradores") {
+    return <ColaboradoresReportView filters={filters} search={search} />;
+  }
+
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
   return (
     <Card className="p-10 text-center">
@@ -453,6 +466,7 @@ function ReportResults({
     </Card>
   );
 }
+
 
 function VendasReportView({
   filters,
@@ -694,11 +708,30 @@ function FornecedoresReportView({
   const topProdOfTopSupplier =
     topSupplier && data?.topProductPerSupplier[topSupplier.supplier];
 
+  const topByQty = data?.suppliers.slice().sort((a, b) => b.quantity - a.quantity)[0] ?? null;
+  const chartData = (data?.suppliers ?? []).slice(0, 10).map((s) => ({
+    name: s.supplier,
+    value: Math.round(s.value * 100) / 100,
+    share: s.share,
+  }));
+  const PIE_COLORS = [
+    "hsl(var(--primary))",
+    "#7c3aed",
+    "#0ea5e9",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#ec4899",
+    "#14b8a6",
+    "#8b5cf6",
+    "#f97316",
+  ];
+  const ranking = (data?.suppliers ?? []).slice(0, 3);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard label="Total vendido (fornecedores)" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
-        <SummaryCard label="Fornecedores vendidos" value={String(data?.suppliers.length ?? 0)} icon={Factory} />
+        <SummaryCard label="Qtd. de fornecedores" value={String(data?.suppliers.length ?? 0)} icon={Factory} />
         <SummaryCard
           label="Maior faturamento"
           value={topSupplier?.supplier ?? "—"}
@@ -706,12 +739,82 @@ function FornecedoresReportView({
           sub={topSupplier ? fmtMoney(topSupplier.value) : undefined}
         />
         <SummaryCard
-          label="Produto mais vendido do fornecedor"
-          value={topProdOfTopSupplier?.name ?? "—"}
-          icon={Package}
-          sub={topProdOfTopSupplier ? fmtMoney(topProdOfTopSupplier.value) : undefined}
+          label="Maior qtd. de produtos vendidos"
+          value={topByQty?.supplier ?? "—"}
+          icon={Boxes}
+          sub={topByQty ? `${topByQty.quantity} produtos` : undefined}
         />
+        <SummaryCard label="Valor movimentado" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Participação nas vendas</h3>
+          </div>
+          <div className="p-4 h-72">
+            {chartData.length === 0 ? (
+              <EmptyResults label="Sem dados no período." />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={chartData} dataKey="value" nameKey="name" outerRadius={90} label={(e: { share?: number }) => `${(e.share ?? 0).toFixed(1)}%`}>
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Valor vendido por fornecedor</h3>
+          </div>
+          <div className="p-4 h-72">
+            {chartData.length === 0 ? (
+              <EmptyResults label="Sem dados no período." />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
+                  <YAxis type="category" dataKey="name" fontSize={11} width={110} />
+                  <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" name="Valor" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {ranking.length > 0 && (
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Ranking — Top 3 fornecedores</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
+            {ranking.map((r, i) => {
+              const medals = ["🥇", "🥈", "🥉"];
+              return (
+                <div key={r.supplier} className="p-5">
+                  <div className="text-2xl mb-1">{medals[i]}</div>
+                  <div className="text-sm font-semibold text-foreground truncate">{r.supplier}</div>
+                  <div className="text-lg font-bold text-foreground mt-2">{fmtMoney(r.value)}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {r.quantity} produtos • {fmtPct(r.share)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <div className="p-5 border-b">
@@ -728,8 +831,8 @@ function FornecedoresReportView({
               <TableHeader>
                 <TableRow>
                   <TableHead>Fornecedor/Fabricante</TableHead>
+                  <TableHead>Categorias fornecidas</TableHead>
                   <TableHead className="text-right">Qtd. produtos vendidos</TableHead>
-                  <TableHead className="text-right">Qtd. pedidos</TableHead>
                   <TableHead className="text-right">Valor vendido</TableHead>
                   <TableHead className="text-right">Participação</TableHead>
                 </TableRow>
@@ -738,8 +841,10 @@ function FornecedoresReportView({
                 {suppliers.map((s) => (
                   <TableRow key={s.supplier}>
                     <TableCell className="font-medium">{s.supplier}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {(data?.supplierCategories[s.supplier] ?? []).join(", ") || "—"}
+                    </TableCell>
                     <TableCell className="text-right">{s.quantity}</TableCell>
-                    <TableCell className="text-right">{s.orders}</TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(s.value)}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{fmtPct(s.share)}</TableCell>
                   </TableRow>
@@ -749,9 +854,43 @@ function FornecedoresReportView({
           </div>
         )}
       </Card>
+
+      {suppliers.length > 0 && (
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Produtos mais vendidos por fornecedor</h3>
+          </div>
+          <div className="divide-y">
+            {suppliers.slice(0, 6).map((s) => {
+              const items = data?.topProductsPerSupplier[s.supplier] ?? [];
+              return (
+                <div key={s.supplier} className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-semibold text-foreground">{s.supplier}</div>
+                    <div className="text-xs text-muted-foreground">{fmtMoney(s.value)}</div>
+                  </div>
+                  {items.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">Sem produtos.</div>
+                  ) : (
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {items.map((p, i) => (
+                        <li key={i} className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1.5">
+                          <span className="truncate mr-2">{i + 1}. {p.name}</span>
+                          <span className="font-medium shrink-0">{fmtMoney(p.value)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
+
 
 function ProdutosReportView({
   filters,
@@ -1314,5 +1453,162 @@ function IndicatorListCard({
         </ul>
       )}
     </Card>
+  );
+}
+
+// ============================================================================
+// Colaboradores
+// ============================================================================
+
+function ColaboradoresReportView({
+  filters,
+  search,
+}: {
+  filters: VendasFilters;
+  search: string;
+}) {
+  const fetchReport = useServerFn(getColaboradoresReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "colaboradores", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  const rows = useMemo(() => {
+    const list = query.data?.rows ?? [];
+    const s = search.trim().toLowerCase();
+    if (!s) return list;
+    return list.filter(
+      (r) =>
+        r.name.toLowerCase().includes(s) ||
+        (r.empresa_name ?? "").toLowerCase().includes(s),
+    );
+  }, [query.data, search]);
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Carregando relatório de colaboradores...
+      </Card>
+    );
+  }
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar dados. Tente novamente.
+      </Card>
+    );
+  }
+
+  const data = query.data!;
+  const s = data.summary;
+
+  const cards = [
+    { label: "Colaboradores", value: String(s.totalColaboradores), icon: UserCog },
+    { label: "Orçamentos criados", value: String(s.orcamentos), icon: FileText },
+    { label: "Pedidos fechados", value: String(s.pedidos), icon: ShoppingCart },
+    { label: "Valor vendido", value: fmtMoney(s.valorVendido), icon: DollarSign },
+    { label: "Ticket médio", value: fmtMoney(s.ticketMedio), icon: Receipt },
+  ];
+
+  const rankings: Array<{ title: string; row: typeof data.maiorVendedor; format: (r: NonNullable<typeof data.maiorVendedor>) => string; icon: typeof BarChart3 }> = [
+    { title: "Maior vendedor", row: data.maiorVendedor, format: (r) => fmtMoney(r.valorVendido), icon: Trophy },
+    { title: "Mais orçamentos", row: data.maiorOrcamentos, format: (r) => `${r.orcamentos} orçamentos`, icon: FileText },
+    { title: "Mais pedidos", row: data.maiorPedidos, format: (r) => `${r.pedidos} pedidos`, icon: ShoppingCart },
+    { title: "Maior faturamento", row: data.maiorFaturamento, format: (r) => fmtMoney(r.valorVendido), icon: DollarSign },
+  ];
+
+  const indicators: Array<{ title: string; row: typeof data.maiorVendedor; format: (r: NonNullable<typeof data.maiorVendedor>) => string; icon: typeof BarChart3 }> = [
+    { title: "Maior conversão", row: data.maiorConversao, format: (r) => fmtPct(r.conversao), icon: TrendingUp },
+    { title: "Maior ticket", row: data.maiorTicket, format: (r) => fmtMoney(r.ticketMedio), icon: Award },
+    { title: "Mais descontos concedidos", row: data.maisDescontos, format: (r) => fmtMoney(r.descontoMedio) + " (médio)", icon: Percent },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {cards.map((c) => (
+          <SummaryCard key={c.label} label={c.label} value={c.value} icon={c.icon} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {rankings.map((r) => (
+          <Card key={r.title} className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+                <r.icon className="h-4 w-4" />
+              </div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{r.title}</div>
+            </div>
+            <div className="text-base font-bold text-foreground truncate">{r.row?.name ?? "—"}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{r.row ? r.format(r.row) : "Sem dados"}</div>
+            {r.row?.empresa_name && (
+              <div className="text-[11px] text-muted-foreground/80 mt-1 truncate">{r.row.empresa_name}</div>
+            )}
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {indicators.map((r) => (
+          <Card key={r.title} className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+                <r.icon className="h-4 w-4" />
+              </div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{r.title}</div>
+            </div>
+            <div className="text-base font-bold text-foreground truncate">{r.row?.name ?? "—"}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{r.row ? r.format(r.row) : "Sem dados"}</div>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Desempenho por colaborador</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {rows.length} colaborador(es) encontrado(s)
+          </p>
+        </div>
+        {rows.length === 0 ? (
+          <EmptyResults label="Ajuste os filtros para visualizar dados." />
+        ) : (
+          <div className="p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead className="text-right">Orçamentos</TableHead>
+                  <TableHead className="text-right">Pedidos</TableHead>
+                  <TableHead className="text-right">Conversão</TableHead>
+                  <TableHead className="text-right">Valor vendido</TableHead>
+                  <TableHead className="text-right">Ticket médio</TableHead>
+                  <TableHead className="text-right">Desc. médio</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    <TableCell className="text-right">{r.orcamentos}</TableCell>
+                    <TableCell className="text-right">{r.pedidos}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{fmtPct(r.conversao)}</TableCell>
+                    <TableCell className="text-right font-medium">{fmtMoney(r.valorVendido)}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(r.ticketMedio)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {r.descontoMedio > 0 ? fmtMoney(r.descontoMedio) : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }

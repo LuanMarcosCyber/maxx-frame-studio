@@ -74,7 +74,10 @@ export interface ProdutosFornecedoresReport {
   topProduct: ProductRow | null;
   topCategory: { category: string; value: number; quantity: number } | null;
   topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }>;
+  supplierCategories: Record<string, string[]>;
+  topProductsPerSupplier: Record<string, Array<{ name: string; quantity: number; value: number }>>;
 }
+
 
 function periodRange(period: string): { from?: string; to?: string } {
   const now = new Date();
@@ -429,6 +432,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         topProduct: null,
         topCategory: null,
         topProductPerSupplier: {},
+        supplierCategories: {},
+        topProductsPerSupplier: {},
       };
     }
 
@@ -466,7 +471,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
     const productAgg = new Map<string, ProductRow & { orderSet: Set<string> }>();
     const supplierAgg = new Map<string, SupplierRow & { orderSet: Set<string> }>();
     const categoryAgg = new Map<string, { value: number; quantity: number }>();
-    const supplierTopProduct = new Map<string, { name: string; quantity: number; value: number }>();
+    const supplierCategoriesSet = new Map<string, Set<string>>();
+    const supplierProductAgg = new Map<string, Map<string, { name: string; quantity: number; value: number }>>();
 
     for (const it of itemRows ?? []) {
       const parts = extractParts((it.data ?? {}) as Record<string, unknown>);
@@ -532,14 +538,21 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
           categoryAgg.set(category, { value: part.value, quantity: 1 });
         }
 
-        // top product per supplier
-        const currTop = supplierTopProduct.get(supplier);
-        if (!currTop || part.value > currTop.value) {
-          supplierTopProduct.set(supplier, {
-            name: description,
-            quantity: 1,
-            value: part.value,
-          });
+        // categories per supplier
+        let cats = supplierCategoriesSet.get(supplier);
+        if (!cats) { cats = new Set(); supplierCategoriesSet.set(supplier, cats); }
+        if (category) cats.add(category);
+
+        // products per supplier
+        let spMap = supplierProductAgg.get(supplier);
+        if (!spMap) { spMap = new Map(); supplierProductAgg.set(supplier, spMap); }
+        const spKey = part.productId;
+        const spExisting = spMap.get(spKey);
+        if (spExisting) {
+          spExisting.quantity += 1;
+          spExisting.value += part.value;
+        } else {
+          spMap.set(spKey, { name: description, quantity: 1, value: part.value });
         }
       }
     }
@@ -572,7 +585,16 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       : null;
 
     const topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }> = {};
-    for (const [s, v] of supplierTopProduct.entries()) topProductPerSupplier[s] = v;
+    const topProductsPerSupplier: Record<string, Array<{ name: string; quantity: number; value: number }>> = {};
+    for (const [s, m] of supplierProductAgg.entries()) {
+      const arr = Array.from(m.values()).sort((a, b) => b.value - a.value);
+      topProductsPerSupplier[s] = arr.slice(0, 5);
+      if (arr[0]) topProductPerSupplier[s] = arr[0];
+    }
+    const supplierCategories: Record<string, string[]> = {};
+    for (const [s, set] of supplierCategoriesSet.entries()) {
+      supplierCategories[s] = Array.from(set).sort();
+    }
 
     return {
       totalValue,
@@ -584,6 +606,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       topProduct,
       topCategory,
       topProductPerSupplier,
+      supplierCategories,
+      topProductsPerSupplier,
     };
   });
 
@@ -1133,5 +1157,237 @@ export const getClientesReport = createServerFn({ method: "POST" })
       rows: rows.sort((a, b) => b.valorComprado - a.valorComprado),
       cities,
       inactivityDays,
+    };
+  });
+
+// ============================================================================
+// Colaboradores
+// ============================================================================
+
+export interface ColaboradorRow {
+  id: string; // operator_id or synthetic name-based key
+  name: string;
+  empresa_name: string | null;
+  orcamentos: number;
+  pedidos: number;
+  conversao: number; // %
+  valorVendido: number;
+  ticketMedio: number;
+  descontoMedio: number;
+}
+
+export interface ColaboradoresReport {
+  summary: {
+    totalColaboradores: number;
+    orcamentos: number;
+    pedidos: number;
+    valorVendido: number;
+    ticketMedio: number;
+  };
+  maiorVendedor: ColaboradorRow | null;
+  maiorOrcamentos: ColaboradorRow | null;
+  maiorPedidos: ColaboradorRow | null;
+  maiorFaturamento: ColaboradorRow | null;
+  maiorConversao: ColaboradorRow | null;
+  maiorTicket: ColaboradorRow | null;
+  maisDescontos: ColaboradorRow | null;
+  rows: ColaboradorRow[];
+}
+
+export const getColaboradoresReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: VendasFilters) => data)
+  .handler(async ({ data, context }): Promise<ColaboradoresReport> => {
+    const { supabase, userId } = context;
+    const { data: adminRow } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    const isAdmin = adminRow === true;
+
+    let client = supabase;
+    if (isAdmin) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      client = supabaseAdmin as unknown as typeof supabase;
+    }
+
+    let userIds: string[] | null = null;
+    if (isAdmin && data.empresaUserId) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: children } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("parent_user_id", data.empresaUserId);
+      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
+    }
+
+    const { from, to } = periodRange(data.period || "mes");
+
+    // Budgets
+    let bq = client
+      .from("budgets")
+      .select("id, operator_id, operator_name, user_id, total_value, created_at, details")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (from) bq = bq.gte("created_at", from);
+    if (to) bq = bq.lt("created_at", to);
+    if (userIds) bq = bq.in("user_id", userIds);
+    if (data.operatorId) bq = bq.eq("operator_id", data.operatorId);
+    if (data.clientId) bq = bq.eq("client_id", data.clientId);
+    const { data: budgetsData, error: bErr } = await bq;
+    if (bErr) throw bErr;
+
+    // Orders
+    let oq = client
+      .from("orders")
+      .select("id, operator_id, operator_name, user_id, total_value, created_at, budget_id, budgets:budget_id(details, client_id)")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (from) oq = oq.gte("created_at", from);
+    if (to) oq = oq.lt("created_at", to);
+    if (userIds) oq = oq.in("user_id", userIds);
+    if (data.operatorId) oq = oq.eq("operator_id", data.operatorId);
+    const { data: ordersData, error: oErr } = await oq;
+    if (oErr) throw oErr;
+
+    const budgets = (budgetsData ?? []) as Array<{
+      id: string;
+      operator_id: string | null;
+      operator_name: string | null;
+      user_id: string;
+      total_value: number | string;
+      created_at: string;
+      details: Record<string, unknown> | null;
+    }>;
+    const orders = (ordersData ?? []) as Array<{
+      id: string;
+      operator_id: string | null;
+      operator_name: string | null;
+      user_id: string;
+      total_value: number | string;
+      budget_id: string | null;
+      budgets: { details: Record<string, unknown> | null; client_id: string | null } | null;
+    }>;
+
+    // Empresa names (admin)
+    const empresaMap = new Map<string, string>();
+    if (isAdmin) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const uids = Array.from(new Set([
+        ...budgets.map((b) => b.user_id),
+        ...orders.map((o) => o.user_id),
+      ]));
+      if (uids.length) {
+        const { data: profs } = await supabaseAdmin
+          .from("profiles")
+          .select("id, store_name, full_name")
+          .in("id", uids);
+        for (const p of profs ?? []) {
+          empresaMap.set(p.id, p.store_name || p.full_name || "—");
+        }
+      }
+    }
+
+    type Agg = {
+      id: string;
+      name: string;
+      empresa_name: string | null;
+      orcamentos: number;
+      pedidos: number;
+      valorVendido: number;
+      descontoTotal: number;
+      descontoCount: number;
+    };
+    const agg = new Map<string, Agg>();
+    const keyOf = (opId: string | null, opName: string | null) =>
+      opId ? `id:${opId}` : `name:${(opName ?? "—").trim().toLowerCase()}`;
+    const ensure = (opId: string | null, opName: string | null, empresa: string | null): Agg => {
+      const k = keyOf(opId, opName);
+      let a = agg.get(k);
+      if (!a) {
+        a = {
+          id: opId ?? k,
+          name: (opName ?? "—") || "—",
+          empresa_name: empresa,
+          orcamentos: 0,
+          pedidos: 0,
+          valorVendido: 0,
+          descontoTotal: 0,
+          descontoCount: 0,
+        };
+        agg.set(k, a);
+      }
+      if (!a.empresa_name && empresa) a.empresa_name = empresa;
+      return a;
+    };
+
+    for (const b of budgets) {
+      if (data.clientId) {
+        // filter would need details; keep simple — server already filtered by client_id
+      }
+      const empresa = empresaMap.get(b.user_id) ?? null;
+      const a = ensure(b.operator_id, b.operator_name, empresa);
+      a.orcamentos += 1;
+    }
+
+    for (const o of orders) {
+      if (data.clientId && o.budgets?.client_id !== data.clientId) continue;
+      const empresa = empresaMap.get(o.user_id) ?? null;
+      const a = ensure(o.operator_id, o.operator_name, empresa);
+      const v = Number(o.total_value) || 0;
+      a.pedidos += 1;
+      a.valorVendido += v;
+      const details = o.budgets?.details ?? {};
+      const desc = Number((details as Record<string, unknown>).descontoValor) || 0;
+      if (desc > 0) {
+        a.descontoTotal += desc;
+        a.descontoCount += 1;
+      }
+    }
+
+    const rows: ColaboradorRow[] = Array.from(agg.values()).map((a) => ({
+      id: a.id,
+      name: a.name,
+      empresa_name: a.empresa_name,
+      orcamentos: a.orcamentos,
+      pedidos: a.pedidos,
+      conversao: a.orcamentos > 0 ? (a.pedidos / a.orcamentos) * 100 : 0,
+      valorVendido: a.valorVendido,
+      ticketMedio: a.pedidos > 0 ? a.valorVendido / a.pedidos : 0,
+      descontoMedio: a.descontoCount > 0 ? a.descontoTotal / a.descontoCount : 0,
+    }));
+
+    const totalColaboradores = rows.length;
+    const orcTotal = rows.reduce((s, r) => s + r.orcamentos, 0);
+    const pedTotal = rows.reduce((s, r) => s + r.pedidos, 0);
+    const valTotal = rows.reduce((s, r) => s + r.valorVendido, 0);
+    const ticketMedio = pedTotal ? valTotal / pedTotal : 0;
+
+    const bestBy = (fn: (r: ColaboradorRow) => number): ColaboradorRow | null => {
+      let best: ColaboradorRow | null = null;
+      let bv = -Infinity;
+      for (const r of rows) {
+        const v = fn(r);
+        if (v > bv) { bv = v; best = r; }
+      }
+      return best && bv > 0 ? best : null;
+    };
+
+    return {
+      summary: {
+        totalColaboradores,
+        orcamentos: orcTotal,
+        pedidos: pedTotal,
+        valorVendido: valTotal,
+        ticketMedio,
+      },
+      maiorVendedor: bestBy((r) => r.valorVendido),
+      maiorOrcamentos: bestBy((r) => r.orcamentos),
+      maiorPedidos: bestBy((r) => r.pedidos),
+      maiorFaturamento: bestBy((r) => r.valorVendido),
+      maiorConversao: bestBy((r) => r.conversao),
+      maiorTicket: bestBy((r) => r.ticketMedio),
+      maisDescontos: bestBy((r) => r.descontoMedio),
+      rows: rows.sort((a, b) => b.valorVendido - a.valorVendido),
     };
   });
