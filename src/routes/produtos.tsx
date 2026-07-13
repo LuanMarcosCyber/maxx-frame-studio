@@ -835,11 +835,17 @@ function Produtos() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="forn">Fornecedor / Fabricante *</Label>
-                <Input
-                  id="forn"
-                  placeholder="Nome do fornecedor ou fabricante"
-                  value={form.supplier}
-                  onChange={(e) => updateField("supplier", e.target.value.toUpperCase())}
+                <SupplierPicker
+                  value={form.supplier_id}
+                  legacyText={form.supplier}
+                  preferredCategory={productCategoryToSupplierCategory(activeCategory)}
+                  onChange={(id, opt) =>
+                    setForm((f) => ({
+                      ...f,
+                      supplier_id: id,
+                      supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
+                    }))
+                  }
                   className={errCls("supplier")}
                 />
                 <FieldError field="supplier" />
