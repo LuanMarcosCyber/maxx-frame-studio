@@ -538,14 +538,21 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
           categoryAgg.set(category, { value: part.value, quantity: 1 });
         }
 
-        // top product per supplier
-        const currTop = supplierTopProduct.get(supplier);
-        if (!currTop || part.value > currTop.value) {
-          supplierTopProduct.set(supplier, {
-            name: description,
-            quantity: 1,
-            value: part.value,
-          });
+        // categories per supplier
+        let cats = supplierCategoriesSet.get(supplier);
+        if (!cats) { cats = new Set(); supplierCategoriesSet.set(supplier, cats); }
+        if (category) cats.add(category);
+
+        // products per supplier
+        let spMap = supplierProductAgg.get(supplier);
+        if (!spMap) { spMap = new Map(); supplierProductAgg.set(supplier, spMap); }
+        const spKey = part.productId;
+        const spExisting = spMap.get(spKey);
+        if (spExisting) {
+          spExisting.quantity += 1;
+          spExisting.value += part.value;
+        } else {
+          spMap.set(spKey, { name: description, quantity: 1, value: part.value });
         }
       }
     }
