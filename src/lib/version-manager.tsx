@@ -104,7 +104,7 @@ async function clearCachesAndReload() {
 
 export function VersionUpdateProvider({ children }: { children: ReactNode }) {
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "prompt" | "updating">("idle");
+  const [phase, setPhase] = useState<PromptPhase>("idle");
   const dirtyRef = useRef<Set<string>>(new Set());
   const [dirtyTick, setDirtyTick] = useState(0);
   const baselineRef = useRef<string | null>(null);
