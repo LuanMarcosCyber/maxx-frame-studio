@@ -1455,3 +1455,160 @@ function IndicatorListCard({
     </Card>
   );
 }
+
+// ============================================================================
+// Colaboradores
+// ============================================================================
+
+function ColaboradoresReportView({
+  filters,
+  search,
+}: {
+  filters: VendasFilters;
+  search: string;
+}) {
+  const fetchReport = useServerFn(getColaboradoresReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "colaboradores", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  const rows = useMemo(() => {
+    const list = query.data?.rows ?? [];
+    const s = search.trim().toLowerCase();
+    if (!s) return list;
+    return list.filter(
+      (r) =>
+        r.name.toLowerCase().includes(s) ||
+        (r.empresa_name ?? "").toLowerCase().includes(s),
+    );
+  }, [query.data, search]);
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Carregando relatório de colaboradores...
+      </Card>
+    );
+  }
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar dados. Tente novamente.
+      </Card>
+    );
+  }
+
+  const data = query.data!;
+  const s = data.summary;
+
+  const cards = [
+    { label: "Colaboradores", value: String(s.totalColaboradores), icon: UserCog },
+    { label: "Orçamentos criados", value: String(s.orcamentos), icon: FileText },
+    { label: "Pedidos fechados", value: String(s.pedidos), icon: ShoppingCart },
+    { label: "Valor vendido", value: fmtMoney(s.valorVendido), icon: DollarSign },
+    { label: "Ticket médio", value: fmtMoney(s.ticketMedio), icon: Receipt },
+  ];
+
+  const rankings: Array<{ title: string; row: typeof data.maiorVendedor; format: (r: NonNullable<typeof data.maiorVendedor>) => string; icon: typeof BarChart3 }> = [
+    { title: "Maior vendedor", row: data.maiorVendedor, format: (r) => fmtMoney(r.valorVendido), icon: Trophy },
+    { title: "Mais orçamentos", row: data.maiorOrcamentos, format: (r) => `${r.orcamentos} orçamentos`, icon: FileText },
+    { title: "Mais pedidos", row: data.maiorPedidos, format: (r) => `${r.pedidos} pedidos`, icon: ShoppingCart },
+    { title: "Maior faturamento", row: data.maiorFaturamento, format: (r) => fmtMoney(r.valorVendido), icon: DollarSign },
+  ];
+
+  const indicators: Array<{ title: string; row: typeof data.maiorVendedor; format: (r: NonNullable<typeof data.maiorVendedor>) => string; icon: typeof BarChart3 }> = [
+    { title: "Maior conversão", row: data.maiorConversao, format: (r) => fmtPct(r.conversao), icon: TrendingUp },
+    { title: "Maior ticket", row: data.maiorTicket, format: (r) => fmtMoney(r.ticketMedio), icon: Award },
+    { title: "Mais descontos concedidos", row: data.maisDescontos, format: (r) => fmtMoney(r.descontoMedio) + " (médio)", icon: Percent },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {cards.map((c) => (
+          <SummaryCard key={c.label} label={c.label} value={c.value} icon={c.icon} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {rankings.map((r) => (
+          <Card key={r.title} className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+                <r.icon className="h-4 w-4" />
+              </div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{r.title}</div>
+            </div>
+            <div className="text-base font-bold text-foreground truncate">{r.row?.name ?? "—"}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{r.row ? r.format(r.row) : "Sem dados"}</div>
+            {r.row?.empresa_name && (
+              <div className="text-[11px] text-muted-foreground/80 mt-1 truncate">{r.row.empresa_name}</div>
+            )}
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {indicators.map((r) => (
+          <Card key={r.title} className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+                <r.icon className="h-4 w-4" />
+              </div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{r.title}</div>
+            </div>
+            <div className="text-base font-bold text-foreground truncate">{r.row?.name ?? "—"}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">{r.row ? r.format(r.row) : "Sem dados"}</div>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Desempenho por colaborador</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {rows.length} colaborador(es) encontrado(s)
+          </p>
+        </div>
+        {rows.length === 0 ? (
+          <EmptyResults label="Ajuste os filtros para visualizar dados." />
+        ) : (
+          <div className="p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead className="text-right">Orçamentos</TableHead>
+                  <TableHead className="text-right">Pedidos</TableHead>
+                  <TableHead className="text-right">Conversão</TableHead>
+                  <TableHead className="text-right">Valor vendido</TableHead>
+                  <TableHead className="text-right">Ticket médio</TableHead>
+                  <TableHead className="text-right">Desc. médio</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    <TableCell className="text-right">{r.orcamentos}</TableCell>
+                    <TableCell className="text-right">{r.pedidos}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{fmtPct(r.conversao)}</TableCell>
+                    <TableCell className="text-right font-medium">{fmtMoney(r.valorVendido)}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(r.ticketMedio)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {r.descontoMedio > 0 ? fmtMoney(r.descontoMedio) : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
