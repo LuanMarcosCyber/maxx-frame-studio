@@ -2311,7 +2311,17 @@ function NovoOrcamento() {
                         value={arquitetoNome}
                         className="uppercase"
                         autoComplete="off"
-
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        onCompositionStart={() => {
+                          composingArquitetoRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composingArquitetoRef.current = false;
+                          const v = (e.target as HTMLInputElement).value.toUpperCase();
+                          if (v !== arquitetoNome) setArquitetoNome(v);
+                        }}
                         onFocus={() => {
                           if (arquitetoNome.trim().length > 0) {
                             setArquitetoSugestoesOpen(true);
