@@ -275,7 +275,7 @@ function Fornecedores() {
     }
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         is_global: isAdmin ? form.is_global : false,
         user_id: (isAdmin && form.is_global) ? null : (ownerUserId ?? session.user.id),
         legal_name: form.legal_name.trim() || null,
