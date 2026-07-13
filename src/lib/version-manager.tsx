@@ -243,9 +243,8 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Um pequeno hack: "idle-prompted" não é do union; usamos string. Ajustamos:
+// Fases possíveis do gerenciador de atualização.
 type PromptPhase = "idle" | "prompt" | "idle-prompted" | "updating";
-void (null as unknown as PromptPhase);
 
 export function useVersionUpdate(): Ctx {
   const ctx = useContext(VersionCtx);
