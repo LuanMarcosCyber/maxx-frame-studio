@@ -36,7 +36,7 @@ import {
   Loader2,
   Globe2,
   Building2,
-  Lock,
+  Eye,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
