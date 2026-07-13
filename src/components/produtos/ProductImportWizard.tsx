@@ -119,7 +119,26 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: { line: number; reason: string }[] } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [manualSupplierId, setManualSupplierId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: allSuppliers = [] } = useSuppliersQuery();
+
+  const supplierByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of allSuppliers) {
+      const label = supplierLabel(s);
+      const keys = [label, s.legal_name, s.trade_name].filter(Boolean) as string[];
+      for (const k of keys) {
+        const nk = normalizeSupplierName(k);
+        if (nk && !m.has(nk)) m.set(nk, s.id);
+      }
+    }
+    return m;
+  }, [allSuppliers]);
+  const manualSupplier = useMemo(
+    () => allSuppliers.find((s) => s.id === manualSupplierId) ?? null,
+    [allSuppliers, manualSupplierId],
+  );
 
   const reset = () => {
     setStep(1);
