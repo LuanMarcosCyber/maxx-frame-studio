@@ -74,7 +74,10 @@ export interface ProdutosFornecedoresReport {
   topProduct: ProductRow | null;
   topCategory: { category: string; value: number; quantity: number } | null;
   topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }>;
+  supplierCategories: Record<string, string[]>;
+  topProductsPerSupplier: Record<string, Array<{ name: string; quantity: number; value: number }>>;
 }
+
 
 function periodRange(period: string): { from?: string; to?: string } {
   const now = new Date();
