@@ -432,6 +432,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         topProduct: null,
         topCategory: null,
         topProductPerSupplier: {},
+        supplierCategories: {},
+        topProductsPerSupplier: {},
       };
     }
 
