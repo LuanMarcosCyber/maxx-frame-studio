@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setRole(null);
         setProfile(null);
+        setEffectiveOwnerId(null);
       }
     });
 
