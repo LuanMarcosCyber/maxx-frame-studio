@@ -36,7 +36,7 @@ import {
   Loader2,
   Globe2,
   Building2,
-  Lock,
+  Eye,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -139,6 +139,7 @@ function Fornecedores() {
 
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [readOnly, setReadOnly] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<SupplierRow | null>(null);
@@ -180,10 +181,11 @@ function Fornecedores() {
 
   function openCreate() {
     setForm({ ...emptyForm, is_global: false });
+    setReadOnly(false);
     setDialogOpen(true);
   }
 
-  function openEdit(r: SupplierRow) {
+  function openEdit(r: SupplierRow, viewOnly = false) {
     setForm({
       id: r.id,
       is_global: r.is_global,
@@ -205,6 +207,7 @@ function Fornecedores() {
       categories: r.categories ?? [],
       active: r.active,
     });
+    setReadOnly(viewOnly);
     setDialogOpen(true);
   }
 
@@ -435,13 +438,13 @@ function Fornecedores() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => openEdit(r)}
+                            onClick={() => openEdit(r, !editable)}
                             title={editable ? "Editar" : "Visualizar (somente leitura)"}
                           >
                             {editable ? (
                               <Pencil className="h-4 w-4" />
                             ) : (
-                              <Lock className="h-4 w-4 text-muted-foreground" />
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             )}
                           </Button>
                           {editable && (
@@ -470,14 +473,26 @@ function Fornecedores() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {form.id ? "Editar fornecedor" : "Novo fornecedor"}
+              {readOnly
+                ? "Visualizar fornecedor (somente leitura)"
+                : form.id ? "Editar fornecedor" : "Novo fornecedor"}
             </DialogTitle>
             <DialogDescription>
-              Preencha ao menos a razão social ou o nome fantasia. CNPJ é opcional.
+              {readOnly
+                ? "Este é um fornecedor global. Apenas o administrador pode editá-lo."
+                : "Preencha ao menos a razão social ou o nome fantasia. CNPJ é opcional."}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+          <fieldset
+            disabled={readOnly}
+            className={
+              "grid grid-cols-1 sm:grid-cols-6 gap-4 min-w-0 " +
+              (readOnly
+                ? "[&_input]:cursor-not-allowed [&_textarea]:cursor-not-allowed [&_button]:cursor-not-allowed [&_[role=checkbox]]:cursor-not-allowed [&_[role=radio]]:cursor-not-allowed [&_label]:cursor-not-allowed opacity-95"
+                : "")
+            }
+          >
             {isAdmin && (
               <div className="sm:col-span-6 space-y-2 border rounded-md p-3 bg-muted/30">
                 <Label className="text-sm font-semibold">Disponibilidade do fornecedor *</Label>
@@ -704,25 +719,33 @@ function Fornecedores() {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
               />
             </div>
-          </div>
+          </fieldset>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Salvando...
-                </>
-              ) : (
-                "Salvar"
-              )}
-            </Button>
+            {readOnly ? (
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Voltar
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Salvando...
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -38,6 +38,7 @@ interface AuthContextValue {
   role: AppRole | null;
   profile: Profile | null;
   ownerUserId: string | null;
+  effectiveOwnerId: string | null;
   isActive: boolean;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: string | null }>;
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [effectiveOwnerId, setEffectiveOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setRole(null);
         setProfile(null);
+        setEffectiveOwnerId(null);
       }
     });
 
@@ -134,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: effRows } = await (supabase.rpc as any)("get_effective_profile");
       const eff = Array.isArray(effRows) ? effRows[0] : effRows;
       if (eff) {
+        if (eff.id) setEffectiveOwnerId(eff.id as string);
         mergedProfile = {
           ...mergedProfile,
           // Empresas vinculadas NÃO compartilham identidade. Ao trocar,
@@ -197,7 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const ownerUserId = profile?.parent_user_id ?? session?.user?.id ?? null;
+  const ownerUserId =
+    effectiveOwnerId ?? profile?.parent_user_id ?? session?.user?.id ?? null;
   const isActive = profile?.active ?? true;
 
   return (
@@ -208,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         profile,
         ownerUserId,
+        effectiveOwnerId,
         isActive,
         loading,
         signIn,
