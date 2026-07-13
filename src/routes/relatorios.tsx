@@ -134,12 +134,16 @@ function Relatorios() {
   const [category, setCategory] = useState<string>("todos");
   const [supplier, setSupplier] = useState<string>("todos");
   const [productId, setProductId] = useState<string>("todos");
+  const [granularity, setGranularity] = useState<string>("mes");
+  const [cityFilter, setCityFilter] = useState<string>("todos");
   const [search, setSearch] = useState("");
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
   const showCategoryFilter = selected === "produtos" || selected === "fornecedores";
   const showSupplierFilter = selected === "produtos";
   const showProductFilter = selected === "produtos";
+  const showGranularity = selected === "orcamentos";
+  const showCityFilter = selected === "clientes";
 
   const fetchOptions = useServerFn(getVendasOptions);
 
