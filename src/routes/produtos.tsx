@@ -117,6 +117,7 @@ const emptyForm: FormState = {
   name: "",
   barcode: "",
   supplier: "",
+  supplier_id: null,
   labor_cost: "",
   commission_percentage: "",
   ncm: "",
