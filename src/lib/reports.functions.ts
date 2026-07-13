@@ -186,6 +186,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
     ]);
 
     let empresas: { id: string; name: string }[] = [];
+    let activeEmpresaId: string | null = null;
     if (isAdmin) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       // Empresas = usuários com role 'revendedor' e sem parent (contas raiz).
@@ -206,7 +207,18 @@ export const getVendasOptions = createServerFn({ method: "GET" })
           name: p.store_name || p.full_name || "—",
         }));
       }
+    } else {
+      // Non-admin: only companies the caller may switch/consult (own + linked).
+      // If only their own → filter hidden on the client.
+      const { data: switchable } = await supabase.rpc("list_switchable_companies");
+      const list = (switchable ?? []) as Array<{
+        id: string; full_name: string | null; store_name: string | null; is_active: boolean;
+      }>;
+      empresas = list.map((r) => ({ id: r.id, name: r.store_name || r.full_name || "—" }));
+      const active = list.find((r) => r.is_active);
+      activeEmpresaId = active?.id ?? null;
     }
+
 
     // Products/categories/suppliers for filter dropdowns.
     const prodClient = isAdmin
