@@ -30,9 +30,12 @@ import {
   getOrcamentosReport,
   getClientesReport,
   getColaboradoresReport,
+  getEmpresasReport,
+  getInsightsReport,
   type VendasFilters,
   type OrcamentosFilters,
   type ClientesFilters,
+  type Insight,
 } from "@/lib/reports.functions";
 import {
   Search,
@@ -60,6 +63,9 @@ import {
   Repeat,
   TrendingDown,
   Award,
+  Sparkles,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import {
   ResponsiveContainer,
