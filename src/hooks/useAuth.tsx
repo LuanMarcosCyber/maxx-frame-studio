@@ -201,7 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const ownerUserId = profile?.parent_user_id ?? session?.user?.id ?? null;
+  const ownerUserId =
+    effectiveOwnerId ?? profile?.parent_user_id ?? session?.user?.id ?? null;
   const isActive = profile?.active ?? true;
 
   return (
@@ -212,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         profile,
         ownerUserId,
+        effectiveOwnerId,
         isActive,
         loading,
         signIn,
