@@ -85,6 +85,7 @@ type Product = {
   name: string | null;
   barcode: string | null;
   supplier: string | null;
+  supplier_id: string | null;
   labor_cost: number | null;
   commission_percentage: number | null;
   ncm: string | null;
