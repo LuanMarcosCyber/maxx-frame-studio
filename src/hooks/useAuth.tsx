@@ -38,6 +38,7 @@ interface AuthContextValue {
   role: AppRole | null;
   profile: Profile | null;
   ownerUserId: string | null;
+  effectiveOwnerId: string | null;
   isActive: boolean;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: string | null }>;
