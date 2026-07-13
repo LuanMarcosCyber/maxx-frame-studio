@@ -921,16 +921,24 @@ function NovoOrcamento() {
   const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
   const [arquitetoSugestoesOpen, setArquitetoSugestoesOpen] = useState(false);
 
-  // Força CAPS LOCK nos campos Colaborador / Cliente / Arquiteto
+  // Força CAPS LOCK nos campos Colaborador / Cliente / Arquiteto,
+  // mas SOMENTE quando não há composição do IME em andamento (Android/iOS).
+  // Alterar o valor durante composição duplica caracteres no teclado mobile.
+  const composingVendedorRef = useRef(false);
+  const composingClienteRef = useRef(false);
+  const composingArquitetoRef = useRef(false);
   useEffect(() => {
+    if (composingVendedorRef.current) return;
     const up = vendedorNome.toUpperCase();
     if (up !== vendedorNome) setVendedorNome(up);
   }, [vendedorNome]);
   useEffect(() => {
+    if (composingClienteRef.current) return;
     const up = clienteNome.toUpperCase();
     if (up !== clienteNome) setClienteNome(up);
   }, [clienteNome]);
   useEffect(() => {
+    if (composingArquitetoRef.current) return;
     const up = arquitetoNome.toUpperCase();
     if (up !== arquitetoNome) setArquitetoNome(up);
   }, [arquitetoNome]);
@@ -2057,7 +2065,17 @@ function NovoOrcamento() {
                         value={vendedorNome}
                         className="uppercase"
                         autoComplete="off"
-
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        onCompositionStart={() => {
+                          composingVendedorRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composingVendedorRef.current = false;
+                          const v = (e.target as HTMLInputElement).value.toUpperCase();
+                          if (v !== vendedorNome) setVendedorNome(v);
+                        }}
                         onFocus={() => {
                           if (vendedorNome.trim().length > 0) setColabSugestoesOpen(true);
                         }}
@@ -2150,7 +2168,17 @@ function NovoOrcamento() {
                         value={clienteNome}
                         className="uppercase"
                         autoComplete="off"
-
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        onCompositionStart={() => {
+                          composingClienteRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composingClienteRef.current = false;
+                          const v = (e.target as HTMLInputElement).value.toUpperCase();
+                          if (v !== clienteNome) setClienteNome(v);
+                        }}
                         onFocus={() => {
                           if (!naoVincularCliente && clienteNome.trim().length > 0) {
                             setClienteSugestoesOpen(true);
@@ -2283,7 +2311,17 @@ function NovoOrcamento() {
                         value={arquitetoNome}
                         className="uppercase"
                         autoComplete="off"
-
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        onCompositionStart={() => {
+                          composingArquitetoRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composingArquitetoRef.current = false;
+                          const v = (e.target as HTMLInputElement).value.toUpperCase();
+                          if (v !== arquitetoNome) setArquitetoNome(v);
+                        }}
                         onFocus={() => {
                           if (arquitetoNome.trim().length > 0) {
                             setArquitetoSugestoesOpen(true);
