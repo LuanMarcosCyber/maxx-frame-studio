@@ -27,6 +27,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+import {
+  SupplierPicker,
+  productCategoryToSupplierCategory,
+  supplierLabel,
+} from "@/components/suppliers/SupplierPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
