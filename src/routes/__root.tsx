@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { OperatorProvider } from "@/hooks/useOperator";
 import { CompanySwitchProvider } from "@/components/layout/CompanySwitchOverlay";
+import { VersionUpdateProvider } from "@/lib/version-manager";
 import { useMobileKeyboardScroll } from "@/hooks/use-mobile-keyboard-scroll";
 import { Toaster } from "@/components/ui/sonner";
 
