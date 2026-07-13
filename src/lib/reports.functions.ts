@@ -1580,26 +1580,9 @@ export const getInsightsReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<{ insights: Insight[] }> => {
-    const { supabase, userId } = context;
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId, _role: "admin",
-    });
-    const isAdmin = adminRow === true;
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { client, userIds } = scope;
 
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
-
-    // scope user_ids
-    let userIds: string[] | null = null;
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles").select("id").eq("parent_user_id", data.empresaUserId);
-      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-    }
 
     // Windows: current period vs previous same-size
     const { from, to } = periodRange(data.period || "mes");
