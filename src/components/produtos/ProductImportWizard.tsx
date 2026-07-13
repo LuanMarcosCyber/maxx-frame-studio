@@ -535,6 +535,32 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                         ))}
                       </SelectContent>
                     </Select>
+                  ) : f.key === "supplier" ? (
+                    <div className="space-y-2">
+                      <SupplierPicker
+                        value={manualSupplierId}
+                        legacyText={cfg.manual}
+                        preferredCategory={productCategoryToSupplierCategory(category)}
+                        onChange={(id, opt) => {
+                          setManualSupplierId(id);
+                          if (opt) updateMap(f.key, { manual: supplierLabel(opt).toUpperCase() });
+                        }}
+                        placeholder="Vincular ao fornecedor cadastrado..."
+                      />
+                      <Input
+                        placeholder="Ou digite um nome livre (sem vínculo)"
+                        value={cfg.manual}
+                        onChange={(e) => {
+                          setManualSupplierId(null);
+                          updateMap(f.key, { manual: e.target.value.toUpperCase() });
+                        }}
+                      />
+                      {manualSupplierId && (
+                        <p className="text-[11px] text-emerald-700">
+                          Todos os produtos ficarão vinculados ao fornecedor selecionado.
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <Input
                       placeholder={f.placeholder ?? (f.numeric ? "Ex: 300" : "Digite o valor")}
