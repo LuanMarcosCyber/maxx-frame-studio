@@ -176,10 +176,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Mask technical email-related errors with a user-friendly message
       return { error: "Usuário ou senha inválidos." };
     }
+    // Toda sessão nova começa na EMPRESA do login. Empresas vinculadas
+    // ativadas em sessões anteriores não persistem entre logins.
+    try {
+      await supabase.rpc("clear_active_company");
+    } catch (err) {
+      console.warn("clear_active_company falhou no login", err);
+    }
     return { error: null };
   };
 
   const signOut = async () => {
+    // Limpa a empresa ativa antes de encerrar a sessão para que o próximo
+    // login inicie sempre na empresa principal.
+    try {
+      await supabase.rpc("clear_active_company");
+    } catch {
+      // best-effort
+    }
     await supabase.auth.signOut();
   };
 
