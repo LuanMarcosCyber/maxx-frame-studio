@@ -30,9 +30,12 @@ import {
   getOrcamentosReport,
   getClientesReport,
   getColaboradoresReport,
+  getEmpresasReport,
+  getInsightsReport,
   type VendasFilters,
   type OrcamentosFilters,
   type ClientesFilters,
+  type Insight,
 } from "@/lib/reports.functions";
 import {
   Search,
@@ -60,6 +63,9 @@ import {
   Repeat,
   TrendingDown,
   Award,
+  Sparkles,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -99,7 +105,8 @@ type ReportKey =
   | "fornecedores"
   | "clientes"
   | "colaboradores"
-  | "empresas";
+  | "empresas"
+  | "inteligencia";
 
 interface ReportCardDef {
   key: ReportKey;
@@ -116,7 +123,8 @@ const REPORT_CARDS: ReportCardDef[] = [
   { key: "fornecedores", title: "Fornecedores", description: "Analise quanto cada fornecedor representa nas vendas.", icon: Factory },
   { key: "clientes", title: "Clientes", description: "Consulte histórico e ranking dos clientes.", icon: Users },
   { key: "colaboradores", title: "Colaboradores", description: "Acompanhe produtividade, descontos e desempenho.", icon: UserCog },
-  { key: "empresas", title: "Empresas", description: "Visualize indicadores das empresas/revendedores.", icon: Building2, adminOnly: true },
+  { key: "empresas", title: "Empresas", description: "Compare desempenho de todas as empresas cadastradas.", icon: Building2, adminOnly: true },
+  { key: "inteligencia", title: "Central de Inteligência", description: "Insights automáticos baseados nos seus dados reais.", icon: Sparkles },
 ];
 
 const STATUS_OPTIONS = [
@@ -452,6 +460,14 @@ function ReportResults({
 
   if (selected === "colaboradores") {
     return <ColaboradoresReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "empresas") {
+    return <EmpresasReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "inteligencia") {
+    return <InteligenciaReportView filters={filters} />;
   }
 
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
@@ -1609,6 +1625,256 @@ function ColaboradoresReportView({
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+// ============================================================================
+// Empresas (admin)
+// ============================================================================
+
+function EmpresasReportView({
+  filters,
+  search,
+}: {
+  filters: VendasFilters;
+  search: string;
+}) {
+  const fetchReport = useServerFn(getEmpresasReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "empresas", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  const rows = useMemo(() => {
+    const list = query.data?.rows ?? [];
+    const s = search.trim().toLowerCase();
+    if (!s) return list;
+    return list.filter((r) => r.name.toLowerCase().includes(s));
+  }, [query.data, search]);
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Carregando relatório de empresas...
+      </Card>
+    );
+  }
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar dados. Tente novamente.
+      </Card>
+    );
+  }
+  const data = query.data!;
+  const s = data.summary;
+
+  const cards = [
+    { label: "Qtd. de empresas", value: String(s.totalEmpresas), icon: Building2 },
+    { label: "Empresas ativas", value: String(s.ativas), icon: CheckCircle2 },
+    { label: "Sem movimentação", value: String(s.semMovimento), icon: XCircle },
+    { label: "Faturamento geral", value: fmtMoney(s.faturamentoGeral), icon: DollarSign },
+  ];
+
+  const SERIES_COLORS = ["hsl(var(--primary))", "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b"];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((c) => (
+          <SummaryCard key={c.label} label={c.label} value={c.value} icon={c.icon} />
+        ))}
+      </div>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Ranking por faturamento</h3>
+        </div>
+        <div className="p-4 h-80">
+          {data.ranking.length === 0 ? (
+            <EmptyResults label="Sem dados no período." />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.ranking} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis type="number" fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
+                <YAxis type="category" dataKey="name" fontSize={11} width={130} />
+                <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" name="Faturamento" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Comparativo mensal (últimos 6 meses)</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Faturamento por empresa (top 5) — linhas coloridas — e total geral (linha cinza).
+          </p>
+        </div>
+        <div className="p-4 h-80">
+          {data.monthly.length === 0 ? (
+            <EmptyResults label="Sem dados." />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.monthly.map((m) => ({ bucket: m.bucket, total: m.total, ...m.series }))}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="bucket" fontSize={11} />
+                <YAxis fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
+                <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                {data.topNames.map((n, i) => (
+                  <Line key={n} type="monotone" dataKey={n} stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={2} />
+                ))}
+                <Line type="monotone" dataKey="total" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" name="Total geral" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-5 border-b">
+          <h3 className="text-base font-semibold text-foreground">Empresas</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {rows.length} empresa(s) encontrada(s)
+          </p>
+        </div>
+        {rows.length === 0 ? (
+          <EmptyResults label="Ajuste os filtros para visualizar dados." />
+        ) : (
+          <div className="p-2">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empresa</TableHead>
+                  <TableHead className="text-right">Pedidos</TableHead>
+                  <TableHead className="text-right">Orçamentos</TableHead>
+                  <TableHead className="text-right">Clientes</TableHead>
+                  <TableHead className="text-right">Produtos</TableHead>
+                  <TableHead className="text-right">Faturamento</TableHead>
+                  <TableHead className="text-right">Ticket médio</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">
+                      {r.name}
+                      {!r.active && (
+                        <span className="ml-2 inline-flex px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">
+                          inativa
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">{r.pedidos}</TableCell>
+                    <TableCell className="text-right">{r.orcamentos}</TableCell>
+                    <TableCell className="text-right">{r.clientes}</TableCell>
+                    <TableCell className="text-right">{r.produtos}</TableCell>
+                    <TableCell className="text-right font-medium">{fmtMoney(r.faturamento)}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(r.ticketMedio)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+// ============================================================================
+// Central de Inteligência
+// ============================================================================
+
+function InteligenciaReportView({ filters }: { filters: VendasFilters }) {
+  const fetchReport = useServerFn(getInsightsReport);
+  const query = useQuery({
+    queryKey: ["relatorios", "inteligencia", filters],
+    queryFn: () => fetchReport({ data: filters }),
+    staleTime: 15_000,
+  });
+
+  if (query.isLoading) {
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Analisando seus dados...
+      </Card>
+    );
+  }
+  if (query.error) {
+    return (
+      <Card className="p-10 text-center text-sm text-destructive">
+        Erro ao carregar insights. Tente novamente.
+      </Card>
+    );
+  }
+  const insights = query.data?.insights ?? [];
+
+  const styleFor = (lvl: Insight["level"]) => {
+    if (lvl === "positive")
+      return { icon: CheckCircle2, dot: "🟢", ring: "border-emerald-500/40", bg: "bg-emerald-500/5", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" };
+    if (lvl === "attention")
+      return { icon: Info, dot: "🟡", ring: "border-amber-500/40", bg: "bg-amber-500/5", chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300" };
+    return { icon: AlertTriangle, dot: "🔴", ring: "border-red-500/40", bg: "bg-red-500/5", chip: "bg-red-500/10 text-red-700 dark:text-red-300" };
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-foreground">Central de Inteligência</div>
+          <div className="text-xs text-muted-foreground">
+            Insights automáticos gerados a partir dos seus dados reais — sem IA, sem números fictícios.
+          </div>
+        </div>
+      </Card>
+
+      {insights.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="mx-auto h-14 w-14 rounded-full bg-muted grid place-items-center text-muted-foreground mb-3">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Ainda não há informações suficientes para gerar insights confiáveis no período selecionado.
+            Registre mais pedidos, orçamentos ou clientes e volte aqui.
+          </p>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {insights.map((it) => {
+            const st = styleFor(it.level);
+            const Icon = st.icon;
+            return (
+              <Card key={it.id} className={cn("p-4 border-2", st.ring, st.bg)}>
+                <div className="flex items-start gap-3">
+                  <div className="text-xl leading-none">{st.dot}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="h-3.5 w-3.5" />
+                      <div className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                        {it.title}
+                      </div>
+                    </div>
+                    <p className="text-sm text-foreground/90 leading-snug">{it.message}</p>
+                    <span className={cn("inline-block mt-2 text-[10px] px-1.5 py-0.5 rounded", st.chip)}>
+                      {it.level === "positive" ? "positivo" : it.level === "attention" ? "atenção" : "alerta"}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -1391,3 +1391,502 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
       rows: rows.sort((a, b) => b.valorVendido - a.valorVendido),
     };
   });
+
+// ============================================================================
+// Empresas (admin-only)
+// ============================================================================
+
+export interface EmpresaRow {
+  id: string;
+  name: string;
+  active: boolean;
+  pedidos: number;
+  orcamentos: number;
+  clientes: number;
+  produtos: number;
+  faturamento: number;
+  ticketMedio: number;
+}
+
+export interface EmpresasReport {
+  summary: {
+    totalEmpresas: number;
+    ativas: number;
+    semMovimento: number;
+    faturamentoGeral: number;
+  };
+  rows: EmpresaRow[];
+  ranking: { name: string; value: number }[];
+  monthly: { bucket: string; total: number; series: Record<string, number> }[];
+  topNames: string[];
+}
+
+export const getEmpresasReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: VendasFilters) => data)
+  .handler(async ({ data, context }): Promise<EmpresasReport> => {
+    const { supabase, userId } = context;
+    const { data: adminRow } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    const isAdmin = adminRow === true;
+    if (!isAdmin) {
+      throw new Error("Somente administradores podem acessar o relatório de Empresas.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. All empresas (revendedor + parent null)
+    const { data: revRoles } = await supabaseAdmin
+      .from("user_roles").select("user_id").eq("role", "revendedor");
+    const revIds = Array.from(new Set((revRoles ?? []).map((r) => r.user_id)));
+    const { data: empresaProfiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, store_name, active")
+      .in("id", revIds.length ? revIds : ["00000000-0000-0000-0000-000000000000"])
+      .is("parent_user_id", null);
+    const empresas = (empresaProfiles ?? []) as Array<{
+      id: string; full_name: string | null; store_name: string | null; active: boolean;
+    }>;
+
+    // Filter by chosen empresa if any
+    const filteredEmpresas = data.empresaUserId
+      ? empresas.filter((e) => e.id === data.empresaUserId)
+      : empresas;
+
+    // 2. Map user_id -> empresaId (self or parent)
+    const empresaIds = filteredEmpresas.map((e) => e.id);
+    const { data: childrenProfiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id, parent_user_id")
+      .in("parent_user_id", empresaIds.length ? empresaIds : ["00000000-0000-0000-0000-000000000000"]);
+    const ownerOf = new Map<string, string>();
+    for (const e of filteredEmpresas) ownerOf.set(e.id, e.id);
+    for (const c of childrenProfiles ?? []) {
+      if (c.parent_user_id) ownerOf.set(c.id, c.parent_user_id);
+    }
+    const allUserIds = Array.from(ownerOf.keys());
+
+    // 3. Period range
+    const { from, to } = periodRange(data.period || "mes");
+
+    // 4. Fetch orders in period
+    let oq = supabaseAdmin
+      .from("orders")
+      .select("id, user_id, total_value, created_at")
+      .in("user_id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"])
+      .limit(20000);
+    if (from) oq = oq.gte("created_at", from);
+    if (to) oq = oq.lt("created_at", to);
+    const { data: orders } = await oq;
+
+    // 5. Budgets in period
+    let bq = supabaseAdmin
+      .from("budgets")
+      .select("id, user_id, created_at")
+      .in("user_id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"])
+      .limit(20000);
+    if (from) bq = bq.gte("created_at", from);
+    if (to) bq = bq.lt("created_at", to);
+    const { data: budgetsAll } = await bq;
+
+    // 6. Clients count (all-time)
+    const { data: clientsAll } = await supabaseAdmin
+      .from("clients").select("id, user_id")
+      .in("user_id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"]);
+
+    // 7. Products count (all-time)
+    const { data: productsAll } = await supabaseAdmin
+      .from("products").select("id, user_id")
+      .in("user_id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"]);
+
+    // 8. Aggregate per empresa
+    type Agg = { pedidos: number; orcamentos: number; clientes: number; produtos: number; faturamento: number };
+    const agg = new Map<string, Agg>();
+    for (const e of filteredEmpresas) {
+      agg.set(e.id, { pedidos: 0, orcamentos: 0, clientes: 0, produtos: 0, faturamento: 0 });
+    }
+    for (const o of orders ?? []) {
+      const eid = ownerOf.get(o.user_id);
+      if (!eid) continue;
+      const a = agg.get(eid); if (!a) continue;
+      a.pedidos += 1;
+      a.faturamento += Number(o.total_value) || 0;
+    }
+    for (const b of budgetsAll ?? []) {
+      const eid = ownerOf.get(b.user_id);
+      if (!eid) continue;
+      const a = agg.get(eid); if (!a) continue;
+      a.orcamentos += 1;
+    }
+    for (const c of clientsAll ?? []) {
+      const eid = ownerOf.get(c.user_id);
+      if (!eid) continue;
+      const a = agg.get(eid); if (!a) continue;
+      a.clientes += 1;
+    }
+    for (const p of productsAll ?? []) {
+      const eid = ownerOf.get(p.user_id);
+      if (!eid) continue;
+      const a = agg.get(eid); if (!a) continue;
+      a.produtos += 1;
+    }
+
+    const rows: EmpresaRow[] = filteredEmpresas.map((e) => {
+      const a = agg.get(e.id) ?? { pedidos: 0, orcamentos: 0, clientes: 0, produtos: 0, faturamento: 0 };
+      return {
+        id: e.id,
+        name: e.store_name || e.full_name || "—",
+        active: !!e.active,
+        pedidos: a.pedidos,
+        orcamentos: a.orcamentos,
+        clientes: a.clientes,
+        produtos: a.produtos,
+        faturamento: a.faturamento,
+        ticketMedio: a.pedidos > 0 ? a.faturamento / a.pedidos : 0,
+      };
+    }).sort((a, b) => b.faturamento - a.faturamento);
+
+    const totalEmpresas = filteredEmpresas.length;
+    const ativas = rows.filter((r) => r.active).length;
+    const semMovimento = rows.filter((r) => r.pedidos === 0 && r.orcamentos === 0).length;
+    const faturamentoGeral = rows.reduce((s, r) => s + r.faturamento, 0);
+
+    const ranking = rows.slice(0, 10).map((r) => ({ name: r.name, value: r.faturamento }));
+
+    // Monthly comparative: last 6 months, top 5 empresas
+    const topFive = rows.slice(0, 5).map((r) => r.id);
+    const idToName = new Map(rows.map((r) => [r.id, r.name]));
+    const now = new Date();
+    const monthBuckets: string[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthBuckets.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
+    const { data: ordersFor6 } = await supabaseAdmin
+      .from("orders")
+      .select("user_id, total_value, created_at")
+      .in("user_id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"])
+      .gte("created_at", monthStart)
+      .limit(20000);
+    const monthMap = new Map<string, { total: number; series: Record<string, number> }>();
+    for (const bk of monthBuckets) monthMap.set(bk, { total: 0, series: {} });
+    for (const o of ordersFor6 ?? []) {
+      const eid = ownerOf.get(o.user_id);
+      if (!eid) continue;
+      const d = new Date(o.created_at);
+      const bk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const m = monthMap.get(bk);
+      if (!m) continue;
+      const v = Number(o.total_value) || 0;
+      m.total += v;
+      if (topFive.includes(eid)) {
+        const nm = idToName.get(eid) ?? "—";
+        m.series[nm] = (m.series[nm] ?? 0) + v;
+      }
+    }
+    const monthly = monthBuckets.map((bk) => ({ bucket: bk, ...(monthMap.get(bk)!) }));
+
+    return {
+      summary: { totalEmpresas, ativas, semMovimento, faturamentoGeral },
+      rows,
+      ranking,
+      monthly,
+      topNames: topFive.map((id) => idToName.get(id) ?? "—"),
+    };
+  });
+
+// ============================================================================
+// Central de Inteligência (rule-based, no AI)
+// ============================================================================
+
+export type InsightLevel = "positive" | "attention" | "alert";
+
+export interface Insight {
+  id: string;
+  level: InsightLevel;
+  title: string;
+  message: string;
+}
+
+export const getInsightsReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: VendasFilters) => data)
+  .handler(async ({ data, context }): Promise<{ insights: Insight[] }> => {
+    const { supabase, userId } = context;
+    const { data: adminRow } = await supabase.rpc("has_role", {
+      _user_id: userId, _role: "admin",
+    });
+    const isAdmin = adminRow === true;
+
+    let client = supabase;
+    if (isAdmin) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      client = supabaseAdmin as unknown as typeof supabase;
+    }
+
+    // scope user_ids
+    let userIds: string[] | null = null;
+    if (isAdmin && data.empresaUserId) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: children } = await supabaseAdmin
+        .from("profiles").select("id").eq("parent_user_id", data.empresaUserId);
+      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
+    }
+
+    // Windows: current period vs previous same-size
+    const { from, to } = periodRange(data.period || "mes");
+    const now = Date.now();
+    const fromTs = from ? new Date(from).getTime() : new Date(now - 30 * 86400000).getTime();
+    const toTs = to ? new Date(to).getTime() : now;
+    const windowSize = toTs - fromTs;
+    const prevFrom = new Date(fromTs - windowSize).toISOString();
+    const prevTo = new Date(fromTs).toISOString();
+
+    // Orders: current + previous period
+    let curOrdersQ = client
+      .from("orders")
+      .select("id, total_value, created_at, user_id, operator_id, operator_name, budget_id, budgets:budget_id(client_id, details)")
+      .gte("created_at", new Date(fromTs).toISOString())
+      .lt("created_at", new Date(toTs).toISOString())
+      .limit(5000);
+    if (userIds) curOrdersQ = curOrdersQ.in("user_id", userIds);
+    const { data: curOrders } = await curOrdersQ;
+
+    let prevOrdersQ = client
+      .from("orders")
+      .select("id, total_value, created_at, user_id")
+      .gte("created_at", prevFrom).lt("created_at", prevTo)
+      .limit(5000);
+    if (userIds) prevOrdersQ = prevOrdersQ.in("user_id", userIds);
+    const { data: prevOrders } = await prevOrdersQ;
+
+    // Budgets in current period
+    let bq = client
+      .from("budgets")
+      .select("id, total_value, status, created_at, user_id, operator_id, operator_name")
+      .gte("created_at", new Date(fromTs).toISOString())
+      .lt("created_at", new Date(toTs).toISOString())
+      .limit(5000);
+    if (userIds) bq = bq.in("user_id", userIds);
+    const { data: budgetsCur } = await bq;
+
+    const insights: Insight[] = [];
+    const cur = (curOrders ?? []) as Array<{ total_value: number | string; budgets: { client_id: string | null; details: Record<string, unknown> | null } | null }>;
+    const prev = (prevOrders ?? []) as Array<{ total_value: number | string }>;
+
+    const curFat = cur.reduce((s, o) => s + (Number(o.total_value) || 0), 0);
+    const prevFat = prev.reduce((s, o) => s + (Number(o.total_value) || 0), 0);
+    const curTicket = cur.length ? curFat / cur.length : 0;
+    const prevTicket = prev.length ? prevFat / prev.length : 0;
+
+    // 1. Faturamento vs período anterior
+    if (curFat > 0 && prevFat > 0) {
+      const pct = ((curFat - prevFat) / prevFat) * 100;
+      if (Math.abs(pct) >= 5) {
+        insights.push({
+          id: "faturamento-diff",
+          level: pct >= 0 ? "positive" : "alert",
+          title: pct >= 0 ? "Faturamento em alta" : "Faturamento em queda",
+          message: `Seu faturamento ${pct >= 0 ? "aumentou" : "diminuiu"} ${Math.abs(pct).toFixed(1)}% em relação ao período anterior.`,
+        });
+      }
+    } else if (curFat > 0 && prevFat === 0) {
+      insights.push({
+        id: "faturamento-novo",
+        level: "positive",
+        title: "Novo faturamento no período",
+        message: `Seu faturamento neste período foi de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(curFat)}.`,
+      });
+    }
+
+    // 2. Ticket médio vs anterior
+    if (curTicket > 0 && prevTicket > 0) {
+      const diff = curTicket - prevTicket;
+      if (Math.abs(diff) >= 5) {
+        insights.push({
+          id: "ticket-diff",
+          level: diff >= 0 ? "positive" : "attention",
+          title: diff >= 0 ? "Ticket médio em alta" : "Ticket médio em queda",
+          message: `Seu ticket médio ${diff >= 0 ? "aumentou" : "diminuiu"} ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Math.abs(diff))}.`,
+        });
+      }
+    }
+
+    // 3. Pedidos vs anterior
+    if (prev.length > 0) {
+      const diff = cur.length - prev.length;
+      if (Math.abs(diff) >= 1) {
+        insights.push({
+          id: "pedidos-diff",
+          level: diff >= 0 ? "positive" : "attention",
+          title: diff >= 0 ? "Mais pedidos no período" : "Menos pedidos no período",
+          message: `A quantidade de pedidos ${diff >= 0 ? "aumentou" : "diminuiu"} em relação ao período anterior (${cur.length} vs ${prev.length}).`,
+        });
+      }
+    }
+
+    // 4. Taxa de aprovação
+    const bList = (budgetsCur ?? []) as Array<{ status: string }>;
+    if (bList.length > 0) {
+      const aprov = bList.filter((b) => isAprovadoStatus(b.status)).length;
+      const pct = (aprov / bList.length) * 100;
+      if (pct >= 70) {
+        insights.push({
+          id: "aprovacao-alta",
+          level: "positive",
+          title: "Ótima taxa de aprovação",
+          message: `Foram aprovados ${pct.toFixed(0)}% dos orçamentos.`,
+        });
+      } else if (pct <= 30) {
+        insights.push({
+          id: "aprovacao-baixa",
+          level: "alert",
+          title: "Taxa de aprovação baixa",
+          message: `Apenas ${pct.toFixed(0)}% dos orçamentos foram aprovados.`,
+        });
+      } else {
+        insights.push({
+          id: "aprovacao-media",
+          level: "attention",
+          title: "Taxa de aprovação",
+          message: `Foram aprovados ${pct.toFixed(0)}% dos orçamentos.`,
+        });
+      }
+    }
+
+    // 5. Fornecedor concentração — via extractParts
+    const budgetIds = cur.map((o: { budgets: unknown }) => (o as { budget_id?: string }).budget_id).filter((v): v is string => !!v);
+    if (budgetIds.length > 0) {
+      const { data: itemRows } = await client
+        .from("budget_items").select("data, budget_id").in("budget_id", budgetIds);
+      const { data: prodRows } = await client
+        .from("products").select("id, code, description, supplier");
+      const pMap = new Map<string, { code: string; description: string; supplier: string }>();
+      for (const p of prodRows ?? []) pMap.set(p.id, { code: p.code ?? "", description: p.description ?? "", supplier: (p.supplier ?? "").trim() || "—" });
+      const supTotals = new Map<string, number>();
+      const prodTotals = new Map<string, { code: string; name: string; value: number; qty: number }>();
+      let grand = 0;
+      for (const it of itemRows ?? []) {
+        const parts = extractParts((it.data ?? {}) as Record<string, unknown>);
+        for (const part of parts) {
+          const meta = pMap.get(part.productId);
+          const sup = meta?.supplier ?? "—";
+          supTotals.set(sup, (supTotals.get(sup) ?? 0) + part.value);
+          grand += part.value;
+          const key = part.productId;
+          const ex = prodTotals.get(key);
+          if (ex) { ex.value += part.value; ex.qty += 1; }
+          else prodTotals.set(key, { code: meta?.code || part.code, name: meta?.description || part.description || "Produto", value: part.value, qty: 1 });
+        }
+      }
+      if (grand > 0) {
+        const topSup = Array.from(supTotals.entries()).sort((a, b) => b[1] - a[1])[0];
+        if (topSup) {
+          const pct = (topSup[1] / grand) * 100;
+          if (pct >= 50) {
+            insights.push({
+              id: "fornecedor-concentracao",
+              level: pct >= 70 ? "attention" : "positive",
+              title: "Concentração de fornecedor",
+              message: `O fornecedor ${topSup[0]} representa ${pct.toFixed(0)}% das vendas.`,
+            });
+          }
+        }
+        const topProd = Array.from(prodTotals.values()).sort((a, b) => b.qty - a.qty)[0];
+        if (topProd) {
+          insights.push({
+            id: "produto-top",
+            level: "positive",
+            title: "Produto mais vendido",
+            message: `O produto ${topProd.code || topProd.name} continua sendo o mais vendido${topProd.qty > 1 ? ` (${topProd.qty} unidades)` : ""}.`,
+          });
+        }
+      }
+    }
+
+    // 6. Cliente inativo (última compra > 30 dias)
+    let cq = client.from("clients").select("id, name, user_id").limit(2000);
+    if (userIds) cq = cq.in("user_id", userIds);
+    const { data: clientsAll } = await cq;
+    let allOrdersQ = client.from("orders")
+      .select("created_at, budget_id, budgets:budget_id(client_id)")
+      .order("created_at", { ascending: false }).limit(5000);
+    if (userIds) allOrdersQ = allOrdersQ.in("user_id", userIds);
+    const { data: allOrders } = await allOrdersQ;
+    const lastByClient = new Map<string, string>();
+    for (const o of allOrders ?? []) {
+      const cid = (o as { budgets: { client_id: string | null } | null }).budgets?.client_id;
+      if (!cid) continue;
+      if (!lastByClient.has(cid)) lastByClient.set(cid, o.created_at as string);
+    }
+    const cList = (clientsAll ?? []) as Array<{ id: string; name: string }>;
+    // active clients count
+    const activeCount = cList.filter((c) => {
+      const last = lastByClient.get(c.id);
+      if (!last) return false;
+      return (now - new Date(last).getTime()) / 86400000 <= 90;
+    }).length;
+    if (activeCount > 0) {
+      insights.push({
+        id: "clientes-ativos",
+        level: "positive",
+        title: "Clientes ativos",
+        message: `A empresa possui ${activeCount} cliente(s) ativo(s) (compra nos últimos 90 dias).`,
+      });
+    }
+    // Longest inactive client (had at least one order)
+    const inativos = cList
+      .map((c) => {
+        const last = lastByClient.get(c.id);
+        if (!last) return null;
+        const days = Math.floor((now - new Date(last).getTime()) / 86400000);
+        return { name: c.name, days };
+      })
+      .filter((x): x is { name: string; days: number } => x !== null && x.days >= 30)
+      .sort((a, b) => b.days - a.days);
+    if (inativos.length > 0) {
+      const w = inativos[0];
+      insights.push({
+        id: "cliente-inativo",
+        level: w.days >= 90 ? "alert" : "attention",
+        title: "Cliente sem comprar",
+        message: `O cliente ${w.name} não compra há ${w.days} dias.`,
+      });
+    }
+
+    // 7. Colaborador com maior conversão (inline, evitando chamar outra server fn)
+    try {
+      type OpAgg = { name: string; orc: number; ped: number };
+      const byOp = new Map<string, OpAgg>();
+      for (const b of bList as unknown as Array<{ operator_id: string | null; operator_name: string | null }>) {
+        const k = b.operator_id || (b.operator_name ?? "").toLowerCase();
+        if (!k) continue;
+        const a = byOp.get(k) ?? { name: b.operator_name ?? "—", orc: 0, ped: 0 };
+        a.orc += 1;
+        byOp.set(k, a);
+      }
+      for (const o of cur as unknown as Array<{ operator_id: string | null; operator_name: string | null }>) {
+        const k = o.operator_id || (o.operator_name ?? "").toLowerCase();
+        if (!k) continue;
+        const a = byOp.get(k) ?? { name: o.operator_name ?? "—", orc: 0, ped: 0 };
+        a.ped += 1;
+        if (!byOp.has(k)) byOp.set(k, a);
+      }
+      const best = Array.from(byOp.values())
+        .filter((a) => a.orc >= 3)
+        .map((a) => ({ ...a, conv: (a.ped / a.orc) * 100 }))
+        .sort((a, b) => b.conv - a.conv)[0];
+      if (best && best.conv >= 50) {
+        insights.push({
+          id: "colab-conversao",
+          level: "positive",
+          title: "Melhor conversão",
+          message: `O colaborador ${best.name} possui a maior taxa de conversão (${best.conv.toFixed(0)}%).`,
+        });
+      }
+    } catch { /* skip */ }
+
+    return { insights };
+  });
