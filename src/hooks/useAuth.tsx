@@ -136,19 +136,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (eff) {
         mergedProfile = {
           ...mergedProfile,
-          avatar_url: eff.avatar_url ?? mergedProfile.avatar_url,
-          store_name: eff.store_name ?? mergedProfile.store_name,
-          email: eff.email ?? mergedProfile.email,
-          phone: eff.phone ?? mergedProfile.phone,
-          document: eff.document ?? mergedProfile.document,
-          document_type: eff.document_type ?? mergedProfile.document_type,
-          cep: eff.cep ?? mergedProfile.cep,
-          address: eff.address ?? mergedProfile.address,
-          address_number: eff.address_number ?? mergedProfile.address_number,
-          city: eff.city ?? mergedProfile.city,
-          state: eff.state ?? mergedProfile.state,
-          // Quando é uma troca (Juliane atuando como Sulamérica), exibe o nome
-          // da empresa ativa também no campo `full_name` do card.
+          // Empresas vinculadas NÃO compartilham identidade. Ao trocar,
+          // usamos estritamente os campos da empresa ativa (sem fallback
+          // para os dados da conta de login) para evitar vazamento visual.
+          avatar_url: eff.is_switched ? (eff.avatar_url ?? null) : (eff.avatar_url ?? mergedProfile.avatar_url),
+          store_name: eff.is_switched ? (eff.store_name ?? null) : (eff.store_name ?? mergedProfile.store_name),
+          email: eff.is_switched ? (eff.email ?? null) : (eff.email ?? mergedProfile.email),
+          phone: eff.is_switched ? (eff.phone ?? null) : (eff.phone ?? mergedProfile.phone),
+          document: eff.is_switched ? (eff.document ?? null) : (eff.document ?? mergedProfile.document),
+          document_type: eff.is_switched ? (eff.document_type ?? null) : (eff.document_type ?? mergedProfile.document_type),
+          cep: eff.is_switched ? (eff.cep ?? null) : (eff.cep ?? mergedProfile.cep),
+          address: eff.is_switched ? (eff.address ?? null) : (eff.address ?? mergedProfile.address),
+          address_number: eff.is_switched ? (eff.address_number ?? null) : (eff.address_number ?? mergedProfile.address_number),
+          city: eff.is_switched ? (eff.city ?? null) : (eff.city ?? mergedProfile.city),
+          state: eff.is_switched ? (eff.state ?? null) : (eff.state ?? mergedProfile.state),
           full_name: eff.is_switched
             ? (eff.full_name ?? mergedProfile.full_name)
             : mergedProfile.full_name,
