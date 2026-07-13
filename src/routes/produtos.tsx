@@ -101,6 +101,7 @@ type FormState = {
   name: string;
   barcode: string;
   supplier: string;
+  supplier_id: string | null;
   labor_cost: string;
   commission_percentage: string;
   ncm: string;
