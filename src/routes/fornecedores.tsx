@@ -719,25 +719,33 @@ function Fornecedores() {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
               />
             </div>
-          </div>
+          </fieldset>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Salvando...
-                </>
-              ) : (
-                "Salvar"
-              )}
-            </Button>
+            {readOnly ? (
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Voltar
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Salvando...
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
