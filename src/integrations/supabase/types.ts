@@ -481,6 +481,7 @@ export type Database = {
           ncm: string | null
           profit_margin: number
           supplier: string | null
+          supplier_id: string | null
           updated_at: string
           user_id: string
           value_per_meter: number
@@ -500,6 +501,7 @@ export type Database = {
           ncm?: string | null
           profit_margin?: number
           supplier?: string | null
+          supplier_id?: string | null
           updated_at?: string
           user_id: string
           value_per_meter?: number
@@ -519,12 +521,21 @@ export type Database = {
           ncm?: string | null
           profit_margin?: number
           supplier?: string | null
+          supplier_id?: string | null
           updated_at?: string
           user_id?: string
           value_per_meter?: number
           waste_percentage?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -631,6 +642,81 @@ export type Database = {
           },
         ]
       }
+      suppliers: {
+        Row: {
+          active: boolean
+          address: string | null
+          address_number: string | null
+          categories: Database["public"]["Enums"]["supplier_category"][]
+          cep: string | null
+          city: string | null
+          contact_name: string | null
+          created_at: string
+          document: string | null
+          email: string | null
+          id: string
+          is_global: boolean
+          legal_name: string | null
+          notes: string | null
+          phone: string | null
+          site: string | null
+          state: string | null
+          state_registration: string | null
+          trade_name: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          address_number?: string | null
+          categories?: Database["public"]["Enums"]["supplier_category"][]
+          cep?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          document?: string | null
+          email?: string | null
+          id?: string
+          is_global?: boolean
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          site?: string | null
+          state?: string | null
+          state_registration?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          address_number?: string | null
+          categories?: Database["public"]["Enums"]["supplier_category"][]
+          cep?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          document?: string | null
+          email?: string | null
+          id?: string
+          is_global?: boolean
+          legal_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          site?: string | null
+          state?: string | null
+          state_registration?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -726,6 +812,14 @@ export type Database = {
     Enums: {
       account_type: "admin" | "revendedor" | "operacional"
       app_role: "admin" | "revendedor" | "colaborador"
+      supplier_category:
+        | "foam"
+        | "paspatur"
+        | "impressao"
+        | "perfil"
+        | "vidro"
+        | "colagem"
+        | "diversos"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -855,6 +949,15 @@ export const Constants = {
     Enums: {
       account_type: ["admin", "revendedor", "operacional"],
       app_role: ["admin", "revendedor", "colaborador"],
+      supplier_category: [
+        "foam",
+        "paspatur",
+        "impressao",
+        "perfil",
+        "vidro",
+        "colagem",
+        "diversos",
+      ],
     },
   },
 } as const
