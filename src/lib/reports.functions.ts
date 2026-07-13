@@ -264,20 +264,9 @@ export const getVendasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<VendasReport> => {
-    const { supabase, userId } = context;
-
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
-
-    // Admin needs cross-tenant read; otherwise RLS-scoped.
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
+    const { supabase } = context;
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { isAdmin, client, userIds } = scope;
 
     let q = client
       .from("orders")
@@ -292,16 +281,8 @@ export const getVendasReport = createServerFn({ method: "POST" })
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
-    if (isAdmin && data.empresaUserId) {
-      // Inclui pedidos criados pela própria Empresa e por suas contas de acesso (filhos).
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-      q = q.in("user_id", ids);
-    }
+    if (userIds) q = q.in("user_id", userIds);
+
 
     const { data: rows, error } = await q;
     if (error) throw error;
