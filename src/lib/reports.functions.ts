@@ -406,19 +406,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ProdutosFornecedoresReport> => {
-    const { supabase, userId } = context;
-
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
-
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { client, userIds } = scope;
 
     // 1. Fetch orders (respecting filters)
     let q = client
@@ -434,15 +423,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-      q = q.in("user_id", ids);
-    }
+    if (userIds) q = q.in("user_id", userIds);
+
 
     const { data: orderRows, error: ordersErr } = await q;
     if (ordersErr) throw ordersErr;
