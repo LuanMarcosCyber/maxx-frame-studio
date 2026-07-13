@@ -137,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: effRows } = await (supabase.rpc as any)("get_effective_profile");
       const eff = Array.isArray(effRows) ? effRows[0] : effRows;
       if (eff) {
+        if (eff.id) setEffectiveOwnerId(eff.id as string);
         mergedProfile = {
           ...mergedProfile,
           // Empresas vinculadas NÃO compartilham identidade. Ao trocar,
