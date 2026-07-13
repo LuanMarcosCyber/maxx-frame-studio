@@ -152,6 +152,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     setRows([]);
     setMapping(initialMapping(defaultCategory));
     setResult(null);
+    setManualSupplierId(null);
   };
 
   const handleClose = (o: boolean) => {
