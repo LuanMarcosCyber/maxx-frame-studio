@@ -1665,7 +1665,7 @@ export const getInsightsReport = createServerFn({ method: "POST" })
     // Budgets in current period
     let bq = client
       .from("budgets")
-      .select("id, total_value, status, created_at, user_id")
+      .select("id, total_value, status, created_at, user_id, operator_id, operator_name")
       .gte("created_at", new Date(fromTs).toISOString())
       .lt("created_at", new Date(toTs).toISOString())
       .limit(5000);
