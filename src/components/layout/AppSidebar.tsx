@@ -103,8 +103,10 @@ function useSidebarData() {
 
 function ProfileAvatar() {
   const { user, profile, role, refreshProfile } = useAuth();
+  const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const isChildAccount =
     !!profile?.parent_user_id || profile?.account_type === "operacional" || role === "colaborador";
   const canEditAvatar = !isChildAccount;
@@ -125,17 +127,34 @@ function ProfileAvatar() {
     setUploading(true);
     try {
       const dataUrl = await fileToAvatarDataUrl(file, 320, 0.85);
-      const { error } = await supabase
-        .from("profiles")
-        .update({ avatar_url: dataUrl })
-        .eq("id", user.id);
+      // Grava na EMPRESA ATIVA (empresa vinculada quando trocado), nunca
+      // na conta de login diretamente. RPC valida permissão server-side.
+      const { error } = await supabase.rpc("set_active_company_avatar", { _avatar: dataUrl });
       if (error) throw error;
       await refreshProfile();
+      await qc.invalidateQueries({ queryKey: ["switchable-companies"] });
       toast.success("Foto de perfil atualizada.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao atualizar foto.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const onRemove = async () => {
+    if (!canEditAvatar || !profile?.avatar_url) return;
+    if (!window.confirm("Remover foto desta empresa?")) return;
+    setRemoving(true);
+    try {
+      const { error } = await supabase.rpc("set_active_company_avatar", { _avatar: null });
+      if (error) throw error;
+      await refreshProfile();
+      await qc.invalidateQueries({ queryKey: ["switchable-companies"] });
+      toast.success("Foto removida.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao remover foto.");
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -147,7 +166,7 @@ function ProfileAvatar() {
       <button
         type="button"
         onClick={onPick}
-        disabled={uploading || !canEditAvatar}
+        disabled={uploading || removing || !canEditAvatar}
         aria-label={canEditAvatar ? "Alterar foto de perfil" : "Foto herdada da conta principal"}
         title={canEditAvatar ? "Alterar foto de perfil" : "Foto herdada da conta principal"}
         className={cn(
@@ -165,24 +184,42 @@ function ProfileAvatar() {
         )}
       </button>
       {canEditAvatar && (
-        <button
-          type="button"
-          onClick={onPick}
-          disabled={uploading}
-          aria-label="Alterar foto de perfil"
-          title="Alterar foto de perfil"
-          className={cn(
-            "absolute bottom-0 right-0 h-9 w-9 rounded-full grid place-items-center cursor-pointer",
-            "bg-gradient-brand text-brand-foreground shadow-brand border-2 border-white",
-            "hover:opacity-95 hover:scale-105 transition disabled:opacity-60 disabled:cursor-wait",
+        <>
+          <button
+            type="button"
+            onClick={onPick}
+            disabled={uploading || removing}
+            aria-label="Alterar foto de perfil"
+            title="Alterar foto de perfil"
+            className={cn(
+              "absolute bottom-0 right-0 h-9 w-9 rounded-full grid place-items-center cursor-pointer",
+              "bg-gradient-brand text-brand-foreground shadow-brand border-2 border-white",
+              "hover:opacity-95 hover:scale-105 transition disabled:opacity-60 disabled:cursor-wait",
+            )}
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Pencil className="h-4 w-4" />
+            )}
+          </button>
+          {avatar && (
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={uploading || removing}
+              aria-label="Remover foto desta empresa"
+              title="Remover foto desta empresa"
+              className={cn(
+                "absolute bottom-0 left-0 h-9 w-9 rounded-full grid place-items-center cursor-pointer",
+                "bg-white text-destructive border-2 border-white shadow-md",
+                "hover:bg-destructive hover:text-white hover:scale-105 transition disabled:opacity-60 disabled:cursor-wait",
+              )}
+            >
+              {removing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </button>
           )}
-        >
-          {uploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Pencil className="h-4 w-4" />
-          )}
-        </button>
+        </>
       )}
       <input
         ref={inputRef}
