@@ -120,12 +120,15 @@ function Relatorios() {
   const showSupplierFilter = selected === "produtos";
   const showProductFilter = selected === "produtos";
 
+  const { session } = useAuth();
   const fetchOptions = useServerFn(getVendasOptions);
   const optionsQuery = useQuery({
     queryKey: ["relatorios", "options"],
     queryFn: () => fetchOptions(),
     staleTime: 60_000,
+    enabled: !!session,
   });
+
 
   return (
     <AppShell
