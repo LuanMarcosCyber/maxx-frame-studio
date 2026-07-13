@@ -716,18 +716,8 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: OrcamentosFilters) => data)
   .handler(async ({ data, context }): Promise<OrcamentosReport> => {
-    const { supabase, userId } = context;
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
-
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { isAdmin, client, userIds } = scope;
 
     let q = client
       .from("budgets")
@@ -743,15 +733,8 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
     if (data.clientId) q = q.eq("client_id", data.clientId);
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-      q = q.in("user_id", ids);
-    }
+    if (userIds) q = q.in("user_id", userIds);
+
 
     const { data: budgets, error } = await q;
     if (error) throw error;
