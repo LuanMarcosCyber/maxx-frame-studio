@@ -105,7 +105,8 @@ type ReportKey =
   | "fornecedores"
   | "clientes"
   | "colaboradores"
-  | "empresas";
+  | "empresas"
+  | "inteligencia";
 
 interface ReportCardDef {
   key: ReportKey;
@@ -122,7 +123,8 @@ const REPORT_CARDS: ReportCardDef[] = [
   { key: "fornecedores", title: "Fornecedores", description: "Analise quanto cada fornecedor representa nas vendas.", icon: Factory },
   { key: "clientes", title: "Clientes", description: "Consulte histórico e ranking dos clientes.", icon: Users },
   { key: "colaboradores", title: "Colaboradores", description: "Acompanhe produtividade, descontos e desempenho.", icon: UserCog },
-  { key: "empresas", title: "Empresas", description: "Visualize indicadores das empresas/revendedores.", icon: Building2, adminOnly: true },
+  { key: "empresas", title: "Empresas", description: "Compare desempenho de todas as empresas cadastradas.", icon: Building2, adminOnly: true },
+  { key: "inteligencia", title: "Central de Inteligência", description: "Insights automáticos baseados nos seus dados reais.", icon: Sparkles },
 ];
 
 const STATUS_OPTIONS = [
