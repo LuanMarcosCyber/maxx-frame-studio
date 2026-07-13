@@ -462,6 +462,14 @@ function ReportResults({
     return <ColaboradoresReportView filters={filters} search={search} />;
   }
 
+  if (selected === "empresas") {
+    return <EmpresasReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "inteligencia") {
+    return <InteligenciaReportView filters={filters} />;
+  }
+
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
   return (
     <Card className="p-10 text-center">
