@@ -360,7 +360,7 @@ function Relatorios() {
                     <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todas</SelectItem>
-                      {(clientesCitiesQuery.data ?? []).map((c) => (
+                      {(optionsQuery.data?.cities ?? []).map((c) => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
                     </SelectContent>
