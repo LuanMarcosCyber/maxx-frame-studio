@@ -397,10 +397,14 @@ function Relatorios() {
 function ReportResults({
   selected,
   filters,
+  granularity,
+  cityFilter,
   search,
 }: {
   selected: ReportKey | null;
   filters: VendasFilters;
+  granularity: string;
+  cityFilter?: string;
   search: string;
 }) {
   if (!selected) {
@@ -429,6 +433,14 @@ function ReportResults({
 
   if (selected === "produtos") {
     return <ProdutosReportView filters={filters} search={search} />;
+  }
+
+  if (selected === "orcamentos") {
+    return <OrcamentosReportView filters={{ ...filters, granularity }} search={search} />;
+  }
+
+  if (selected === "clientes") {
+    return <ClientesReportView filters={{ ...filters, cityFilter }} search={search} />;
   }
 
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
