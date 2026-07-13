@@ -1647,7 +1647,7 @@ export const getInsightsReport = createServerFn({ method: "POST" })
     // Orders: current + previous period
     let curOrdersQ = client
       .from("orders")
-      .select("id, total_value, created_at, user_id, budget_id, budgets:budget_id(client_id, details)")
+      .select("id, total_value, created_at, user_id, operator_id, operator_name, budget_id, budgets:budget_id(client_id, details)")
       .gte("created_at", new Date(fromTs).toISOString())
       .lt("created_at", new Date(toTs).toISOString())
       .limit(5000);
