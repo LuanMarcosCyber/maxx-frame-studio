@@ -311,8 +311,11 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       if (cfg.origin === "column" && !cfg.column) return false;
       if (cfg.origin === "manual" && !cfg.manual.trim()) return false;
     }
+    // Se supplier for manual, exigir picker OU texto livre
+    const sup = mapping.supplier;
+    if (sup.origin === "manual" && !sup.manual.trim() && !manualSupplierId) return false;
     return true;
-  }, [mapping]);
+  }, [mapping, manualSupplierId]);
 
   const doImport = async () => {
     if (!user) return;
