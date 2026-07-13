@@ -2065,7 +2065,17 @@ function NovoOrcamento() {
                         value={vendedorNome}
                         className="uppercase"
                         autoComplete="off"
-
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        onCompositionStart={() => {
+                          composingVendedorRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composingVendedorRef.current = false;
+                          const v = (e.target as HTMLInputElement).value.toUpperCase();
+                          if (v !== vendedorNome) setVendedorNome(v);
+                        }}
                         onFocus={() => {
                           if (vendedorNome.trim().length > 0) setColabSugestoesOpen(true);
                         }}
