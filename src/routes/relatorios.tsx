@@ -145,7 +145,7 @@ function Relatorios() {
   const [status, setStatus] = useState<string>("todos");
   const [clientId, setClientId] = useState<string>("todos");
   const [operatorId, setOperatorId] = useState<string>("todos");
-  const [empresaUserId, setEmpresaUserId] = useState<string>("todos");
+  const [empresaUserId, setEmpresaUserId] = useState<string>("");
   const [category, setCategory] = useState<string>("todos");
   const [supplier, setSupplier] = useState<string>("todos");
   const [productId, setProductId] = useState<string>("todos");
