@@ -181,10 +181,11 @@ function Fornecedores() {
 
   function openCreate() {
     setForm({ ...emptyForm, is_global: false });
+    setReadOnly(false);
     setDialogOpen(true);
   }
 
-  function openEdit(r: SupplierRow) {
+  function openEdit(r: SupplierRow, viewOnly = false) {
     setForm({
       id: r.id,
       is_global: r.is_global,
@@ -206,6 +207,7 @@ function Fornecedores() {
       categories: r.categories ?? [],
       active: r.active,
     });
+    setReadOnly(viewOnly);
     setDialogOpen(true);
   }
 
