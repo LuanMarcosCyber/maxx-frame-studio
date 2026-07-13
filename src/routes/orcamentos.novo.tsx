@@ -2168,7 +2168,17 @@ function NovoOrcamento() {
                         value={clienteNome}
                         className="uppercase"
                         autoComplete="off"
-
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck={false}
+                        onCompositionStart={() => {
+                          composingClienteRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          composingClienteRef.current = false;
+                          const v = (e.target as HTMLInputElement).value.toUpperCase();
+                          if (v !== clienteNome) setClienteNome(v);
+                        }}
                         onFocus={() => {
                           if (!naoVincularCliente && clienteNome.trim().length > 0) {
                             setClienteSugestoesOpen(true);
