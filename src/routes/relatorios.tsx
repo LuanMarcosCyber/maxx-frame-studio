@@ -55,11 +55,9 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  MapPin,
   UserPlus,
   Repeat,
   TrendingDown,
-  Calendar,
 } from "lucide-react";
 import {
   ResponsiveContainer,
