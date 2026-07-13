@@ -102,7 +102,7 @@ const STATUS_OPTIONS = [
 ];
 
 function Relatorios() {
-  const { role } = useAuth();
+  const { role, session } = useAuth();
   const isAdmin = role === "admin";
   const [selected, setSelected] = useState<ReportKey | null>(null);
   const [period, setPeriod] = useState<string>("mes");
@@ -121,11 +121,14 @@ function Relatorios() {
   const showProductFilter = selected === "produtos";
 
   const fetchOptions = useServerFn(getVendasOptions);
+
   const optionsQuery = useQuery({
     queryKey: ["relatorios", "options"],
     queryFn: () => fetchOptions(),
     staleTime: 60_000,
+    enabled: !!session,
   });
+
 
   return (
     <AppShell
