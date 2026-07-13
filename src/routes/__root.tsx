@@ -198,10 +198,12 @@ function RootComponent() {
       <AuthProvider>
         <OperatorProvider>
           <CompanySwitchProvider>
-            <AuthGate>
-              <Outlet />
-            </AuthGate>
-            <Toaster />
+            <VersionUpdateProvider>
+              <AuthGate>
+                <Outlet />
+              </AuthGate>
+              <Toaster />
+            </VersionUpdateProvider>
           </CompanySwitchProvider>
         </OperatorProvider>
       </AuthProvider>
