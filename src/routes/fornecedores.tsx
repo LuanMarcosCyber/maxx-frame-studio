@@ -473,14 +473,26 @@ function Fornecedores() {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {form.id ? "Editar fornecedor" : "Novo fornecedor"}
+              {readOnly
+                ? "Visualizar fornecedor (somente leitura)"
+                : form.id ? "Editar fornecedor" : "Novo fornecedor"}
             </DialogTitle>
             <DialogDescription>
-              Preencha ao menos a razão social ou o nome fantasia. CNPJ é opcional.
+              {readOnly
+                ? "Este é um fornecedor global. Apenas o administrador pode editá-lo."
+                : "Preencha ao menos a razão social ou o nome fantasia. CNPJ é opcional."}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+          <fieldset
+            disabled={readOnly}
+            className={
+              "grid grid-cols-1 sm:grid-cols-6 gap-4 min-w-0 " +
+              (readOnly
+                ? "[&_input]:cursor-not-allowed [&_textarea]:cursor-not-allowed [&_button]:cursor-not-allowed [&_[role=checkbox]]:cursor-not-allowed [&_[role=radio]]:cursor-not-allowed [&_label]:cursor-not-allowed opacity-95"
+                : "")
+            }
+          >
             {isAdmin && (
               <div className="sm:col-span-6 space-y-2 border rounded-md p-3 bg-muted/30">
                 <Label className="text-sm font-semibold">Disponibilidade do fornecedor *</Label>
