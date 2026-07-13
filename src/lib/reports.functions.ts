@@ -107,6 +107,51 @@ function periodRange(period: string): { from?: string; to?: string } {
   return {};
 }
 
+/**
+ * Resolve the empresa filter scope for the current user.
+ * - Admin: cross-tenant read; empresaUserId may be any root profile.
+ * - Non-admin: only companies from list_switchable_companies (own + linked)
+ *   are authorized. Manipulated ids are rejected server-side.
+ */
+async function resolveEmpresaScope(
+  context: { supabase: any; userId: string },
+  empresaUserId: string | undefined,
+): Promise<{ isAdmin: boolean; client: any; userIds: string[] | null; allowedRoots: string[] }> {
+  const { supabase, userId } = context;
+  const { data: adminRow } = await supabase.rpc("has_role", {
+    _user_id: userId, _role: "admin",
+  });
+  const isAdmin = adminRow === true;
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  let allowedRoots: string[] = [];
+  if (!isAdmin) {
+    const { data: switchable } = await supabase.rpc("list_switchable_companies");
+    allowedRoots = ((switchable ?? []) as Array<{ id: string }>).map((r) => r.id);
+  }
+
+  let userIds: string[] | null = null;
+  if (empresaUserId) {
+    if (!isAdmin && !allowedRoots.includes(empresaUserId)) {
+      throw new Error("Empresa não autorizada.");
+    }
+    const { data: children } = await supabaseAdmin
+      .from("profiles").select("id").eq("parent_user_id", empresaUserId);
+    userIds = [empresaUserId, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+  } else if (!isAdmin && allowedRoots.length > 1) {
+    const { data: children } = await supabaseAdmin
+      .from("profiles").select("id").in("parent_user_id", allowedRoots);
+    userIds = [...allowedRoots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+  }
+
+  const needsAdmin = isAdmin || userIds !== null;
+  const client = needsAdmin ? (supabaseAdmin as any) : supabase;
+  return { isAdmin, client, userIds, allowedRoots };
+}
+
+
+
 export const getVendasOptions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<VendasOptions> => {
