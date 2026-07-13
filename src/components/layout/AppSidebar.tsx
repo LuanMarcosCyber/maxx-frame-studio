@@ -146,7 +146,7 @@ function ProfileAvatar() {
     if (!window.confirm("Remover foto desta empresa?")) return;
     setRemoving(true);
     try {
-      const { error } = await supabase.rpc("set_active_company_avatar", { _avatar: null });
+      const { error } = await (supabase.rpc as any)("set_active_company_avatar", { _avatar: null });
       if (error) throw error;
       await refreshProfile();
       await qc.invalidateQueries({ queryKey: ["switchable-companies"] });
