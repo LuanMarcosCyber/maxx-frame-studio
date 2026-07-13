@@ -43,6 +43,7 @@ export interface VendasOptions {
   categories: string[];
   suppliers: string[];
   products: { id: string; label: string }[];
+  cities: string[];
 }
 
 export interface SupplierRow {
