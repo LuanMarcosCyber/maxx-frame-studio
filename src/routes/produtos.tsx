@@ -276,6 +276,7 @@ function Produtos() {
           name: form.name.trim(),
           barcode: form.barcode.trim() || null,
           supplier: form.supplier.trim(),
+          supplier_id: form.supplier_id,
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
         };
