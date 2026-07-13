@@ -169,6 +169,16 @@ function Relatorios() {
     enabled: !!session,
   });
 
+  // Set default to active empresa on first load.
+  const activeEmpresaId = optionsQuery.data?.activeEmpresaId ?? null;
+  useEffect(() => {
+    if (!empresaUserId && activeEmpresaId) setEmpresaUserId(activeEmpresaId);
+  }, [activeEmpresaId, empresaUserId]);
+
+  const empresasList = optionsQuery.data?.empresas ?? [];
+  const showEmpresaFilter = isAdmin || empresasList.length > 1;
+
+
 
   return (
     <AppShell
