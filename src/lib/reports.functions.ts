@@ -178,6 +178,14 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       new Set((prods ?? []).map((p) => (p.supplier ?? "").trim()).filter(Boolean)),
     ).sort();
 
+    const clientClient = isAdmin
+      ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
+      : supabase;
+    const { data: cityRows } = await clientClient.from("clients").select("city");
+    const cities = Array.from(
+      new Set(((cityRows ?? []) as Array<{ city: string | null }>).map((r) => (r.city ?? "").trim()).filter(Boolean)),
+    ).sort();
+
     return {
       isAdmin,
       clients: clients ?? [],
@@ -186,6 +194,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       categories,
       suppliers,
       products,
+      cities,
     };
   });
 
