@@ -303,20 +303,32 @@ function Relatorios() {
                 </Select>
               </div>
 
-              {isAdmin && (
+              {showEmpresaFilter && (
                 <div className="space-y-1.5">
                   <Label>Empresa</Label>
-                  <Select value={empresaUserId} onValueChange={setEmpresaUserId}>
+                  <Select value={empresaUserId || "todos"} onValueChange={(v) => setEmpresaUserId(v === "todos" ? "" : v)}>
                     <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {(optionsQuery.data?.empresas ?? []).map((e) => (
-                        <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                      ))}
+                      {isAdmin ? (
+                        <>
+                          <SelectItem value="todos">Todas</SelectItem>
+                          {empresasList.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          {empresasList.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                          ))}
+                          <SelectItem value="todos">Todas</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
               )}
+
 
               {showCategoryFilter && (
                 <div className="space-y-1.5">
