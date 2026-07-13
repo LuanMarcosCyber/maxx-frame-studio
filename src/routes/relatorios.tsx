@@ -29,6 +29,7 @@ import {
   getProdutosFornecedoresReport,
   getOrcamentosReport,
   getClientesReport,
+  getColaboradoresReport,
   type VendasFilters,
   type OrcamentosFilters,
   type ClientesFilters,
@@ -58,6 +59,7 @@ import {
   UserPlus,
   Repeat,
   TrendingDown,
+  Award,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -67,7 +69,14 @@ import {
   YAxis,
   Tooltip as RTooltip,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend,
 } from "recharts";
+
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
