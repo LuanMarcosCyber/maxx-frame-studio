@@ -1856,15 +1856,34 @@ export const getInsightsReport = createServerFn({ method: "POST" })
       });
     }
 
-    // 7. Colaborador com maior conversão
+    // 7. Colaborador com maior conversão (inline, evitando chamar outra server fn)
     try {
-      const colab = await getColaboradoresReport({ data });
-      if (colab.maiorConversao && colab.maiorConversao.conversao >= 50 && colab.maiorConversao.orcamentos >= 3) {
+      type OpAgg = { name: string; orc: number; ped: number };
+      const byOp = new Map<string, OpAgg>();
+      for (const b of bList as unknown as Array<{ operator_id: string | null; operator_name: string | null }>) {
+        const k = b.operator_id || (b.operator_name ?? "").toLowerCase();
+        if (!k) continue;
+        const a = byOp.get(k) ?? { name: b.operator_name ?? "—", orc: 0, ped: 0 };
+        a.orc += 1;
+        byOp.set(k, a);
+      }
+      for (const o of cur as unknown as Array<{ operator_id: string | null; operator_name: string | null }>) {
+        const k = o.operator_id || (o.operator_name ?? "").toLowerCase();
+        if (!k) continue;
+        const a = byOp.get(k) ?? { name: o.operator_name ?? "—", orc: 0, ped: 0 };
+        a.ped += 1;
+        if (!byOp.has(k)) byOp.set(k, a);
+      }
+      const best = Array.from(byOp.values())
+        .filter((a) => a.orc >= 3)
+        .map((a) => ({ ...a, conv: (a.ped / a.orc) * 100 }))
+        .sort((a, b) => b.conv - a.conv)[0];
+      if (best && best.conv >= 50) {
         insights.push({
           id: "colab-conversao",
           level: "positive",
           title: "Melhor conversão",
-          message: `O colaborador ${colab.maiorConversao.name} possui a maior taxa de conversão (${colab.maiorConversao.conversao.toFixed(0)}%).`,
+          message: `O colaborador ${best.name} possui a maior taxa de conversão (${best.conv.toFixed(0)}%).`,
         });
       }
     } catch { /* skip */ }
