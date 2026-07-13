@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
@@ -145,7 +145,7 @@ function Relatorios() {
   const [status, setStatus] = useState<string>("todos");
   const [clientId, setClientId] = useState<string>("todos");
   const [operatorId, setOperatorId] = useState<string>("todos");
-  const [empresaUserId, setEmpresaUserId] = useState<string>("todos");
+  const [empresaUserId, setEmpresaUserId] = useState<string>("");
   const [category, setCategory] = useState<string>("todos");
   const [supplier, setSupplier] = useState<string>("todos");
   const [productId, setProductId] = useState<string>("todos");
@@ -168,6 +168,16 @@ function Relatorios() {
     staleTime: 60_000,
     enabled: !!session,
   });
+
+  // Set default to active empresa on first load.
+  const activeEmpresaId = optionsQuery.data?.activeEmpresaId ?? null;
+  useEffect(() => {
+    if (!empresaUserId && activeEmpresaId) setEmpresaUserId(activeEmpresaId);
+  }, [activeEmpresaId, empresaUserId]);
+
+  const empresasList = optionsQuery.data?.empresas ?? [];
+  const showEmpresaFilter = isAdmin || empresasList.length > 1;
+
 
 
   return (
@@ -293,20 +303,32 @@ function Relatorios() {
                 </Select>
               </div>
 
-              {isAdmin && (
+              {showEmpresaFilter && (
                 <div className="space-y-1.5">
                   <Label>Empresa</Label>
-                  <Select value={empresaUserId} onValueChange={setEmpresaUserId}>
+                  <Select value={empresaUserId || "todos"} onValueChange={(v) => setEmpresaUserId(v === "todos" ? "" : v)}>
                     <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {(optionsQuery.data?.empresas ?? []).map((e) => (
-                        <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                      ))}
+                      {isAdmin ? (
+                        <>
+                          <SelectItem value="todos">Todas</SelectItem>
+                          {empresasList.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          {empresasList.map((e) => (
+                            <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                          ))}
+                          <SelectItem value="todos">Todas</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
               )}
+
 
               {showCategoryFilter && (
                 <div className="space-y-1.5">
@@ -394,7 +416,7 @@ function Relatorios() {
               status,
               clientId: clientId === "todos" ? undefined : clientId,
               operatorId: operatorId === "todos" ? undefined : operatorId,
-              empresaUserId: empresaUserId === "todos" ? undefined : empresaUserId,
+              empresaUserId: empresaUserId || undefined,
               category: category === "todos" ? undefined : category,
               supplier: supplier === "todos" ? undefined : supplier,
               productId: productId === "todos" ? undefined : productId,

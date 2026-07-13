@@ -40,6 +40,7 @@ export interface VendasOptions {
   clients: { id: string; name: string }[];
   operators: { id: string; name: string }[];
   empresas: { id: string; name: string }[];
+  activeEmpresaId: string | null;
   categories: string[];
   suppliers: string[];
   products: { id: string; label: string }[];
@@ -106,6 +107,51 @@ function periodRange(period: string): { from?: string; to?: string } {
   return {};
 }
 
+/**
+ * Resolve the empresa filter scope for the current user.
+ * - Admin: cross-tenant read; empresaUserId may be any root profile.
+ * - Non-admin: only companies from list_switchable_companies (own + linked)
+ *   are authorized. Manipulated ids are rejected server-side.
+ */
+async function resolveEmpresaScope(
+  context: { supabase: any; userId: string },
+  empresaUserId: string | undefined,
+): Promise<{ isAdmin: boolean; client: any; userIds: string[] | null; allowedRoots: string[] }> {
+  const { supabase, userId } = context;
+  const { data: adminRow } = await supabase.rpc("has_role", {
+    _user_id: userId, _role: "admin",
+  });
+  const isAdmin = adminRow === true;
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  let allowedRoots: string[] = [];
+  if (!isAdmin) {
+    const { data: switchable } = await supabase.rpc("list_switchable_companies");
+    allowedRoots = ((switchable ?? []) as Array<{ id: string }>).map((r) => r.id);
+  }
+
+  let userIds: string[] | null = null;
+  if (empresaUserId) {
+    if (!isAdmin && !allowedRoots.includes(empresaUserId)) {
+      throw new Error("Empresa não autorizada.");
+    }
+    const { data: children } = await supabaseAdmin
+      .from("profiles").select("id").eq("parent_user_id", empresaUserId);
+    userIds = [empresaUserId, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+  } else if (!isAdmin && allowedRoots.length > 1) {
+    const { data: children } = await supabaseAdmin
+      .from("profiles").select("id").in("parent_user_id", allowedRoots);
+    userIds = [...allowedRoots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+  }
+
+  const needsAdmin = isAdmin || userIds !== null;
+  const client = needsAdmin ? (supabaseAdmin as any) : supabase;
+  return { isAdmin, client, userIds, allowedRoots };
+}
+
+
+
 export const getVendasOptions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<VendasOptions> => {
@@ -140,6 +186,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
     ]);
 
     let empresas: { id: string; name: string }[] = [];
+    let activeEmpresaId: string | null = null;
     if (isAdmin) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       // Empresas = usuários com role 'revendedor' e sem parent (contas raiz).
@@ -160,7 +207,18 @@ export const getVendasOptions = createServerFn({ method: "GET" })
           name: p.store_name || p.full_name || "—",
         }));
       }
+    } else {
+      // Non-admin: only companies the caller may switch/consult (own + linked).
+      // If only their own → filter hidden on the client.
+      const { data: switchable } = await supabase.rpc("list_switchable_companies");
+      const list = (switchable ?? []) as Array<{
+        id: string; full_name: string | null; store_name: string | null; is_active: boolean;
+      }>;
+      empresas = list.map((r) => ({ id: r.id, name: r.store_name || r.full_name || "—" }));
+      const active = list.find((r) => r.is_active);
+      activeEmpresaId = active?.id ?? null;
     }
+
 
     // Products/categories/suppliers for filter dropdowns.
     const prodClient = isAdmin
@@ -194,6 +252,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       clients: clients ?? [],
       operators: operators ?? [],
       empresas,
+      activeEmpresaId,
       categories,
       suppliers,
       products,
@@ -205,20 +264,9 @@ export const getVendasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<VendasReport> => {
-    const { supabase, userId } = context;
-
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
-
-    // Admin needs cross-tenant read; otherwise RLS-scoped.
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
+    const { supabase } = context;
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { isAdmin, client, userIds } = scope;
 
     let q = client
       .from("orders")
@@ -233,16 +281,8 @@ export const getVendasReport = createServerFn({ method: "POST" })
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
-    if (isAdmin && data.empresaUserId) {
-      // Inclui pedidos criados pela própria Empresa e por suas contas de acesso (filhos).
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-      q = q.in("user_id", ids);
-    }
+    if (userIds) q = q.in("user_id", userIds);
+
 
     const { data: rows, error } = await q;
     if (error) throw error;
@@ -366,19 +406,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ProdutosFornecedoresReport> => {
-    const { supabase, userId } = context;
-
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
-
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { client, userIds } = scope;
 
     // 1. Fetch orders (respecting filters)
     let q = client
@@ -394,15 +423,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-      q = q.in("user_id", ids);
-    }
+    if (userIds) q = q.in("user_id", userIds);
+
 
     const { data: orderRows, error: ordersErr } = await q;
     if (ordersErr) throw ordersErr;
@@ -694,18 +716,8 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: OrcamentosFilters) => data)
   .handler(async ({ data, context }): Promise<OrcamentosReport> => {
-    const { supabase, userId } = context;
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
-
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { isAdmin, client, userIds } = scope;
 
     let q = client
       .from("budgets")
@@ -721,15 +733,8 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
     if (data.clientId) q = q.eq("client_id", data.clientId);
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      const ids = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-      q = q.in("user_id", ids);
-    }
+    if (userIds) q = q.in("user_id", userIds);
+
 
     const { data: budgets, error } = await q;
     if (error) throw error;
@@ -924,29 +929,9 @@ export const getClientesReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: ClientesFilters) => data)
   .handler(async ({ data, context }): Promise<ClientesReport> => {
-    const { supabase, userId } = context;
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { client, userIds } = scope;
 
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
-
-    // Companies scope
-    let userIds: string[] | null = null;
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-    }
 
     // Clients (all cadastrados)
     let cq = client
@@ -1198,28 +1183,9 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ColaboradoresReport> => {
-    const { supabase, userId } = context;
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId,
-      _role: "admin",
-    });
-    const isAdmin = adminRow === true;
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { client, userIds } = scope;
 
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
-
-    let userIds: string[] | null = null;
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("parent_user_id", data.empresaUserId);
-      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-    }
 
     const { from, to } = periodRange(data.period || "mes");
 
@@ -1271,7 +1237,7 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
 
     // Empresa names (admin)
     const empresaMap = new Map<string, string>();
-    if (isAdmin) {
+    if (scope.isAdmin) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const uids = Array.from(new Set([
         ...budgets.map((b) => b.user_id),
@@ -1614,26 +1580,9 @@ export const getInsightsReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<{ insights: Insight[] }> => {
-    const { supabase, userId } = context;
-    const { data: adminRow } = await supabase.rpc("has_role", {
-      _user_id: userId, _role: "admin",
-    });
-    const isAdmin = adminRow === true;
+    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const { client, userIds } = scope;
 
-    let client = supabase;
-    if (isAdmin) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      client = supabaseAdmin as unknown as typeof supabase;
-    }
-
-    // scope user_ids
-    let userIds: string[] | null = null;
-    if (isAdmin && data.empresaUserId) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: children } = await supabaseAdmin
-        .from("profiles").select("id").eq("parent_user_id", data.empresaUserId);
-      userIds = [data.empresaUserId, ...((children ?? []).map((c) => c.id))];
-    }
 
     // Windows: current period vs previous same-size
     const { from, to } = periodRange(data.period || "mes");
