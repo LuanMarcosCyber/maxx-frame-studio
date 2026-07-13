@@ -438,13 +438,13 @@ function Fornecedores() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => openEdit(r)}
+                            onClick={() => openEdit(r, !editable)}
                             title={editable ? "Editar" : "Visualizar (somente leitura)"}
                           >
                             {editable ? (
                               <Pencil className="h-4 w-4" />
                             ) : (
-                              <Lock className="h-4 w-4 text-muted-foreground" />
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             )}
                           </Button>
                           {editable && (
