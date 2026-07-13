@@ -338,6 +338,17 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
       const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
       const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
+
+      // Resolve supplier text and supplier_id
+      let supplierText = built.supplier || null;
+      let supplierId: string | null = null;
+      if (mapping.supplier.origin === "manual" && manualSupplier) {
+        supplierText = supplierLabel(manualSupplier).toUpperCase();
+        supplierId = manualSupplier.id;
+      } else if (supplierText) {
+        supplierId = supplierByName.get(normalizeSupplierName(supplierText)) ?? null;
+      }
+
       payloads.push({
         user_id: user.id,
         code: built.code,
@@ -349,7 +360,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         commission_percentage: Number.isFinite(commission) ? commission : 0,
         frame_width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
         labor_cost: Number.isFinite(laborCost) ? laborCost : 0,
-        supplier: built.supplier || null,
+        supplier: supplierText,
+        supplier_id: supplierId,
         ncm: built.ncm || null,
       });
     });
