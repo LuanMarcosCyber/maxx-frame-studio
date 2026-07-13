@@ -708,11 +708,30 @@ function FornecedoresReportView({
   const topProdOfTopSupplier =
     topSupplier && data?.topProductPerSupplier[topSupplier.supplier];
 
+  const topByQty = data?.suppliers.slice().sort((a, b) => b.quantity - a.quantity)[0] ?? null;
+  const chartData = (data?.suppliers ?? []).slice(0, 10).map((s) => ({
+    name: s.supplier,
+    value: Math.round(s.value * 100) / 100,
+    share: s.share,
+  }));
+  const PIE_COLORS = [
+    "hsl(var(--primary))",
+    "#7c3aed",
+    "#0ea5e9",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#ec4899",
+    "#14b8a6",
+    "#8b5cf6",
+    "#f97316",
+  ];
+  const ranking = (data?.suppliers ?? []).slice(0, 3);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard label="Total vendido (fornecedores)" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
-        <SummaryCard label="Fornecedores vendidos" value={String(data?.suppliers.length ?? 0)} icon={Factory} />
+        <SummaryCard label="Qtd. de fornecedores" value={String(data?.suppliers.length ?? 0)} icon={Factory} />
         <SummaryCard
           label="Maior faturamento"
           value={topSupplier?.supplier ?? "—"}
@@ -720,12 +739,82 @@ function FornecedoresReportView({
           sub={topSupplier ? fmtMoney(topSupplier.value) : undefined}
         />
         <SummaryCard
-          label="Produto mais vendido do fornecedor"
-          value={topProdOfTopSupplier?.name ?? "—"}
-          icon={Package}
-          sub={topProdOfTopSupplier ? fmtMoney(topProdOfTopSupplier.value) : undefined}
+          label="Maior qtd. de produtos vendidos"
+          value={topByQty?.supplier ?? "—"}
+          icon={Boxes}
+          sub={topByQty ? `${topByQty.quantity} produtos` : undefined}
         />
+        <SummaryCard label="Valor movimentado" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Participação nas vendas</h3>
+          </div>
+          <div className="p-4 h-72">
+            {chartData.length === 0 ? (
+              <EmptyResults label="Sem dados no período." />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={chartData} dataKey="value" nameKey="name" outerRadius={90} label={(e: { share?: number }) => `${(e.share ?? 0).toFixed(1)}%`}>
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Valor vendido por fornecedor</h3>
+          </div>
+          <div className="p-4 h-72">
+            {chartData.length === 0 ? (
+              <EmptyResults label="Sem dados no período." />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
+                  <YAxis type="category" dataKey="name" fontSize={11} width={110} />
+                  <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" name="Valor" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {ranking.length > 0 && (
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Ranking — Top 3 fornecedores</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x">
+            {ranking.map((r, i) => {
+              const medals = ["🥇", "🥈", "🥉"];
+              return (
+                <div key={r.supplier} className="p-5">
+                  <div className="text-2xl mb-1">{medals[i]}</div>
+                  <div className="text-sm font-semibold text-foreground truncate">{r.supplier}</div>
+                  <div className="text-lg font-bold text-foreground mt-2">{fmtMoney(r.value)}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {r.quantity} produtos • {fmtPct(r.share)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <div className="p-5 border-b">
@@ -742,8 +831,8 @@ function FornecedoresReportView({
               <TableHeader>
                 <TableRow>
                   <TableHead>Fornecedor/Fabricante</TableHead>
+                  <TableHead>Categorias fornecidas</TableHead>
                   <TableHead className="text-right">Qtd. produtos vendidos</TableHead>
-                  <TableHead className="text-right">Qtd. pedidos</TableHead>
                   <TableHead className="text-right">Valor vendido</TableHead>
                   <TableHead className="text-right">Participação</TableHead>
                 </TableRow>
@@ -752,8 +841,10 @@ function FornecedoresReportView({
                 {suppliers.map((s) => (
                   <TableRow key={s.supplier}>
                     <TableCell className="font-medium">{s.supplier}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {(data?.supplierCategories[s.supplier] ?? []).join(", ") || "—"}
+                    </TableCell>
                     <TableCell className="text-right">{s.quantity}</TableCell>
-                    <TableCell className="text-right">{s.orders}</TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(s.value)}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{fmtPct(s.share)}</TableCell>
                   </TableRow>
@@ -763,9 +854,43 @@ function FornecedoresReportView({
           </div>
         )}
       </Card>
+
+      {suppliers.length > 0 && (
+        <Card>
+          <div className="p-5 border-b">
+            <h3 className="text-base font-semibold text-foreground">Produtos mais vendidos por fornecedor</h3>
+          </div>
+          <div className="divide-y">
+            {suppliers.slice(0, 6).map((s) => {
+              const items = data?.topProductsPerSupplier[s.supplier] ?? [];
+              return (
+                <div key={s.supplier} className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm font-semibold text-foreground">{s.supplier}</div>
+                    <div className="text-xs text-muted-foreground">{fmtMoney(s.value)}</div>
+                  </div>
+                  {items.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">Sem produtos.</div>
+                  ) : (
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {items.map((p, i) => (
+                        <li key={i} className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1.5">
+                          <span className="truncate mr-2">{i + 1}. {p.name}</span>
+                          <span className="font-medium shrink-0">{fmtMoney(p.value)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
+
 
 function ProdutosReportView({
   filters,
