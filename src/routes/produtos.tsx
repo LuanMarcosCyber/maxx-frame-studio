@@ -391,6 +391,7 @@ function Produtos() {
           frame_width_cm: isPerfil ? frameWidth : null,
           labor_cost: isPerfil ? laborCost : 0,
           supplier: form.supplier.trim(),
+          supplier_id: form.supplier_id,
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
 
