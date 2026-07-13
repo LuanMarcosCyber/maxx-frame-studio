@@ -1237,7 +1237,7 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
 
     // Empresa names (admin)
     const empresaMap = new Map<string, string>();
-    if (isAdmin) {
+    if (scope.isAdmin) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const uids = Array.from(new Set([
         ...budgets.map((b) => b.user_id),
