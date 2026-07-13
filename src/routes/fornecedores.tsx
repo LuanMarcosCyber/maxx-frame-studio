@@ -139,6 +139,7 @@ function Fornecedores() {
 
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [readOnly, setReadOnly] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<SupplierRow | null>(null);
