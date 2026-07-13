@@ -337,6 +337,36 @@ function Relatorios() {
                   </Select>
                 </div>
               )}
+
+              {showGranularity && (
+                <div className="space-y-1.5">
+                  <Label>Agrupar por</Label>
+                  <Select value={granularity} onValueChange={setGranularity}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dia">Dia</SelectItem>
+                      <SelectItem value="semana">Semana</SelectItem>
+                      <SelectItem value="mes">Mês</SelectItem>
+                      <SelectItem value="ano">Ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {showCityFilter && (
+                <div className="space-y-1.5">
+                  <Label>Cidade</Label>
+                  <Select value={cityFilter} onValueChange={setCityFilter}>
+                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas</SelectItem>
+                      {(clientesCitiesQuery.data ?? []).map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </Card>
         </section>
@@ -354,6 +384,8 @@ function Relatorios() {
               supplier: supplier === "todos" ? undefined : supplier,
               productId: productId === "todos" ? undefined : productId,
             }}
+            granularity={granularity}
+            cityFilter={cityFilter === "todos" ? undefined : cityFilter}
             search={search}
           />
         </section>
