@@ -27,7 +27,11 @@ import {
   getVendasOptions,
   getVendasReport,
   getProdutosFornecedoresReport,
+  getOrcamentosReport,
+  getClientesReport,
   type VendasFilters,
+  type OrcamentosFilters,
+  type ClientesFilters,
 } from "@/lib/reports.functions";
 import {
   Search,
@@ -48,7 +52,24 @@ import {
   Trophy,
   Boxes,
   Tag,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  MapPin,
+  UserPlus,
+  Repeat,
+  TrendingDown,
+  Calendar,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+  CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/relatorios")({
   head: () => ({
