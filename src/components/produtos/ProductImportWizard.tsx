@@ -25,6 +25,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  SupplierPicker,
+  useSuppliersQuery,
+  normalizeSupplierName,
+  supplierLabel,
+  productCategoryToSupplierCategory,
+} from "@/components/suppliers/SupplierPicker";
 
 type Props = {
   open: boolean;
