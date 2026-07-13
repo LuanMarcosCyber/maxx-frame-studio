@@ -57,6 +57,7 @@ const orcamentos: Item = { title: "Orçamentos", url: "/orcamentos", icon: FileT
 const pedidos: Item = { title: "Pedidos", url: "/pedidos", icon: ShoppingCart };
 const clientes: Item = { title: "Clientes", url: "/clientes", icon: Contact };
 const produtos: Item = { title: "Produtos", url: "/produtos", icon: Package };
+const fornecedores: Item = { title: "Fornecedores", url: "/fornecedores", icon: Truck };
 const arquitetos: Item = { title: "Arquitetos", url: "/arquitetos", icon: Compass };
 const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras", icon: Truck };
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3 };
