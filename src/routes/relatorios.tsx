@@ -102,7 +102,7 @@ const STATUS_OPTIONS = [
 ];
 
 function Relatorios() {
-  const { role } = useAuth();
+  const { role, session } = useAuth();
   const isAdmin = role === "admin";
   const [selected, setSelected] = useState<ReportKey | null>(null);
   const [period, setPeriod] = useState<string>("mes");
