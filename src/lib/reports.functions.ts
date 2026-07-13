@@ -252,6 +252,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       clients: clients ?? [],
       operators: operators ?? [],
       empresas,
+      activeEmpresaId,
       categories,
       suppliers,
       products,
