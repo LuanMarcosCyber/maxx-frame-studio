@@ -88,7 +88,7 @@ const fieldsForCategory = (category: string): FieldDef[] =>
 
 const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
-    const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key);
+    const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "ncm"].includes(f.key);
     acc[f.key] = {
       origin: isDefaultManual ? "manual" : "column",
       column: "",
