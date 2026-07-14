@@ -1022,6 +1022,12 @@ function Produtos() {
         defaultCategory={activeCategory}
         onImported={() => queryClient.invalidateQueries({ queryKey: ["products"] })}
       />
+
+      <PriceIncreaseWizard
+        open={priceIncreaseOpen}
+        onOpenChange={setPriceIncreaseOpen}
+        initialCategory={activeCategory}
+      />
     </AppShell>
   );
 }
