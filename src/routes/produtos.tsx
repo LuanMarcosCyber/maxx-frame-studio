@@ -25,8 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Upload, TrendingUp } from "lucide-react";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+import { PriceIncreaseWizard } from "@/components/produtos/PriceIncreaseWizard";
 import {
   SupplierPicker,
   productCategoryToSupplierCategory,
@@ -145,6 +146,7 @@ function Produtos() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [priceIncreaseOpen, setPriceIncreaseOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
@@ -477,13 +479,20 @@ function Produtos() {
             ))}
           </div>
           {canEdit && (
-            <Button
-              variant="outline"
-              onClick={() => setImportOpen(true)}
-              className="sm:ml-auto"
-            >
-              <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
-            </Button>
+            <div className="flex flex-wrap gap-2 sm:ml-auto">
+              <Button
+                variant="outline"
+                onClick={() => setPriceIncreaseOpen(true)}
+              >
+                <TrendingUp className="h-4 w-4 mr-1.5" /> Aumento de preço
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
+              </Button>
+            </div>
           )}
         </div>
       </Card>
@@ -1012,6 +1021,12 @@ function Produtos() {
         categories={CATEGORIES.map((c) => ({ key: c.key, label: c.label }))}
         defaultCategory={activeCategory}
         onImported={() => queryClient.invalidateQueries({ queryKey: ["products"] })}
+      />
+
+      <PriceIncreaseWizard
+        open={priceIncreaseOpen}
+        onOpenChange={setPriceIncreaseOpen}
+        initialCategory={activeCategory}
       />
     </AppShell>
   );

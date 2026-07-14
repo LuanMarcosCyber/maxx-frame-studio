@@ -466,6 +466,50 @@ export type Database = {
           },
         ]
       }
+      price_increase_history: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          owner_user_id: string
+          percentage: number
+          products_affected: number
+          supplier_id: string
+          supplier_is_global: boolean
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          owner_user_id: string
+          percentage: number
+          products_affected?: number
+          supplier_id: string
+          supplier_is_global?: boolean
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          owner_user_id?: string
+          percentage?: number
+          products_affected?: number
+          supplier_id?: string
+          supplier_is_global?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_increase_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           barcode: string | null
@@ -743,6 +787,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_price_increase: {
+        Args: { _category: string; _percentage: number; _supplier_id: string }
+        Returns: {
+          history_id: string
+          products_affected: number
+        }[]
+      }
       can_switch_to_company: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
@@ -807,6 +858,13 @@ export type Database = {
       }
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
+      preview_price_increase: {
+        Args: { _category: string; _percentage: number; _supplier_id: string }
+        Returns: {
+          sample: Json
+          total: number
+        }[]
+      }
       set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
     }
