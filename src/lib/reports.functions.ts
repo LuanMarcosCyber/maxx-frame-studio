@@ -63,6 +63,8 @@ export interface ProductRow {
   quantity: number;
   value: number;
   orders: number;
+  consumption: number; // meters or m²
+  consumptionUnit: "m" | "m²" | "";
 }
 
 export interface ProdutosFornecedoresReport {
@@ -77,7 +79,10 @@ export interface ProdutosFornecedoresReport {
   topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }>;
   supplierCategories: Record<string, string[]>;
   topProductsPerSupplier: Record<string, Array<{ name: string; quantity: number; value: number }>>;
+  totalConsumptionLinearM: number;
+  totalConsumptionAreaM2: number;
 }
+
 
 
 function periodRange(period: string): { from?: string; to?: string } {
