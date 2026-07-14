@@ -171,10 +171,12 @@ function Fornecedores() {
         (r.document ?? "").toLowerCase().includes(q) ||
         (r.email ?? "").toLowerCase().includes(q) ||
         (r.phone ?? "").toLowerCase().includes(q) ||
+        (r.contact_name ?? "").toLowerCase().includes(q) ||
         inCat
       );
     });
   }, [rows, search]);
+
 
   const canEdit = (r: SupplierRow) =>
     isAdmin ? true : !r.is_global && r.user_id === ownerUserId;
