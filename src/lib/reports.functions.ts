@@ -665,6 +665,13 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       supplierCategories[s] = Array.from(set).sort();
     }
 
+    let totalConsumptionLinearM = 0;
+    let totalConsumptionAreaM2 = 0;
+    for (const p of productsList) {
+      if (p.consumptionUnit === "m") totalConsumptionLinearM += p.consumption;
+      else if (p.consumptionUnit === "m²") totalConsumptionAreaM2 += p.consumption;
+    }
+
     return {
       totalValue,
       totalQuantity,
@@ -677,7 +684,10 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       topProductPerSupplier,
       supplierCategories,
       topProductsPerSupplier,
+      totalConsumptionLinearM,
+      totalConsumptionAreaM2,
     };
+
   });
 
 // ============================================================================
