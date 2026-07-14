@@ -146,6 +146,7 @@ function Produtos() {
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [priceIncreaseOpen, setPriceIncreaseOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const updateField = (field: keyof FormState, value: string) => {
