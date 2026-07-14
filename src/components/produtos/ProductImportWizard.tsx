@@ -337,7 +337,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const margin = built.profit_margin ? parseNum(built.profit_margin) : 0;
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
-      const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
       const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
 
       // Resolve supplier text and supplier_id
