@@ -120,6 +120,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: { line: number; reason: string }[] } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [manualSupplierId, setManualSupplierId] = useState<string | null>(null);
+  const [widthUnit, setWidthUnit] = useState<"cm" | "mm">("cm");
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: allSuppliers = [] } = useSuppliersQuery();
 
