@@ -479,13 +479,20 @@ function Produtos() {
             ))}
           </div>
           {canEdit && (
-            <Button
-              variant="outline"
-              onClick={() => setImportOpen(true)}
-              className="sm:ml-auto"
-            >
-              <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
-            </Button>
+            <div className="flex flex-wrap gap-2 sm:ml-auto">
+              <Button
+                variant="outline"
+                onClick={() => setPriceIncreaseOpen(true)}
+              >
+                <TrendingUp className="h-4 w-4 mr-1.5" /> Aumento de preço
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
+              </Button>
+            </div>
           )}
         </div>
       </Card>
