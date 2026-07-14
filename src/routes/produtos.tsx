@@ -25,8 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Upload, TrendingUp } from "lucide-react";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+import { PriceIncreaseWizard } from "@/components/produtos/PriceIncreaseWizard";
 import {
   SupplierPicker,
   productCategoryToSupplierCategory,
