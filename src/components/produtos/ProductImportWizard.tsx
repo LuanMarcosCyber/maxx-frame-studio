@@ -88,7 +88,7 @@ const fieldsForCategory = (category: string): FieldDef[] =>
 
 const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
-    const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "frame_width_cm", "ncm"].includes(f.key);
+    const isDefaultManual = ["supplier", "profit_margin", "waste_percentage", "labor_cost", "commission_percentage", "ncm"].includes(f.key);
     acc[f.key] = {
       origin: isDefaultManual ? "manual" : "column",
       column: "",
@@ -120,6 +120,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: { line: number; reason: string }[] } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [manualSupplierId, setManualSupplierId] = useState<string | null>(null);
+  const [widthUnit, setWidthUnit] = useState<"cm" | "mm">("cm");
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: allSuppliers = [] } = useSuppliersQuery();
 
@@ -336,7 +337,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       const margin = built.profit_margin ? parseNum(built.profit_margin) : 0;
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
-      const frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
       const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
 
       // Resolve supplier text and supplier_id
@@ -567,6 +569,28 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                       value={cfg.manual}
                       onChange={(e) => updateMap(f.key, { manual: e.target.value })}
                     />
+                  )}
+                  {f.key === "frame_width_cm" && (
+                    <div className="pt-2 border-t space-y-2">
+                      <div className="font-medium text-sm">Unidade da largura</div>
+                      <RadioGroup
+                        value={widthUnit}
+                        onValueChange={(v) => setWidthUnit(v as "cm" | "mm")}
+                        className="flex gap-6"
+                      >
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <RadioGroupItem value="cm" /> Centímetros (cm)
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <RadioGroupItem value="mm" /> Milímetros (mm)
+                        </label>
+                      </RadioGroup>
+                      <p className="text-[11px] text-muted-foreground">
+                        {widthUnit === "mm"
+                          ? "Os valores serão convertidos automaticamente para centímetros (÷ 10) antes de salvar."
+                          : "Os valores serão salvos exatamente como estão na planilha."}
+                      </p>
+                    </div>
                   )}
                 </Card>
               );
