@@ -171,10 +171,12 @@ function Fornecedores() {
         (r.document ?? "").toLowerCase().includes(q) ||
         (r.email ?? "").toLowerCase().includes(q) ||
         (r.phone ?? "").toLowerCase().includes(q) ||
+        (r.contact_name ?? "").toLowerCase().includes(q) ||
         inCat
       );
     });
   }, [rows, search]);
+
 
   const canEdit = (r: SupplierRow) =>
     isAdmin ? true : !r.is_global && r.user_id === ownerUserId;
@@ -621,6 +623,16 @@ function Fornecedores() {
             </div>
 
             <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="sup-contact">Nome do contato</Label>
+              <Input
+                id="sup-contact"
+                value={form.contact_name}
+                maxLength={100}
+                onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
+                placeholder="Ex.: João Silva"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="sup-site">Site</Label>
               <Input
                 id="sup-site"
@@ -629,14 +641,7 @@ function Fornecedores() {
                 placeholder="https://..."
               />
             </div>
-            <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="sup-contact">Nome do contato</Label>
-              <Input
-                id="sup-contact"
-                value={form.contact_name}
-                onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
-              />
-            </div>
+
 
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="sup-cep">CEP</Label>
