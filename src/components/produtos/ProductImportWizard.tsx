@@ -570,6 +570,28 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                       onChange={(e) => updateMap(f.key, { manual: e.target.value })}
                     />
                   )}
+                  {f.key === "frame_width_cm" && (
+                    <div className="pt-2 border-t space-y-2">
+                      <div className="font-medium text-sm">Unidade da largura</div>
+                      <RadioGroup
+                        value={widthUnit}
+                        onValueChange={(v) => setWidthUnit(v as "cm" | "mm")}
+                        className="flex gap-6"
+                      >
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <RadioGroupItem value="cm" /> Centímetros (cm)
+                        </label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <RadioGroupItem value="mm" /> Milímetros (mm)
+                        </label>
+                      </RadioGroup>
+                      <p className="text-[11px] text-muted-foreground">
+                        {widthUnit === "mm"
+                          ? "Os valores serão convertidos automaticamente para centímetros (÷ 10) antes de salvar."
+                          : "Os valores serão salvos exatamente como estão na planilha."}
+                      </p>
+                    </div>
+                  )}
                 </Card>
               );
             })}
