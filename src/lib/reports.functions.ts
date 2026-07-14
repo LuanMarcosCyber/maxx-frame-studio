@@ -493,7 +493,10 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         topProductPerSupplier: {},
         supplierCategories: {},
         topProductsPerSupplier: {},
+        totalConsumptionLinearM: 0,
+        totalConsumptionAreaM2: 0,
       };
+
     }
 
     // 2. Fetch budget items
