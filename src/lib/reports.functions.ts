@@ -559,6 +559,10 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         if (pExisting) {
           pExisting.quantity += 1;
           pExisting.value += part.value;
+          pExisting.consumption += part.consumption;
+          if (!pExisting.consumptionUnit && part.consumptionUnit) {
+            pExisting.consumptionUnit = part.consumptionUnit;
+          }
           for (const oid of orderIds) pExisting.orderSet.add(oid);
         } else {
           productAgg.set(pKey, {
@@ -570,9 +574,12 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
             quantity: 1,
             value: part.value,
             orders: 0,
+            consumption: part.consumption,
+            consumptionUnit: part.consumptionUnit,
             orderSet: new Set(orderIds),
           });
         }
+
 
         // per-supplier
         const sExisting = supplierAgg.get(supplier);
