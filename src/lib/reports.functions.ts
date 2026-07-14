@@ -63,6 +63,8 @@ export interface ProductRow {
   quantity: number;
   value: number;
   orders: number;
+  consumption: number; // meters or m²
+  consumptionUnit: "m" | "m²" | "";
 }
 
 export interface ProdutosFornecedoresReport {
@@ -77,7 +79,10 @@ export interface ProdutosFornecedoresReport {
   topProductPerSupplier: Record<string, { name: string; quantity: number; value: number }>;
   supplierCategories: Record<string, string[]>;
   topProductsPerSupplier: Record<string, Array<{ name: string; quantity: number; value: number }>>;
+  totalConsumptionLinearM: number;
+  totalConsumptionAreaM2: number;
 }
+
 
 
 function periodRange(period: string): { from?: string; to?: string } {
@@ -358,29 +363,59 @@ interface PartExtract {
   code: string;
   description: string;
   value: number;
+  consumption: number; // per single item (already multiplied by item quantidade)
+  consumptionUnit: "m" | "m²" | "";
+}
+
+function num(x: unknown): number {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function extractParts(item: Record<string, unknown>): PartExtract[] {
   const parts: PartExtract[] = [];
-  const keys: { key: PartKey; idField: string; codeField: string; descField: string; valField: string }[] = [
-    { key: "perfil", idField: "perfilId", codeField: "perfilCode", descField: "perfilDescription", valField: "valorPerfil" },
-    { key: "perfilAdicional", idField: "perfilAdicionalId", codeField: "perfilAdicionalCode", descField: "perfilAdicionalDescription", valField: "valorPerfilAdicional" },
-    { key: "paspatur", idField: "paspaturId", codeField: "paspaturCode", descField: "paspaturDescription", valField: "valorPaspatur" },
-    { key: "paspaturAdicional", idField: "paspaturAdicionalId", codeField: "paspaturAdicionalCode", descField: "paspaturAdicionalDescription", valField: "valorPaspaturAdicional" },
-    { key: "foam", idField: "foamId", codeField: "foamCode", descField: "foamDescription", valField: "valorFoam" },
-    { key: "vidro", idField: "vidroId", codeField: "vidroCode", descField: "vidroDescription", valField: "valorVidro" },
-    { key: "colagem", idField: "colagemId", codeField: "colagemCode", descField: "colagemDescription", valField: "valorColagem" },
-    { key: "impressao", idField: "impressaoId", codeField: "impressaoCode", descField: "impressaoDescription", valField: "valorImpressao" },
+  const qtdItem = Math.max(1, Math.floor(num(item.quantidade) || 1));
+  const aF = num(item.alturaFinal);
+  const lF = num(item.larguraFinal);
+  const areaMain = (aF * lF) / 10000; // m²
+  const perimMain = (2 * (aF + lF)) / 100; // m
+  const aAdic = num(item.alturaAdicional);
+  const lAdic = num(item.larguraAdicional);
+  const areaAdic = (aAdic * lAdic) / 10000;
+  const aPerfilAdic = num(item.alturaPerfilAdicional);
+  const lPerfilAdic = num(item.larguraPerfilAdicional);
+  const perimPerfilAdic = (2 * (aPerfilAdic + lPerfilAdic)) / 100;
+  const vidroQtd = Math.max(1, Math.floor(num(item.vidroQuantidade) || 1));
+
+  const keys: {
+    key: PartKey;
+    idField: string;
+    codeField: string;
+    descField: string;
+    valField: string;
+    consumption: number;
+    unit: "m" | "m²" | "";
+  }[] = [
+    { key: "perfil", idField: "perfilId", codeField: "perfilCode", descField: "perfilDescription", valField: "valorPerfil", consumption: perimMain, unit: "m" },
+    { key: "perfilAdicional", idField: "perfilAdicionalId", codeField: "perfilAdicionalCode", descField: "perfilAdicionalDescription", valField: "valorPerfilAdicional", consumption: perimPerfilAdic, unit: "m" },
+    { key: "paspatur", idField: "paspaturId", codeField: "paspaturCode", descField: "paspaturDescription", valField: "valorPaspatur", consumption: areaMain, unit: "m²" },
+    { key: "paspaturAdicional", idField: "paspaturAdicionalId", codeField: "paspaturAdicionalCode", descField: "paspaturAdicionalDescription", valField: "valorPaspaturAdicional", consumption: areaAdic, unit: "m²" },
+    { key: "foam", idField: "foamId", codeField: "foamCode", descField: "foamDescription", valField: "valorFoam", consumption: areaMain, unit: "m²" },
+    { key: "vidro", idField: "vidroId", codeField: "vidroCode", descField: "vidroDescription", valField: "valorVidro", consumption: areaMain * vidroQtd, unit: "m²" },
+    { key: "colagem", idField: "colagemId", codeField: "colagemCode", descField: "colagemDescription", valField: "valorColagem", consumption: 0, unit: "" },
+    { key: "impressao", idField: "impressaoId", codeField: "impressaoCode", descField: "impressaoDescription", valField: "valorImpressao", consumption: areaMain, unit: "m²" },
   ];
   for (const k of keys) {
     const id = String(item[k.idField] ?? "").trim();
-    const val = Number(item[k.valField]) || 0;
+    const val = num(item[k.valField]);
     if (!id || val <= 0) continue;
     parts.push({
       productId: id,
       code: String(item[k.codeField] ?? ""),
       description: String(item[k.descField] ?? ""),
       value: val,
+      consumption: k.consumption * qtdItem,
+      consumptionUnit: k.unit,
     });
   }
   const diversos = Array.isArray(item.produtosDiversos)
@@ -388,19 +423,21 @@ function extractParts(item: Record<string, unknown>): PartExtract[] {
     : [];
   for (const d of diversos) {
     const id = String(d.productId ?? "").trim();
-    const qty = Number(d.quantidade) || 1;
-    const total = Number(d.total) || Number(d.valorUnitario) * qty || 0;
+    const qty = num(d.quantidade) || 1;
+    const total = num(d.total) || num(d.valorUnitario) * qty || 0;
     if (!id) continue;
-    // Represent quantities as multiple synthetic entries for aggregation of count.
     parts.push({
       productId: id,
       code: String(d.code ?? ""),
       description: String(d.nome ?? ""),
       value: total,
+      consumption: 0,
+      consumptionUnit: "",
     });
   }
   return parts;
 }
+
 
 export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -456,7 +493,10 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         topProductPerSupplier: {},
         supplierCategories: {},
         topProductsPerSupplier: {},
+        totalConsumptionLinearM: 0,
+        totalConsumptionAreaM2: 0,
       };
+
     }
 
     // 2. Fetch budget items
@@ -519,6 +559,10 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         if (pExisting) {
           pExisting.quantity += 1;
           pExisting.value += part.value;
+          pExisting.consumption += part.consumption;
+          if (!pExisting.consumptionUnit && part.consumptionUnit) {
+            pExisting.consumptionUnit = part.consumptionUnit;
+          }
           for (const oid of orderIds) pExisting.orderSet.add(oid);
         } else {
           productAgg.set(pKey, {
@@ -530,9 +574,12 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
             quantity: 1,
             value: part.value,
             orders: 0,
+            consumption: part.consumption,
+            consumptionUnit: part.consumptionUnit,
             orderSet: new Set(orderIds),
           });
         }
+
 
         // per-supplier
         const sExisting = supplierAgg.get(supplier);
@@ -618,6 +665,13 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       supplierCategories[s] = Array.from(set).sort();
     }
 
+    let totalConsumptionLinearM = 0;
+    let totalConsumptionAreaM2 = 0;
+    for (const p of productsList) {
+      if (p.consumptionUnit === "m") totalConsumptionLinearM += p.consumption;
+      else if (p.consumptionUnit === "m²") totalConsumptionAreaM2 += p.consumption;
+    }
+
     return {
       totalValue,
       totalQuantity,
@@ -630,7 +684,10 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       topProductPerSupplier,
       supplierCategories,
       topProductsPerSupplier,
+      totalConsumptionLinearM,
+      totalConsumptionAreaM2,
     };
+
   });
 
 // ============================================================================
