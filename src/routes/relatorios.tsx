@@ -974,6 +974,20 @@ function ProdutosReportView({
 
   const data = query.data;
 
+  const fmtConsumption = (n: number, unit: "m" | "m²" | "") =>
+    unit ? `${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit}` : "—";
+
+  const consumoLabel = (() => {
+    const linear = data?.totalConsumptionLinearM ?? 0;
+    const area = data?.totalConsumptionAreaM2 ?? 0;
+    if (linear > 0 && area > 0) {
+      return `${fmtConsumption(area, "m²")} · ${fmtConsumption(linear, "m")}`;
+    }
+    if (linear > 0) return fmtConsumption(linear, "m");
+    if (area > 0) return fmtConsumption(area, "m²");
+    return "—";
+  })();
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -985,10 +999,10 @@ function ProdutosReportView({
           sub={data?.topProduct ? fmtMoney(data.topProduct.value) : undefined}
         />
         <SummaryCard
-          label="Categoria mais vendida"
-          value={data?.topCategory?.category ?? "—"}
+          label="Consumo total"
+          value={consumoLabel}
           icon={Tag}
-          sub={data?.topCategory ? fmtMoney(data.topCategory.value) : undefined}
+          sub="Perfil em metros · demais em m²"
         />
         <SummaryCard label="Valor total em produtos" value={fmtMoney(data?.totalValue ?? 0)} icon={DollarSign} />
       </div>
@@ -1012,6 +1026,7 @@ function ProdutosReportView({
                   <TableHead>Categoria</TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead className="text-right">Qtd. vendida</TableHead>
+                  <TableHead className="text-right">Consumo</TableHead>
                   <TableHead className="text-right">Valor vendido</TableHead>
                   <TableHead className="text-right">Nº pedidos</TableHead>
                 </TableRow>
@@ -1024,6 +1039,9 @@ function ProdutosReportView({
                     <TableCell>{p.category}</TableCell>
                     <TableCell>{p.supplier}</TableCell>
                     <TableCell className="text-right">{p.quantity}</TableCell>
+                    <TableCell className="text-right">
+                      {fmtConsumption(p.consumption, p.consumptionUnit)}
+                    </TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(p.value)}</TableCell>
                     <TableCell className="text-right">{p.orders}</TableCell>
                   </TableRow>
@@ -1036,6 +1054,7 @@ function ProdutosReportView({
     </div>
   );
 }
+
 
 // ============================================================================
 // Orçamentos
