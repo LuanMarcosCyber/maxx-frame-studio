@@ -363,29 +363,59 @@ interface PartExtract {
   code: string;
   description: string;
   value: number;
+  consumption: number; // per single item (already multiplied by item quantidade)
+  consumptionUnit: "m" | "m²" | "";
+}
+
+function num(x: unknown): number {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function extractParts(item: Record<string, unknown>): PartExtract[] {
   const parts: PartExtract[] = [];
-  const keys: { key: PartKey; idField: string; codeField: string; descField: string; valField: string }[] = [
-    { key: "perfil", idField: "perfilId", codeField: "perfilCode", descField: "perfilDescription", valField: "valorPerfil" },
-    { key: "perfilAdicional", idField: "perfilAdicionalId", codeField: "perfilAdicionalCode", descField: "perfilAdicionalDescription", valField: "valorPerfilAdicional" },
-    { key: "paspatur", idField: "paspaturId", codeField: "paspaturCode", descField: "paspaturDescription", valField: "valorPaspatur" },
-    { key: "paspaturAdicional", idField: "paspaturAdicionalId", codeField: "paspaturAdicionalCode", descField: "paspaturAdicionalDescription", valField: "valorPaspaturAdicional" },
-    { key: "foam", idField: "foamId", codeField: "foamCode", descField: "foamDescription", valField: "valorFoam" },
-    { key: "vidro", idField: "vidroId", codeField: "vidroCode", descField: "vidroDescription", valField: "valorVidro" },
-    { key: "colagem", idField: "colagemId", codeField: "colagemCode", descField: "colagemDescription", valField: "valorColagem" },
-    { key: "impressao", idField: "impressaoId", codeField: "impressaoCode", descField: "impressaoDescription", valField: "valorImpressao" },
+  const qtdItem = Math.max(1, Math.floor(num(item.quantidade) || 1));
+  const aF = num(item.alturaFinal);
+  const lF = num(item.larguraFinal);
+  const areaMain = (aF * lF) / 10000; // m²
+  const perimMain = (2 * (aF + lF)) / 100; // m
+  const aAdic = num(item.alturaAdicional);
+  const lAdic = num(item.larguraAdicional);
+  const areaAdic = (aAdic * lAdic) / 10000;
+  const aPerfilAdic = num(item.alturaPerfilAdicional);
+  const lPerfilAdic = num(item.larguraPerfilAdicional);
+  const perimPerfilAdic = (2 * (aPerfilAdic + lPerfilAdic)) / 100;
+  const vidroQtd = Math.max(1, Math.floor(num(item.vidroQuantidade) || 1));
+
+  const keys: {
+    key: PartKey;
+    idField: string;
+    codeField: string;
+    descField: string;
+    valField: string;
+    consumption: number;
+    unit: "m" | "m²" | "";
+  }[] = [
+    { key: "perfil", idField: "perfilId", codeField: "perfilCode", descField: "perfilDescription", valField: "valorPerfil", consumption: perimMain, unit: "m" },
+    { key: "perfilAdicional", idField: "perfilAdicionalId", codeField: "perfilAdicionalCode", descField: "perfilAdicionalDescription", valField: "valorPerfilAdicional", consumption: perimPerfilAdic, unit: "m" },
+    { key: "paspatur", idField: "paspaturId", codeField: "paspaturCode", descField: "paspaturDescription", valField: "valorPaspatur", consumption: areaMain, unit: "m²" },
+    { key: "paspaturAdicional", idField: "paspaturAdicionalId", codeField: "paspaturAdicionalCode", descField: "paspaturAdicionalDescription", valField: "valorPaspaturAdicional", consumption: areaAdic, unit: "m²" },
+    { key: "foam", idField: "foamId", codeField: "foamCode", descField: "foamDescription", valField: "valorFoam", consumption: areaMain, unit: "m²" },
+    { key: "vidro", idField: "vidroId", codeField: "vidroCode", descField: "vidroDescription", valField: "valorVidro", consumption: areaMain * vidroQtd, unit: "m²" },
+    { key: "colagem", idField: "colagemId", codeField: "colagemCode", descField: "colagemDescription", valField: "valorColagem", consumption: 0, unit: "" },
+    { key: "impressao", idField: "impressaoId", codeField: "impressaoCode", descField: "impressaoDescription", valField: "valorImpressao", consumption: areaMain, unit: "m²" },
   ];
   for (const k of keys) {
     const id = String(item[k.idField] ?? "").trim();
-    const val = Number(item[k.valField]) || 0;
+    const val = num(item[k.valField]);
     if (!id || val <= 0) continue;
     parts.push({
       productId: id,
       code: String(item[k.codeField] ?? ""),
       description: String(item[k.descField] ?? ""),
       value: val,
+      consumption: k.consumption * qtdItem,
+      consumptionUnit: k.unit,
     });
   }
   const diversos = Array.isArray(item.produtosDiversos)
@@ -393,19 +423,21 @@ function extractParts(item: Record<string, unknown>): PartExtract[] {
     : [];
   for (const d of diversos) {
     const id = String(d.productId ?? "").trim();
-    const qty = Number(d.quantidade) || 1;
-    const total = Number(d.total) || Number(d.valorUnitario) * qty || 0;
+    const qty = num(d.quantidade) || 1;
+    const total = num(d.total) || num(d.valorUnitario) * qty || 0;
     if (!id) continue;
-    // Represent quantities as multiple synthetic entries for aggregation of count.
     parts.push({
       productId: id,
       code: String(d.code ?? ""),
       description: String(d.nome ?? ""),
       value: total,
+      consumption: 0,
+      consumptionUnit: "",
     });
   }
   return parts;
 }
+
 
 export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
