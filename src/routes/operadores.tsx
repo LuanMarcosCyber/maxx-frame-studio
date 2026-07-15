@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, AlertCircle } from "lucide-react";
 import {
   listOperators,
   createOperator,
@@ -49,11 +49,12 @@ import {
   deleteOperator,
   listOperationalAccounts,
 } from "@/lib/operators.functions";
+import { listResellers } from "@/lib/admin-users.functions";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/operadores")({
-  head: () => ({ meta: [{ title: "Operadores — Total Maxx ERP" }] }),
+  head: () => ({ meta: [{ title: "Usuários — Total Maxx ERP" }] }),
   component: OperadoresPage,
 });
 
@@ -73,12 +74,14 @@ type Op = {
 };
 
 type OpAcct = { id: string; full_name: string; username: string | null; active: boolean };
+type Reseller = { id: string; full_name: string | null; username: string | null; role: string };
 
 type FormState = {
   id?: string;
   name: string;
   nickname: string;
   pin: string;
+  company_id: string; // apenas para Admin escolher a empresa
   operational_account_id: string;
   can_edit_budgets: boolean;
   can_create_products: boolean;
@@ -91,7 +94,8 @@ const emptyForm: FormState = {
   name: "",
   nickname: "",
   pin: "",
-  operational_account_id: "__none__",
+  company_id: "",
+  operational_account_id: "",
   can_edit_budgets: true,
   can_create_products: true,
   can_create_clients: true,
@@ -102,6 +106,7 @@ const emptyForm: FormState = {
 function OperadoresPage() {
   const { role, profile, loading } = useAuth();
   const isOperational = !!profile?.parent_user_id;
+  const isAdmin = role === "admin";
   const canManage = (role === "revendedor" || role === "admin") && !isOperational;
   const navigate = useNavigate();
   useEffect(() => {
@@ -112,6 +117,7 @@ function OperadoresPage() {
 
   const list = useServerFn(listOperators);
   const listAccts = useServerFn(listOperationalAccounts);
+  const listResellersFn = useServerFn(listResellers);
   const create = useServerFn(createOperator);
   const update = useServerFn(updateOperator);
   const del = useServerFn(deleteOperator);
@@ -127,10 +133,24 @@ function OperadoresPage() {
     queryFn: () => list() as Promise<Op[]>,
   });
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ["operational-accounts"],
-    queryFn: () => listAccts() as Promise<OpAcct[]>,
-    enabled: !isOperational,
+  // Lista de empresas (apenas Admin)
+  const { data: resellers = [] } = useQuery({
+    queryKey: ["admin-resellers"],
+    queryFn: () => listResellersFn() as Promise<Reseller[]>,
+    enabled: isAdmin,
+  });
+
+  // Conta de acesso alvo: para Admin usa a empresa escolhida no form;
+  // para Revendedor sempre a própria empresa (backend resolve).
+  const accountsCompanyId = isAdmin ? form.company_id : undefined;
+
+  const { data: accounts = [], isFetching: loadingAccounts } = useQuery({
+    queryKey: ["operational-accounts", accountsCompanyId ?? "self"],
+    queryFn: () =>
+      listAccts(
+        accountsCompanyId ? ({ data: { company_id: accountsCompanyId } } as never) : (undefined as never),
+      ) as Promise<OpAcct[]>,
+    enabled: !isOperational && (!isAdmin || !!accountsCompanyId),
   });
 
   const acctMap = useMemo(() => {
@@ -138,6 +158,15 @@ function OperadoresPage() {
     accounts.forEach((a) => m.set(a.id, a.full_name));
     return m;
   }, [accounts]);
+
+  // Auto-selecionar a primeira conta quando o diálogo abrir / lista carregar
+  useEffect(() => {
+    if (!dialogOpen) return;
+    if (form.id) return; // não sobrescrever edição
+    if (!accounts.length) return;
+    if (form.operational_account_id) return;
+    setForm((f) => ({ ...f, operational_account_id: accounts[0].id }));
+  }, [dialogOpen, accounts, form.id, form.operational_account_id]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -162,7 +191,7 @@ function OperadoresPage() {
   const delMut = useMutation({
     mutationFn: (id: string) => del({ data: { id } }),
     onSuccess: () => {
-      toast.success("Operador excluído.");
+      toast.success("Usuário excluído.");
       setDeleting(null);
       qc.invalidateQueries({ queryKey: ["operators"] });
       qc.invalidateQueries({ queryKey: ["active-operators"] });
@@ -181,7 +210,8 @@ function OperadoresPage() {
       name: o.name,
       nickname: o.nickname ?? "",
       pin: "",
-      operational_account_id: o.operational_account_id ?? "__none__",
+      company_id: "",
+      operational_account_id: o.operational_account_id ?? "",
       can_edit_budgets: o.can_edit_budgets,
       can_create_products: o.can_create_products,
       can_create_clients: o.can_create_clients,
@@ -191,10 +221,19 @@ function OperadoresPage() {
     setDialogOpen(true);
   }
 
+  // Precisa haver uma Conta de Acesso para poder criar Usuário
+  const hasAccounts = accounts.length > 0;
+  const needsCompanyFirst = isAdmin && !form.company_id;
+  const canSubmit = !!form.operational_account_id && !!form.name.trim();
+
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast.error("Informe o nome do operador.");
+      toast.error("Informe o nome do usuário.");
+      return;
+    }
+    if (!form.id && !form.operational_account_id) {
+      toast.error("Selecione uma Conta de Acesso para vincular o usuário.");
       return;
     }
     if (!form.id && !/^\d{4,6}$/.test(form.pin)) {
@@ -207,8 +246,7 @@ function OperadoresPage() {
     }
     setSaving(true);
     try {
-      const opAcct =
-        form.operational_account_id === "__none__" ? null : form.operational_account_id;
+      const opAcct = form.operational_account_id || null;
       const perms = {
         can_edit_budgets: form.can_edit_budgets,
         can_create_products: form.can_create_products,
@@ -227,7 +265,7 @@ function OperadoresPage() {
             ...perms,
           },
         });
-        toast.success("Operador atualizado.");
+        toast.success("Usuário atualizado.");
       } else {
         await create({
           data: {
@@ -238,14 +276,14 @@ function OperadoresPage() {
             ...perms,
           },
         });
-        toast.success("Operador criado.");
+        toast.success("Usuário criado.");
       }
       qc.invalidateQueries({ queryKey: ["operators"] });
       qc.invalidateQueries({ queryKey: ["active-operators"] });
       setDialogOpen(false);
       setForm(emptyForm);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao salvar operador.");
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar usuário.");
     } finally {
       setSaving(false);
     }
@@ -255,7 +293,10 @@ function OperadoresPage() {
 
   if (loading || !role) {
     return (
-      <AppShell title="Operadores" subtitle="Pessoas que operam o sistema no dia a dia (não fazem login).">
+      <AppShell
+        title="Usuários"
+        subtitle="Usuários identificam quem está utilizando o sistema no dia a dia. Eles não fazem login."
+      >
         <div className="text-sm text-muted-foreground">Carregando...</div>
       </AppShell>
     );
@@ -273,18 +314,20 @@ function OperadoresPage() {
     );
   }
 
+  // Para revendedor, o botão "Novo Usuário" só é habilitado quando existir ao menos uma Conta.
+  const createDisabled = !isAdmin && !hasAccounts;
 
   return (
     <AppShell
-      title="Operadores"
-      subtitle="Pessoas que operam o sistema no dia a dia (não fazem login)."
+      title="Usuários"
+      subtitle="Usuários identificam quem está utilizando o sistema no dia a dia. Eles não fazem login."
     >
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
           <div className="relative w-full sm:max-w-sm">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar operador..."
+              placeholder="Buscar usuário..."
               className="pl-9"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -292,11 +335,26 @@ function OperadoresPage() {
           </div>
           <Button
             onClick={openCreate}
+            disabled={createDisabled}
+            title={
+              createDisabled
+                ? "Cadastre primeiro uma Conta de Acesso para esta empresa antes de criar usuários."
+                : undefined
+            }
             className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
           >
-            <Plus className="h-4 w-4 mr-1.5" /> Novo Operador
+            <Plus className="h-4 w-4 mr-1.5" /> Novo Usuário
           </Button>
         </div>
+
+        {!isAdmin && !hasAccounts && (
+          <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Cadastre primeiro uma Conta de Acesso para esta empresa antes de criar usuários.
+            </span>
+          </div>
+        )}
 
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
@@ -304,7 +362,7 @@ function OperadoresPage() {
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 <th className="font-medium py-3 px-6">Nome</th>
                 {!isOperational && (
-                  <th className="font-medium py-3 px-3">Conta operacional</th>
+                  <th className="font-medium py-3 px-3">Conta de acesso</th>
                 )}
                 <th className="font-medium py-3 px-3">Ativo</th>
                 <th className="font-medium py-3 px-6 text-right">Ações</th>
@@ -320,7 +378,7 @@ function OperadoresPage() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                    Nenhum operador cadastrado.
+                    Nenhum usuário cadastrado.
                   </td>
                 </tr>
               ) : (
@@ -334,12 +392,12 @@ function OperadoresPage() {
                         </Badge>
                       )}
                     </td>
-                    
+
                     {!isOperational && (
                       <td className="py-3.5 px-3 text-muted-foreground">
                         {o.operational_account_id
                           ? acctMap.get(o.operational_account_id) ?? "—"
-                          : <span className="italic">Loja (sem vínculo)</span>}
+                          : <span className="italic">—</span>}
                       </td>
                     )}
                     <td className="py-3.5 px-3">
@@ -390,12 +448,36 @@ function OperadoresPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{form.id ? "Editar operador" : "Novo operador"}</DialogTitle>
+            <DialogTitle>{form.id ? "Editar usuário" : "Novo usuário"}</DialogTitle>
             <DialogDescription>
-              Operadores identificam quem está usando o sistema. Eles não fazem login.
+              Usuários identificam quem está utilizando o sistema no dia a dia. Eles não fazem login.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
+            {/* Admin: escolher a empresa primeiro */}
+            {isAdmin && !form.id && (
+              <div className="space-y-1.5">
+                <Label>Empresa *</Label>
+                <Select
+                  value={form.company_id}
+                  onValueChange={(v) =>
+                    setForm({ ...form, company_id: v, operational_account_id: "" })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a empresa..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {resellers.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.full_name || r.username || "Empresa"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label htmlFor="op-name">Nome *</Label>
               <Input
@@ -428,16 +510,26 @@ function OperadoresPage() {
               </div>
               {canPickAccount && (
                 <div className="space-y-1.5">
-                  <Label>Conta operacional</Label>
+                  <Label>Conta de acesso *</Label>
                   <Select
                     value={form.operational_account_id}
                     onValueChange={(v) => setForm({ ...form, operational_account_id: v })}
+                    disabled={needsCompanyFirst || loadingAccounts || !hasAccounts}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue
+                        placeholder={
+                          needsCompanyFirst
+                            ? "Selecione a empresa primeiro..."
+                            : loadingAccounts
+                              ? "Carregando..."
+                              : !hasAccounts
+                                ? "Nenhuma conta disponível"
+                                : "Selecione..."
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Loja (sem vínculo)</SelectItem>
                       {accounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.full_name}
@@ -445,6 +537,11 @@ function OperadoresPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!needsCompanyFirst && !loadingAccounts && !hasAccounts && (
+                    <p className="text-xs text-amber-700">
+                      Cadastre primeiro uma Conta de Acesso para esta empresa antes de criar usuários.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -508,10 +605,10 @@ function OperadoresPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={saving}
+                disabled={saving || !canSubmit}
                 className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
               >
-                {saving ? "Salvando..." : form.id ? "Salvar" : "Criar operador"}
+                {saving ? "Salvando..." : form.id ? "Salvar" : "Criar usuário"}
               </Button>
             </DialogFooter>
           </form>
@@ -521,7 +618,7 @@ function OperadoresPage() {
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir operador?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleting?.name} será removido. Registros antigos permanecem inalterados.
             </AlertDialogDescription>

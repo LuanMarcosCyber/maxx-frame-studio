@@ -280,20 +280,41 @@ export const validateOperatorPinV2 = createServerFn({ method: "POST" })
     };
   });
 
-/** List operational (colaborador) accounts for the dropdown when creating operators. */
+/** List Contas de Acesso (operational accounts) for a given company/owner. */
 export const listOperationalAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) =>
+    z.object({ company_id: z.string().uuid().optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { ownerId, isOperational } = await resolveCaller(supabaseAdmin, context.userId);
+    const { ownerId: callerOwnerId, isOperational } = await resolveCaller(
+      supabaseAdmin,
+      context.userId,
+    );
     if (isOperational) return [];
-    const { data, error } = await supabaseAdmin
+
+    let targetOwner = callerOwnerId;
+    if (data?.company_id && data.company_id !== callerOwnerId) {
+      const { data: adminRole } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", context.userId)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!adminRole) {
+        throw new Error("Sem permissão para listar contas desta empresa.");
+      }
+      targetOwner = data.company_id;
+    }
+
+    const { data: rows, error } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, username, active")
-      .eq("parent_user_id", ownerId)
+      .eq("parent_user_id", targetOwner)
       .order("full_name", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r: Record<string, unknown>) => ({
+    return (rows ?? []).map((r: Record<string, unknown>) => ({
       id: r.id as string,
       full_name: (r.full_name as string | null) ?? (r.username as string | null) ?? "Conta",
       username: (r.username as string | null) ?? null,
