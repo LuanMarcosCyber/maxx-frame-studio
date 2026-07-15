@@ -108,7 +108,7 @@ function ColaboradoresPage() {
   return (
     <AppShell
       title="Contas de acesso"
-      subtitle="Contas operacionais que fazem login. Para cadastrar operadores (Márcia, Tânia, Thiago…), use o menu Operadores."
+      subtitle="Contas operacionais que fazem login. Para cadastrar usuários (Márcia, Tânia, Thiago…), use o menu Usuários."
     >
       <Content />
     </AppShell>
