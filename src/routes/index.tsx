@@ -45,99 +45,87 @@ function startOfMonth(d = new Date()) {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
 }
 
-type DashboardData = {
-  budgetsMonth: number;
-  ordersMonth: number;
-  productsTotal: number;
-  revenueMonth: number;
-  recent: Array<{
-    kind: "Orçamento" | "Pedido";
-    id: string;
-    number: string;
-    client_name: string;
-    total_value: number;
-    status: string;
-    created_at: string;
-    to: "/orcamentos" | "/pedidos";
-  }>;
+type RecentItem = {
+  kind: "Orçamento" | "Pedido";
+  id: string;
+  number: string;
+  client_name: string;
+  total_value: number;
+  status: string;
+  created_at: string;
+  to: "/orcamentos" | "/pedidos";
 };
 
-async function fetchDashboard(): Promise<DashboardData> {
-  const monthStart = startOfMonth();
-
-  // Contagens server-side (head:true não traz linhas) e soma do mês via
-  // select mínimo apenas dos pedidos do mês corrente.
-  const [
-    budgetsMonthRes,
-    ordersMonthRes,
-    productsTotalRes,
-    revenueRowsRes,
-    recentBudgets,
-    recentOrders,
-  ] = await Promise.all([
+async function fetchBudgetsPart(monthStart: string) {
+  const [countRes, recentRes] = await Promise.all([
     supabase
       .from("budgets")
       .select("id", { count: "exact", head: true })
       .gte("created_at", monthStart),
     supabase
+      .from("budgets")
+      .select("id, number, client_name, total_value, status, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(8),
+  ]);
+  if (countRes.error) throw countRes.error;
+  if (recentRes.error) throw recentRes.error;
+  const recent: RecentItem[] = (recentRes.data ?? []).map((b) => ({
+    kind: "Orçamento",
+    id: b.id,
+    number: b.number,
+    client_name: b.client_name,
+    total_value: Number(b.total_value),
+    status: b.status,
+    created_at: (b as { updated_at?: string }).updated_at ?? b.created_at,
+    to: "/orcamentos",
+  }));
+  return { count: countRes.count ?? 0, recent };
+}
+
+async function fetchOrdersPart(monthStart: string) {
+  const [countRes, revenueRes, recentRes] = await Promise.all([
+    supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
       .gte("created_at", monthStart),
-    supabase.from("products").select("id", { count: "exact", head: true }),
     supabase
       .from("orders")
       .select("total_value")
       .gte("created_at", monthStart),
     supabase
-      .from("budgets")
-      .select("id, number, client_name, total_value, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
       .from("orders")
-      .select("id, number, client_name, total_value, status, created_at")
+      .select("id, number, client_name, total_value, status, created_at, updated_at")
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(8),
   ]);
-
-  if (budgetsMonthRes.error) throw budgetsMonthRes.error;
-  if (ordersMonthRes.error) throw ordersMonthRes.error;
-  if (productsTotalRes.error) throw productsTotalRes.error;
-  if (revenueRowsRes.error) throw revenueRowsRes.error;
-  if (recentBudgets.error) throw recentBudgets.error;
-  if (recentOrders.error) throw recentOrders.error;
-
-  const revenueMonth = (revenueRowsRes.data ?? []).reduce(
+  if (countRes.error) throw countRes.error;
+  if (revenueRes.error) throw revenueRes.error;
+  if (recentRes.error) throw recentRes.error;
+  const revenue = (revenueRes.data ?? []).reduce(
     (s, o) => s + Number(o.total_value || 0),
     0,
   );
-
-  const recent = [
-    ...(recentBudgets.data ?? []).map((b) => ({
-      kind: "Orçamento" as const,
-      ...b,
-      total_value: Number(b.total_value),
-      to: "/orcamentos" as const,
-    })),
-    ...(recentOrders.data ?? []).map((o) => ({
-      kind: "Pedido" as const,
-      ...o,
-      total_value: Number(o.total_value),
-      to: "/pedidos" as const,
-    })),
-  ]
-    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
-    .slice(0, 6);
-
-  return {
-    budgetsMonth: budgetsMonthRes.count ?? 0,
-    ordersMonth: ordersMonthRes.count ?? 0,
-    productsTotal: productsTotalRes.count ?? 0,
-    revenueMonth,
-    recent,
-  };
+  const recent: RecentItem[] = (recentRes.data ?? []).map((o) => ({
+    kind: "Pedido",
+    id: o.id,
+    number: o.number,
+    client_name: o.client_name,
+    total_value: Number(o.total_value),
+    status: o.status,
+    created_at: (o as { updated_at?: string }).updated_at ?? o.created_at,
+    to: "/pedidos",
+  }));
+  return { count: countRes.count ?? 0, revenue, recent };
 }
 
+async function fetchProductsCount() {
+  const { count, error } = await supabase
+    .from("products")
+    .select("id", { count: "exact", head: true });
+  if (error) throw error;
+  return count ?? 0;
+}
 
 const quickActions = [
   {
@@ -167,12 +155,51 @@ const quickActions = [
 ];
 
 function Dashboard() {
-  const { session, profile, role } = useAuth();
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["dashboard"],
-    enabled: !!session,
-    queryFn: fetchDashboard,
+  const { session, profile, role, ownerUserId } = useAuth();
+  const monthStart = startOfMonth();
+  const scope = ownerUserId ?? session?.user?.id ?? null;
+
+  const commonOpts = {
+    enabled: !!session && !!scope,
+    staleTime: 0,
+    refetchOnMount: "always" as const,
+    refetchOnWindowFocus: true,
+  };
+
+  const budgetsQuery = useQuery({
+    queryKey: ["budgets", "dashboard", scope, monthStart],
+    queryFn: () => fetchBudgetsPart(monthStart),
+    ...commonOpts,
   });
+  const ordersQuery = useQuery({
+    queryKey: ["orders", "dashboard", scope, monthStart],
+    queryFn: () => fetchOrdersPart(monthStart),
+    ...commonOpts,
+  });
+  const productsQuery = useQuery({
+    queryKey: ["products", "dashboard-count", scope],
+    queryFn: fetchProductsCount,
+    ...commonOpts,
+  });
+
+  const isLoading = budgetsQuery.isLoading || ordersQuery.isLoading || productsQuery.isLoading;
+  const isError = budgetsQuery.isError || ordersQuery.isError || productsQuery.isError;
+  const error = (budgetsQuery.error || ordersQuery.error || productsQuery.error) as Error | null;
+
+  const recent = [
+    ...(budgetsQuery.data?.recent ?? []),
+    ...(ordersQuery.data?.recent ?? []),
+  ]
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+    .slice(0, 8);
+
+  const data = {
+    budgetsMonth: budgetsQuery.data?.count ?? 0,
+    ordersMonth: ordersQuery.data?.count ?? 0,
+    productsTotal: productsQuery.data ?? 0,
+    revenueMonth: ordersQuery.data?.revenue ?? 0,
+    recent,
+  };
 
   const displayName =
     profile?.full_name || profile?.username || "de volta";
@@ -184,25 +211,26 @@ function Dashboard() {
   const stats = [
     {
       label: "Orçamentos do mês",
-      value: data ? String(data.budgetsMonth) : "0",
+      value: String(data.budgetsMonth),
       icon: FileText,
     },
     {
       label: "Pedidos do mês",
-      value: data ? String(data.ordersMonth) : "0",
+      value: String(data.ordersMonth),
       icon: ShoppingCart,
     },
     {
       label: "Produtos cadastrados",
-      value: data ? String(data.productsTotal) : "0",
+      value: String(data.productsTotal),
       icon: Package,
     },
     {
       label: "Faturamento do mês",
-      value: data ? fmtMoney(data.revenueMonth) : fmtMoney(0),
+      value: fmtMoney(data.revenueMonth),
       icon: ArrowRight,
     },
   ];
+
 
   return (
     <AppShell title="Início" subtitle="Painel principal da Total Maxx">
