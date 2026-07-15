@@ -260,7 +260,7 @@ function Content() {
         <div className="min-w-0">
           <h2 className="text-lg font-semibold">Contas de acesso da loja</h2>
           <p className="text-sm text-muted-foreground">
-            Cada conta faz login e representa um usuário do sistema. Os operadores que aparecem no seletor do topo são cadastrados em <strong>Operadores</strong>.
+            Cada conta faz login e representa uma conta de acesso do sistema. Os usuários que aparecem no seletor do topo são cadastrados em <strong>Usuários</strong>.
           </p>
         </div>
         <CreateDialog
