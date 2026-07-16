@@ -521,7 +521,21 @@ function Produtos() {
     } finally {
       setDeleteTarget(null);
     }
+
+
+  const handleResetOverride = async (p: Product) => {
+    try {
+      const { error } = await supabase.rpc("reset_company_product_override", {
+        _global_product_id: p.id,
+      });
+      if (error) throw error;
+      toast.success("Produto voltou a usar a configuração padrão.");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao restaurar padrão.");
+    }
   };
+
 
 
   const handleBulkDelete = async () => {
