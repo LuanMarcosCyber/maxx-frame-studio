@@ -26,7 +26,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Pencil, Trash2, Upload, TrendingUp } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Upload, TrendingUp, Globe2, RotateCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
 import { PriceIncreaseWizard } from "@/components/produtos/PriceIncreaseWizard";
 import {
