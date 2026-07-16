@@ -154,6 +154,8 @@ function Fornecedores() {
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [catalogFor, setCatalogFor] = useState<SupplierRow | null>(null);
+  const [deleteCatalogFor, setDeleteCatalogFor] = useState<SupplierRow | null>(null);
+  const [deletingCatalog, setDeletingCatalog] = useState(false);
 
 
   const { data: rows = [], isLoading } = useQuery({
@@ -169,6 +171,62 @@ function Fornecedores() {
       return (data ?? []) as SupplierRow[];
     },
   });
+
+  // Contagem de produtos globais por fornecedor + categorias e amostra.
+  type GlobalCatalog = {
+    total: number;
+    categories: Record<string, number>;
+    sample: Array<{ id: string; code: string; description: string; category: string; base_price: number | null; width_cm: number | null }>;
+  };
+  const { data: catalogBySupplier = {} } = useQuery<Record<string, GlobalCatalog>>({
+    queryKey: ["global-catalog-by-supplier"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("global_supplier_products")
+        .select("id, supplier_id, code, description, category, base_price, width_cm")
+        .eq("active", true)
+        .order("code", { ascending: true });
+      if (error) throw error;
+      const acc: Record<string, GlobalCatalog> = {};
+      for (const r of (data ?? []) as Array<{ id: string; supplier_id: string; code: string; description: string; category: string; base_price: number | null; width_cm: number | null }>) {
+        const bucket = acc[r.supplier_id] ?? (acc[r.supplier_id] = { total: 0, categories: {}, sample: [] });
+        bucket.total += 1;
+        bucket.categories[r.category] = (bucket.categories[r.category] ?? 0) + 1;
+        if (bucket.sample.length < 300) bucket.sample.push(r);
+      }
+      return acc;
+    },
+  });
+
+  const invalidateAllCatalog = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["suppliers"] }),
+      qc.invalidateQueries({ queryKey: ["suppliers", "picker"] }),
+      qc.invalidateQueries({ queryKey: ["global-catalog-by-supplier"] }),
+      qc.invalidateQueries({ queryKey: ["products"] }),
+      qc.invalidateQueries({ queryKey: ["supplier-wizard-state"] }),
+    ]);
+  };
+
+  async function handleDeleteGlobalCatalog() {
+    if (!deleteCatalogFor || !isAdmin) return;
+    setDeletingCatalog(true);
+    try {
+      const { error } = await supabase
+        .from("global_supplier_products")
+        .delete()
+        .eq("supplier_id", deleteCatalogFor.id);
+      if (error) throw error;
+      toast.success("Catálogo global excluído. Pedidos e orçamentos históricos foram preservados.");
+      await invalidateAllCatalog();
+      setDeleteCatalogFor(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir catálogo global.");
+    } finally {
+      setDeletingCatalog(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -411,6 +469,11 @@ function Fornecedores() {
                         <div>{r.trade_name || r.legal_name || "—"}</div>
                         {r.trade_name && r.legal_name && (
                           <div className="text-xs text-muted-foreground">{r.legal_name}</div>
+                        )}
+                        {r.is_global && r.publish_catalog && (
+                          <div className="text-xs text-emerald-700 mt-0.5">
+                            {(catalogBySupplier[r.id]?.total ?? 0)} produtos globais
+                          </div>
                         )}
                       </td>
                       <td className="py-3.5 px-3 text-muted-foreground">{r.document || "—"}</td>
@@ -771,6 +834,88 @@ function Fornecedores() {
             </div>
           </fieldset>
 
+          {form.id && form.is_global && (() => {
+            const cat = catalogBySupplier[form.id!];
+            const total = cat?.total ?? 0;
+            const cats = cat ? Object.entries(cat.categories) : [];
+            return (
+              <div className="mt-4 border rounded-md p-3 sm:p-4 bg-muted/20 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-semibold">Produtos globais</div>
+                    <div className="text-xs text-muted-foreground">
+                      {total} produto{total === 1 ? "" : "s"} vinculado{total === 1 ? "" : "s"} a este fornecedor.
+                    </div>
+                  </div>
+                  {isAdmin && total > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/40 hover:bg-destructive/5"
+                      onClick={() => {
+                        const row = rows.find((r) => r.id === form.id);
+                        if (row) setDeleteCatalogFor(row);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1.5" /> Excluir produtos globais
+                    </Button>
+                  )}
+                </div>
+                {cats.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {cats.map(([c, n]) => (
+                      <Badge key={c} variant="outline" className="text-[11px]">
+                        {c} · {n}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {total > 0 ? (
+                  <div className="max-h-64 overflow-y-auto border rounded-md bg-background">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr className="text-left text-muted-foreground">
+                          <th className="py-1.5 px-2 font-medium">Código</th>
+                          <th className="py-1.5 px-2 font-medium">Descrição</th>
+                          <th className="py-1.5 px-2 font-medium">Categoria</th>
+                          <th className="py-1.5 px-2 font-medium text-right">Preço-base</th>
+                          <th className="py-1.5 px-2 font-medium text-right">Largura</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {(cat?.sample ?? []).map((p) => (
+                          <tr key={p.id}>
+                            <td className="py-1.5 px-2 font-mono">{p.code}</td>
+                            <td className="py-1.5 px-2">{p.description}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{p.category}</td>
+                            <td className="py-1.5 px-2 text-right">
+                              {p.base_price != null
+                                ? p.base_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                                : "—"}
+                            </td>
+                            <td className="py-1.5 px-2 text-right">
+                              {p.width_cm != null ? `${p.width_cm} cm` : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {total > (cat?.sample.length ?? 0) && (
+                      <div className="py-1.5 px-2 text-[11px] text-muted-foreground border-t bg-muted/30">
+                        Exibindo {cat?.sample.length} de {total} produtos.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    Nenhum produto global cadastrado neste fornecedor.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+
           <DialogFooter>
             {readOnly ? (
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -824,6 +969,56 @@ function Fornecedores() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog
+        open={!!deleteCatalogFor}
+        onOpenChange={(o) => !o && !deletingCatalog && setDeleteCatalogFor(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produtos globais deste fornecedor?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Você confirma a exclusão de <b>todos os produtos globais</b> deste fornecedor?
+                  Eles deixarão de aparecer em todas as empresas do sistema. Orçamentos e pedidos
+                  antigos <b>não serão alterados</b>.
+                </p>
+                {deleteCatalogFor && (() => {
+                  const cat = catalogBySupplier[deleteCatalogFor.id];
+                  const total = cat?.total ?? 0;
+                  const cats = cat ? Object.keys(cat.categories) : [];
+                  return (
+                    <div className="text-sm border rounded-md p-2.5 bg-muted/40 space-y-1">
+                      <div><span className="text-muted-foreground">Fornecedor:</span> <b>{deleteCatalogFor.trade_name || deleteCatalogFor.legal_name}</b></div>
+                      <div><span className="text-muted-foreground">Produtos:</span> <b>{total}</b></div>
+                      {cats.length > 0 && (
+                        <div><span className="text-muted-foreground">Categorias:</span> <b>{cats.join(", ")}</b></div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingCatalog}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteGlobalCatalog(); }}
+              disabled={deletingCatalog}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingCatalog ? (
+                <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Excluindo...</>
+              ) : (
+                "Excluir produtos globais"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+
       {catalogFor && (() => {
         // Map slug de fornecedor → chave canônica usada na tela de Produtos.
         const SLUG_TO_PRODUCT_CATEGORY: Record<string, string> = {
@@ -848,8 +1043,7 @@ function Fornecedores() {
             categories={wizardCategories}
             defaultCategory={wizardCategories[0]?.key ?? "Paspatur"}
             onImported={() => {
-              qc.invalidateQueries({ queryKey: ["products"] });
-              qc.invalidateQueries({ queryKey: ["global_supplier_products"] });
+              invalidateAllCatalog();
             }}
             mode="global-catalog"
             globalContext={{
