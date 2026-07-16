@@ -827,7 +827,7 @@ function Fornecedores() {
       {catalogFor && (
         <ProductImportWizard
           open={!!catalogFor}
-          onOpenChange={(o) => !o && setCatalogFor(null)}
+          onOpenChange={(o: boolean) => !o && setCatalogFor(null)}
           categories={(catalogFor.categories ?? [])
             .map((k) => SUPPLIER_CATEGORIES.find((c) => c.key === k))
             .filter(Boolean)
