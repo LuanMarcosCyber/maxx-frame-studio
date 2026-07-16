@@ -91,6 +91,10 @@ export function PriceIncreaseWizard({
 
   const goPreview = async () => {
     if (!supplierId || !percentValid) return;
+    if (isGlobalSupplier && !isAdmin) {
+      toast.error("Somente Admin pode reajustar produtos de fornecedor global.");
+      return;
+    }
     setLoadingPreview(true);
     try {
       const { data, error } = await supabase.rpc("preview_price_increase", {
