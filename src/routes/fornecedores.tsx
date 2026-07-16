@@ -834,6 +834,88 @@ function Fornecedores() {
             </div>
           </fieldset>
 
+          {form.id && form.is_global && (() => {
+            const cat = catalogBySupplier[form.id!];
+            const total = cat?.total ?? 0;
+            const cats = cat ? Object.entries(cat.categories) : [];
+            return (
+              <div className="mt-4 border rounded-md p-3 sm:p-4 bg-muted/20 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-semibold">Produtos globais</div>
+                    <div className="text-xs text-muted-foreground">
+                      {total} produto{total === 1 ? "" : "s"} vinculado{total === 1 ? "" : "s"} a este fornecedor.
+                    </div>
+                  </div>
+                  {isAdmin && total > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/40 hover:bg-destructive/5"
+                      onClick={() => {
+                        const row = rows.find((r) => r.id === form.id);
+                        if (row) setDeleteCatalogFor(row);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1.5" /> Excluir produtos globais
+                    </Button>
+                  )}
+                </div>
+                {cats.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {cats.map(([c, n]) => (
+                      <Badge key={c} variant="outline" className="text-[11px]">
+                        {c} · {n}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {total > 0 ? (
+                  <div className="max-h-64 overflow-y-auto border rounded-md bg-background">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr className="text-left text-muted-foreground">
+                          <th className="py-1.5 px-2 font-medium">Código</th>
+                          <th className="py-1.5 px-2 font-medium">Descrição</th>
+                          <th className="py-1.5 px-2 font-medium">Categoria</th>
+                          <th className="py-1.5 px-2 font-medium text-right">Preço-base</th>
+                          <th className="py-1.5 px-2 font-medium text-right">Largura</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {(cat?.sample ?? []).map((p) => (
+                          <tr key={p.id}>
+                            <td className="py-1.5 px-2 font-mono">{p.code}</td>
+                            <td className="py-1.5 px-2">{p.description}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{p.category}</td>
+                            <td className="py-1.5 px-2 text-right">
+                              {p.base_price != null
+                                ? p.base_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                                : "—"}
+                            </td>
+                            <td className="py-1.5 px-2 text-right">
+                              {p.width_cm != null ? `${p.width_cm} cm` : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {total > (cat?.sample.length ?? 0) && (
+                      <div className="py-1.5 px-2 text-[11px] text-muted-foreground border-t bg-muted/30">
+                        Exibindo {cat?.sample.length} de {total} produtos.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    Nenhum produto global cadastrado neste fornecedor.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+
           <DialogFooter>
             {readOnly ? (
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
