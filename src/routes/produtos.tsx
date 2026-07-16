@@ -1047,6 +1047,12 @@ function Produtos() {
         onOpenChange={setPriceIncreaseOpen}
         initialCategory={activeCategory}
       />
+
+      <SupplierConfigWizard
+        open={wizardOpen && wizardPending.length > 0}
+        onOpenChange={setWizardOpen}
+        pending={wizardPending}
+      />
     </AppShell>
   );
 }
