@@ -521,6 +521,9 @@ function Produtos() {
     } finally {
       setDeleteTarget(null);
     }
+  };
+
+
 
 
   const handleResetOverride = async (p: Product) => {
