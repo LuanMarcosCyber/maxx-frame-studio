@@ -343,6 +343,10 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
 
   const doImport = async () => {
     if (!user) return;
+    if (isGlobal && !globalContext) {
+      toast.error("Contexto do fornecedor global ausente.");
+      return;
+    }
     setImporting(true);
     const errors: { line: number; reason: string }[] = [];
     const payloads: any[] = [];
@@ -357,11 +361,26 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         errors.push({ line: idx + 2, reason: "Faltando: " + missing.join(", ") });
         return;
       }
+      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
+
+      if (isGlobal) {
+        payloads.push({
+          supplier_id: globalContext!.supplierId,
+          category,
+          code: built.code.toUpperCase(),
+          description: built.description.toUpperCase(),
+          base_price: value,
+          width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
+          ncm: built.ncm || null,
+          active: true,
+        });
+        return;
+      }
+
       const margin = built.profit_margin ? parseNum(built.profit_margin) : 0;
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
-      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
-      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
       const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
 
       // Resolve supplier text and supplier_id
@@ -393,10 +412,14 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
 
     try {
       if (payloads.length) {
-        // chunked insert
         const chunk = 500;
+        const table = isGlobal ? "global_supplier_products" : "products";
         for (let i = 0; i < payloads.length; i += chunk) {
-          const { error } = await supabase.from("products").insert(payloads.slice(i, i + chunk));
+          const slice = payloads.slice(i, i + chunk);
+          const q = isGlobal
+            ? supabase.from(table).upsert(slice, { onConflict: "supplier_id,category,code" })
+            : supabase.from(table).insert(slice);
+          const { error } = await q;
           if (error) throw error;
         }
       }
@@ -410,6 +433,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       setImporting(false);
     }
   };
+
 
   const updateMap = (k: FieldKey, patch: Partial<Mapping[FieldKey]>) =>
     setMapping((m) => ({ ...m, [k]: { ...m[k], ...patch } }));
