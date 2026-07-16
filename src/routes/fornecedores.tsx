@@ -446,6 +446,17 @@ function Fornecedores() {
                       </td>
                       <td className="py-3.5 px-6 text-right">
                         <div className="flex justify-end gap-1">
+                          {isAdmin && r.is_global && r.publish_catalog && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-emerald-700 hover:text-emerald-800"
+                              onClick={() => setCatalogFor(r)}
+                              title="Gerenciar catálogo global"
+                            >
+                              <PackagePlus className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -473,6 +484,7 @@ function Fornecedores() {
                         </div>
                       </td>
                     </tr>
+
                   );
                 })
               )}
