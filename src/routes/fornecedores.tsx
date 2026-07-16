@@ -969,6 +969,56 @@ function Fornecedores() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog
+        open={!!deleteCatalogFor}
+        onOpenChange={(o) => !o && !deletingCatalog && setDeleteCatalogFor(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produtos globais deste fornecedor?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Você confirma a exclusão de <b>todos os produtos globais</b> deste fornecedor?
+                  Eles deixarão de aparecer em todas as empresas do sistema. Orçamentos e pedidos
+                  antigos <b>não serão alterados</b>.
+                </p>
+                {deleteCatalogFor && (() => {
+                  const cat = catalogBySupplier[deleteCatalogFor.id];
+                  const total = cat?.total ?? 0;
+                  const cats = cat ? Object.keys(cat.categories) : [];
+                  return (
+                    <div className="text-sm border rounded-md p-2.5 bg-muted/40 space-y-1">
+                      <div><span className="text-muted-foreground">Fornecedor:</span> <b>{deleteCatalogFor.trade_name || deleteCatalogFor.legal_name}</b></div>
+                      <div><span className="text-muted-foreground">Produtos:</span> <b>{total}</b></div>
+                      {cats.length > 0 && (
+                        <div><span className="text-muted-foreground">Categorias:</span> <b>{cats.join(", ")}</b></div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingCatalog}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDeleteGlobalCatalog(); }}
+              disabled={deletingCatalog}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingCatalog ? (
+                <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Excluindo...</>
+              ) : (
+                "Excluir produtos globais"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+
       {catalogFor && (() => {
         // Map slug de fornecedor → chave canônica usada na tela de Produtos.
         const SLUG_TO_PRODUCT_CATEGORY: Record<string, string> = {
