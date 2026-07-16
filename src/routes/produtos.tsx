@@ -282,6 +282,56 @@ function Produtos() {
 
   const handleSave = async () => {
     if (!user) return;
+
+    // Produto do catálogo global: apenas personaliza valores comerciais da empresa
+    if (editing && editing.source === "global") {
+      const newErrors: Partial<Record<keyof FormState, string>> = {};
+      const value = parseNum(form.value_per_meter || "0");
+      const margin = parseNum(form.profit_margin || "0");
+      const waste = parseNum(form.waste_percentage || "0");
+      if (Number.isNaN(value) || value < 0) newErrors.value_per_meter = "Valor inválido.";
+      if (Number.isNaN(margin) || margin < 0) newErrors.profit_margin = "Margem inválida.";
+      if (Number.isNaN(waste) || waste < 0) newErrors.waste_percentage = "Perda inválida.";
+      const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+      if (form.commission_percentage.trim() !== "" && (Number.isNaN(commission) || commission < 0)) {
+        newErrors.commission_percentage = "Comissão inválida.";
+      }
+      let laborCost: number | null = null;
+      if (activeCategory === "Perfil" && form.labor_cost.trim() !== "") {
+        const lc = parseNum(form.labor_cost);
+        if (Number.isNaN(lc) || lc < 0) newErrors.labor_cost = "Mão de obra inválida.";
+        else laborCost = lc;
+      }
+      if (Object.keys(newErrors).length) {
+        setErrors(newErrors);
+        toast.error("Preencha os campos obrigatórios.");
+        return;
+      }
+      setSaving(true);
+      try {
+        const { error } = await supabase.rpc("upsert_company_product_override", {
+          _global_product_id: editing.id,
+          _margin: margin,
+          _loss: waste,
+          _commission: commission,
+          _labor_cost: laborCost,
+          _base_price_override: value === Number(editing.base_price ?? 0) ? null : value,
+        });
+        if (error) throw error;
+        toast.success("Personalização salva para esta empresa.");
+        setDialogOpen(false);
+        setEditing(null);
+        setForm(emptyForm);
+        setErrors({});
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+      } catch (e: any) {
+        toast.error(e.message ?? "Erro ao salvar personalização.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const newErrors: Partial<Record<keyof FormState, string>> = {};
     const req = (field: keyof FormState, msg = "Campo obrigatório") => {
       const v = form[field];
