@@ -121,7 +121,9 @@ const parseNum = (s: string): number => {
   return Number.isFinite(n) ? n : NaN;
 };
 
-export function ProductImportWizard({ open, onOpenChange, categories, defaultCategory, onImported }: Props) {
+export function ProductImportWizard({ open, onOpenChange, categories, defaultCategory, onImported, mode = "company", globalContext }: Props) {
+  const isGlobal = mode === "global-catalog";
+
   const { user } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [category, setCategory] = useState(defaultCategory);
