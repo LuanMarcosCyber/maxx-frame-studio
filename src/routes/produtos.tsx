@@ -268,8 +268,8 @@ function Produtos() {
       setSaving(true);
       try {
         const payload = {
-          code: form.code.trim(),
-          description: form.description.trim(),
+          code: form.code.trim().toUpperCase(),
+          description: form.description.trim().toUpperCase(),
           category: "produtos_diversos",
           value_per_meter: value,
           profit_margin: 0,
