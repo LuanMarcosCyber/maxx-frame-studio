@@ -194,17 +194,32 @@ function Produtos() {
     activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", "visible"],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, supplier_id, labor_cost, commission_percentage, ncm",
-        )
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("list_visible_products");
       if (error) throw error;
-      return (data ?? []) as Product[];
+      return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+        id: r.id as string,
+        source: (r.source as "company" | "global") ?? "company",
+        code: (r.code as string) ?? "",
+        description: (r.description as string) ?? "",
+        category: (r.category as string | null) ?? null,
+        value_per_meter: Number(r.effective_price ?? 0),
+        base_price: Number(r.base_price ?? 0),
+        profit_margin: Number(r.profit_margin ?? 0),
+        waste_percentage: Number(r.waste_percentage ?? 0),
+        frame_width_cm: r.width_cm == null ? null : Number(r.width_cm),
+        name: (r.name as string | null) ?? null,
+        barcode: (r.barcode as string | null) ?? null,
+        supplier: (r.supplier as string | null) ?? null,
+        supplier_id: (r.supplier_id as string | null) ?? null,
+        labor_cost: r.labor_cost == null ? null : Number(r.labor_cost),
+        commission_percentage:
+          r.commission_percentage == null ? null : Number(r.commission_percentage),
+        ncm: (r.ncm as string | null) ?? null,
+        has_override: Boolean(r.has_override),
+      })) as Product[];
     },
   });
 
