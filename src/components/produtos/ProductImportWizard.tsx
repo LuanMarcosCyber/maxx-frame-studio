@@ -33,13 +33,19 @@ import {
   productCategoryToSupplierCategory,
 } from "@/components/suppliers/SupplierPicker";
 
+type ImportMode = "company" | "global-catalog";
+
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   categories: { key: string; label: string }[];
   defaultCategory: string;
   onImported: () => void;
+  mode?: ImportMode;
+  /** Required when mode === "global-catalog". */
+  globalContext?: { supplierId: string; supplierName: string };
 };
+
 
 type Row = Record<string, string>;
 
@@ -83,8 +89,18 @@ type Mapping = Record<
 >;
 
 const isPerfilOnly = (k: FieldKey) => k === "labor_cost" || k === "frame_width_cm";
-const fieldsForCategory = (category: string): FieldDef[] =>
-  category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+const COMMERCIAL_KEYS: FieldKey[] = ["profit_margin", "waste_percentage", "labor_cost", "commission_percentage"];
+
+const fieldsForContext = (mode: ImportMode, category: string): FieldDef[] => {
+  const base = category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+  if (mode === "global-catalog") {
+    // Catálogo global: dados técnicos + preço-base + largura (Perfil) + NCM. Sem comerciais nem fornecedor.
+    return base.filter((f) => f.key !== "supplier" && !COMMERCIAL_KEYS.includes(f.key));
+  }
+  return base;
+};
+// Retro-compat com callers antigos deste arquivo.
+const fieldsForCategory = (category: string): FieldDef[] => fieldsForContext("company", category);
 
 const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
@@ -97,6 +113,7 @@ const initialMapping = (category?: string): Mapping =>
     return acc;
   }, {} as Mapping);
 
+
 const parseNum = (s: string): number => {
   if (s == null) return NaN;
   const cleaned = String(s).replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
@@ -104,7 +121,9 @@ const parseNum = (s: string): number => {
   return Number.isFinite(n) ? n : NaN;
 };
 
-export function ProductImportWizard({ open, onOpenChange, categories, defaultCategory, onImported }: Props) {
+export function ProductImportWizard({ open, onOpenChange, categories, defaultCategory, onImported, mode = "company", globalContext }: Props) {
+  const isGlobal = mode === "global-catalog";
+
   const { user } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [category, setCategory] = useState(defaultCategory);
@@ -306,20 +325,28 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   }
 
   const canGoStep4 = useMemo(() => {
-    for (const f of FIELDS) {
+    const visible = fieldsForContext(mode, category);
+    for (const f of visible) {
       if (!f.required) continue;
       const cfg = mapping[f.key];
       if (cfg.origin === "column" && !cfg.column) return false;
       if (cfg.origin === "manual" && !cfg.manual.trim()) return false;
     }
-    // Se supplier for manual, exigir picker OU texto livre
-    const sup = mapping.supplier;
-    if (sup.origin === "manual" && !sup.manual.trim() && !manualSupplierId) return false;
+    if (!isGlobal) {
+      // Se supplier for manual, exigir picker OU texto livre
+      const sup = mapping.supplier;
+      if (sup.origin === "manual" && !sup.manual.trim() && !manualSupplierId) return false;
+    }
     return true;
-  }, [mapping, manualSupplierId]);
+  }, [mapping, manualSupplierId, mode, category, isGlobal]);
+
 
   const doImport = async () => {
     if (!user) return;
+    if (isGlobal && !globalContext) {
+      toast.error("Contexto do fornecedor global ausente.");
+      return;
+    }
     setImporting(true);
     const errors: { line: number; reason: string }[] = [];
     const payloads: any[] = [];
@@ -334,11 +361,26 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         errors.push({ line: idx + 2, reason: "Faltando: " + missing.join(", ") });
         return;
       }
+      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
+
+      if (isGlobal) {
+        payloads.push({
+          supplier_id: globalContext!.supplierId,
+          category,
+          code: built.code.toUpperCase(),
+          description: built.description.toUpperCase(),
+          base_price: value,
+          width_cm: Number.isFinite(frameWidth) ? frameWidth : null,
+          ncm: built.ncm || null,
+          active: true,
+        });
+        return;
+      }
+
       const margin = built.profit_margin ? parseNum(built.profit_margin) : 0;
       const waste = built.waste_percentage ? parseNum(built.waste_percentage) : 0;
       const commission = built.commission_percentage ? parseNum(built.commission_percentage) : 0;
-      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
-      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
       const laborCost = built.labor_cost ? parseNum(built.labor_cost) : NaN;
 
       // Resolve supplier text and supplier_id
@@ -370,10 +412,14 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
 
     try {
       if (payloads.length) {
-        // chunked insert
         const chunk = 500;
+        const table = isGlobal ? "global_supplier_products" : "products";
         for (let i = 0; i < payloads.length; i += chunk) {
-          const { error } = await supabase.from("products").insert(payloads.slice(i, i + chunk));
+          const slice = payloads.slice(i, i + chunk);
+          const q = isGlobal
+            ? supabase.from(table).upsert(slice, { onConflict: "supplier_id,category,code" })
+            : supabase.from(table).insert(slice);
+          const { error } = await q;
           if (error) throw error;
         }
       }
@@ -388,6 +434,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     }
   };
 
+
   const updateMap = (k: FieldKey, patch: Partial<Mapping[FieldKey]>) =>
     setMapping((m) => ({ ...m, [k]: { ...m[k], ...patch } }));
 
@@ -395,14 +442,27 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Importar produtos — Passo {result ? 5 : step} de 5</DialogTitle>
+          <DialogTitle>
+            {isGlobal
+              ? `Catálogo global de ${globalContext?.supplierName ?? "fornecedor"} — Passo ${result ? 5 : step} de 5`
+              : `Importar produtos — Passo ${result ? 5 : step} de 5`}
+          </DialogTitle>
+
         </DialogHeader>
 
         {/* STEP 1 */}
         {!result && step === 1 && (
           <div className="space-y-4 py-2">
+            {isGlobal && globalContext && (
+              <div className="rounded-md border bg-emerald-50 text-emerald-900 px-3 py-2 text-sm">
+                Catálogo do fornecedor global <b>{globalContext.supplierName}</b>. Estes produtos ficarão
+                disponíveis para todas as empresas do sistema.
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
-              Escolha a categoria de destino dos produtos que serão importados.
+              {isGlobal
+                ? "Escolha a categoria deste catálogo. Você pode importar um catálogo separado para cada categoria fornecida."
+                : "Escolha a categoria de destino dos produtos que serão importados."}
             </p>
             <div>
               <Label>Categoria</Label>
@@ -414,9 +474,15 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                   ))}
                 </SelectContent>
               </Select>
+              {isGlobal && categories.length === 0 && (
+                <p className="text-xs text-destructive mt-1">
+                  Este fornecedor ainda não possui categorias fornecidas. Volte ao cadastro para selecioná-las.
+                </p>
+              )}
             </div>
           </div>
         )}
+
 
         {/* STEP 2 */}
         {!result && step === 2 && (
@@ -507,7 +573,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               (todos os produtos recebem o mesmo valor).
             </p>
 
-            {fieldsForCategory(category).map((f) => {
+            {fieldsForContext(mode, category).map((f) => {
               const cfg = mapping[f.key];
               return (
                 <Card key={f.key} className="p-4 space-y-3">
@@ -608,7 +674,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {fieldsForCategory(category).map((f) => (
+                    {fieldsForContext(mode, category).map((f) => (
                       <th key={f.key} className="text-left font-medium px-3 py-2">{f.label.split(" —")[0].split(" (")[0]}</th>
                     ))}
                   </tr>
@@ -616,7 +682,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                 <tbody>
                   {previewRows.map((r, i) => (
                     <tr key={i} className="border-t">
-                      {fieldsForCategory(category).map((f) => (
+                      {fieldsForContext(mode, category).map((f) => (
                         <td key={f.key} className="px-3 py-2">{r[f.key]}</td>
                       ))}
                     </tr>
