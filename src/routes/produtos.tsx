@@ -314,8 +314,8 @@ function Produtos() {
           _margin: margin,
           _loss: waste,
           _commission: commission,
-          _labor_cost: laborCost,
-          _base_price_override: value === Number(editing.base_price ?? 0) ? null : value,
+          _labor_cost: laborCost as unknown as number,
+          _base_price_override: (value === Number(editing.base_price ?? 0) ? null : value) as unknown as number,
         });
         if (error) throw error;
         toast.success("Personalização salva para esta empresa.");
