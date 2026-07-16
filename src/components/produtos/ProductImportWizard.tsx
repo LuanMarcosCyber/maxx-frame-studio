@@ -130,6 +130,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const isGlobal = mode === "global-catalog";
 
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [category, setCategory] = useState(defaultCategory);
   const [fileName, setFileName] = useState("");
