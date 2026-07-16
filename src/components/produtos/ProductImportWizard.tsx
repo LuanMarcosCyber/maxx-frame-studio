@@ -353,8 +353,8 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
 
       payloads.push({
         user_id: user.id,
-        code: built.code,
-        description: built.description,
+        code: built.code.toUpperCase(),
+        description: built.description.toUpperCase(),
         category,
         value_per_meter: value,
         profit_margin: Number.isFinite(margin) ? margin : 0,

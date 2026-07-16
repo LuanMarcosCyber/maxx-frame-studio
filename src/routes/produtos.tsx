@@ -268,8 +268,8 @@ function Produtos() {
       setSaving(true);
       try {
         const payload = {
-          code: form.code.trim(),
-          description: form.description.trim(),
+          code: form.code.trim().toUpperCase(),
+          description: form.description.trim().toUpperCase(),
           category: "produtos_diversos",
           value_per_meter: value,
           profit_margin: 0,
@@ -364,8 +364,8 @@ function Produtos() {
         const { error } = await supabase
           .from("products")
           .update({
-            code: form.code.trim(),
-            description: form.description.trim(),
+            code: form.code.trim().toUpperCase(),
+            description: form.description.trim().toUpperCase(),
             category: activeCategory,
             value_per_meter: value,
             profit_margin: margin,
@@ -384,8 +384,8 @@ function Produtos() {
       } else {
         const { error } = await supabase.from("products").insert({
           user_id: user.id,
-          code: form.code.trim(),
-          description: form.description.trim(),
+          code: form.code.trim().toUpperCase(),
+          description: form.description.trim().toUpperCase(),
           category: activeCategory,
           value_per_meter: value,
           profit_margin: margin,
@@ -727,7 +727,7 @@ function Produtos() {
                     id="d-cod"
                     placeholder="Ex: DIV-001"
                     value={form.code}
-                    onChange={(e) => updateField("code", e.target.value)}
+                    onChange={(e) => updateField("code", e.target.value.toUpperCase())}
                     className={errCls("code")}
                   />
                   <FieldError field="code" />
@@ -816,7 +816,7 @@ function Produtos() {
                     id="cod"
                     placeholder="Ex: FOAM-001"
                     value={form.code}
-                    onChange={(e) => updateField("code", e.target.value)}
+                    onChange={(e) => updateField("code", e.target.value.toUpperCase())}
                     className={errCls("code")}
                   />
                   <FieldError field="code" />
