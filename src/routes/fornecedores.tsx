@@ -154,6 +154,8 @@ function Fornecedores() {
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
   const [catalogFor, setCatalogFor] = useState<SupplierRow | null>(null);
+  const [deleteCatalogFor, setDeleteCatalogFor] = useState<SupplierRow | null>(null);
+  const [deletingCatalog, setDeletingCatalog] = useState(false);
 
 
   const { data: rows = [], isLoading } = useQuery({
@@ -169,6 +171,62 @@ function Fornecedores() {
       return (data ?? []) as SupplierRow[];
     },
   });
+
+  // Contagem de produtos globais por fornecedor + categorias e amostra.
+  type GlobalCatalog = {
+    total: number;
+    categories: Record<string, number>;
+    sample: Array<{ id: string; code: string; description: string; category: string; base_price: number | null; width_cm: number | null }>;
+  };
+  const { data: catalogBySupplier = {} } = useQuery<Record<string, GlobalCatalog>>({
+    queryKey: ["global-catalog-by-supplier"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("global_supplier_products")
+        .select("id, supplier_id, code, description, category, base_price, width_cm")
+        .eq("active", true)
+        .order("code", { ascending: true });
+      if (error) throw error;
+      const acc: Record<string, GlobalCatalog> = {};
+      for (const r of (data ?? []) as Array<{ id: string; supplier_id: string; code: string; description: string; category: string; base_price: number | null; width_cm: number | null }>) {
+        const bucket = acc[r.supplier_id] ?? (acc[r.supplier_id] = { total: 0, categories: {}, sample: [] });
+        bucket.total += 1;
+        bucket.categories[r.category] = (bucket.categories[r.category] ?? 0) + 1;
+        if (bucket.sample.length < 300) bucket.sample.push(r);
+      }
+      return acc;
+    },
+  });
+
+  const invalidateAllCatalog = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["suppliers"] }),
+      qc.invalidateQueries({ queryKey: ["suppliers", "picker"] }),
+      qc.invalidateQueries({ queryKey: ["global-catalog-by-supplier"] }),
+      qc.invalidateQueries({ queryKey: ["products"] }),
+      qc.invalidateQueries({ queryKey: ["supplier-wizard-state"] }),
+    ]);
+  };
+
+  async function handleDeleteGlobalCatalog() {
+    if (!deleteCatalogFor || !isAdmin) return;
+    setDeletingCatalog(true);
+    try {
+      const { error } = await supabase
+        .from("global_supplier_products")
+        .delete()
+        .eq("supplier_id", deleteCatalogFor.id);
+      if (error) throw error;
+      toast.success("Catálogo global excluído. Pedidos e orçamentos históricos foram preservados.");
+      await invalidateAllCatalog();
+      setDeleteCatalogFor(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao excluir catálogo global.");
+    } finally {
+      setDeletingCatalog(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
