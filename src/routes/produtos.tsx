@@ -867,9 +867,20 @@ function Produtos() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Editar produto" : "Cadastrar produto"} — {activeLabel}
+              {editing?.source === "global"
+                ? "Personalizar produto global"
+                : editing
+                  ? "Editar produto"
+                  : "Cadastrar produto"} — {activeLabel}
             </DialogTitle>
           </DialogHeader>
+          {editing?.source === "global" && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-2.5 text-xs text-amber-900 dark:text-amber-100">
+              <b>Catálogo global:</b> código, descrição, fornecedor, NCM e largura vêm do fornecedor global e não podem ser alterados aqui.
+              Você pode ajustar somente os valores comerciais desta empresa.
+            </div>
+          )}
+
 
           {isDiversos ? (
             <div className="space-y-4">
