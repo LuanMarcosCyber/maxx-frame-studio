@@ -1081,6 +1081,7 @@ function Produtos() {
         open={wizardOpen && wizardPending.length > 0}
         onOpenChange={setWizardOpen}
         pending={wizardPending}
+        ownerUserId={ownerUserId}
       />
     </AppShell>
   );
