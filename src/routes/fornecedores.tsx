@@ -37,12 +37,16 @@ import {
   Globe2,
   Building2,
   Eye,
+  PackagePlus,
+
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { fmtCNPJ, fmtCEP, onlyDigits } from "@/lib/utils";
 import { SUPPLIER_CATEGORIES } from "@/components/suppliers/SupplierPicker";
+import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+
 
 export const Route = createFileRoute("/fornecedores")({
   head: () => ({
@@ -79,6 +83,7 @@ type SupplierRow = {
   notes: string | null;
   categories: string[];
   active: boolean;
+  publish_catalog: boolean;
   created_at: string;
 };
 
@@ -102,6 +107,7 @@ type FormState = {
   notes: string;
   categories: string[];
   active: boolean;
+  publish_catalog: boolean;
 };
 
 const emptyForm: FormState = {
@@ -123,7 +129,9 @@ const emptyForm: FormState = {
   notes: "",
   categories: [],
   active: true,
+  publish_catalog: false,
 };
+
 
 function fmtPhoneBR(raw: string): string {
   const d = onlyDigits(raw);
@@ -145,6 +153,8 @@ function Fornecedores() {
   const [deleting, setDeleting] = useState<SupplierRow | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [catalogFor, setCatalogFor] = useState<SupplierRow | null>(null);
+
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["suppliers"],
@@ -208,6 +218,8 @@ function Fornecedores() {
       notes: r.notes ?? "",
       categories: r.categories ?? [],
       active: r.active,
+      publish_catalog: r.publish_catalog ?? false,
+
     });
     setReadOnly(viewOnly);
     setDialogOpen(true);
@@ -300,6 +312,8 @@ function Fornecedores() {
         notes: form.notes.trim() || null,
         categories: form.categories,
         active: form.active,
+        publish_catalog: isAdmin && form.is_global ? form.publish_catalog : false,
+
       };
       if (form.id) {
         const { error } = await supabase.from("suppliers").update(payload).eq("id", form.id);
@@ -436,6 +450,17 @@ function Fornecedores() {
                       </td>
                       <td className="py-3.5 px-6 text-right">
                         <div className="flex justify-end gap-1">
+                          {isAdmin && r.is_global && r.publish_catalog && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-emerald-700 hover:text-emerald-800"
+                              onClick={() => setCatalogFor(r)}
+                              title="Gerenciar catálogo global"
+                            >
+                              <PackagePlus className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -463,6 +488,7 @@ function Fornecedores() {
                         </div>
                       </td>
                     </tr>
+
                   );
                 })
               )}
@@ -524,8 +550,27 @@ function Fornecedores() {
                     </div>
                   </label>
                 </RadioGroup>
+                {form.is_global && (
+                  <label className="flex items-start gap-2 pt-2 border-t cursor-pointer">
+                    <Checkbox
+                      checked={form.publish_catalog}
+                      onCheckedChange={(v) =>
+                        setForm((f) => ({ ...f, publish_catalog: Boolean(v) }))
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Publicar catálogo padrão</div>
+                      <div className="text-xs text-muted-foreground">
+                        Ao ativar, os produtos importados neste fornecedor ficarão visíveis para
+                        todas as empresas. Você poderá gerenciar o catálogo após salvar.
+                      </div>
+                    </div>
+                  </label>
+                )}
               </div>
             )}
+
 
             <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="sup-legal">Razão social</Label>
@@ -778,6 +823,32 @@ function Fornecedores() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {catalogFor && (
+        <ProductImportWizard
+          open={!!catalogFor}
+          onOpenChange={(o: boolean) => !o && setCatalogFor(null)}
+          categories={(catalogFor.categories ?? [])
+            .map((k) => SUPPLIER_CATEGORIES.find((c) => c.key === k))
+            .filter(Boolean)
+            .map((c) => ({ key: c!.key, label: c!.label }))}
+          defaultCategory={
+            (catalogFor.categories ?? [])[0] ??
+            SUPPLIER_CATEGORIES[0].key
+          }
+          onImported={() => {
+            qc.invalidateQueries({ queryKey: ["products"] });
+            qc.invalidateQueries({ queryKey: ["global_supplier_products"] });
+          }}
+          mode="global-catalog"
+          globalContext={{
+            supplierId: catalogFor.id,
+            supplierName:
+              catalogFor.trade_name || catalogFor.legal_name || "Fornecedor global",
+          }}
+        />
+      )}
     </AppShell>
+
   );
 }
