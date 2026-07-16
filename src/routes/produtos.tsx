@@ -771,7 +771,19 @@ function Produtos() {
                     </tr>
                   ) : (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
-                      <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
+                      <td className="py-3.5 px-6 font-mono font-semibold">
+                        <div className="flex items-center gap-2">
+                          <span>{p.code}</span>
+                          {p.source === "global" && (
+                            <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                              <Globe2 className="h-3 w-3" /> Global
+                            </Badge>
+                          )}
+                          {p.has_override && (
+                            <Badge variant="outline" className="text-[10px] h-5">Personalizado</Badge>
+                          )}
+                        </div>
+                      </td>
                       <td
                         className="py-3.5 px-3 max-w-[280px] truncate"
                         title={p.description}
@@ -814,21 +826,35 @@ function Produtos() {
                             <button
                               onClick={() => openEdit(p)}
                               className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                              aria-label="Editar produto"
+                              aria-label={p.source === "global" ? "Personalizar produto" : "Editar produto"}
+                              title={p.source === "global" ? "Personalizar valores para esta empresa" : "Editar produto"}
                             >
                               <Pencil className="h-4 w-4 text-muted-foreground" />
                             </button>
-                            <button
-                              onClick={() => setDeleteTarget(p)}
-                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
-                              aria-label="Excluir produto"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </button>
+                            {p.source === "global" && p.has_override && (
+                              <button
+                                onClick={() => handleResetOverride(p)}
+                                className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                                aria-label="Voltar ao padrão"
+                                title="Voltar a usar a configuração padrão"
+                              >
+                                <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            )}
+                            {p.source !== "global" && (
+                              <button
+                                onClick={() => setDeleteTarget(p)}
+                                className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
+                                aria-label="Excluir produto"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}
                     </tr>
+
                   ),
                 )
               )}
