@@ -127,7 +127,7 @@ const emptyForm: FormState = {
 
 
 function Produtos() {
-  const { session, user, role, profile } = useAuth();
+  const { session, user, role, profile, ownerUserId } = useAuth();
   const queryClient = useQueryClient();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
   const deleteProductByIdFn = useServerFn(deleteProductById);
@@ -150,8 +150,9 @@ function Produtos() {
   const [priceIncreaseOpen, setPriceIncreaseOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardAutoOpened, setWizardAutoOpened] = useState(false);
 
-  // Ensure auto-distributed products exist and open wizard when config is missing.
+  // Ensure auto-distributed products exist and detect missing supplier config.
   const { data: wizardPending = [] } = useQuery({
     queryKey: ["supplier-wizard-state"],
     enabled: !!session && canEdit,
@@ -164,9 +165,13 @@ function Produtos() {
     },
   });
 
+  // Auto-open only the first time pending config is detected in this session.
   useEffect(() => {
-    if (wizardPending.length > 0) setWizardOpen(true);
-  }, [wizardPending.length]);
+    if (!wizardAutoOpened && wizardPending.length > 0) {
+      setWizardOpen(true);
+      setWizardAutoOpened(true);
+    }
+  }, [wizardPending.length, wizardAutoOpened]);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
