@@ -37,6 +37,8 @@ import {
   Globe2,
   Building2,
   Eye,
+  PackagePlus,
+
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
