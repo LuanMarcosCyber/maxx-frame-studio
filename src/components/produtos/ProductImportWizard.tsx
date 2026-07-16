@@ -442,7 +442,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Importar produtos — Passo {result ? 5 : step} de 5</DialogTitle>
+          <DialogTitle>{isGlobal ? "Importar catálogo global — Passo" : "Importar produtos — Passo"}PLACEHOLDER {result ? 5 : step} de 5</DialogTitle>
         </DialogHeader>
 
         {/* STEP 1 */}
@@ -554,7 +554,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               (todos os produtos recebem o mesmo valor).
             </p>
 
-            {fieldsForCategory(category).map((f) => {
+            {fieldsForContext(mode, category).map((f) => {
               const cfg = mapping[f.key];
               return (
                 <Card key={f.key} className="p-4 space-y-3">
@@ -655,7 +655,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
               <table className="w-full text-xs">
                 <thead className="bg-muted/50">
                   <tr>
-                    {fieldsForCategory(category).map((f) => (
+                    {fieldsForContext(mode, category).map((f) => (
                       <th key={f.key} className="text-left font-medium px-3 py-2">{f.label.split(" —")[0].split(" (")[0]}</th>
                     ))}
                   </tr>
@@ -663,7 +663,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                 <tbody>
                   {previewRows.map((r, i) => (
                     <tr key={i} className="border-t">
-                      {fieldsForCategory(category).map((f) => (
+                      {fieldsForContext(mode, category).map((f) => (
                         <td key={f.key} className="px-3 py-2">{r[f.key]}</td>
                       ))}
                     </tr>
