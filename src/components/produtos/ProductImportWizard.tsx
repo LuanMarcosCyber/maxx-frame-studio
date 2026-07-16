@@ -33,13 +33,19 @@ import {
   productCategoryToSupplierCategory,
 } from "@/components/suppliers/SupplierPicker";
 
+type ImportMode = "company" | "global-catalog";
+
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   categories: { key: string; label: string }[];
   defaultCategory: string;
   onImported: () => void;
+  mode?: ImportMode;
+  /** Required when mode === "global-catalog". */
+  globalContext?: { supplierId: string; supplierName: string };
 };
+
 
 type Row = Record<string, string>;
 
