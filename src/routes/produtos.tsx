@@ -484,6 +484,30 @@ function Produtos() {
 
   return (
     <AppShell title="Produtos" subtitle="Gerencie produtos por categoria">
+      {canEdit && wizardPending.length > 0 && !wizardOpen && (
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className="flex-1 text-sm text-amber-900 dark:text-amber-100 space-y-0.5">
+            {wizardPending.map((p) => {
+              const fields =
+                p.category === "Perfil"
+                  ? "margem, perda, comissão e mão de obra"
+                  : "margem, perda e comissão";
+              return (
+                <div key={p.supplier_id}>
+                  <b>Configuração pendente:</b> defina {fields} dos {p.category.toLowerCase()}s da {p.supplier_name}.
+                </div>
+              );
+            })}
+          </div>
+          <Button
+            size="sm"
+            className="w-full sm:w-auto shrink-0"
+            onClick={() => setWizardOpen(true)}
+          >
+            Configurar agora
+          </Button>
+        </div>
+      )}
       <Card className="p-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex flex-wrap gap-2">
