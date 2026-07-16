@@ -470,6 +470,11 @@ function Fornecedores() {
                         {r.trade_name && r.legal_name && (
                           <div className="text-xs text-muted-foreground">{r.legal_name}</div>
                         )}
+                        {r.is_global && r.publish_catalog && (
+                          <div className="text-xs text-emerald-700 mt-0.5">
+                            {(catalogBySupplier[r.id]?.total ?? 0)} produtos globais
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-3 text-muted-foreground">{r.document || "—"}</td>
                       <td className="py-3.5 px-3 text-muted-foreground">{r.phone || r.whatsapp || "—"}</td>
