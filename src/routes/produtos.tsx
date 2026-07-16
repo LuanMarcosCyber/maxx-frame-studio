@@ -364,8 +364,8 @@ function Produtos() {
         const { error } = await supabase
           .from("products")
           .update({
-            code: form.code.trim(),
-            description: form.description.trim(),
+            code: form.code.trim().toUpperCase(),
+            description: form.description.trim().toUpperCase(),
             category: activeCategory,
             value_per_meter: value,
             profit_margin: margin,
