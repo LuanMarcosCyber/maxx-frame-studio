@@ -534,8 +534,27 @@ function Fornecedores() {
                     </div>
                   </label>
                 </RadioGroup>
+                {form.is_global && (
+                  <label className="flex items-start gap-2 pt-2 border-t cursor-pointer">
+                    <Checkbox
+                      checked={form.publish_catalog}
+                      onCheckedChange={(v) =>
+                        setForm((f) => ({ ...f, publish_catalog: Boolean(v) }))
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Publicar catálogo padrão</div>
+                      <div className="text-xs text-muted-foreground">
+                        Ao ativar, os produtos importados neste fornecedor ficarão visíveis para
+                        todas as empresas. Você poderá gerenciar o catálogo após salvar.
+                      </div>
+                    </div>
+                  </label>
+                )}
               </div>
             )}
+
 
             <div className="space-y-1.5 sm:col-span-3">
               <Label htmlFor="sup-legal">Razão social</Label>
