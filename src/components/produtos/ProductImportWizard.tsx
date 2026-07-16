@@ -325,17 +325,21 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   }
 
   const canGoStep4 = useMemo(() => {
-    for (const f of FIELDS) {
+    const visible = fieldsForContext(mode, category);
+    for (const f of visible) {
       if (!f.required) continue;
       const cfg = mapping[f.key];
       if (cfg.origin === "column" && !cfg.column) return false;
       if (cfg.origin === "manual" && !cfg.manual.trim()) return false;
     }
-    // Se supplier for manual, exigir picker OU texto livre
-    const sup = mapping.supplier;
-    if (sup.origin === "manual" && !sup.manual.trim() && !manualSupplierId) return false;
+    if (!isGlobal) {
+      // Se supplier for manual, exigir picker OU texto livre
+      const sup = mapping.supplier;
+      if (sup.origin === "manual" && !sup.manual.trim() && !manualSupplierId) return false;
+    }
     return true;
-  }, [mapping, manualSupplierId]);
+  }, [mapping, manualSupplierId, mode, category, isGlobal]);
+
 
   const doImport = async () => {
     if (!user) return;
