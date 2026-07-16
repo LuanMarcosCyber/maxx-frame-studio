@@ -816,7 +816,7 @@ function Produtos() {
                     id="cod"
                     placeholder="Ex: FOAM-001"
                     value={form.code}
-                    onChange={(e) => updateField("code", e.target.value)}
+                    onChange={(e) => updateField("code", e.target.value.toUpperCase())}
                     className={errCls("code")}
                   />
                   <FieldError field="code" />
