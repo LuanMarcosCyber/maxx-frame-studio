@@ -453,8 +453,16 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
         {/* STEP 1 */}
         {!result && step === 1 && (
           <div className="space-y-4 py-2">
+            {isGlobal && globalContext && (
+              <div className="rounded-md border bg-emerald-50 text-emerald-900 px-3 py-2 text-sm">
+                Catálogo do fornecedor global <b>{globalContext.supplierName}</b>. Estes produtos ficarão
+                disponíveis para todas as empresas do sistema.
+              </div>
+            )}
             <p className="text-sm text-muted-foreground">
-              Escolha a categoria de destino dos produtos que serão importados.
+              {isGlobal
+                ? "Escolha a categoria deste catálogo. Você pode importar um catálogo separado para cada categoria fornecida."
+                : "Escolha a categoria de destino dos produtos que serão importados."}
             </p>
             <div>
               <Label>Categoria</Label>
@@ -466,9 +474,15 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
                   ))}
                 </SelectContent>
               </Select>
+              {isGlobal && categories.length === 0 && (
+                <p className="text-xs text-destructive mt-1">
+                  Este fornecedor ainda não possui categorias fornecidas. Volte ao cadastro para selecioná-las.
+                </p>
+              )}
             </div>
           </div>
         )}
+
 
         {/* STEP 2 */}
         {!result && step === 2 && (
