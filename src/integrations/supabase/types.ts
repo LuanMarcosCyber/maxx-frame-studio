@@ -1121,6 +1121,7 @@ export type Database = {
       list_visible_products: {
         Args: never
         Returns: {
+          barcode: string
           base_price: number
           category: string
           code: string
@@ -1131,6 +1132,7 @@ export type Database = {
           has_override: boolean
           id: string
           labor_cost: number
+          name: string
           ncm: string
           profit_margin: number
           source: string
@@ -1149,8 +1151,23 @@ export type Database = {
           total: number
         }[]
       }
+      reset_company_product_override: {
+        Args: { _global_product_id: string }
+        Returns: boolean
+      }
       set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
+      upsert_company_product_override: {
+        Args: {
+          _base_price_override: number
+          _commission: number
+          _global_product_id: string
+          _labor_cost: number
+          _loss: number
+          _margin: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_type: "admin" | "revendedor" | "operacional"

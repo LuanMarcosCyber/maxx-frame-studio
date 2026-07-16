@@ -26,7 +26,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Pencil, Trash2, Upload, TrendingUp } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Upload, TrendingUp, Globe2, RotateCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
 import { PriceIncreaseWizard } from "@/components/produtos/PriceIncreaseWizard";
 import {
@@ -77,6 +78,7 @@ const parseNum = (s: string) => {
 
 type Product = {
   id: string;
+  source: "company" | "global";
   code: string;
   description: string;
   category: string | null;
@@ -91,6 +93,8 @@ type Product = {
   labor_cost: number | null;
   commission_percentage: number | null;
   ncm: string | null;
+  has_override?: boolean;
+  base_price?: number;
 };
 
 type FormState = {
@@ -190,17 +194,32 @@ function Produtos() {
     activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", "visible"],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(
-          "id, code, description, category, value_per_meter, profit_margin, waste_percentage, frame_width_cm, name, barcode, supplier, supplier_id, labor_cost, commission_percentage, ncm",
-        )
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("list_visible_products");
       if (error) throw error;
-      return (data ?? []) as Product[];
+      return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+        id: r.id as string,
+        source: (r.source as "company" | "global") ?? "company",
+        code: (r.code as string) ?? "",
+        description: (r.description as string) ?? "",
+        category: (r.category as string | null) ?? null,
+        value_per_meter: Number(r.effective_price ?? 0),
+        base_price: Number(r.base_price ?? 0),
+        profit_margin: Number(r.profit_margin ?? 0),
+        waste_percentage: Number(r.waste_percentage ?? 0),
+        frame_width_cm: r.width_cm == null ? null : Number(r.width_cm),
+        name: (r.name as string | null) ?? null,
+        barcode: (r.barcode as string | null) ?? null,
+        supplier: (r.supplier as string | null) ?? null,
+        supplier_id: (r.supplier_id as string | null) ?? null,
+        labor_cost: r.labor_cost == null ? null : Number(r.labor_cost),
+        commission_percentage:
+          r.commission_percentage == null ? null : Number(r.commission_percentage),
+        ncm: (r.ncm as string | null) ?? null,
+        has_override: Boolean(r.has_override),
+      })) as Product[];
     },
   });
 
@@ -263,6 +282,56 @@ function Produtos() {
 
   const handleSave = async () => {
     if (!user) return;
+
+    // Produto do catálogo global: apenas personaliza valores comerciais da empresa
+    if (editing && editing.source === "global") {
+      const newErrors: Partial<Record<keyof FormState, string>> = {};
+      const value = parseNum(form.value_per_meter || "0");
+      const margin = parseNum(form.profit_margin || "0");
+      const waste = parseNum(form.waste_percentage || "0");
+      if (Number.isNaN(value) || value < 0) newErrors.value_per_meter = "Valor inválido.";
+      if (Number.isNaN(margin) || margin < 0) newErrors.profit_margin = "Margem inválida.";
+      if (Number.isNaN(waste) || waste < 0) newErrors.waste_percentage = "Perda inválida.";
+      const commission = form.commission_percentage.trim() === "" ? 0 : parseNum(form.commission_percentage);
+      if (form.commission_percentage.trim() !== "" && (Number.isNaN(commission) || commission < 0)) {
+        newErrors.commission_percentage = "Comissão inválida.";
+      }
+      let laborCost: number | null = null;
+      if (activeCategory === "Perfil" && form.labor_cost.trim() !== "") {
+        const lc = parseNum(form.labor_cost);
+        if (Number.isNaN(lc) || lc < 0) newErrors.labor_cost = "Mão de obra inválida.";
+        else laborCost = lc;
+      }
+      if (Object.keys(newErrors).length) {
+        setErrors(newErrors);
+        toast.error("Preencha os campos obrigatórios.");
+        return;
+      }
+      setSaving(true);
+      try {
+        const { error } = await supabase.rpc("upsert_company_product_override", {
+          _global_product_id: editing.id,
+          _margin: margin,
+          _loss: waste,
+          _commission: commission,
+          _labor_cost: laborCost as unknown as number,
+          _base_price_override: (value === Number(editing.base_price ?? 0) ? null : value) as unknown as number,
+        });
+        if (error) throw error;
+        toast.success("Personalização salva para esta empresa.");
+        setDialogOpen(false);
+        setEditing(null);
+        setForm(emptyForm);
+        setErrors({});
+        queryClient.invalidateQueries({ queryKey: ["products"] });
+      } catch (e: any) {
+        toast.error(e.message ?? "Erro ao salvar personalização.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const newErrors: Partial<Record<keyof FormState, string>> = {};
     const req = (field: keyof FormState, msg = "Campo obrigatório") => {
       const v = form[field];
@@ -438,6 +507,11 @@ function Produtos() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    if (deleteTarget.source === "global") {
+      toast.error("Produtos do catálogo global não podem ser excluídos.");
+      setDeleteTarget(null);
+      return;
+    }
     try {
       await deleteProductByIdFn({ data: { id: deleteTarget.id } });
       queryClient.setQueryData<Product[]>(["products"], (current = []) =>
@@ -453,6 +527,23 @@ function Produtos() {
       setDeleteTarget(null);
     }
   };
+
+
+
+
+  const handleResetOverride = async (p: Product) => {
+    try {
+      const { error } = await supabase.rpc("reset_company_product_override", {
+        _global_product_id: p.id,
+      });
+      if (error) throw error;
+      toast.success("Produto voltou a usar a configuração padrão.");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao restaurar padrão.");
+    }
+  };
+
 
 
   const handleBulkDelete = async () => {
@@ -680,7 +771,19 @@ function Produtos() {
                     </tr>
                   ) : (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
-                      <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
+                      <td className="py-3.5 px-6 font-mono font-semibold">
+                        <div className="flex items-center gap-2">
+                          <span>{p.code}</span>
+                          {p.source === "global" && (
+                            <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                              <Globe2 className="h-3 w-3" /> Global
+                            </Badge>
+                          )}
+                          {p.has_override && (
+                            <Badge variant="outline" className="text-[10px] h-5">Personalizado</Badge>
+                          )}
+                        </div>
+                      </td>
                       <td
                         className="py-3.5 px-3 max-w-[280px] truncate"
                         title={p.description}
@@ -723,21 +826,35 @@ function Produtos() {
                             <button
                               onClick={() => openEdit(p)}
                               className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                              aria-label="Editar produto"
+                              aria-label={p.source === "global" ? "Personalizar produto" : "Editar produto"}
+                              title={p.source === "global" ? "Personalizar valores para esta empresa" : "Editar produto"}
                             >
                               <Pencil className="h-4 w-4 text-muted-foreground" />
                             </button>
-                            <button
-                              onClick={() => setDeleteTarget(p)}
-                              className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
-                              aria-label="Excluir produto"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </button>
+                            {p.source === "global" && p.has_override && (
+                              <button
+                                onClick={() => handleResetOverride(p)}
+                                className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                                aria-label="Voltar ao padrão"
+                                title="Voltar a usar a configuração padrão"
+                              >
+                                <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            )}
+                            {p.source !== "global" && (
+                              <button
+                                onClick={() => setDeleteTarget(p)}
+                                className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
+                                aria-label="Excluir produto"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       )}
                     </tr>
+
                   ),
                 )
               )}
@@ -750,9 +867,20 @@ function Produtos() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Editar produto" : "Cadastrar produto"} — {activeLabel}
+              {editing?.source === "global"
+                ? "Personalizar produto global"
+                : editing
+                  ? "Editar produto"
+                  : "Cadastrar produto"} — {activeLabel}
             </DialogTitle>
           </DialogHeader>
+          {editing?.source === "global" && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-2.5 text-xs text-amber-900 dark:text-amber-100">
+              <b>Catálogo global:</b> código, descrição, fornecedor, NCM e largura vêm do fornecedor global e não podem ser alterados aqui.
+              Você pode ajustar somente os valores comerciais desta empresa.
+            </div>
+          )}
+
 
           {isDiversos ? (
             <div className="space-y-4">
@@ -865,6 +993,7 @@ function Produtos() {
                     value={form.code}
                     onChange={(e) => updateField("code", e.target.value.toUpperCase())}
                     className={errCls("code")}
+                    disabled={editing?.source === "global"}
                   />
                   <FieldError field="code" />
                 </div>
@@ -875,6 +1004,7 @@ function Produtos() {
                     placeholder="Opcional"
                     value={form.ncm}
                     onChange={(e) => updateField("ncm", e.target.value)}
+                    disabled={editing?.source === "global"}
                   />
                 </div>
               </div>
@@ -886,25 +1016,32 @@ function Produtos() {
                   value={form.description}
                   onChange={(e) => updateField("description", e.target.value.toUpperCase())}
                   className={errCls("description")}
+                  disabled={editing?.source === "global"}
                 />
                 <FieldError field="description" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="forn">Fornecedor / Fabricante *</Label>
-                <SupplierPicker
-                  value={form.supplier_id}
-                  legacyText={form.supplier}
-                  preferredCategory={productCategoryToSupplierCategory(activeCategory)}
-                  onChange={(id, opt) =>
-                    setForm((f) => ({
-                      ...f,
-                      supplier_id: id,
-                      supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
-                    }))
-                  }
-                  className={errCls("supplier")}
-                />
-                <FieldError field="supplier" />
+                {editing?.source === "global" ? (
+                  <Input value={form.supplier} disabled readOnly />
+                ) : (
+                  <>
+                    <SupplierPicker
+                      value={form.supplier_id}
+                      legacyText={form.supplier}
+                      preferredCategory={productCategoryToSupplierCategory(activeCategory)}
+                      onChange={(id, opt) =>
+                        setForm((f) => ({
+                          ...f,
+                          supplier_id: id,
+                          supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
+                        }))
+                      }
+                      className={errCls("supplier")}
+                    />
+                    <FieldError field="supplier" />
+                  </>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -929,7 +1066,9 @@ function Produtos() {
                       value={form.frame_width_cm}
                       onChange={(e) => updateField("frame_width_cm", e.target.value)}
                       className={errCls("frame_width_cm")}
+                      disabled={editing?.source === "global"}
                     />
+
                     <FieldError field="frame_width_cm" />
                   </div>
                 )}
