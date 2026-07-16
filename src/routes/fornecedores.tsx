@@ -911,8 +911,7 @@ function Fornecedores() {
             categories={wizardCategories}
             defaultCategory={wizardCategories[0]?.key ?? "Paspatur"}
             onImported={() => {
-              qc.invalidateQueries({ queryKey: ["products"] });
-              qc.invalidateQueries({ queryKey: ["global_supplier_products"] });
+              invalidateAllCatalog();
             }}
             mode="global-catalog"
             globalContext={{
