@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      _backup_products_pre_global: {
+        Row: {
+          backup_at: string | null
+          barcode: string | null
+          category: string | null
+          code: string | null
+          commission_percentage: number | null
+          created_at: string | null
+          description: string | null
+          frame_width_cm: number | null
+          id: string | null
+          labor_cost: number | null
+          name: string | null
+          ncm: string | null
+          profit_margin: number | null
+          source_global_product_id: string | null
+          supplier: string | null
+          supplier_id: string | null
+          updated_at: string | null
+          user_id: string | null
+          uses_default_config: boolean | null
+          value_per_meter: number | null
+          waste_percentage: number | null
+        }
+        Insert: {
+          backup_at?: string | null
+          barcode?: string | null
+          category?: string | null
+          code?: string | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          description?: string | null
+          frame_width_cm?: number | null
+          id?: string | null
+          labor_cost?: number | null
+          name?: string | null
+          ncm?: string | null
+          profit_margin?: number | null
+          source_global_product_id?: string | null
+          supplier?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          uses_default_config?: boolean | null
+          value_per_meter?: number | null
+          waste_percentage?: number | null
+        }
+        Update: {
+          backup_at?: string | null
+          barcode?: string | null
+          category?: string | null
+          code?: string | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          description?: string | null
+          frame_width_cm?: number | null
+          id?: string | null
+          labor_cost?: number | null
+          name?: string | null
+          ncm?: string | null
+          profit_margin?: number | null
+          source_global_product_id?: string | null
+          supplier?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          uses_default_config?: boolean | null
+          value_per_meter?: number | null
+          waste_percentage?: number | null
+        }
+        Relationships: []
+      }
       architects: {
         Row: {
           created_at: string
@@ -267,6 +339,60 @@ export type Database = {
         }
         Relationships: []
       }
+      company_product_overrides: {
+        Row: {
+          base_price_override: number | null
+          commission_percentage: number | null
+          created_at: string
+          global_product_id: string
+          id: string
+          labor_cost: number | null
+          owner_user_id: string
+          profit_margin: number | null
+          updated_at: string
+          waste_percentage: number | null
+        }
+        Insert: {
+          base_price_override?: number | null
+          commission_percentage?: number | null
+          created_at?: string
+          global_product_id: string
+          id?: string
+          labor_cost?: number | null
+          owner_user_id: string
+          profit_margin?: number | null
+          updated_at?: string
+          waste_percentage?: number | null
+        }
+        Update: {
+          base_price_override?: number | null
+          commission_percentage?: number | null
+          created_at?: string
+          global_product_id?: string
+          id?: string
+          labor_cost?: number | null
+          owner_user_id?: string
+          profit_margin?: number | null
+          updated_at?: string
+          waste_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_product_overrides_global_product_id_fkey"
+            columns: ["global_product_id"]
+            isOneToOne: false
+            referencedRelation: "global_supplier_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_product_overrides_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_supplier_config: {
         Row: {
           commission: number
@@ -381,6 +507,56 @@ export type Database = {
             columns: ["budget_id"]
             isOneToOne: false
             referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_supplier_products: {
+        Row: {
+          active: boolean
+          base_price: number
+          category: string
+          code: string
+          created_at: string
+          description: string
+          id: string
+          ncm: string | null
+          supplier_id: string
+          updated_at: string
+          width_cm: number | null
+        }
+        Insert: {
+          active?: boolean
+          base_price?: number
+          category: string
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+          ncm?: string | null
+          supplier_id: string
+          updated_at?: string
+          width_cm?: number | null
+        }
+        Update: {
+          active?: boolean
+          base_price?: number
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          ncm?: string | null
+          supplier_id?: string
+          updated_at?: string
+          width_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_supplier_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -762,6 +938,7 @@ export type Database = {
           legal_name: string | null
           notes: string | null
           phone: string | null
+          publish_catalog: boolean
           site: string | null
           state: string | null
           state_registration: string | null
@@ -788,6 +965,7 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          publish_catalog?: boolean
           site?: string | null
           state?: string | null
           state_registration?: string | null
@@ -814,6 +992,7 @@ export type Database = {
           legal_name?: string | null
           notes?: string | null
           phone?: string | null
+          publish_catalog?: boolean
           site?: string | null
           state?: string | null
           state_registration?: string | null
@@ -873,11 +1052,6 @@ export type Database = {
       }
       clear_active_company: { Args: never; Returns: undefined }
       company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
-      distribute_auto_products: {
-        Args: { _owner_user_id: string }
-        Returns: number
-      }
-      ensure_auto_distribution: { Args: never; Returns: number }
       get_effective_profile: {
         Args: never
         Returns: {
@@ -942,6 +1116,28 @@ export type Database = {
           is_active: boolean
           is_self: boolean
           store_name: string
+        }[]
+      }
+      list_visible_products: {
+        Args: never
+        Returns: {
+          base_price: number
+          category: string
+          code: string
+          commission_percentage: number
+          config_pending: boolean
+          description: string
+          effective_price: number
+          has_override: boolean
+          id: string
+          labor_cost: number
+          ncm: string
+          profit_margin: number
+          source: string
+          supplier: string
+          supplier_id: string
+          waste_percentage: number
+          width_cm: number
         }[]
       }
       next_document_number: { Args: { _kind: string }; Returns: string }
