@@ -507,6 +507,11 @@ function Produtos() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    if (deleteTarget.source === "global") {
+      toast.error("Produtos do catálogo global não podem ser excluídos.");
+      setDeleteTarget(null);
+      return;
+    }
     try {
       await deleteProductByIdFn({ data: { id: deleteTarget.id } });
       queryClient.setQueryData<Product[]>(["products"], (current = []) =>
