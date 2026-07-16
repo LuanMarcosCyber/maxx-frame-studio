@@ -79,6 +79,7 @@ type SupplierRow = {
   notes: string | null;
   categories: string[];
   active: boolean;
+  publish_catalog: boolean;
   created_at: string;
 };
 
@@ -102,6 +103,7 @@ type FormState = {
   notes: string;
   categories: string[];
   active: boolean;
+  publish_catalog: boolean;
 };
 
 const emptyForm: FormState = {
@@ -123,7 +125,9 @@ const emptyForm: FormState = {
   notes: "",
   categories: [],
   active: true,
+  publish_catalog: false,
 };
+
 
 function fmtPhoneBR(raw: string): string {
   const d = onlyDigits(raw);
