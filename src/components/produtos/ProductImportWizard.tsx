@@ -89,8 +89,18 @@ type Mapping = Record<
 >;
 
 const isPerfilOnly = (k: FieldKey) => k === "labor_cost" || k === "frame_width_cm";
-const fieldsForCategory = (category: string): FieldDef[] =>
-  category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+const COMMERCIAL_KEYS: FieldKey[] = ["profit_margin", "waste_percentage", "labor_cost", "commission_percentage"];
+
+const fieldsForContext = (mode: ImportMode, category: string): FieldDef[] => {
+  const base = category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+  if (mode === "global-catalog") {
+    // Catálogo global: dados técnicos + preço-base + largura (Perfil) + NCM. Sem comerciais nem fornecedor.
+    return base.filter((f) => f.key !== "supplier" && !COMMERCIAL_KEYS.includes(f.key));
+  }
+  return base;
+};
+// Retro-compat com callers antigos deste arquivo.
+const fieldsForCategory = (category: string): FieldDef[] => fieldsForContext("company", category);
 
 const initialMapping = (category?: string): Mapping =>
   FIELDS.reduce((acc, f) => {
@@ -102,6 +112,7 @@ const initialMapping = (category?: string): Mapping =>
     };
     return acc;
   }, {} as Mapping);
+
 
 const parseNum = (s: string): number => {
   if (s == null) return NaN;
