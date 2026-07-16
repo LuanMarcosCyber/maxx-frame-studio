@@ -93,11 +93,15 @@ const COMMERCIAL_KEYS: FieldKey[] = ["profit_margin", "waste_percentage", "labor
 
 const fieldsForContext = (mode: ImportMode, category: string): FieldDef[] => {
   const base = category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+  // Largura é obrigatória em Perfil (ambos os modos).
+  const withPerfilRules = base.map((f) =>
+    f.key === "frame_width_cm" && category === "Perfil" ? { ...f, required: true } : f,
+  );
   if (mode === "global-catalog") {
     // Catálogo global: dados técnicos + preço-base + largura (Perfil) + NCM. Sem comerciais nem fornecedor.
-    return base.filter((f) => f.key !== "supplier" && !COMMERCIAL_KEYS.includes(f.key));
+    return withPerfilRules.filter((f) => f.key !== "supplier" && !COMMERCIAL_KEYS.includes(f.key));
   }
-  return base;
+  return withPerfilRules;
 };
 // Retro-compat com callers antigos deste arquivo.
 const fieldsForCategory = (category: string): FieldDef[] => fieldsForContext("company", category);
