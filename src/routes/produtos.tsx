@@ -727,7 +727,7 @@ function Produtos() {
                     id="d-cod"
                     placeholder="Ex: DIV-001"
                     value={form.code}
-                    onChange={(e) => updateField("code", e.target.value)}
+                    onChange={(e) => updateField("code", e.target.value.toUpperCase())}
                     className={errCls("code")}
                   />
                   <FieldError field="code" />
