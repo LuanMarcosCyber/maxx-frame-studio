@@ -21,6 +21,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
@@ -93,11 +94,15 @@ const COMMERCIAL_KEYS: FieldKey[] = ["profit_margin", "waste_percentage", "labor
 
 const fieldsForContext = (mode: ImportMode, category: string): FieldDef[] => {
   const base = category === "Perfil" ? FIELDS : FIELDS.filter((f) => !isPerfilOnly(f.key));
+  // Largura é obrigatória em Perfil (ambos os modos).
+  const withPerfilRules = base.map((f) =>
+    f.key === "frame_width_cm" && category === "Perfil" ? { ...f, required: true } : f,
+  );
   if (mode === "global-catalog") {
     // Catálogo global: dados técnicos + preço-base + largura (Perfil) + NCM. Sem comerciais nem fornecedor.
-    return base.filter((f) => f.key !== "supplier" && !COMMERCIAL_KEYS.includes(f.key));
+    return withPerfilRules.filter((f) => f.key !== "supplier" && !COMMERCIAL_KEYS.includes(f.key));
   }
-  return base;
+  return withPerfilRules;
 };
 // Retro-compat com callers antigos deste arquivo.
 const fieldsForCategory = (category: string): FieldDef[] => fieldsForContext("company", category);
@@ -125,6 +130,7 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
   const isGlobal = mode === "global-catalog";
 
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [category, setCategory] = useState(defaultCategory);
   const [fileName, setFileName] = useState("");
@@ -347,6 +353,17 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       toast.error("Contexto do fornecedor global ausente.");
       return;
     }
+    // Perfil: exigir a coluna de Largura antes de qualquer coisa.
+    if (category === "Perfil") {
+      const wcfg = mapping.frame_width_cm;
+      const hasWidth =
+        (wcfg.origin === "column" && !!wcfg.column) ||
+        (wcfg.origin === "manual" && !!wcfg.manual.trim());
+      if (!hasWidth) {
+        toast.error("Selecione a coluna de largura para continuar.");
+        return;
+      }
+    }
     setImporting(true);
     const errors: { line: number; reason: string }[] = [];
     const payloads: any[] = [];
@@ -357,12 +374,13 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
       if (!built.description) missing.push("Descrição");
       const value = parseNum(built.value_per_meter);
       if (!built.value_per_meter || Number.isNaN(value)) missing.push("Valor do metro");
+      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
+      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
+      if (category === "Perfil" && !Number.isFinite(frameWidth)) missing.push("Largura");
       if (missing.length) {
         errors.push({ line: idx + 2, reason: "Faltando: " + missing.join(", ") });
         return;
       }
-      let frameWidth = built.frame_width_cm ? parseNum(built.frame_width_cm) : NaN;
-      if (Number.isFinite(frameWidth) && widthUnit === "mm") frameWidth = frameWidth / 10;
 
       if (isGlobal) {
         payloads.push({
@@ -411,21 +429,41 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     });
 
     try {
-      if (payloads.length) {
-        const chunk = 500;
-        const table = isGlobal ? "global_supplier_products" : "products";
-        for (let i = 0; i < payloads.length; i += chunk) {
-          const slice = payloads.slice(i, i + chunk);
-          const q = isGlobal
-            ? supabase.from(table).upsert(slice, { onConflict: "supplier_id,category,code" })
-            : supabase.from(table).insert(slice);
-          const { error } = await q;
-          if (error) throw error;
-        }
+      if (!payloads.length) {
+        setImporting(false);
+        toast.error(
+          errors.length
+            ? `Nenhum produto pôde ser importado — ${errors.length} linha(s) com dados obrigatórios ausentes.`
+            : "Nenhum produto válido encontrado na planilha.",
+        );
+        return;
       }
-      setResult({ imported: payloads.length, skipped: errors.length, errors });
+      const chunk = 500;
+      const table = isGlobal ? "global_supplier_products" : "products";
+      let written = 0;
+      for (let i = 0; i < payloads.length; i += chunk) {
+        const slice = payloads.slice(i, i + chunk);
+        const q = isGlobal
+          ? supabase
+              .from(table)
+              .upsert(slice, { onConflict: "supplier_id,category,code" })
+              .select("id")
+          : supabase.from(table).insert(slice).select("id");
+        const { data, error } = await q;
+        if (error) throw error;
+        written += Array.isArray(data) ? data.length : slice.length;
+      }
+      if (!written) {
+        toast.error("A gravação não retornou registros. Verifique permissões.");
+        setImporting(false);
+        return;
+      }
+      // Invalida caches de leitura unificada
+      await qc.invalidateQueries({ queryKey: ["products"] });
+      await qc.invalidateQueries({ queryKey: ["global_supplier_products"] });
+      setResult({ imported: written, skipped: errors.length, errors });
       onImported();
-      if (payloads.length) toast.success(`${payloads.length} produto(s) importado(s).`);
+      toast.success(`${written} produto(s) importado(s).`);
       if (errors.length) toast.warning(`${errors.length} linha(s) ignorada(s).`);
     } catch (e: any) {
       toast.error("Erro ao importar: " + (e?.message ?? "desconhecido"));
