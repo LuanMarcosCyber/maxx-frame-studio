@@ -212,6 +212,8 @@ function Fornecedores() {
       notes: r.notes ?? "",
       categories: r.categories ?? [],
       active: r.active,
+      publish_catalog: r.publish_catalog ?? false,
+
     });
     setReadOnly(viewOnly);
     setDialogOpen(true);
