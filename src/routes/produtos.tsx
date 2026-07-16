@@ -993,6 +993,7 @@ function Produtos() {
                     value={form.code}
                     onChange={(e) => updateField("code", e.target.value.toUpperCase())}
                     className={errCls("code")}
+                    disabled={editing?.source === "global"}
                   />
                   <FieldError field="code" />
                 </div>
@@ -1003,6 +1004,7 @@ function Produtos() {
                     placeholder="Opcional"
                     value={form.ncm}
                     onChange={(e) => updateField("ncm", e.target.value)}
+                    disabled={editing?.source === "global"}
                   />
                 </div>
               </div>
@@ -1014,25 +1016,32 @@ function Produtos() {
                   value={form.description}
                   onChange={(e) => updateField("description", e.target.value.toUpperCase())}
                   className={errCls("description")}
+                  disabled={editing?.source === "global"}
                 />
                 <FieldError field="description" />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="forn">Fornecedor / Fabricante *</Label>
-                <SupplierPicker
-                  value={form.supplier_id}
-                  legacyText={form.supplier}
-                  preferredCategory={productCategoryToSupplierCategory(activeCategory)}
-                  onChange={(id, opt) =>
-                    setForm((f) => ({
-                      ...f,
-                      supplier_id: id,
-                      supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
-                    }))
-                  }
-                  className={errCls("supplier")}
-                />
-                <FieldError field="supplier" />
+                {editing?.source === "global" ? (
+                  <Input value={form.supplier} disabled readOnly />
+                ) : (
+                  <>
+                    <SupplierPicker
+                      value={form.supplier_id}
+                      legacyText={form.supplier}
+                      preferredCategory={productCategoryToSupplierCategory(activeCategory)}
+                      onChange={(id, opt) =>
+                        setForm((f) => ({
+                          ...f,
+                          supplier_id: id,
+                          supplier: opt ? supplierLabel(opt).toUpperCase() : f.supplier,
+                        }))
+                      }
+                      className={errCls("supplier")}
+                    />
+                    <FieldError field="supplier" />
+                  </>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -1057,7 +1066,9 @@ function Produtos() {
                       value={form.frame_width_cm}
                       onChange={(e) => updateField("frame_width_cm", e.target.value)}
                       className={errCls("frame_width_cm")}
+                      disabled={editing?.source === "global"}
                     />
+
                     <FieldError field="frame_width_cm" />
                   </div>
                 )}
