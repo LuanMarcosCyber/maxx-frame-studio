@@ -306,6 +306,8 @@ function Fornecedores() {
         notes: form.notes.trim() || null,
         categories: form.categories,
         active: form.active,
+        publish_catalog: isAdmin && form.is_global ? form.publish_catalog : false,
+
       };
       if (form.id) {
         const { error } = await supabase.from("suppliers").update(payload).eq("id", form.id);
