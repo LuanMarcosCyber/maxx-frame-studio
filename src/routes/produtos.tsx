@@ -157,11 +157,10 @@ function Produtos() {
     queryKey: ["supplier-wizard-state"],
     enabled: !!session && canEdit,
     queryFn: async () => {
-      await supabase.rpc("ensure_auto_distribution");
       const { data, error } = await supabase.rpc("get_supplier_wizard_state");
       if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ["products"] });
       return ((data ?? []) as WizardRow[]).filter((r) => !r.configured && r.product_count > 0);
+
     },
   });
 
