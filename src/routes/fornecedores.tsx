@@ -821,6 +821,32 @@ function Fornecedores() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {catalogFor && (
+        <ProductImportWizard
+          open={!!catalogFor}
+          onOpenChange={(o) => !o && setCatalogFor(null)}
+          categories={(catalogFor.categories ?? [])
+            .map((k) => SUPPLIER_CATEGORIES.find((c) => c.key === k))
+            .filter(Boolean)
+            .map((c) => ({ key: c!.key, label: c!.label }))}
+          defaultCategory={
+            (catalogFor.categories ?? [])[0] ??
+            SUPPLIER_CATEGORIES[0].key
+          }
+          onImported={() => {
+            qc.invalidateQueries({ queryKey: ["products"] });
+            qc.invalidateQueries({ queryKey: ["global_supplier_products"] });
+          }}
+          mode="global-catalog"
+          globalContext={{
+            supplierId: catalogFor.id,
+            supplierName:
+              catalogFor.trade_name || catalogFor.legal_name || "Fornecedor global",
+          }}
+        />
+      )}
     </AppShell>
+
   );
 }
