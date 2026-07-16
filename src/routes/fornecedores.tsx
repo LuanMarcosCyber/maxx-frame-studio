@@ -149,6 +149,8 @@ function Fornecedores() {
   const [deleting, setDeleting] = useState<SupplierRow | null>(null);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [catalogFor, setCatalogFor] = useState<SupplierRow | null>(null);
+
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["suppliers"],
