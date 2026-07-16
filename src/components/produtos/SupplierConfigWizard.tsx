@@ -73,7 +73,7 @@ export function SupplierConfigWizard({
         _margin: parseNum(margin),
         _loss: parseNum(loss),
         _commission: parseNum(commission),
-        _labor_cost: isPerfil ? parseNum(labor) : null,
+        _labor_cost: (isPerfil ? parseNum(labor) : null) as unknown as number,
       });
       if (error) throw error;
       toast.success(`Configuração aplicada a ${current.product_count} ${current.category}(s) de ${current.supplier_name}.`);
