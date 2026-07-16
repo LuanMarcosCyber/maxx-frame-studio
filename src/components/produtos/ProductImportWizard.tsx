@@ -442,7 +442,12 @@ export function ProductImportWizard({ open, onOpenChange, categories, defaultCat
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isGlobal ? "Importar catálogo global — Passo" : "Importar produtos — Passo"}PLACEHOLDER {result ? 5 : step} de 5</DialogTitle>
+          <DialogTitle>
+            {isGlobal
+              ? `Catálogo global de ${globalContext?.supplierName ?? "fornecedor"} — Passo ${result ? 5 : step} de 5`
+              : `Importar produtos — Passo ${result ? 5 : step} de 5`}
+          </DialogTitle>
+
         </DialogHeader>
 
         {/* STEP 1 */}
