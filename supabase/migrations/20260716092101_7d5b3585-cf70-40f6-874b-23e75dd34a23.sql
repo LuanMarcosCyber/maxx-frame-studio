@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.list_visible_products() FROM anon, PUBLIC;
