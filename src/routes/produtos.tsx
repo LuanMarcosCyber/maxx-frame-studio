@@ -78,6 +78,7 @@ const parseNum = (s: string) => {
 
 type Product = {
   id: string;
+  source: "company" | "global";
   code: string;
   description: string;
   category: string | null;
@@ -92,6 +93,8 @@ type Product = {
   labor_cost: number | null;
   commission_percentage: number | null;
   ncm: string | null;
+  has_override?: boolean;
+  base_price?: number;
 };
 
 type FormState = {
