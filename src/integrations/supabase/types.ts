@@ -267,6 +267,50 @@ export type Database = {
         }
         Relationships: []
       }
+      company_supplier_config: {
+        Row: {
+          commission: number
+          created_at: string
+          id: string
+          labor_cost: number | null
+          loss: number
+          margin: number
+          owner_user_id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission?: number
+          created_at?: string
+          id?: string
+          labor_cost?: number | null
+          loss?: number
+          margin?: number
+          owner_user_id: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission?: number
+          created_at?: string
+          id?: string
+          labor_cost?: number | null
+          loss?: number
+          margin?: number
+          owner_user_id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_supplier_config_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_switch_audit: {
         Row: {
           from_company_id: string | null
@@ -524,10 +568,12 @@ export type Database = {
           name: string | null
           ncm: string | null
           profit_margin: number
+          source_global_product_id: string | null
           supplier: string | null
           supplier_id: string | null
           updated_at: string
           user_id: string
+          uses_default_config: boolean
           value_per_meter: number
           waste_percentage: number
         }
@@ -544,10 +590,12 @@ export type Database = {
           name?: string | null
           ncm?: string | null
           profit_margin?: number
+          source_global_product_id?: string | null
           supplier?: string | null
           supplier_id?: string | null
           updated_at?: string
           user_id: string
+          uses_default_config?: boolean
           value_per_meter?: number
           waste_percentage?: number
         }
@@ -564,14 +612,23 @@ export type Database = {
           name?: string | null
           ncm?: string | null
           profit_margin?: number
+          source_global_product_id?: string | null
           supplier?: string | null
           supplier_id?: string | null
           updated_at?: string
           user_id?: string
+          uses_default_config?: boolean
           value_per_meter?: number
           waste_percentage?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "products_source_global_product_id_fkey"
+            columns: ["source_global_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -691,11 +748,13 @@ export type Database = {
           active: boolean
           address: string | null
           address_number: string | null
+          auto_distribute: boolean
           categories: Database["public"]["Enums"]["supplier_category"][]
           cep: string | null
           city: string | null
           contact_name: string | null
           created_at: string
+          distribute_category: string | null
           document: string | null
           email: string | null
           id: string
@@ -715,11 +774,13 @@ export type Database = {
           active?: boolean
           address?: string | null
           address_number?: string | null
+          auto_distribute?: boolean
           categories?: Database["public"]["Enums"]["supplier_category"][]
           cep?: string | null
           city?: string | null
           contact_name?: string | null
           created_at?: string
+          distribute_category?: string | null
           document?: string | null
           email?: string | null
           id?: string
@@ -739,11 +800,13 @@ export type Database = {
           active?: boolean
           address?: string | null
           address_number?: string | null
+          auto_distribute?: boolean
           categories?: Database["public"]["Enums"]["supplier_category"][]
           cep?: string | null
           city?: string | null
           contact_name?: string | null
           created_at?: string
+          distribute_category?: string | null
           document?: string | null
           email?: string | null
           id?: string
@@ -794,12 +857,27 @@ export type Database = {
           products_affected: number
         }[]
       }
+      apply_supplier_default_config: {
+        Args: {
+          _commission: number
+          _labor_cost: number
+          _loss: number
+          _margin: number
+          _supplier_id: string
+        }
+        Returns: number
+      }
       can_switch_to_company: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
       clear_active_company: { Args: never; Returns: undefined }
       company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
+      distribute_auto_products: {
+        Args: { _owner_user_id: string }
+        Returns: number
+      }
+      ensure_auto_distribution: { Args: never; Returns: number }
       get_effective_profile: {
         Args: never
         Returns: {
@@ -835,6 +913,16 @@ export type Database = {
           phone: string
           state: string
           store_name: string
+        }[]
+      }
+      get_supplier_wizard_state: {
+        Args: never
+        Returns: {
+          category: string
+          configured: boolean
+          product_count: number
+          supplier_id: string
+          supplier_name: string
         }[]
       }
       has_role: {

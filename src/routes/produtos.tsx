@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { SupplierConfigWizard, type WizardRow } from "@/components/produtos/SupplierConfigWizard";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,24 @@ function Produtos() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [priceIncreaseOpen, setPriceIncreaseOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
+  // Ensure auto-distributed products exist and open wizard when config is missing.
+  const { data: wizardPending = [] } = useQuery({
+    queryKey: ["supplier-wizard-state"],
+    enabled: !!session && canEdit,
+    queryFn: async () => {
+      await supabase.rpc("ensure_auto_distribution");
+      const { data, error } = await supabase.rpc("get_supplier_wizard_state");
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      return ((data ?? []) as WizardRow[]).filter((r) => !r.configured && r.product_count > 0);
+    },
+  });
+
+  useEffect(() => {
+    if (wizardPending.length > 0) setWizardOpen(true);
+  }, [wizardPending.length]);
 
   const updateField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -1027,6 +1046,12 @@ function Produtos() {
         open={priceIncreaseOpen}
         onOpenChange={setPriceIncreaseOpen}
         initialCategory={activeCategory}
+      />
+
+      <SupplierConfigWizard
+        open={wizardOpen && wizardPending.length > 0}
+        onOpenChange={setWizardOpen}
+        pending={wizardPending}
       />
     </AppShell>
   );
