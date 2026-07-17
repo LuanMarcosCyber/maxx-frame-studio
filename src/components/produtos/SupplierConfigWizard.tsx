@@ -64,6 +64,7 @@ export function SupplierConfigWizard({
   const [saving, setSaving] = useState(false);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [done, setDone] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   const total = pending.length;
   const current = pending[step];
