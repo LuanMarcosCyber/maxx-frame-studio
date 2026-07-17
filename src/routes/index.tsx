@@ -120,11 +120,9 @@ async function fetchOrdersPart(monthStart: string) {
 }
 
 async function fetchProductsCount() {
-  const { count, error } = await supabase
-    .from("products")
-    .select("id", { count: "exact", head: true });
+  const { data, error } = await supabase.rpc("list_visible_products");
   if (error) throw error;
-  return count ?? 0;
+  return (data ?? []).length;
 }
 
 const quickActions = [
