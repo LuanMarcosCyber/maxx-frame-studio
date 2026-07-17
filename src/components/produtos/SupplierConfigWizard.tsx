@@ -170,6 +170,17 @@ export function SupplierConfigWizard({
     return Math.round((completedIds.length / total) * 100);
   }, [completedIds.length, total, done]);
 
+  const hasNext = step + 1 < total;
+  const goNext = () => {
+    setJustSaved(false);
+    if (hasNext) {
+      setStep(step + 1);
+    } else {
+      setDone(true);
+      onOpenChange(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -177,20 +188,27 @@ export function SupplierConfigWizard({
       <DialogContent className="w-[calc(100vw-2rem)] max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">
-            {done ? "Configuração inicial concluída" : "Configuração inicial do catálogo"}
+            {justSaved ? "Dados inseridos com sucesso!" : "Configuração inicial do catálogo"}
           </DialogTitle>
         </DialogHeader>
 
-        {done ? (
+        {justSaved ? (
           <div className="space-y-4 py-2">
-            <div className="flex flex-col items-center gap-3 py-4">
-              <CheckCircle2 className="h-12 w-12 text-emerald-600" />
-              <p className="text-sm text-center text-muted-foreground">
-                Todos os fornecedores foram configurados. Você já pode utilizar seu catálogo.
+            <div className="flex flex-col items-center gap-3 py-6">
+              <CheckCircle2 className="h-16 w-16 text-emerald-600" />
+              <p className="text-sm text-center text-muted-foreground max-w-sm">
+                As configurações comerciais deste fornecedor foram salvas com sucesso.
               </p>
             </div>
-            <DialogFooter>
-              <Button className="w-full sm:w-auto" onClick={finish}>Ir para Produtos</Button>
+            <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+              {hasNext && (
+                <Button variant="outline" className="w-full sm:w-auto" onClick={skip}>
+                  Configurar depois
+                </Button>
+              )}
+              <Button className="w-full sm:w-auto" onClick={goNext}>
+                {hasNext ? "Configurar próximo" : "Concluir"}
+              </Button>
             </DialogFooter>
           </div>
         ) : current ? (
