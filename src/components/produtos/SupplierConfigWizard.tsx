@@ -79,6 +79,7 @@ export function SupplierConfigWizard({
     setErrors({});
     setCompletedIds([]);
     setDone(false);
+    setJustSaved(false);
   }, [open]);
 
   // Set default labor for perfil steps
