@@ -225,7 +225,7 @@ export function SupplierConfigWizard({
               </div>
               {total > 1 && (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] pt-1">
-                  {pending.map((p, i) => {
+                  {snapshot.map((p, i) => {
                     const isDone = completedIds.includes(p.supplier_id);
                     const isCurrent = i === step;
                     return (
