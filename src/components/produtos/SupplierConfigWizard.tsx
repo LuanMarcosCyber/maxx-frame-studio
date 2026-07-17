@@ -65,21 +65,25 @@ export function SupplierConfigWizard({
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [done, setDone] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  // Snapshot pending list on open so mid-flow cache invalidations don't shrink the queue.
+  const [snapshot, setSnapshot] = useState<WizardRow[]>([]);
 
-  const total = pending.length;
-  const current = pending[step];
+  const total = snapshot.length;
+  const current = snapshot[step];
   const isPerfil = current?.category === "Perfil";
   const values = valuesByStep[step] ?? emptyValues;
 
-  // Reset when opened
+  // Reset when opened, snapshotting the pending list at that moment.
   useEffect(() => {
     if (!open) return;
+    setSnapshot(pending);
     setStep(0);
     setValuesByStep({});
     setErrors({});
     setCompletedIds([]);
     setDone(false);
     setJustSaved(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Set default labor for perfil steps
@@ -221,7 +225,7 @@ export function SupplierConfigWizard({
               </div>
               {total > 1 && (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] pt-1">
-                  {pending.map((p, i) => {
+                  {snapshot.map((p, i) => {
                     const isDone = completedIds.includes(p.supplier_id);
                     const isCurrent = i === step;
                     return (
