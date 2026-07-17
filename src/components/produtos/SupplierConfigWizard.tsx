@@ -147,11 +147,7 @@ export function SupplierConfigWizard({
       setCompletedIds((prev) => [...prev, current.supplier_id]);
       await qc.invalidateQueries({ queryKey: ["products"] });
       await qc.invalidateQueries({ queryKey: ["supplier-wizard-state"] });
-      if (step + 1 < total) {
-        setStep(step + 1);
-      } else {
-        setDone(true);
-      }
+      setJustSaved(true);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Falha ao aplicar configuração.";
       toast.error(msg);
