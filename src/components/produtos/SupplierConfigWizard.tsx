@@ -160,9 +160,6 @@ export function SupplierConfigWizard({
     onOpenChange(false);
   };
 
-  const finish = () => {
-    onOpenChange(false);
-  };
 
   const progressPct = useMemo(() => {
     if (total === 0) return 0;
