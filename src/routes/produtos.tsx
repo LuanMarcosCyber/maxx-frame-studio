@@ -924,22 +924,21 @@ function Produtos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={page <= 1 || isFetching}
+                  disabled={currentPage <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
                   Anterior
                 </Button>
-                {buildPageList(page, totalPages).map((it, idx) =>
+                {buildPageList(currentPage, totalPages).map((it, idx) =>
                   it === "…" ? (
                     <span key={`e-${idx}`} className="px-2 text-muted-foreground text-sm">…</span>
                   ) : (
                     <Button
                       key={it}
-                      variant={it === page ? "default" : "outline"}
+                      variant={it === currentPage ? "default" : "outline"}
                       size="sm"
                       className="min-w-[36px]"
                       onClick={() => setPage(it as number)}
-                      disabled={isFetching && it !== page}
                     >
                       {it}
                     </Button>
@@ -948,13 +947,14 @@ function Produtos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={page >= totalPages || isFetching}
+                  disabled={currentPage >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 >
                   Próxima
                 </Button>
               </div>
             )}
+
           </div>
         )}
       </Card>
