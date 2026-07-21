@@ -208,13 +208,21 @@ function Produtos() {
   const activeLabel =
     activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["products", "visible"],
+  const { data: pageResult, isLoading, isFetching } = useQuery({
+    queryKey: ["products", "page", activeCategory, debouncedSearch, page],
     enabled: !!session,
+    placeholderData: (prev) => prev,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_visible_products");
+      const { data, error } = await (supabase as any).rpc("list_visible_products_page", {
+        _category: activeCategory,
+        _search: debouncedSearch || null,
+        _limit: PAGE_SIZE,
+        _offset: (page - 1) * PAGE_SIZE,
+      });
       if (error) throw error;
-      return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+      const arr = (data ?? []) as Array<Record<string, unknown>>;
+      const total = arr.length > 0 ? Number(arr[0].total_count ?? 0) : 0;
+      const products: Product[] = arr.map((r) => ({
         id: r.id as string,
         source: (r.source as "company" | "global") ?? "company",
         code: (r.code as string) ?? "",
@@ -234,25 +242,16 @@ function Produtos() {
           r.commission_percentage == null ? null : Number(r.commission_percentage),
         ncm: (r.ncm as string | null) ?? null,
         has_override: Boolean(r.has_override),
-      })) as Product[];
+      }));
+      return { products, total };
     },
   });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows
-      .filter((r) => (r.category ?? "") === activeCategory)
-      .filter(
-        (r) =>
-          !q ||
-          r.code.toLowerCase().includes(q) ||
-          (r.description ?? "").toLowerCase().includes(q) ||
-          (r.name ?? "").toLowerCase().includes(q) ||
-          (r.supplier ?? "").toLowerCase().includes(q) ||
-          (r.barcode ?? "").toLowerCase().includes(q),
-      )
-      .sort((a, b) => naturalCompare(a.code, b.code));
-  }, [rows, activeCategory, search]);
+  const pageRows = pageResult?.products ?? [];
+  const totalCount = pageResult?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const pageStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   const openCreate = () => {
     setEditing(null);
