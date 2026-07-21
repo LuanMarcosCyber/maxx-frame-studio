@@ -221,21 +221,14 @@ function Produtos() {
   const activeLabel =
     activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
-  const { data: pageResult, isLoading, isFetching } = useQuery({
-    queryKey: ["products", "page", activeCategory, debouncedSearch, page],
+  const { data: allProducts = [], isLoading, isFetching } = useQuery({
+    queryKey: ["products"],
     enabled: !!session,
-    placeholderData: (prev) => prev,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("list_visible_products_page", {
-        _category: activeCategory,
-        _search: debouncedSearch || null,
-        _limit: PAGE_SIZE,
-        _offset: (page - 1) * PAGE_SIZE,
-      });
+      const { data, error } = await supabase.rpc("list_visible_products");
       if (error) throw error;
       const arr = (data ?? []) as Array<Record<string, unknown>>;
-      const total = arr.length > 0 ? Number(arr[0].total_count ?? 0) : 0;
-      const products: Product[] = arr.map((r) => ({
+      return arr.map((r) => ({
         id: r.id as string,
         source: (r.source as "company" | "global") ?? "company",
         code: (r.code as string) ?? "",
@@ -255,16 +248,37 @@ function Produtos() {
           r.commission_percentage == null ? null : Number(r.commission_percentage),
         ncm: (r.ncm as string | null) ?? null,
         has_override: Boolean(r.has_override),
-      }));
-      return { products, total };
+      })) as Product[];
     },
   });
 
-  const pageRows = pageResult?.products ?? [];
-  const totalCount = pageResult?.total ?? 0;
+  const filteredRows = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const rows = allProducts
+      .filter((p) => (p.category ?? "") === activeCategory)
+      .filter((p) => {
+        if (!q) return true;
+        return (
+          (p.code ?? "").toLowerCase().includes(q) ||
+          (p.description ?? "").toLowerCase().includes(q) ||
+          (p.name ?? "").toLowerCase().includes(q) ||
+          (p.supplier ?? "").toLowerCase().includes(q) ||
+          (p.barcode ?? "").toLowerCase().includes(q)
+        );
+      });
+    return rows.sort((a, b) => naturalCompare(a.code ?? "", b.code ?? ""));
+  }, [allProducts, activeCategory, debouncedSearch]);
+
+  const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const pageStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const pageEnd = Math.min(page * PAGE_SIZE, totalCount);
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filteredRows.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+  const pageStart = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
+
 
   const openCreate = () => {
     setEditing(null);
@@ -910,22 +924,21 @@ function Produtos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={page <= 1 || isFetching}
+                  disabled={currentPage <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
                   Anterior
                 </Button>
-                {buildPageList(page, totalPages).map((it, idx) =>
+                {buildPageList(currentPage, totalPages).map((it, idx) =>
                   it === "…" ? (
                     <span key={`e-${idx}`} className="px-2 text-muted-foreground text-sm">…</span>
                   ) : (
                     <Button
                       key={it}
-                      variant={it === page ? "default" : "outline"}
+                      variant={it === currentPage ? "default" : "outline"}
                       size="sm"
                       className="min-w-[36px]"
                       onClick={() => setPage(it as number)}
-                      disabled={isFetching && it !== page}
                     >
                       {it}
                     </Button>
@@ -934,13 +947,14 @@ function Produtos() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={page >= totalPages || isFetching}
+                  disabled={currentPage >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 >
                   Próxima
                 </Button>
               </div>
             )}
+
           </div>
         )}
       </Card>
