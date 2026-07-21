@@ -734,14 +734,14 @@ function Produtos() {
                     Carregando...
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-muted-foreground">
                     Nenhum produto em {activeLabel}.
                   </td>
                 </tr>
               ) : (
-                filtered.map((p) =>
+                pageRows.map((p) =>
                   isDiversos ? (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
                       <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
