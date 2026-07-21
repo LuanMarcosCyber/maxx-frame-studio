@@ -553,19 +553,24 @@ function Produtos() {
       setDeleteTarget(null);
       return;
     }
+    const target = deleteTarget;
+    const previous = queryClient.getQueryData<Product[]>(["products"]);
+    // Optimistic: remove immediately from cache.
+    queryClient.setQueryData<Product[]>(["products"], (current = []) =>
+      current.filter((p) => p.id !== target.id),
+    );
+    setDeleteTarget(null);
     try {
-      await deleteProductByIdFn({ data: { id: deleteTarget.id } });
-      queryClient.setQueryData<Product[]>(["products"], (current = []) =>
-        current.filter((p) => p.id !== deleteTarget.id),
-      );
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      await deleteProductByIdFn({ data: { id: target.id } });
       toast.success("Produto excluído.");
+      // Background refresh — do not block UI.
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     } catch (e: any) {
+      // Rollback on failure.
+      if (previous) queryClient.setQueryData(["products"], previous);
       toast.error(e.message ?? "Erro ao excluir produto.");
-    } finally {
-      setDeleteTarget(null);
     }
   };
 
@@ -589,26 +594,29 @@ function Produtos() {
 
   const handleBulkDelete = async () => {
     if (!user) return;
+    const previous = queryClient.getQueryData<Product[]>(["products"]);
+    // Optimistic remove of all rows in this category.
+    queryClient.setQueryData<Product[]>(["products"], (current = []) =>
+      current.filter((product) => product.category !== activeCategory),
+    );
     setBulkDeleting(true);
+    setBulkDeleteOpen(false);
     try {
       const result = await bulkDeleteProductsByCategoryFn({ data: { category: activeCategory } });
       if (result.found === 0) {
+        if (previous) queryClient.setQueryData(["products"], previous);
         toast.info("Nenhum produto para excluir nesta categoria.");
         return;
       }
-
-      queryClient.setQueryData<Product[]>(["products"], (current = []) =>
-        current.filter((product) => product.category !== activeCategory),
-      );
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      await queryClient.invalidateQueries({ queryKey: ["budgets"] });
-      await queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Todos os produtos da categoria foram excluídos com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     } catch (e: any) {
+      if (previous) queryClient.setQueryData(["products"], previous);
       toast.error(e.message ?? "Erro ao excluir produtos.");
     } finally {
       setBulkDeleting(false);
-      setBulkDeleteOpen(false);
     }
   };
 
