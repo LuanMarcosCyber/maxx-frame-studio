@@ -119,10 +119,10 @@ async function fetchOrdersPart(monthStart: string) {
   return { count: countRes.count ?? 0, revenue, recent };
 }
 
-async function fetchProductsCount() {
+async function fetchProductsList() {
   const { data, error } = await supabase.rpc("list_visible_products");
   if (error) throw error;
-  return (data ?? []).length;
+  return (data ?? []) as unknown[];
 }
 
 const quickActions = [
@@ -175,8 +175,9 @@ function Dashboard() {
     ...commonOpts,
   });
   const productsQuery = useQuery({
-    queryKey: ["products", "dashboard-count", scope],
-    queryFn: fetchProductsCount,
+    queryKey: ["products"],
+    queryFn: fetchProductsList,
+    select: (arr) => arr.length,
     ...commonOpts,
   });
 
