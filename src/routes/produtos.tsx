@@ -785,26 +785,27 @@ function Produtos() {
                     </tr>
                   ) : (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
-                      <td className="py-3.5 px-6 font-mono font-semibold">
-                        <div className="flex items-center gap-2">
-                          <span>{p.code}</span>
-                          {p.source === "global" && (
-                            <Badge variant="secondary" className="text-[10px] h-5 gap-1">
-                              <Globe2 className="h-3 w-3" /> Global
-                            </Badge>
-                          )}
+                      <td className="py-3.5 px-6 align-top">
+                        <div className="flex flex-col gap-1 min-w-[180px]">
+                          <span className="font-mono font-semibold">{p.code}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {p.source === "global" && (
+                              <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                                <Globe2 className="h-3 w-3" /> Global
+                              </Badge>
+                            )}
+                            {p.has_override && (
+                              <Badge variant="outline" className="text-[10px] h-5">
+                                Personalizado
+                              </Badge>
+                            )}
+                          </div>
                           {p.source === "global" && p.supplier && (
-                            <Badge
-                              className="text-[10px] h-5 bg-emerald-600 hover:bg-emerald-600 text-white border-transparent"
-                              title={p.supplier}
-                            >
+                            <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 whitespace-normal break-words leading-snug">
+                              <span className="text-muted-foreground font-normal">FORNECEDOR: </span>
                               {p.supplier}
-                            </Badge>
+                            </div>
                           )}
-                          {p.has_override && (
-                            <Badge variant="outline" className="text-[10px] h-5">Personalizado</Badge>
-                          )}
-
                         </div>
                       </td>
                       <td
