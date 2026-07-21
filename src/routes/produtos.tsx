@@ -885,6 +885,51 @@ function Produtos() {
             </tbody>
           </table>
         </div>
+
+        {totalCount > 0 && (
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Exibindo {pageStart}–{pageEnd} de {totalCount} produto{totalCount === 1 ? "" : "s"}
+              {isFetching && !isLoading ? " • atualizando..." : ""}
+            </p>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </Button>
+                {buildPageList(page, totalPages).map((it, idx) =>
+                  it === "…" ? (
+                    <span key={`e-${idx}`} className="px-2 text-muted-foreground text-sm">…</span>
+                  ) : (
+                    <Button
+                      key={it}
+                      variant={it === page ? "default" : "outline"}
+                      size="sm"
+                      className="min-w-[36px]"
+                      onClick={() => setPage(it as number)}
+                      disabled={isFetching && it !== page}
+                    >
+                      {it}
+                    </Button>
+                  ),
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isFetching}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Próxima
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
