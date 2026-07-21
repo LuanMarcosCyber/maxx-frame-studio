@@ -143,6 +143,9 @@ function Produtos() {
 
   const [activeCategory, setActiveCategory] = useState<Category>("Foam");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -155,6 +158,18 @@ function Produtos() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardAutoOpened, setWizardAutoOpened] = useState(false);
+
+  // Debounce da busca e reset de página ao alterar filtros/categoria.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => {
+    setPage(1);
+  }, [activeCategory]);
 
   // Ensure auto-distributed products exist and detect missing supplier config.
   const { data: wizardPending = [] } = useQuery({
