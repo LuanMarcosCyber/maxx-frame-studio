@@ -654,7 +654,7 @@ function Produtos() {
           <div>
             <h2 className="text-lg font-semibold">{activeLabel}</h2>
             <p className="text-xs text-muted-foreground">
-              {filtered.length} produto{filtered.length === 1 ? "" : "s"}
+              {totalCount} produto{totalCount === 1 ? "" : "s"}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
