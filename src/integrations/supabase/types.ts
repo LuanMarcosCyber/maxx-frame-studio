@@ -1070,6 +1070,37 @@ export type Database = {
           width_cm: number
         }[]
       }
+      list_visible_products_page: {
+        Args: {
+          _category: string
+          _limit: number
+          _offset: number
+          _search: string
+        }
+        Returns: {
+          barcode: string
+          base_price: number
+          category: string
+          code: string
+          commission_percentage: number
+          config_pending: boolean
+          description: string
+          effective_price: number
+          has_override: boolean
+          id: string
+          labor_cost: number
+          name: string
+          ncm: string
+          profit_margin: number
+          source: string
+          supplier: string
+          supplier_id: string
+          total_count: number
+          waste_percentage: number
+          width_cm: number
+        }[]
+      }
+      natural_key: { Args: { _s: string }; Returns: string }
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
       preview_price_increase: {

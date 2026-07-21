@@ -129,6 +129,19 @@ const emptyForm: FormState = {
   ncm: "",
 };
 
+function buildPageList(current: number, total: number): Array<number | "…"> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: Array<number | "…"> = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("…");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("…");
+  pages.push(total);
+  return pages;
+}
+
+
 
 function Produtos() {
   const { session, user, role, profile, ownerUserId } = useAuth();
@@ -143,6 +156,9 @@ function Produtos() {
 
   const [activeCategory, setActiveCategory] = useState<Category>("Foam");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -155,6 +171,18 @@ function Produtos() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardAutoOpened, setWizardAutoOpened] = useState(false);
+
+  // Debounce da busca e reset de página ao alterar filtros/categoria.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => {
+    setPage(1);
+  }, [activeCategory]);
 
   // Ensure auto-distributed products exist and detect missing supplier config.
   const { data: wizardPending = [] } = useQuery({
@@ -193,13 +221,21 @@ function Produtos() {
   const activeLabel =
     activeCategory === "Paspatur" ? "Paspatur / Sanduíche de Vidro" : baseLabel;
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["products", "visible"],
+  const { data: pageResult, isLoading, isFetching } = useQuery({
+    queryKey: ["products", "page", activeCategory, debouncedSearch, page],
     enabled: !!session,
+    placeholderData: (prev) => prev,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_visible_products");
+      const { data, error } = await (supabase as any).rpc("list_visible_products_page", {
+        _category: activeCategory,
+        _search: debouncedSearch || null,
+        _limit: PAGE_SIZE,
+        _offset: (page - 1) * PAGE_SIZE,
+      });
       if (error) throw error;
-      return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+      const arr = (data ?? []) as Array<Record<string, unknown>>;
+      const total = arr.length > 0 ? Number(arr[0].total_count ?? 0) : 0;
+      const products: Product[] = arr.map((r) => ({
         id: r.id as string,
         source: (r.source as "company" | "global") ?? "company",
         code: (r.code as string) ?? "",
@@ -219,25 +255,16 @@ function Produtos() {
           r.commission_percentage == null ? null : Number(r.commission_percentage),
         ncm: (r.ncm as string | null) ?? null,
         has_override: Boolean(r.has_override),
-      })) as Product[];
+      }));
+      return { products, total };
     },
   });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows
-      .filter((r) => (r.category ?? "") === activeCategory)
-      .filter(
-        (r) =>
-          !q ||
-          r.code.toLowerCase().includes(q) ||
-          (r.description ?? "").toLowerCase().includes(q) ||
-          (r.name ?? "").toLowerCase().includes(q) ||
-          (r.supplier ?? "").toLowerCase().includes(q) ||
-          (r.barcode ?? "").toLowerCase().includes(q),
-      )
-      .sort((a, b) => naturalCompare(a.code, b.code));
-  }, [rows, activeCategory, search]);
+  const pageRows = pageResult?.products ?? [];
+  const totalCount = pageResult?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const pageStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(page * PAGE_SIZE, totalCount);
 
   const openCreate = () => {
     setEditing(null);
@@ -640,7 +667,7 @@ function Produtos() {
           <div>
             <h2 className="text-lg font-semibold">{activeLabel}</h2>
             <p className="text-xs text-muted-foreground">
-              {filtered.length} produto{filtered.length === 1 ? "" : "s"}
+              {totalCount} produto{totalCount === 1 ? "" : "s"}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -661,7 +688,7 @@ function Produtos() {
                 >
                   <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
                 </Button>
-                {filtered.length > 0 && (
+                {totalCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -720,14 +747,14 @@ function Produtos() {
                     Carregando...
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : pageRows.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-muted-foreground">
                     Nenhum produto em {activeLabel}.
                   </td>
                 </tr>
               ) : (
-                filtered.map((p) =>
+                pageRows.map((p) =>
                   isDiversos ? (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
                       <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
@@ -771,26 +798,27 @@ function Produtos() {
                     </tr>
                   ) : (
                     <tr key={p.id} className="hover:bg-muted/40 transition">
-                      <td className="py-3.5 px-6 font-mono font-semibold">
-                        <div className="flex items-center gap-2">
-                          <span>{p.code}</span>
-                          {p.source === "global" && (
-                            <Badge variant="secondary" className="text-[10px] h-5 gap-1">
-                              <Globe2 className="h-3 w-3" /> Global
-                            </Badge>
-                          )}
+                      <td className="py-3.5 px-6 align-top">
+                        <div className="flex flex-col gap-1 min-w-[180px]">
+                          <span className="font-mono font-semibold">{p.code}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {p.source === "global" && (
+                              <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                                <Globe2 className="h-3 w-3" /> Global
+                              </Badge>
+                            )}
+                            {p.has_override && (
+                              <Badge variant="outline" className="text-[10px] h-5">
+                                Personalizado
+                              </Badge>
+                            )}
+                          </div>
                           {p.source === "global" && p.supplier && (
-                            <Badge
-                              className="text-[10px] h-5 bg-emerald-600 hover:bg-emerald-600 text-white border-transparent"
-                              title={p.supplier}
-                            >
+                            <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 whitespace-normal break-words leading-snug">
+                              <span className="text-muted-foreground font-normal">FORNECEDOR: </span>
                               {p.supplier}
-                            </Badge>
+                            </div>
                           )}
-                          {p.has_override && (
-                            <Badge variant="outline" className="text-[10px] h-5">Personalizado</Badge>
-                          )}
-
                         </div>
                       </td>
                       <td
@@ -870,6 +898,51 @@ function Produtos() {
             </tbody>
           </table>
         </div>
+
+        {totalCount > 0 && (
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Exibindo {pageStart}–{pageEnd} de {totalCount} produto{totalCount === 1 ? "" : "s"}
+              {isFetching && !isLoading ? " • atualizando..." : ""}
+            </p>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </Button>
+                {buildPageList(page, totalPages).map((it, idx) =>
+                  it === "…" ? (
+                    <span key={`e-${idx}`} className="px-2 text-muted-foreground text-sm">…</span>
+                  ) : (
+                    <Button
+                      key={it}
+                      variant={it === page ? "default" : "outline"}
+                      size="sm"
+                      className="min-w-[36px]"
+                      onClick={() => setPage(it as number)}
+                      disabled={isFetching && it !== page}
+                    >
+                      {it}
+                    </Button>
+                  ),
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || isFetching}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Próxima
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
