@@ -675,7 +675,7 @@ function Produtos() {
                 >
                   <Plus className="h-4 w-4 mr-1.5" /> Novo Produto
                 </Button>
-                {filtered.length > 0 && (
+                {totalCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
