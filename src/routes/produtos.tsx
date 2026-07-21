@@ -779,9 +779,18 @@ function Produtos() {
                               <Globe2 className="h-3 w-3" /> Global
                             </Badge>
                           )}
+                          {p.source === "global" && p.supplier && (
+                            <Badge
+                              className="text-[10px] h-5 bg-emerald-600 hover:bg-emerald-600 text-white border-transparent"
+                              title={p.supplier}
+                            >
+                              {p.supplier}
+                            </Badge>
+                          )}
                           {p.has_override && (
                             <Badge variant="outline" className="text-[10px] h-5">Personalizado</Badge>
                           )}
+
                         </div>
                       </td>
                       <td

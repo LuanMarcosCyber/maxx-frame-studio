@@ -182,14 +182,24 @@ function Fornecedores() {
     queryKey: ["global-catalog-by-supplier"],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("global_supplier_products")
-        .select("id, supplier_id, code, description, category, base_price, width_cm")
-        .eq("active", true)
-        .order("code", { ascending: true });
-      if (error) throw error;
+      // Paginação manual para contornar o limite de 1000 linhas do PostgREST
+      // e garantir que a contagem sempre reflita o total REAL de produtos globais ativos.
+      const PAGE = 1000;
+      const all: Array<{ id: string; supplier_id: string; code: string; description: string; category: string; base_price: number | null; width_cm: number | null }> = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("global_supplier_products")
+          .select("id, supplier_id, code, description, category, base_price, width_cm")
+          .eq("active", true)
+          .order("code", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const chunk = (data ?? []) as typeof all;
+        all.push(...chunk);
+        if (chunk.length < PAGE) break;
+      }
       const acc: Record<string, GlobalCatalog> = {};
-      for (const r of (data ?? []) as Array<{ id: string; supplier_id: string; code: string; description: string; category: string; base_price: number | null; width_cm: number | null }>) {
+      for (const r of all) {
         const bucket = acc[r.supplier_id] ?? (acc[r.supplier_id] = { total: 0, categories: {}, sample: [] });
         bucket.total += 1;
         bucket.categories[r.category] = (bucket.categories[r.category] ?? 0) + 1;
@@ -198,6 +208,7 @@ function Fornecedores() {
       return acc;
     },
   });
+
 
   const invalidateAllCatalog = async () => {
     await Promise.all([
