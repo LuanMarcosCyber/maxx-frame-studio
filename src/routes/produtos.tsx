@@ -446,7 +446,7 @@ function Produtos() {
     req("code", "Informe o código.");
     req("description", "Informe a descrição.");
     req("supplier", "Informe o fornecedor / fabricante.");
-    req("value_per_meter", "Informe o valor do metro.");
+    req("value_per_meter", activeCategory === "Perfil" ? "Informe o custo do metro linear." : "Informe o custo do metro².");
     req("profit_margin", "Informe a margem.");
     req("waste_percentage", "Informe a perda.");
     const value = parseNum(form.value_per_meter || "0");
