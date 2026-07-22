@@ -154,18 +154,32 @@ function calcAreaValue(prod: Produto | null, altura: number, largura: number) {
 
 function useCategoryProducts(categories: string[], enabled: boolean) {
   return useQuery({
-    queryKey: ["products", ...categories],
+    queryKey: ["products", "visible"],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(
-          "id, code, description, value_per_meter, profit_margin, waste_percentage, category, frame_width_cm, labor_cost",
-        )
-        .in("category", categories)
-        .order("code", { ascending: true });
+      const { data, error } = await supabase.rpc("list_visible_products");
       if (error) throw error;
-      return (data ?? []) as Produto[];
+      return (data ?? []) as Array<Record<string, unknown>>;
+    },
+    select: (rows) => {
+      const set = new Set(categories);
+      const mapped = rows
+        .filter((r) => set.has(((r.category as string) ?? "")))
+        .map((r) => ({
+          id: r.id as string,
+          code: (r.code as string) ?? "",
+          description: (r.description as string) ?? "",
+          value_per_meter: Number(r.effective_price ?? r.base_price ?? 0),
+          profit_margin: Number(r.profit_margin ?? 0),
+          waste_percentage: Number(r.waste_percentage ?? 0),
+          category: (r.category as string | null) ?? null,
+          frame_width_cm: r.width_cm == null ? null : Number(r.width_cm),
+          labor_cost: r.labor_cost == null ? null : Number(r.labor_cost),
+        })) as Produto[];
+      mapped.sort((a, b) =>
+        a.code.localeCompare(b.code, "pt-BR", { numeric: true, sensitivity: "base" }),
+      );
+      return mapped;
     },
   });
 }
