@@ -12,10 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, TrendingUp, Loader2, Globe2 } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Loader2, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { SupplierPicker, useSuppliersQuery, supplierLabel } from "@/components/suppliers/SupplierPicker";
 import { fmtMoney } from "@/lib/utils";
 
@@ -29,7 +28,8 @@ const CATEGORIES = [
   { key: "produtos_diversos", label: "Produtos Diversos", supplierCat: "diversos" },
 ] as const;
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type Direction = "increase" | "decrease";
 type SampleRow = { code: string; description: string; current_price: number; new_price: number };
 
 const parseNum = (s: string) => {
@@ -47,12 +47,11 @@ export function PriceIncreaseWizard({
   onOpenChange: (v: boolean) => void;
   initialCategory?: string;
 }) {
-  const { role } = useAuth();
   const qc = useQueryClient();
-  const isAdmin = role === "admin";
   const { data: suppliers = [] } = useSuppliersQuery();
 
   const [step, setStep] = useState<Step>(1);
+  const [direction, setDirection] = useState<Direction | null>(null);
   const [category, setCategory] = useState<string>(initialCategory ?? "Foam");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [percentText, setPercentText] = useState("");
@@ -71,11 +70,16 @@ export function PriceIncreaseWizard({
     [suppliers, supplierId],
   );
   const percent = parseNum(percentText);
-  const percentValid = !Number.isNaN(percent) && percent > 0;
+  const percentValid =
+    !Number.isNaN(percent) &&
+    percent > 0 &&
+    (direction === "increase" || percent < 100);
   const isGlobalSupplier = selectedSupplier?.is_global === true;
+  const isDecrease = direction === "decrease";
 
   const reset = () => {
     setStep(1);
+    setDirection(null);
     setCategory(initialCategory ?? "Foam");
     setSupplierId(null);
     setPercentText("");
@@ -90,23 +94,20 @@ export function PriceIncreaseWizard({
   };
 
   const goPreview = async () => {
-    if (!supplierId || !percentValid) return;
-    if (isGlobalSupplier && !isAdmin) {
-      toast.error("Somente Admin pode reajustar produtos de fornecedor global.");
-      return;
-    }
+    if (!supplierId || !percentValid || !direction) return;
     setLoadingPreview(true);
     try {
       const { data, error } = await supabase.rpc("preview_price_increase", {
         _category: category,
         _supplier_id: supplierId,
         _percentage: percent,
+        _direction: direction,
       });
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       setPreviewTotal(Number(row?.total ?? 0));
       setPreviewSample((row?.sample ?? []) as SampleRow[]);
-      setStep(4);
+      setStep(5);
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao carregar prévia.");
     } finally {
@@ -114,45 +115,78 @@ export function PriceIncreaseWizard({
     }
   };
 
-  const applyIncrease = async () => {
-    if (!supplierId || !percentValid) return;
+  const applyChange = async () => {
+    if (!supplierId || !percentValid || !direction) return;
     setApplying(true);
     try {
       const { data, error } = await supabase.rpc("apply_price_increase", {
         _category: category,
         _supplier_id: supplierId,
         _percentage: percent,
+        _direction: direction,
       });
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       const affected = Number(row?.products_affected ?? 0);
       setResult({ affected });
-      setStep(5);
+      setStep(6);
       await qc.invalidateQueries({ queryKey: ["products"] });
-      toast.success(`Reajuste aplicado em ${affected} produto(s).`);
+      toast.success(
+        `${isDecrease ? "Redução" : "Aumento"} aplicado em ${affected} produto(s).`,
+      );
     } catch (e: any) {
-      toast.error(e.message ?? "Erro ao aplicar reajuste.");
+      toast.error(e.message ?? "Erro ao aplicar alteração.");
     } finally {
       setApplying(false);
     }
   };
 
   const catLabel = CATEGORIES.find((c) => c.key === category)?.label ?? category;
+  const dirLabel = isDecrease ? "Redução" : "Aumento";
+  const Icon = isDecrease ? TrendingDown : TrendingUp;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-brand" />
-            Aumento de preço — Etapa {step} de 5
+            <Icon className="h-5 w-5 text-brand" />
+            Alteração nos preços — Etapa {step} de 6
           </DialogTitle>
           <DialogDescription>
-            Reajuste em massa por categoria e fornecedor.
+            Ajuste em massa por categoria e fornecedor, aplicado apenas à empresa
+            atual.
           </DialogDescription>
         </DialogHeader>
 
         {step === 1 && (
+          <div className="space-y-3">
+            <Label>Qual tipo de alteração será aplicada?</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["increase", "decrease"] as Direction[]).map((d) => {
+                const active = direction === d;
+                const DIcon = d === "decrease" ? TrendingDown : TrendingUp;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDirection(d)}
+                    className={`px-3 py-3 rounded-md border text-sm text-left transition flex items-center gap-2 ${
+                      active
+                        ? "bg-gradient-brand text-brand-foreground border-transparent shadow-brand"
+                        : "bg-background hover:bg-accent"
+                    }`}
+                  >
+                    <DIcon className="h-4 w-4" />
+                    {d === "increase" ? "Aumento" : "Redução"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
           <div className="space-y-3">
             <Label>Qual categoria de produto teve alteração de preço?</Label>
             <div className="grid grid-cols-2 gap-2">
@@ -174,7 +208,7 @@ export function PriceIncreaseWizard({
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="space-y-3">
             <Label>Qual fornecedor teve alteração de preço?</Label>
             <SupplierPicker
@@ -194,17 +228,14 @@ export function PriceIncreaseWizard({
                 )}
               </div>
             )}
-            {isGlobalSupplier && !isAdmin && (
-              <p className="text-xs text-destructive">
-                Somente Admin pode reajustar catálogo global.
-              </p>
-            )}
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-3">
-            <Label htmlFor="pct">Qual foi o reajuste de preço?</Label>
+            <Label htmlFor="pct">
+              Qual foi {isDecrease ? "a redução" : "o aumento"} de preço?
+            </Label>
             <div className="relative">
               <Input
                 id="pct"
@@ -218,17 +249,19 @@ export function PriceIncreaseWizard({
               </span>
             </div>
             {percentText && !percentValid && (
-              <p className="text-xs text-destructive">Informe um percentual maior que zero.</p>
+              <p className="text-xs text-destructive">
+                {isDecrease
+                  ? "Informe um percentual maior que zero e menor que 100%."
+                  : "Informe um percentual maior que zero."}
+              </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Nesta versão, apenas aumento é permitido — não redução.
-            </p>
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-3">
             <div className="rounded-md border p-3 space-y-1 text-sm">
+              <div><span className="text-muted-foreground">Tipo:</span> <strong>{dirLabel}</strong></div>
               <div><span className="text-muted-foreground">Categoria:</span> <strong>{catLabel}</strong></div>
               <div>
                 <span className="text-muted-foreground">Fornecedor:</span>{" "}
@@ -239,7 +272,7 @@ export function PriceIncreaseWizard({
                   </Badge>
                 )}
               </div>
-              <div><span className="text-muted-foreground">Reajuste:</span> <strong>{percent.toLocaleString("pt-BR")}%</strong></div>
+              <div><span className="text-muted-foreground">Percentual:</span> <strong>{percent.toLocaleString("pt-BR")}%</strong></div>
               <div>
                 <span className="text-muted-foreground">Produtos afetados:</span>{" "}
                 <strong>{previewTotal}</strong>
@@ -253,7 +286,7 @@ export function PriceIncreaseWizard({
                     <tr className="text-left">
                       <th className="px-2 py-1.5 font-medium">Código</th>
                       <th className="px-2 py-1.5 font-medium">Produto</th>
-                      <th className="px-2 py-1.5 font-medium text-right">Atual</th>
+                      <th className="px-2 py-1.5 font-medium text-right">Anterior</th>
                       <th className="px-2 py-1.5 font-medium text-right">Novo</th>
                     </tr>
                   </thead>
@@ -286,14 +319,15 @@ export function PriceIncreaseWizard({
               <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm flex gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  Você confirma o aumento de <strong>{percent.toLocaleString("pt-BR")}%</strong>{" "}
-                  em todos os produtos da categoria <strong>{catLabel}</strong> do fornecedor{" "}
+                  Você confirma {isDecrease ? "a redução" : "o aumento"} de{" "}
+                  <strong>{percent.toLocaleString("pt-BR")}%</strong> em todos os
+                  produtos da categoria <strong>{catLabel}</strong> do fornecedor{" "}
                   <strong>{selectedSupplier ? supplierLabel(selectedSupplier) : "—"}</strong>?
-                  {isGlobalSupplier && (
-                    <div className="mt-1 text-amber-700 font-medium">
-                      Este reajuste alterará o catálogo global e afetará todas as empresas que utilizam esses produtos.
-                    </div>
-                  )}
+                  <div className="mt-1 text-muted-foreground">
+                    Esta alteração será aplicada somente aos preços utilizados pela
+                    empresa atual e não modificará o catálogo global nem os preços
+                    de outras empresas.
+                  </div>
                   <div className="mt-1"><strong>{previewTotal}</strong> produtos serão atualizados.</div>
                 </div>
               </div>
@@ -301,11 +335,14 @@ export function PriceIncreaseWizard({
           </div>
         )}
 
-        {step === 5 && result && (
+        {step === 6 && result && (
           <div className="space-y-3">
             <div className="rounded-md border border-green-500/40 bg-green-500/5 p-4 text-sm">
-              <div className="font-semibold text-green-700 mb-2">Reajuste concluído com sucesso.</div>
+              <div className="font-semibold text-green-700 mb-2">
+                Alteração concluída com sucesso.
+              </div>
               <ul className="space-y-1 text-muted-foreground">
+                <li>Tipo: <strong className="text-foreground">{dirLabel}</strong></li>
                 <li>Categoria: <strong className="text-foreground">{catLabel}</strong></li>
                 <li>Fornecedor: <strong className="text-foreground">{selectedSupplier ? supplierLabel(selectedSupplier) : "—"}</strong></li>
                 <li>Percentual: <strong className="text-foreground">{percent.toLocaleString("pt-BR")}%</strong></li>
@@ -319,45 +356,48 @@ export function PriceIncreaseWizard({
           {step === 1 && (
             <>
               <Button variant="outline" onClick={() => handleClose(false)}>Cancelar</Button>
-              <Button onClick={() => setStep(2)}>Próximo</Button>
+              <Button onClick={() => setStep(2)} disabled={!direction}>Próximo</Button>
             </>
           )}
           {step === 2 && (
             <>
               <Button variant="outline" onClick={() => setStep(1)}>Voltar</Button>
-              <Button
-                onClick={() => setStep(3)}
-                disabled={!supplierId || (isGlobalSupplier && !isAdmin)}
-              >
-                Próximo
-              </Button>
+              <Button onClick={() => setStep(3)}>Próximo</Button>
             </>
           )}
           {step === 3 && (
             <>
               <Button variant="outline" onClick={() => setStep(2)}>Voltar</Button>
-              <Button onClick={goPreview} disabled={!percentValid || loadingPreview}>
-                {loadingPreview && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              <Button onClick={() => setStep(4)} disabled={!supplierId}>
                 Próximo
               </Button>
             </>
           )}
           {step === 4 && (
             <>
-              <Button variant="outline" onClick={() => setStep(3)} disabled={applying}>
-                Voltar
-              </Button>
-              <Button
-                onClick={applyIncrease}
-                disabled={applying || previewTotal === 0}
-                className="bg-gradient-brand text-brand-foreground shadow-brand"
-              >
-                {applying && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Confirmar aumento
+              <Button variant="outline" onClick={() => setStep(3)}>Voltar</Button>
+              <Button onClick={goPreview} disabled={!percentValid || loadingPreview}>
+                {loadingPreview && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Próximo
               </Button>
             </>
           )}
           {step === 5 && (
+            <>
+              <Button variant="outline" onClick={() => setStep(4)} disabled={applying}>
+                Voltar
+              </Button>
+              <Button
+                onClick={applyChange}
+                disabled={applying || previewTotal === 0}
+                className="bg-gradient-brand text-brand-foreground shadow-brand"
+              >
+                {applying && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Confirmar {isDecrease ? "redução" : "aumento"}
+              </Button>
+            </>
+          )}
+          {step === 6 && (
             <Button onClick={() => handleClose(false)}>Concluir</Button>
           )}
         </DialogFooter>

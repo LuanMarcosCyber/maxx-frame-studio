@@ -618,6 +618,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          direction: string
           id: string
           owner_user_id: string
           percentage: number
@@ -629,6 +630,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
+          direction?: string
           id?: string
           owner_user_id: string
           percentage: number
@@ -640,6 +642,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          direction?: string
           id?: string
           owner_user_id?: string
           percentage?: number
@@ -958,7 +961,12 @@ export type Database = {
     }
     Functions: {
       apply_price_increase: {
-        Args: { _category: string; _percentage: number; _supplier_id: string }
+        Args: {
+          _category: string
+          _direction?: string
+          _percentage: number
+          _supplier_id: string
+        }
         Returns: {
           history_id: string
           products_affected: number
@@ -1104,7 +1112,12 @@ export type Database = {
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
       preview_price_increase: {
-        Args: { _category: string; _percentage: number; _supplier_id: string }
+        Args: {
+          _category: string
+          _direction?: string
+          _percentage: number
+          _supplier_id: string
+        }
         Returns: {
           sample: Json
           total: number

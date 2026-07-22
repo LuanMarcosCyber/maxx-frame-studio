@@ -679,7 +679,7 @@ function Produtos() {
                 variant="outline"
                 onClick={() => setPriceIncreaseOpen(true)}
               >
-                <TrendingUp className="h-4 w-4 mr-1.5" /> Aumento de preço
+                <TrendingUp className="h-4 w-4 mr-1.5" /> Alteração nos preços
               </Button>
               <Button
                 variant="outline"
@@ -1418,7 +1418,7 @@ function Produtos() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={restoring}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={restoring || restoreConfirm.trim() !== "RESTAURAR"}
+              disabled={restoring || restoreConfirm.trim().toUpperCase() !== "RESTAURAR"}
               onClick={async (e) => {
                 e.preventDefault();
                 setRestoring(true);
