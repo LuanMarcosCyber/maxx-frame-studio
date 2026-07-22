@@ -4239,6 +4239,7 @@ function NovoOrcamento() {
                 )}
                 {next && (
                   <Button
+                    id="orc-next-step-btn"
                     type="button"
                     onClick={() => tryAdvance(next.key)}
                     className="w-full sm:w-auto bg-gradient-brand text-brand-foreground shadow-brand hover:opacity-90"
