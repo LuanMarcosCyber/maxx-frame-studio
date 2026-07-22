@@ -1110,9 +1110,25 @@ export type Database = {
           total: number
         }[]
       }
+      preview_restore_default_catalog: {
+        Args: never
+        Returns: {
+          commercial_configs: number
+          global_products: number
+          particular_products: number
+        }[]
+      }
       reset_company_product_override: {
         Args: { _global_product_id: string }
         Returns: boolean
+      }
+      restore_default_catalog: {
+        Args: never
+        Returns: {
+          commercial_configs_removed: number
+          global_products: number
+          particular_products_deleted: number
+        }[]
       }
       set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
