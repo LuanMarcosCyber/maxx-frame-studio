@@ -678,6 +678,34 @@ function NovoOrcamento() {
 
   const [active, setActive] = useState<StepKey>("tamanho");
 
+  // Enter avança para a próxima etapa quando não há campo em edição.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isEditable = (el: Element | null): boolean => {
+      if (!el || !(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (el.isContentEditable) return true;
+      const role = el.getAttribute("role");
+      if (role && ["combobox", "searchbox", "textbox", "listbox", "option", "menuitem"].includes(role)) return true;
+      // Radix popovers/dialogs abertos indicam interação ativa
+      if (document.querySelector('[data-state="open"][role="dialog"], [data-state="open"][role="listbox"], [data-state="open"][role="menu"]')) return true;
+      return false;
+    };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isEditable(document.activeElement)) return;
+      const btn = document.getElementById("orc-next-step-btn") as HTMLButtonElement | null;
+      if (btn && !btn.disabled) {
+        e.preventDefault();
+        btn.click();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+
   // Items list (persisted snapshots) and which one is active
   const [items, setItems] = useState<ItemSnapshot[]>([{ ...emptyItem }]);
   const [activeIndex, setActiveIndex] = useState<number>(0);
