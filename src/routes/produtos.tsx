@@ -446,7 +446,7 @@ function Produtos() {
     req("code", "Informe o código.");
     req("description", "Informe a descrição.");
     req("supplier", "Informe o fornecedor / fabricante.");
-    req("value_per_meter", "Informe o valor do metro.");
+    req("value_per_meter", activeCategory === "Perfil" ? "Informe o custo do metro linear." : "Informe o custo do metro².");
     req("profit_margin", "Informe a margem.");
     req("waste_percentage", "Informe a perda.");
     const value = parseNum(form.value_per_meter || "0");
@@ -1149,7 +1149,9 @@ function Produtos() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="val">Valor do metro (R$) *</Label>
+                  <Label htmlFor="val">
+                    {activeCategory === "Perfil" ? "Custo do metro linear (R$)" : "Custo do metro² (R$)"} *
+                  </Label>
                   <Input
                     id="val"
                     inputMode="decimal"
