@@ -1418,7 +1418,7 @@ function Produtos() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={restoring}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              disabled={restoring || restoreConfirm.trim() !== "RESTAURAR"}
+              disabled={restoring || restoreConfirm.trim().toUpperCase() !== "RESTAURAR"}
               onClick={async (e) => {
                 e.preventDefault();
                 setRestoring(true);
