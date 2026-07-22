@@ -171,6 +171,14 @@ function Produtos() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardAutoOpened, setWizardAutoOpened] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreConfirm, setRestoreConfirm] = useState("");
+  const [restoring, setRestoring] = useState(false);
+  const [restorePreview, setRestorePreview] = useState<{
+    particular_products: number;
+    commercial_configs: number;
+    global_products: number;
+  } | null>(null);
 
   // Debounce da busca e reset de página ao alterar filtros/categoria.
   useEffect(() => {
@@ -679,10 +687,30 @@ function Produtos() {
               >
                 <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
               </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setRestoreConfirm("");
+                  setRestorePreview(null);
+                  setRestoreOpen(true);
+                  const { data, error } = await supabase.rpc("preview_restore_default_catalog");
+                  if (error) {
+                    toast.error(error.message);
+                    return;
+                  }
+                  const row = Array.isArray(data) ? data[0] : data;
+                  if (row) setRestorePreview(row as any);
+                }}
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <RotateCcw className="h-4 w-4 mr-1.5" /> Restaurar catálogo padrão
+              </Button>
             </div>
           )}
         </div>
       </Card>
+
+
 
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
@@ -1327,6 +1355,104 @@ function Produtos() {
         pending={wizardPending}
         ownerUserId={ownerUserId}
       />
+
+      <AlertDialog
+        open={restoreOpen}
+        onOpenChange={(o) => {
+          if (restoring) return;
+          setRestoreOpen(o);
+          if (!o) {
+            setRestoreConfirm("");
+            setRestorePreview(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar catálogo padrão?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  Esta ação excluirá permanentemente todos os produtos cadastrados
+                  exclusivamente por esta empresa e removerá todas as configurações
+                  comerciais aplicadas aos produtos globais.
+                </p>
+                <p>
+                  Após a restauração, permanecerão apenas os produtos do catálogo
+                  global, com margem, perda, comissão e mão de obra pendentes de nova
+                  configuração.
+                </p>
+                <p className="text-muted-foreground">
+                  Pedidos e orçamentos antigos não serão alterados.
+                </p>
+                <div className="rounded-md border bg-muted/40 p-3 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Produtos particulares que serão excluídos:</span>
+                    <b>{restorePreview?.particular_products ?? "…"}</b>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Configurações comerciais que serão removidas:</span>
+                    <b>{restorePreview?.commercial_configs ?? "…"}</b>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Produtos globais que permanecerão:</span>
+                    <b>{restorePreview?.global_products ?? "…"}</b>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="restore-confirm" className="text-xs">
+                    Para confirmar, digite <b>RESTAURAR</b>:
+                  </Label>
+                  <Input
+                    id="restore-confirm"
+                    autoFocus
+                    value={restoreConfirm}
+                    onChange={(e) => setRestoreConfirm(e.target.value)}
+                    placeholder="RESTAURAR"
+                    disabled={restoring}
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={restoring}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={restoring || restoreConfirm.trim() !== "RESTAURAR"}
+              onClick={async (e) => {
+                e.preventDefault();
+                setRestoring(true);
+                const toastId = toast.loading("Restaurando catálogo padrão...");
+                try {
+                  const { error } = await supabase.rpc("restore_default_catalog");
+                  if (error) throw error;
+                  toast.success("Catálogo padrão restaurado com sucesso.", {
+                    id: toastId,
+                    description:
+                      "Os produtos particulares foram removidos e os produtos globais estão prontos para uma nova configuração comercial.",
+                  });
+                  setRestoreOpen(false);
+                  setRestoreConfirm("");
+                  setRestorePreview(null);
+                  await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ["products"] }),
+                    queryClient.invalidateQueries({ queryKey: ["supplier-wizard-state"] }),
+                  ]);
+                  setWizardAutoOpened(false);
+                  setWizardOpen(true);
+                } catch (err: any) {
+                  toast.error(err?.message ?? "Erro ao restaurar catálogo.", { id: toastId });
+                } finally {
+                  setRestoring(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {restoring ? "Restaurando..." : "Restaurar catálogo padrão"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
