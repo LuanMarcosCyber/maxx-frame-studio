@@ -710,11 +710,7 @@ function Produtos() {
         </div>
       </Card>
 
-      {/* placeholder to keep line alignment */}
-      {false && <span />}
-      {(() => null)()}
-      {/* end */}
-      <div style={{ display: "none" }}>x</div>
+
 
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
