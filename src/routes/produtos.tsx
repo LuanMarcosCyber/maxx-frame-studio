@@ -687,10 +687,34 @@ function Produtos() {
               >
                 <Upload className="h-4 w-4 mr-1.5" /> Importar Produtos
               </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setRestoreConfirm("");
+                  setRestorePreview(null);
+                  setRestoreOpen(true);
+                  const { data, error } = await supabase.rpc("preview_restore_default_catalog");
+                  if (error) {
+                    toast.error(error.message);
+                    return;
+                  }
+                  const row = Array.isArray(data) ? data[0] : data;
+                  if (row) setRestorePreview(row as any);
+                }}
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <RotateCcw className="h-4 w-4 mr-1.5" /> Restaurar catálogo padrão
+              </Button>
             </div>
           )}
         </div>
       </Card>
+
+      {/* placeholder to keep line alignment */}
+      {false && <span />}
+      {(() => null)()}
+      {/* end */}
+      <div style={{ display: "none" }}>x</div>
 
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
