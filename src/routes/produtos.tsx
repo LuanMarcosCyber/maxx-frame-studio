@@ -171,6 +171,14 @@ function Produtos() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardAutoOpened, setWizardAutoOpened] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreConfirm, setRestoreConfirm] = useState("");
+  const [restoring, setRestoring] = useState(false);
+  const [restorePreview, setRestorePreview] = useState<{
+    particular_products: number;
+    commercial_configs: number;
+    global_products: number;
+  } | null>(null);
 
   // Debounce da busca e reset de página ao alterar filtros/categoria.
   useEffect(() => {
