@@ -2060,7 +2060,7 @@ function NovoOrcamento() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="top-colaborador">Colaborador</Label>
+                <Label htmlFor="top-colaborador">Usuário</Label>
                 <Popover
                   open={
                     colabSugestoesOpen &&
@@ -2075,7 +2075,7 @@ function NovoOrcamento() {
                     <div className="w-full">
                       <Input
                         id="top-colaborador"
-                        placeholder="Nome do colaborador"
+                        placeholder="Nome do usuário"
                         value={vendedorNome}
                         className="uppercase"
                         autoComplete="off"
