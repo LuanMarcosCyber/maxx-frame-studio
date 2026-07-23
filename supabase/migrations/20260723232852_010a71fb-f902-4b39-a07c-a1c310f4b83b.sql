@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.log_product_stock_change() FROM PUBLIC, anon, authenticated;
