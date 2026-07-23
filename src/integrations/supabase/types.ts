@@ -572,6 +572,8 @@ export type Database = {
           operator_id: string | null
           operator_name: string | null
           status: string
+          stock_processed: boolean
+          stock_snapshot: Json | null
           total_value: number
           updated_at: string
           user_id: string
@@ -586,6 +588,8 @@ export type Database = {
           operator_id?: string | null
           operator_name?: string | null
           status?: string
+          stock_processed?: boolean
+          stock_snapshot?: Json | null
           total_value?: number
           updated_at?: string
           user_id: string
@@ -600,6 +604,8 @@ export type Database = {
           operator_id?: string | null
           operator_name?: string | null
           status?: string
+          stock_processed?: boolean
+          stock_snapshot?: Json | null
           total_value?: number
           updated_at?: string
           user_id?: string
@@ -682,6 +688,7 @@ export type Database = {
           ncm: string | null
           profit_margin: number
           source_global_product_id: string | null
+          stock_quantity: number
           supplier: string | null
           supplier_id: string | null
           updated_at: string
@@ -704,6 +711,7 @@ export type Database = {
           ncm?: string | null
           profit_margin?: number
           source_global_product_id?: string | null
+          stock_quantity?: number
           supplier?: string | null
           supplier_id?: string | null
           updated_at?: string
@@ -726,6 +734,7 @@ export type Database = {
           ncm?: string | null
           profit_margin?: number
           source_global_product_id?: string | null
+          stock_quantity?: number
           supplier?: string | null
           supplier_id?: string | null
           updated_at?: string
@@ -856,6 +865,63 @@ export type Database = {
           },
         ]
       }
+      stock_movements: {
+        Row: {
+          created_at: string
+          id: string
+          movement_type: string
+          new_stock: number
+          notes: string | null
+          order_id: string | null
+          owner_user_id: string
+          previous_stock: number
+          product_id: string
+          quantity: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movement_type: string
+          new_stock: number
+          notes?: string | null
+          order_id?: string | null
+          owner_user_id: string
+          previous_stock: number
+          product_id: string
+          quantity: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movement_type?: string
+          new_stock?: number
+          notes?: string | null
+          order_id?: string | null
+          owner_user_id?: string
+          previous_stock?: number
+          product_id?: string
+          quantity?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           active: boolean
@@ -978,6 +1044,7 @@ export type Database = {
           products_affected: number
         }[]
       }
+      apply_order_stock: { Args: { _order_id: string }; Returns: Json }
       apply_price_increase: {
         Args: {
           _category: string
@@ -1173,6 +1240,7 @@ export type Database = {
           particular_products_deleted: number
         }[]
       }
+      revert_order_stock: { Args: { _order_id: string }; Returns: Json }
       set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
       upsert_company_product_override: {

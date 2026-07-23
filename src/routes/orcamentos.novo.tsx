@@ -132,7 +132,9 @@ type Produto = {
   category: string | null;
   frame_width_cm: number | null;
   labor_cost: number | null;
+  stock_quantity?: number | null;
 };
+
 
 const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -1028,10 +1030,35 @@ function NovoOrcamento() {
     ["Impressão", "Impressao"],
     !!session,
   );
-  const { data: diversosProdutos = [], isLoading: loadingDiversos } = useCategoryProducts(
+  const { data: diversosProdutosRaw = [], isLoading: loadingDiversos } = useCategoryProducts(
     ["produtos_diversos"],
     !!session,
   );
+  const { data: diversosStockMap } = useQuery({
+    queryKey: ["products", "diversos-stock"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, stock_quantity")
+        .eq("category", "produtos_diversos");
+      if (error) throw error;
+      const m = new Map<string, number>();
+      ((data ?? []) as Array<{ id: string; stock_quantity: number | null }>).forEach((r) =>
+        m.set(r.id, Number(r.stock_quantity ?? 0)),
+      );
+      return m;
+    },
+  });
+  const diversosProdutos = useMemo<Produto[]>(
+    () =>
+      diversosProdutosRaw.map((p) => ({
+        ...p,
+        stock_quantity: diversosStockMap?.get(p.id) ?? 0,
+      })),
+    [diversosProdutosRaw, diversosStockMap],
+  );
+
 
   // Lista de clientes (escopo: dono / colaboradores via RLS)
   const { data: clientes = [] } = useQuery({
@@ -1885,6 +1912,7 @@ function NovoOrcamento() {
           operator_id: activeOperator?.id ?? null,
           operator_name: activeOperator?.full_name ?? null,
         };
+        let orderId: string | null = existingOrder?.id ?? null;
         if (existingOrder?.id) {
           const { error: updErr } = await supabase
             .from("orders")
@@ -1893,16 +1921,60 @@ function NovoOrcamento() {
           if (updErr) throw updErr;
         } else {
           const orderNumber = String(await nextDocumentNumberFn({ data: { kind: "order" } }));
-          const { error: insOrdErr } = await supabase.from("orders").insert({
-            user_id: ownerUserId ?? session.user.id,
-            created_by: session.user.id,
-            number: orderNumber,
-            budget_id: budgetId,
-            ...orderPayload,
-          });
+          const { data: insertedOrder, error: insOrdErr } = await supabase
+            .from("orders")
+            .insert({
+              user_id: ownerUserId ?? session.user.id,
+              created_by: session.user.id,
+              number: orderNumber,
+              budget_id: budgetId,
+              ...orderPayload,
+            })
+            .select("id")
+            .single();
           if (insOrdErr) throw insOrdErr;
+          orderId = (insertedOrder as { id: string } | null)?.id ?? null;
+        }
+
+        // Baixa de estoque para Produtos Diversos (idempotente no servidor)
+        if (orderId) {
+          const { error: stockErr } = await supabase.rpc("apply_order_stock", {
+            _order_id: orderId,
+          });
+          if (stockErr) {
+            // Reverte status do orçamento e desfaz o pedido recém-criado
+            await supabase.from("budgets").update({ status: "Pendente" }).eq("id", budgetId);
+            if (!existingOrder?.id) {
+              await supabase.from("orders").delete().eq("id", orderId);
+            }
+            let msg = "Estoque insuficiente para aprovar o orçamento.";
+            const raw = stockErr.message ?? "";
+            const match = raw.match(/INSUFFICIENT_STOCK:(.+)$/);
+            if (match) {
+              try {
+                const deficits = JSON.parse(match[1]) as Array<{
+                  product_id: string;
+                  requested: number;
+                  available: number;
+                }>;
+                const lines = deficits.map((d) => {
+                  const prod = diversosProdutos.find((p) => p.id === d.product_id);
+                  const nm = prod ? `${prod.code} — ${prod.description}` : d.product_id;
+                  return `${nm}: pedido ${d.requested}, disponível ${d.available}`;
+                });
+                msg = `Estoque insuficiente:\n${lines.join("\n")}`;
+              } catch {
+                // keep default message
+              }
+            }
+            throw new Error(msg);
+          }
+          await queryClient.invalidateQueries({ queryKey: ["products", "diversos-stock"] });
+          await queryClient.invalidateQueries({ queryKey: ["products"] });
         }
       }
+
+
 
       if ((opts.skipDiscountCheck || opts.pendingDiscount) && !approve) {
         // Silent save for discount authorization request flow
@@ -3256,7 +3328,11 @@ function NovoOrcamento() {
                   </p>
                 )}
 
-                {produtosDiversos.map((di, idx) => (
+                {produtosDiversos.map((di, idx) => {
+                  const prodMeta = diversosProdutos.find((p) => p.id === di.productId);
+                  const stockAvail = Number(prodMeta?.stock_quantity ?? 0);
+                  const stockKnown = !!prodMeta;
+                  return (
                   <div
                     key={di.uid}
                     className="rounded-md border border-border bg-muted/20 p-4 space-y-3"
@@ -3269,6 +3345,7 @@ function NovoOrcamento() {
                           value={di.productId}
                           onChange={(pid) => {
                             const prod = diversosProdutos.find((p) => p.id === pid);
+                            const maxStock = Number(prod?.stock_quantity ?? 0);
                             setProdutosDiversos((prev) =>
                               prev.map((it, i) =>
                                 i === idx
@@ -3278,6 +3355,10 @@ function NovoOrcamento() {
                                       code: prod?.code ?? "",
                                       nome: prod?.description ?? "",
                                       valorUnitario: Number(prod?.value_per_meter ?? 0),
+                                      quantidade: Math.min(
+                                        Math.max(1, it.quantidade),
+                                        maxStock > 0 ? maxStock : it.quantidade,
+                                      ),
                                     }
                                   : it,
                               ),
@@ -3287,7 +3368,18 @@ function NovoOrcamento() {
                           loading={loadingDiversos}
                           placeholder="Selecione um produto"
                           emptyLabel="Nenhum produto diverso cadastrado."
+                          showStock
                         />
+                        {stockKnown && stockAvail <= 0 && (
+                          <p className="text-[11px] text-destructive">
+                            Sem estoque disponível para este produto.
+                          </p>
+                        )}
+                        {stockKnown && stockAvail > 0 && stockAvail <= 5 && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                            Estoque baixo: {stockAvail} unidade(s) disponível(is).
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor={`qtd-${di.uid}`}>Quantidade</Label>
@@ -3296,9 +3388,16 @@ function NovoOrcamento() {
                           type="number"
                           min={1}
                           step={1}
+                          max={stockAvail > 0 ? stockAvail : undefined}
                           value={String(di.quantidade)}
                           onChange={(e) => {
-                            const n = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                            let n = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                            if (stockKnown && stockAvail > 0 && n > stockAvail) {
+                              n = stockAvail;
+                              toast.error(
+                                `Quantidade limitada ao estoque disponível (${stockAvail}).`,
+                              );
+                            }
                             setProdutosDiversos((prev) =>
                               prev.map((it, i) =>
                                 i === idx ? { ...it, quantidade: n } : it,
@@ -3307,6 +3406,7 @@ function NovoOrcamento() {
                           }}
                         />
                       </div>
+
                       <Button
                         type="button"
                         variant="outline"
@@ -3326,7 +3426,9 @@ function NovoOrcamento() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
+
 
                 <Button
                   type="button"
@@ -4644,6 +4746,7 @@ function ProductSelect({
   allowNone = false,
   noneLabel = "Nenhum",
   triggerClassName,
+  showStock = false,
 }: {
   id: string;
   value: string;
@@ -4655,10 +4758,12 @@ function ProductSelect({
   allowNone?: boolean;
   noneLabel?: string;
   triggerClassName?: string;
+  showStock?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = products.find((p) => p.id === value);
   const label = (p: Produto) => `${p.code}${p.description ? ` — ${p.description}` : ""}`;
+  const stockOf = (p: Produto) => Number(p.stock_quantity ?? 0);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -4676,7 +4781,8 @@ function ProductSelect({
             {loading
               ? "Carregando..."
               : selected
-                ? label(selected)
+                ? label(selected) +
+                  (showStock ? ` • Estoque: ${stockOf(selected)}` : "")
                 : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -4715,29 +4821,53 @@ function ProductSelect({
                 </CommandItem>
               )}
 
-              {products.map((p) => (
-                <CommandItem
-                  key={p.id}
-                  value={label(p)}
-                  onSelect={() => {
-                    onChange(p.id);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === p.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span className="truncate">{label(p)}</span>
-                </CommandItem>
-              ))}
+              {products.map((p) => {
+                const stock = stockOf(p);
+                const disabled = showStock && stock <= 0;
+                return (
+                  <CommandItem
+                    key={p.id}
+                    value={label(p)}
+                    disabled={disabled}
+                    onSelect={() => {
+                      if (disabled) return;
+                      onChange(p.id);
+                      setOpen(false);
+                    }}
+                    className={cn(disabled && "opacity-50 cursor-not-allowed")}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === p.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                      <span className="truncate">{label(p)}</span>
+                      {showStock && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded-md shrink-0",
+                            stock <= 0
+                              ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                              : stock <= 5
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+                          )}
+                        >
+                          {stock <= 0 ? "Sem estoque" : `Est: ${stock}`}
+                        </span>
+                      )}
+                    </div>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
+
   );
 }
 

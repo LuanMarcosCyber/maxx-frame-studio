@@ -218,6 +218,7 @@ function Orcamentos() {
         total_value: Number(approving.total_value),
         status: "Aprovado",
       };
+      let orderId: string | null = existingOrder?.id ?? null;
       if (existingOrder?.id) {
         const { error: upoErr } = await supabase
           .from("orders")
@@ -226,15 +227,55 @@ function Orcamentos() {
         if (upoErr) throw upoErr;
       } else {
         const orderNumber = String(await nextDocumentNumberFn({ data: { kind: "order" } }));
-        const { error: insErr } = await supabase.from("orders").insert({
-          user_id: ownerUserId ?? session.user.id,
-          created_by: approving.created_by ?? session.user.id,
-          number: orderNumber,
-          budget_id: approving.id,
-          ...orderPayload,
-        });
+        const { data: inserted, error: insErr } = await supabase
+          .from("orders")
+          .insert({
+            user_id: ownerUserId ?? session.user.id,
+            created_by: approving.created_by ?? session.user.id,
+            number: orderNumber,
+            budget_id: approving.id,
+            ...orderPayload,
+          })
+          .select("id")
+          .single();
         if (insErr) throw insErr;
+        orderId = (inserted as { id: string } | null)?.id ?? null;
       }
+
+      if (orderId) {
+        const { error: stockErr } = await supabase.rpc("apply_order_stock", {
+          _order_id: orderId,
+        });
+        if (stockErr) {
+          await supabase.from("budgets").update({ status: "Pendente" }).eq("id", approving.id);
+          if (!existingOrder?.id) {
+            await supabase.from("orders").delete().eq("id", orderId);
+          }
+          const raw = stockErr.message ?? "";
+          const match = raw.match(/INSUFFICIENT_STOCK:(.+)$/);
+          let msg = "Estoque insuficiente para aprovar o orçamento.";
+          if (match) {
+            try {
+              const deficits = JSON.parse(match[1]) as Array<{
+                product_id: string;
+                requested: number;
+                available: number;
+              }>;
+              msg =
+                "Estoque insuficiente:\n" +
+                deficits
+                  .map((d) => `${d.product_id}: pedido ${d.requested}, disponível ${d.available}`)
+                  .join("\n");
+            } catch {
+              // keep default message
+            }
+          }
+          throw new Error(msg);
+        }
+        await queryClient.invalidateQueries({ queryKey: ["products", "diversos-stock"] });
+        await queryClient.invalidateQueries({ queryKey: ["products"] });
+      }
+
 
       toast.success("Orçamento aprovado e movido para Pedidos.");
       setApproving(null);

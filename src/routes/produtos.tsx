@@ -95,6 +95,7 @@ type Product = {
   ncm: string | null;
   has_override?: boolean;
   base_price?: number;
+  stock_quantity?: number;
 };
 
 type FormState = {
@@ -111,6 +112,7 @@ type FormState = {
   labor_cost: string;
   commission_percentage: string;
   ncm: string;
+  stock_quantity: string;
 };
 
 const emptyForm: FormState = {
@@ -127,7 +129,9 @@ const emptyForm: FormState = {
   labor_cost: "",
   commission_percentage: "",
   ncm: "",
+  stock_quantity: "0",
 };
+
 
 function buildPageList(current: number, total: number): Array<number | "…"> {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -260,10 +264,34 @@ function Produtos() {
     },
   });
 
+  // Supplementary: fetch stock_quantity for Produtos Diversos of the active company
+  const { data: stockMap } = useQuery({
+    queryKey: ["products", "stock", ownerUserId],
+    enabled: !!session && !!ownerUserId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, stock_quantity")
+        .eq("category", "produtos_diversos");
+      if (error) throw error;
+      const m = new Map<string, number>();
+      ((data ?? []) as Array<{ id: string; stock_quantity: number | null }>).forEach((r) =>
+        m.set(r.id, Number(r.stock_quantity ?? 0)),
+      );
+      return m;
+    },
+  });
+
+
   const filteredRows = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const rows = allProducts
       .filter((p) => (p.category ?? "") === activeCategory)
+      .map((p) =>
+        p.category === "produtos_diversos" && stockMap
+          ? { ...p, stock_quantity: stockMap.get(p.id) ?? 0 }
+          : p,
+      )
       .filter((p) => {
         if (!q) return true;
         return (
@@ -275,7 +303,8 @@ function Produtos() {
         );
       });
     return rows.sort((a, b) => naturalCompare(a.code ?? "", b.code ?? ""));
-  }, [allProducts, activeCategory, debouncedSearch]);
+  }, [allProducts, activeCategory, debouncedSearch, stockMap]);
+
 
   const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -324,7 +353,9 @@ function Produtos() {
           ? ""
           : String(p.commission_percentage).replace(".", ","),
       ncm: p.ncm ?? "",
+      stock_quantity: String(p.stock_quantity ?? 0),
     });
+
 
     setDialogOpen(true);
   };
@@ -406,6 +437,13 @@ function Produtos() {
         toast.error("Preencha os campos obrigatórios.");
         return;
       }
+      const stockRaw = (form.stock_quantity ?? "").trim();
+      const stock = stockRaw === "" ? 0 : Number(stockRaw.replace(/[^\d-]/g, ""));
+      if (!Number.isFinite(stock) || !Number.isInteger(stock) || stock < 0) {
+        setErrors((prev) => ({ ...prev, stock_quantity: "Estoque inválido." }));
+        toast.error("Estoque atual deve ser um número inteiro maior ou igual a zero.");
+        return;
+      }
       setSaving(true);
       try {
         const payload = {
@@ -422,6 +460,7 @@ function Produtos() {
           supplier_id: form.supplier_id,
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
+          stock_quantity: stock,
         };
 
         if (editing) {
@@ -443,6 +482,7 @@ function Produtos() {
         setForm(emptyForm);
         setErrors({});
         queryClient.invalidateQueries({ queryKey: ["products"] });
+
       } catch (e: any) {
         toast.error(e.message ?? "Erro ao salvar produto.");
       } finally {
@@ -765,7 +805,9 @@ function Produtos() {
                     {showInternal && (
                       <th className="font-medium py-3 px-3">Valor</th>
                     )}
+                    <th className="font-medium py-3 px-3">Estoque</th>
                     {showCommission && <th className="font-medium py-3 px-3">Comissão</th>}
+
                     <th className="font-medium py-3 px-3">Descrição</th>
                     {canEdit && (
                       <th className="font-medium py-3 px-6 text-right">Ações</th>
@@ -817,11 +859,29 @@ function Produtos() {
                           {fmtMoney(Number(p.value_per_meter))}
                         </td>
                       )}
+                      <td className="py-3.5 px-3">
+                        {(() => {
+                          const s = Number(p.stock_quantity ?? 0);
+                          const cls =
+                            s <= 0
+                              ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                              : s <= 5
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
+                          const label = s <= 0 ? "Sem estoque" : s <= 5 ? `${s} • baixo` : `${s}`;
+                          return (
+                            <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       {showCommission && (
                         <td className="py-3.5 px-3 text-muted-foreground">
                           {Number(p.commission_percentage ?? 0) > 0 ? fmtPct(Number(p.commission_percentage)) : "—"}
                         </td>
                       )}
+
                       <td className="py-3.5 px-3 text-muted-foreground max-w-xs truncate">
                         {p.description || "—"}
                       </td>
@@ -1103,15 +1163,38 @@ function Produtos() {
                   <FieldError field="commission_percentage" />
                 </div>
               )}
-              <div className="space-y-1.5">
-                <Label htmlFor="d-ncm">NCM</Label>
-                <Input
-                  id="d-ncm"
-                  placeholder="Opcional"
-                  value={form.ncm}
-                  onChange={(e) => updateField("ncm", e.target.value)}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-ncm">NCM</Label>
+                  <Input
+                    id="d-ncm"
+                    placeholder="Opcional"
+                    value={form.ncm}
+                    onChange={(e) => updateField("ncm", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-stock">Estoque atual *</Label>
+                  <Input
+                    id="d-stock"
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={form.stock_quantity}
+                    onChange={(e) =>
+                      updateField("stock_quantity", e.target.value.replace(/[^\d]/g, ""))
+                    }
+                    className={errCls("stock_quantity")}
+                  />
+                  <FieldError field="stock_quantity" />
+                  <p className="text-[11px] text-muted-foreground">
+                    Quantidade em estoque. Será descontada ao aprovar orçamentos.
+                  </p>
+                </div>
               </div>
+
             </div>
 
           ) : (
