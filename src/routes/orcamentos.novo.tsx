@@ -4671,6 +4671,7 @@ function ProductSelect({
   allowNone = false,
   noneLabel = "Nenhum",
   triggerClassName,
+  showStock = false,
 }: {
   id: string;
   value: string;
@@ -4682,10 +4683,12 @@ function ProductSelect({
   allowNone?: boolean;
   noneLabel?: string;
   triggerClassName?: string;
+  showStock?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = products.find((p) => p.id === value);
   const label = (p: Produto) => `${p.code}${p.description ? ` — ${p.description}` : ""}`;
+  const stockOf = (p: Produto) => Number(p.stock_quantity ?? 0);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -4703,7 +4706,8 @@ function ProductSelect({
             {loading
               ? "Carregando..."
               : selected
-                ? label(selected)
+                ? label(selected) +
+                  (showStock ? ` • Estoque: ${stockOf(selected)}` : "")
                 : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -4742,29 +4746,53 @@ function ProductSelect({
                 </CommandItem>
               )}
 
-              {products.map((p) => (
-                <CommandItem
-                  key={p.id}
-                  value={label(p)}
-                  onSelect={() => {
-                    onChange(p.id);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === p.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span className="truncate">{label(p)}</span>
-                </CommandItem>
-              ))}
+              {products.map((p) => {
+                const stock = stockOf(p);
+                const disabled = showStock && stock <= 0;
+                return (
+                  <CommandItem
+                    key={p.id}
+                    value={label(p)}
+                    disabled={disabled}
+                    onSelect={() => {
+                      if (disabled) return;
+                      onChange(p.id);
+                      setOpen(false);
+                    }}
+                    className={cn(disabled && "opacity-50 cursor-not-allowed")}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === p.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                      <span className="truncate">{label(p)}</span>
+                      {showStock && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded-md shrink-0",
+                            stock <= 0
+                              ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                              : stock <= 5
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+                          )}
+                        >
+                          {stock <= 0 ? "Sem estoque" : `Est: ${stock}`}
+                        </span>
+                      )}
+                    </div>
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
+
   );
 }
 
