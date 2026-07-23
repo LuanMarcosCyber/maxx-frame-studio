@@ -328,7 +328,9 @@ function Produtos() {
           ? ""
           : String(p.commission_percentage).replace(".", ","),
       ncm: p.ncm ?? "",
+      stock_quantity: String(p.stock_quantity ?? 0),
     });
+
 
     setDialogOpen(true);
   };
