@@ -1143,15 +1143,38 @@ function Produtos() {
                   <FieldError field="commission_percentage" />
                 </div>
               )}
-              <div className="space-y-1.5">
-                <Label htmlFor="d-ncm">NCM</Label>
-                <Input
-                  id="d-ncm"
-                  placeholder="Opcional"
-                  value={form.ncm}
-                  onChange={(e) => updateField("ncm", e.target.value)}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-ncm">NCM</Label>
+                  <Input
+                    id="d-ncm"
+                    placeholder="Opcional"
+                    value={form.ncm}
+                    onChange={(e) => updateField("ncm", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="d-stock">Estoque atual *</Label>
+                  <Input
+                    id="d-stock"
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={form.stock_quantity}
+                    onChange={(e) =>
+                      updateField("stock_quantity", e.target.value.replace(/[^\d]/g, ""))
+                    }
+                    className={errCls("stock_quantity")}
+                  />
+                  <FieldError field="stock_quantity" />
+                  <p className="text-[11px] text-muted-foreground">
+                    Quantidade em estoque. Será descontada ao aprovar orçamentos.
+                  </p>
+                </div>
               </div>
+
             </div>
 
           ) : (
