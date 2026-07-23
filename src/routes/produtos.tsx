@@ -264,6 +264,25 @@ function Produtos() {
     },
   });
 
+  // Supplementary: fetch stock_quantity for Produtos Diversos of the active company
+  const { data: stockMap } = useQuery({
+    queryKey: ["products", "stock", ownerUserId],
+    enabled: !!session && !!ownerUserId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, stock_quantity")
+        .eq("category", "produtos_diversos");
+      if (error) throw error;
+      const m = new Map<string, number>();
+      ((data ?? []) as Array<{ id: string; stock_quantity: number | null }>).forEach((r) =>
+        m.set(r.id, Number(r.stock_quantity ?? 0)),
+      );
+      return m;
+    },
+  });
+
+
   const filteredRows = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
     const rows = allProducts
