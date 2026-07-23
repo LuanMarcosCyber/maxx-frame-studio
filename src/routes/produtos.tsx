@@ -859,11 +859,29 @@ function Produtos() {
                           {fmtMoney(Number(p.value_per_meter))}
                         </td>
                       )}
+                      <td className="py-3.5 px-3">
+                        {(() => {
+                          const s = Number(p.stock_quantity ?? 0);
+                          const cls =
+                            s <= 0
+                              ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
+                              : s <= 5
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
+                          const label = s <= 0 ? "Sem estoque" : s <= 5 ? `${s} • baixo` : `${s}`;
+                          return (
+                            <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       {showCommission && (
                         <td className="py-3.5 px-3 text-muted-foreground">
                           {Number(p.commission_percentage ?? 0) > 0 ? fmtPct(Number(p.commission_percentage)) : "—"}
                         </td>
                       )}
+
                       <td className="py-3.5 px-3 text-muted-foreground max-w-xs truncate">
                         {p.description || "—"}
                       </td>
