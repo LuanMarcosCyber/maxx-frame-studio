@@ -1974,8 +1974,7 @@ function NovoOrcamento() {
         }
       }
 
-        }
-      }
+
 
       if ((opts.skipDiscountCheck || opts.pendingDiscount) && !approve) {
         // Silent save for discount authorization request flow
