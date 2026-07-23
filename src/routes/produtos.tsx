@@ -287,6 +287,11 @@ function Produtos() {
     const q = debouncedSearch.trim().toLowerCase();
     const rows = allProducts
       .filter((p) => (p.category ?? "") === activeCategory)
+      .map((p) =>
+        p.category === "produtos_diversos" && stockMap
+          ? { ...p, stock_quantity: stockMap.get(p.id) ?? 0 }
+          : p,
+      )
       .filter((p) => {
         if (!q) return true;
         return (
@@ -298,7 +303,8 @@ function Produtos() {
         );
       });
     return rows.sort((a, b) => naturalCompare(a.code ?? "", b.code ?? ""));
-  }, [allProducts, activeCategory, debouncedSearch]);
+  }, [allProducts, activeCategory, debouncedSearch, stockMap]);
+
 
   const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
