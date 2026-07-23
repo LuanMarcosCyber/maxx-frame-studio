@@ -1912,6 +1912,7 @@ function NovoOrcamento() {
           operator_id: activeOperator?.id ?? null,
           operator_name: activeOperator?.full_name ?? null,
         };
+        let orderId: string | null = existingOrder?.id ?? null;
         if (existingOrder?.id) {
           const { error: updErr } = await supabase
             .from("orders")
@@ -1920,14 +1921,59 @@ function NovoOrcamento() {
           if (updErr) throw updErr;
         } else {
           const orderNumber = String(await nextDocumentNumberFn({ data: { kind: "order" } }));
-          const { error: insOrdErr } = await supabase.from("orders").insert({
-            user_id: ownerUserId ?? session.user.id,
-            created_by: session.user.id,
-            number: orderNumber,
-            budget_id: budgetId,
-            ...orderPayload,
-          });
+          const { data: insertedOrder, error: insOrdErr } = await supabase
+            .from("orders")
+            .insert({
+              user_id: ownerUserId ?? session.user.id,
+              created_by: session.user.id,
+              number: orderNumber,
+              budget_id: budgetId,
+              ...orderPayload,
+            })
+            .select("id")
+            .single();
           if (insOrdErr) throw insOrdErr;
+          orderId = (insertedOrder as { id: string } | null)?.id ?? null;
+        }
+
+        // Baixa de estoque para Produtos Diversos (idempotente no servidor)
+        if (orderId) {
+          const { error: stockErr } = await supabase.rpc("apply_order_stock", {
+            _order_id: orderId,
+          });
+          if (stockErr) {
+            // Reverte status do orçamento e desfaz o pedido recém-criado
+            await supabase.from("budgets").update({ status: "Pendente" }).eq("id", budgetId);
+            if (!existingOrder?.id) {
+              await supabase.from("orders").delete().eq("id", orderId);
+            }
+            let msg = "Estoque insuficiente para aprovar o orçamento.";
+            const raw = stockErr.message ?? "";
+            const match = raw.match(/INSUFFICIENT_STOCK:(.+)$/);
+            if (match) {
+              try {
+                const deficits = JSON.parse(match[1]) as Array<{
+                  product_id: string;
+                  requested: number;
+                  available: number;
+                }>;
+                const lines = deficits.map((d) => {
+                  const prod = diversosProdutos.find((p) => p.id === d.product_id);
+                  const nm = prod ? `${prod.code} — ${prod.description}` : d.product_id;
+                  return `${nm}: pedido ${d.requested}, disponível ${d.available}`;
+                });
+                msg = `Estoque insuficiente:\n${lines.join("\n")}`;
+              } catch {
+                // keep default message
+              }
+            }
+            throw new Error(msg);
+          }
+          await queryClient.invalidateQueries({ queryKey: ["products", "diversos-stock"] });
+          await queryClient.invalidateQueries({ queryKey: ["products"] });
+        }
+      }
+
         }
       }
 
