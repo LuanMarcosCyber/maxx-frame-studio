@@ -805,7 +805,9 @@ function Produtos() {
                     {showInternal && (
                       <th className="font-medium py-3 px-3">Valor</th>
                     )}
+                    <th className="font-medium py-3 px-3">Estoque</th>
                     {showCommission && <th className="font-medium py-3 px-3">Comissão</th>}
+
                     <th className="font-medium py-3 px-3">Descrição</th>
                     {canEdit && (
                       <th className="font-medium py-3 px-6 text-right">Ações</th>
