@@ -95,6 +95,7 @@ type Product = {
   ncm: string | null;
   has_override?: boolean;
   base_price?: number;
+  stock_quantity?: number;
 };
 
 type FormState = {
@@ -111,6 +112,7 @@ type FormState = {
   labor_cost: string;
   commission_percentage: string;
   ncm: string;
+  stock_quantity: string;
 };
 
 const emptyForm: FormState = {
@@ -127,7 +129,9 @@ const emptyForm: FormState = {
   labor_cost: "",
   commission_percentage: "",
   ncm: "",
+  stock_quantity: "0",
 };
+
 
 function buildPageList(current: number, total: number): Array<number | "…"> {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
