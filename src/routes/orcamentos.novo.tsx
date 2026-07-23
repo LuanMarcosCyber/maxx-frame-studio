@@ -143,6 +143,18 @@ function parseNum(v: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function sanitizeMoneyStr(v: string): string {
+  let s = (v ?? "").replace(/[^\d.,]/g, "");
+  const idx = s.search(/[.,]/);
+  if (idx >= 0) {
+    const before = s.slice(0, idx);
+    const sep = s[idx];
+    const after = s.slice(idx + 1).replace(/[.,]/g, "").slice(0, 2);
+    s = before + sep + after;
+  }
+  return s;
+}
+
 function calcAreaValue(prod: Produto | null, altura: number, largura: number) {
   if (!prod || altura <= 0 || largura <= 0) return 0;
   const area = (altura * largura) / 10000;
