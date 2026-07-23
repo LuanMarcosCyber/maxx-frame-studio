@@ -679,7 +679,7 @@ function Produtos() {
                 variant="outline"
                 onClick={() => setPriceIncreaseOpen(true)}
               >
-                <TrendingUp className="h-4 w-4 mr-1.5" /> Alteração nos preços
+                <TrendingUp className="h-4 w-4 mr-1.5" /> Alteração em Massa
               </Button>
               <Button
                 variant="outline"
