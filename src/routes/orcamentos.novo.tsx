@@ -3283,7 +3283,11 @@ function NovoOrcamento() {
                   </p>
                 )}
 
-                {produtosDiversos.map((di, idx) => (
+                {produtosDiversos.map((di, idx) => {
+                  const prodMeta = diversosProdutos.find((p) => p.id === di.productId);
+                  const stockAvail = Number(prodMeta?.stock_quantity ?? 0);
+                  const stockKnown = !!prodMeta;
+                  return (
                   <div
                     key={di.uid}
                     className="rounded-md border border-border bg-muted/20 p-4 space-y-3"
@@ -3296,6 +3300,7 @@ function NovoOrcamento() {
                           value={di.productId}
                           onChange={(pid) => {
                             const prod = diversosProdutos.find((p) => p.id === pid);
+                            const maxStock = Number(prod?.stock_quantity ?? 0);
                             setProdutosDiversos((prev) =>
                               prev.map((it, i) =>
                                 i === idx
@@ -3305,6 +3310,10 @@ function NovoOrcamento() {
                                       code: prod?.code ?? "",
                                       nome: prod?.description ?? "",
                                       valorUnitario: Number(prod?.value_per_meter ?? 0),
+                                      quantidade: Math.min(
+                                        Math.max(1, it.quantidade),
+                                        maxStock > 0 ? maxStock : it.quantidade,
+                                      ),
                                     }
                                   : it,
                               ),
@@ -3314,7 +3323,18 @@ function NovoOrcamento() {
                           loading={loadingDiversos}
                           placeholder="Selecione um produto"
                           emptyLabel="Nenhum produto diverso cadastrado."
+                          showStock
                         />
+                        {stockKnown && stockAvail <= 0 && (
+                          <p className="text-[11px] text-destructive">
+                            Sem estoque disponível para este produto.
+                          </p>
+                        )}
+                        {stockKnown && stockAvail > 0 && stockAvail <= 5 && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                            Estoque baixo: {stockAvail} unidade(s) disponível(is).
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor={`qtd-${di.uid}`}>Quantidade</Label>
@@ -3323,9 +3343,16 @@ function NovoOrcamento() {
                           type="number"
                           min={1}
                           step={1}
+                          max={stockAvail > 0 ? stockAvail : undefined}
                           value={String(di.quantidade)}
                           onChange={(e) => {
-                            const n = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                            let n = Math.max(1, Math.floor(Number(e.target.value) || 1));
+                            if (stockKnown && stockAvail > 0 && n > stockAvail) {
+                              n = stockAvail;
+                              toast.error(
+                                `Quantidade limitada ao estoque disponível (${stockAvail}).`,
+                              );
+                            }
                             setProdutosDiversos((prev) =>
                               prev.map((it, i) =>
                                 i === idx ? { ...it, quantidade: n } : it,
@@ -3334,6 +3361,7 @@ function NovoOrcamento() {
                           }}
                         />
                       </div>
+
                       <Button
                         type="button"
                         variant="outline"
