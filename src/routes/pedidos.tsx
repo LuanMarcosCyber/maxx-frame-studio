@@ -211,6 +211,28 @@ function Pedidos() {
   }, [viewParam, rows, navigate]);
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
+    const current = rows.find((r) => r.id === orderId);
+    const prev = current?.status ?? null;
+
+    // Se estava cancelado e vai para outro status: reaplica baixa de estoque.
+    if (prev === "Cancelado" && newStatus !== "Cancelado") {
+      const { error: reErr } = await supabase.rpc("apply_order_stock", { _order_id: orderId });
+      if (reErr) {
+        const raw = reErr.message ?? "";
+        const match = raw.match(/INSUFFICIENT_STOCK:(.+)$/);
+        toast.error(match ? "Estoque insuficiente para reativar o pedido." : "Não foi possível reativar o estoque.");
+        return false;
+      }
+    }
+    // Se vai para cancelado: devolve estoque antes de atualizar status.
+    if (newStatus === "Cancelado" && prev !== "Cancelado") {
+      const { error: rvErr } = await supabase.rpc("revert_order_stock", { _order_id: orderId });
+      if (rvErr) {
+        toast.error("Não foi possível devolver o estoque do pedido.");
+        return false;
+      }
+    }
+
     const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
@@ -221,6 +243,8 @@ function Pedidos() {
     }
     toast.success(`Status atualizado para "${newStatus}".`);
     await queryClient.invalidateQueries({ queryKey: ["orders"] });
+    await queryClient.invalidateQueries({ queryKey: ["products"] });
+    await queryClient.invalidateQueries({ queryKey: ["products", "diversos-stock"] });
     return true;
   }
 
@@ -240,6 +264,12 @@ function Pedidos() {
   async function handleDelete() {
     const t = target ?? viewing;
     if (!t) return;
+    // Devolve estoque antes de excluir (idempotente; ignora se não havia baixa).
+    const { error: rvErr } = await supabase.rpc("revert_order_stock", { _order_id: t.id });
+    if (rvErr) {
+      toast.error("Não foi possível devolver o estoque antes da exclusão.");
+      return;
+    }
     const { error } = await supabase.from("orders").delete().eq("id", t.id);
     if (error) {
       toast.error("Não foi possível excluir o pedido.");
@@ -250,7 +280,10 @@ function Pedidos() {
     setTarget(null);
     if (viewing && viewing.id === t.id) setViewing(null);
     await queryClient.invalidateQueries({ queryKey: ["orders"] });
+    await queryClient.invalidateQueries({ queryKey: ["products"] });
+    await queryClient.invalidateQueries({ queryKey: ["products", "diversos-stock"] });
   }
+
 
   const actions = viewing ? (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
