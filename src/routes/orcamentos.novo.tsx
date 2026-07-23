@@ -2573,10 +2573,11 @@ function NovoOrcamento() {
                 <div className="w-full sm:w-56 sm:ml-auto">
                   <FieldNum
                     id="mao-obra-extra"
-                    label="Mão de obra extra (R$)"
+                    label="MDOE (R$)"
                     value={maoDeObraExtraStr}
-                    onChange={setMaoDeObraExtraStr}
+                    onChange={(v) => setMaoDeObraExtraStr(sanitizeMoneyStr(v))}
                   />
+
                 </div>
               </div>
 
