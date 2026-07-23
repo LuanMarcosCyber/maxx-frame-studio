@@ -618,10 +618,12 @@ export type Database = {
         Row: {
           category: string
           created_at: string
-          direction: string
+          direction: string | null
+          field: string
           id: string
+          new_value: number | null
           owner_user_id: string
-          percentage: number
+          percentage: number | null
           products_affected: number
           supplier_id: string
           supplier_is_global: boolean
@@ -630,10 +632,12 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
-          direction?: string
+          direction?: string | null
+          field?: string
           id?: string
+          new_value?: number | null
           owner_user_id: string
-          percentage: number
+          percentage?: number | null
           products_affected?: number
           supplier_id: string
           supplier_is_global?: boolean
@@ -642,10 +646,12 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
-          direction?: string
+          direction?: string | null
+          field?: string
           id?: string
+          new_value?: number | null
           owner_user_id?: string
-          percentage?: number
+          percentage?: number | null
           products_affected?: number
           supplier_id?: string
           supplier_is_global?: boolean
@@ -960,6 +966,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_bulk_config_change: {
+        Args: {
+          _category: string
+          _field: string
+          _new_value: number
+          _supplier_id: string
+        }
+        Returns: {
+          history_id: string
+          products_affected: number
+        }[]
+      }
       apply_price_increase: {
         Args: {
           _category: string
@@ -1111,6 +1129,18 @@ export type Database = {
       natural_key: { Args: { _s: string }; Returns: string }
       next_document_number: { Args: { _kind: string }; Returns: string }
       owner_user_id: { Args: { _user_id: string }; Returns: string }
+      preview_bulk_config_change: {
+        Args: {
+          _category: string
+          _field: string
+          _new_value: number
+          _supplier_id: string
+        }
+        Returns: {
+          sample: Json
+          total: number
+        }[]
+      }
       preview_price_increase: {
         Args: {
           _category: string
