@@ -437,6 +437,13 @@ function Produtos() {
         toast.error("Preencha os campos obrigatórios.");
         return;
       }
+      const stockRaw = (form.stock_quantity ?? "").trim();
+      const stock = stockRaw === "" ? 0 : Number(stockRaw.replace(/[^\d-]/g, ""));
+      if (!Number.isFinite(stock) || !Number.isInteger(stock) || stock < 0) {
+        setErrors((prev) => ({ ...prev, stock_quantity: "Estoque inválido." }));
+        toast.error("Estoque atual deve ser um número inteiro maior ou igual a zero.");
+        return;
+      }
       setSaving(true);
       try {
         const payload = {
@@ -453,6 +460,7 @@ function Produtos() {
           supplier_id: form.supplier_id,
           commission_percentage: commission,
           ncm: form.ncm.trim() || null,
+          stock_quantity: stock,
         };
 
         if (editing) {
@@ -474,6 +482,7 @@ function Produtos() {
         setForm(emptyForm);
         setErrors({});
         queryClient.invalidateQueries({ queryKey: ["products"] });
+
       } catch (e: any) {
         toast.error(e.message ?? "Erro ao salvar produto.");
       } finally {
