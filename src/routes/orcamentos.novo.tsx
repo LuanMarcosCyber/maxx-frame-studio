@@ -1030,10 +1030,35 @@ function NovoOrcamento() {
     ["Impressão", "Impressao"],
     !!session,
   );
-  const { data: diversosProdutos = [], isLoading: loadingDiversos } = useCategoryProducts(
+  const { data: diversosProdutosRaw = [], isLoading: loadingDiversos } = useCategoryProducts(
     ["produtos_diversos"],
     !!session,
   );
+  const { data: diversosStockMap } = useQuery({
+    queryKey: ["products", "diversos-stock"],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, stock_quantity")
+        .eq("category", "produtos_diversos");
+      if (error) throw error;
+      const m = new Map<string, number>();
+      ((data ?? []) as Array<{ id: string; stock_quantity: number | null }>).forEach((r) =>
+        m.set(r.id, Number(r.stock_quantity ?? 0)),
+      );
+      return m;
+    },
+  });
+  const diversosProdutos = useMemo<Produto[]>(
+    () =>
+      diversosProdutosRaw.map((p) => ({
+        ...p,
+        stock_quantity: diversosStockMap?.get(p.id) ?? 0,
+      })),
+    [diversosProdutosRaw, diversosStockMap],
+  );
+
 
   // Lista de clientes (escopo: dono / colaboradores via RLS)
   const { data: clientes = [] } = useQuery({
