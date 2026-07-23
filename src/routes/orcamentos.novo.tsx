@@ -132,7 +132,9 @@ type Produto = {
   category: string | null;
   frame_width_cm: number | null;
   labor_cost: number | null;
+  stock_quantity?: number | null;
 };
+
 
 const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
