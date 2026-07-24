@@ -24,18 +24,24 @@ import logoUrl from "@/assets/totalmaxx-logo.png";
 /**
  * Version Update Manager
  * ----------------------
- * Detecta novas versões publicadas do frontend comparando um "fingerprint"
- * do index.html (que muda a cada deploy porque referencia bundles com hash).
+ * Detecta novas versões publicadas comparando um BUILD_ID único injetado
+ * em build-time (via Vite `define`) com o valor servido pelo endpoint
+ * `/api/public/version` do deploy atual.
  *
- * - Tela segura (sem edição): mostra overlay elegante e recarrega.
- * - Tela com risco (dialog aberto, digitação recente, rota de edição, dirty
- *   registrado): mostra modal e espera o usuário salvar/decidir. Ao ficar
- *   segura novamente, aplica a atualização automaticamente.
- *
- * Uso opcional em formulários críticos:
- *   const setDirty = useDirtyGuard();
- *   useEffect(() => { setDirty(form.formState.isDirty); }, [form.formState.isDirty]);
+ * - Ativo apenas no domínio publicado de produção (não roda em dev nem no
+ *   Preview do Lovable), evitando falsos positivos durante edição.
+ * - Verifica a cada 60s, ao voltar para a aba, ao focar a janela e quando
+ *   a conexão volta.
+ * - Notifica todas as abas via BroadcastChannel para atualizarem juntas.
+ * - Usa uma trava `isUpdating` para nunca executar reload duplicado.
+ * - Em telas de edição (dialog aberto, digitando, rota de risco, dirty
+ *   registrado) mostra o modal e aplica automaticamente quando ficar seguro.
  */
+
+// Build ID inlined at build time; muda a cada novo deploy.
+declare const __BUILD_ID__: string;
+const CURRENT_BUILD_ID: string =
+  typeof __BUILD_ID__ !== "undefined" ? __BUILD_ID__ : "dev";
 
 type Ctx = {
   updateAvailable: boolean;
@@ -53,33 +59,53 @@ const RISKY_PATH_PATTERNS: RegExp[] = [
   /^\/pedidos\/[^/]+\/editar/i,
 ];
 
-const POLL_INTERVAL_MS = 90_000; // 1m30s
+const POLL_INTERVAL_MS = 60_000;
 const RECENT_TYPING_MS = 8_000;
+const BROADCAST_CHANNEL = "tm-version-update";
 
-async function fetchVersionFingerprint(): Promise<string | null> {
+type PromptPhase = "idle" | "prompt" | "idle-prompted" | "updating";
+
+/**
+ * Só roda a verificação no domínio publicado de produção. Retorna false
+ * em dev, localhost, iframes do Lovable e domínios de Preview.
+ */
+function isProductionRuntime(): boolean {
+  if (typeof window === "undefined") return false;
+  if (!import.meta.env.PROD) return false;
+  const host = window.location.hostname;
+  if (!host) return false;
+  if (host === "localhost" || host === "127.0.0.1") return false;
+  if (host.startsWith("id-preview--")) return false;
+  if (host.startsWith("preview--")) return false;
+  if (host === "lovableproject.com" || host.endsWith(".lovableproject.com")) return false;
+  if (host === "lovableproject-dev.com" || host.endsWith(".lovableproject-dev.com")) return false;
+  if (host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev")) return false;
   try {
-    const res = await fetch("/", {
+    if (window.self !== window.top) return false;
+  } catch {
+    return false;
+  }
+  return true;
+}
+
+async function fetchServerVersion(): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/public/version?t=${Date.now()}`, {
       cache: "no-store",
       headers: { "cache-control": "no-cache", pragma: "no-cache" },
       credentials: "same-origin",
     });
     if (!res.ok) return null;
-    const etag = res.headers.get("etag");
-    if (etag) return `etag:${etag}`;
-    const text = await res.text();
-    // Extrai referências a assets com hash (Vite): /assets/xxxx-HASH.js|css
-    const matches = text.match(/\/[^"'\s]*assets\/[^"'\s]+\.(?:js|css)/g);
-    if (matches && matches.length) return `assets:${matches.sort().join("|")}`;
-    // Fallback: hash simples do body
-    let h = 0;
-    for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
-    return `hash:${h}`;
+    const data = (await res.json()) as { version?: unknown };
+    if (typeof data?.version !== "string" || !data.version) return null;
+    return data.version;
   } catch {
     return null;
   }
 }
 
 async function clearCachesAndReload() {
+  // Limpa apenas caches técnicos; sessão/localStorage permanecem intactos.
   try {
     if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
@@ -96,7 +122,7 @@ async function clearCachesAndReload() {
   } catch {
     /* noop */
   }
-  // Cache-bust final para forçar bypass de proxy/CDN.
+  // Preserva a rota atual, apenas força bypass de cache/CDN.
   const url = new URL(window.location.href);
   url.searchParams.set("_v", String(Date.now()));
   window.location.replace(url.toString());
@@ -107,8 +133,8 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<PromptPhase>("idle");
   const dirtyRef = useRef<Set<string>>(new Set());
   const [dirtyTick, setDirtyTick] = useState(0);
-  const baselineRef = useRef<string | null>(null);
   const lastTypingRef = useRef<number>(0);
+  const updatingRef = useRef(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const registerDirty = useCallback((id: string) => {
@@ -120,30 +146,57 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
     setDirtyTick((t) => t + 1);
   }, []);
 
-  // Baseline + polling
+  // Detecção + polling de nova versão
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!isProductionRuntime()) return;
+
     let cancelled = false;
-    let timer: number | undefined;
+    let inFlight = false;
+
+    const markAvailable = () => {
+      if (cancelled) return;
+      setUpdateAvailable(true);
+    };
 
     const check = async () => {
-      const fp = await fetchVersionFingerprint();
-      if (cancelled || !fp) return;
-      if (baselineRef.current === null) {
-        baselineRef.current = fp;
-        return;
-      }
-      if (fp !== baselineRef.current) {
-        setUpdateAvailable(true);
+      if (cancelled || inFlight || updatingRef.current) return;
+      inFlight = true;
+      try {
+        const serverVersion = await fetchServerVersion();
+        if (!serverVersion) return; // falha de rede => tenta de novo depois
+        if (serverVersion !== CURRENT_BUILD_ID) {
+          markAvailable();
+          try {
+            bc?.postMessage({ type: "update-available", version: serverVersion });
+          } catch {
+            /* noop */
+          }
+        }
+      } finally {
+        inFlight = false;
       }
     };
 
-    void check();
-    timer = window.setInterval(check, POLL_INTERVAL_MS);
+    // BroadcastChannel para sincronizar as abas.
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(BROADCAST_CHANNEL);
+      bc.onmessage = (ev) => {
+        if (ev?.data?.type === "update-available") markAvailable();
+      };
+    } catch {
+      bc = null;
+    }
+
+    const timer = window.setInterval(check, POLL_INTERVAL_MS);
     const onVis = () => {
       if (document.visibilityState === "visible") void check();
     };
+    const onFocus = () => void check();
+    const onOnline = () => void check();
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onOnline);
 
     // Rastreia digitação recente para não interromper o usuário.
     const onInput = (e: Event) => {
@@ -161,11 +214,22 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
     };
     document.addEventListener("input", onInput, true);
 
+    // Primeira verificação após pequeno delay para não competir com boot.
+    const initial = window.setTimeout(() => void check(), 5_000);
+
     return () => {
       cancelled = true;
-      if (timer) window.clearInterval(timer);
+      window.clearInterval(timer);
+      window.clearTimeout(initial);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onOnline);
       document.removeEventListener("input", onInput, true);
+      try {
+        bc?.close();
+      } catch {
+        /* noop */
+      }
     };
   }, []);
 
@@ -188,18 +252,19 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
   }, [isRiskyPath]);
 
   const beginUpdate = useCallback(() => {
+    if (updatingRef.current) return;
+    updatingRef.current = true;
     setPhase("updating");
-    // Pequeno delay para o fade da tela de transição.
     window.setTimeout(() => {
       void clearCachesAndReload();
-    }, 1000);
+    }, 2_000);
   }, []);
 
   const triggerUpdate = useCallback(() => {
     beginUpdate();
   }, [beginUpdate]);
 
-  // Orquestra a resposta à detecção de nova versão.
+  // Resposta à detecção de nova versão.
   useEffect(() => {
     if (!updateAvailable) return;
     if (phase === "updating") return;
@@ -208,20 +273,17 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
       if (phase !== "prompt") setPhase("prompt");
       return;
     }
-    // Rota segura -> atualiza automaticamente.
     beginUpdate();
   }, [updateAvailable, phase, isRiskyNow, beginUpdate, pathname, dirtyTick]);
 
-  // Verifica periodicamente se o contexto ficou seguro (após salvar/fechar
-  // um dialog / parar de digitar) para atualizar sem lembrete manual.
+  // Verifica periodicamente se o contexto ficou seguro para atualizar
+  // automaticamente após salvar/fechar dialog / parar de digitar.
   useEffect(() => {
     if (!updateAvailable) return;
     if (phase === "updating") return;
     const t = window.setInterval(() => {
-      if (!isRiskyNow()) {
-        beginUpdate();
-      }
-    }, 2500);
+      if (!isRiskyNow()) beginUpdate();
+    }, 2_500);
     return () => window.clearInterval(t);
   }, [updateAvailable, phase, isRiskyNow, beginUpdate]);
 
@@ -242,9 +304,6 @@ export function VersionUpdateProvider({ children }: { children: ReactNode }) {
     </VersionCtx.Provider>
   );
 }
-
-// Fases possíveis do gerenciador de atualização.
-type PromptPhase = "idle" | "prompt" | "idle-prompted" | "updating";
 
 export function useVersionUpdate(): Ctx {
   const ctx = useContext(VersionCtx);

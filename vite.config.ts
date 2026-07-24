@@ -7,6 +7,8 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
+const BUILD_ID = new Date().toISOString();
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -15,5 +17,8 @@ export default defineConfig({
   },
   vite: {
     plugins: [mcpPlugin()],
+    define: {
+      __BUILD_ID__: JSON.stringify(BUILD_ID),
+    },
   },
 });
