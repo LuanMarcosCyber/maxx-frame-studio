@@ -113,7 +113,7 @@ function collaboratorLabel(
 
 function Pedidos() {
   const { session, role, profile } = useAuth();
-  const { activeOperator } = useOperator();
+  const { activeOperator, requirePin } = useOperator();
   const showCollaborator = role !== "colaborador";
   const canDelete = activeOperator
     ? activeOperator.permissions.can_delete_orders
