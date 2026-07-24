@@ -153,13 +153,13 @@ function Content() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold">Usuários cadastrados</h2>
+          <h2 className="text-lg font-semibold">Empresas cadastradas</h2>
           <p className="text-sm text-muted-foreground">
-            Crie empresas e administradores. O acesso é feito apenas por usuário e senha.
+            Crie uma nova empresa com seu login principal e o usuário interno proprietário.
           </p>
 
         </div>
-        <CreateUserDialog onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
+        <NewCompanyWizard onSubmit={(d) => createMut.mutateAsync(d)} submitting={createMut.isPending} />
       </div>
 
       <div className="rounded-lg border bg-card -mx-4 sm:mx-0 overflow-x-auto">
