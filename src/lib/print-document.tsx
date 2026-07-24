@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtDocument, onlyDigits } from "@/lib/utils";
 import { getInheritedStoreProfile } from "@/lib/store-profile.functions";
+import { isDiversosOnly } from "@/lib/frame-detection";
 
 export type Variant = "loja" | "producao" | "cliente";
 export type DocKind = "pedido" | "orcamento";
