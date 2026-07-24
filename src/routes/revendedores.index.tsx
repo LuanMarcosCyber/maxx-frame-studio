@@ -279,147 +279,253 @@ function Content() {
   );
 }
 
-function CreateUserDialog({
+type WizardPayload = {
+  owner_name: string;
+  store_name: string;
+  username: string;
+  password: string;
+  pin: string;
+  company_group_id: string | null;
+  commercial: {
+    document?: string | null;
+    document_type?: "CPF" | "CNPJ" | null;
+    email?: string | null;
+    phone?: string | null;
+    cep?: string | null;
+    address?: string | null;
+    address_number?: string | null;
+    city?: string | null;
+    state?: string | null;
+  };
+};
+
+function NewCompanyWizard({
   onSubmit,
   submitting,
 }: {
-  onSubmit: (d: {
-    full_name: string;
-    store_name: string;
-    username: string;
-    password: string;
-    role: "admin" | "revendedor";
-    company_group_id: string | null;
-  }) => Promise<unknown>;
+  onSubmit: (d: WizardPayload) => Promise<unknown>;
   submitting: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [fullName, setFullName] = useState("");
+  const [step, setStep] = useState<1 | 2>(1);
+
+  // Step 1
+  const [ownerName, setOwnerName] = useState("");
   const [storeName, setStoreName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"admin" | "revendedor">("revendedor");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
   const [companyGroupId, setCompanyGroupId] = useState<string | null>(null);
   const [companyQuery, setCompanyQuery] = useState("");
   const [companyOpen, setCompanyOpen] = useState(false);
+
+  // Step 2 (commercial)
+  const [document, setDocument] = useState("");
+  const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">("CNPJ");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [cep, setCep] = useState("");
+  const [address, setAddress] = useState("");
+  const [addressNumber, setAddressNumber] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
 
   const listCompanies = useServerFn(listAllCompanies);
   const { data: companies = [] } = useQuery({
     queryKey: ["admin", "companies-for-group"],
     queryFn: () => listCompanies(),
-    enabled: open && role === "revendedor",
+    enabled: open,
   });
 
   const selectedCompany = companies.find((c) => c.id === companyGroupId);
   const filteredCompanies = companyQuery.trim()
-    ? companies.filter((c) => {
-        const label = (c.store_name || c.full_name || "").toLowerCase();
-        return label.includes(companyQuery.trim().toLowerCase());
-      })
+    ? companies.filter((c) =>
+        (c.store_name || c.full_name || "").toLowerCase().includes(companyQuery.trim().toLowerCase()),
+      )
     : companies;
 
-  const submit = async (e: FormEvent) => {
+  const reset = () => {
+    setStep(1);
+    setOwnerName("");
+    setStoreName("");
+    setUsername("");
+    setPassword("");
+    setPasswordConfirm("");
+    setPin("");
+    setPinConfirm("");
+    setCompanyGroupId(null);
+    setCompanyQuery("");
+    setDocument("");
+    setDocumentType("CNPJ");
+    setEmail("");
+    setPhone("");
+    setCep("");
+    setAddress("");
+    setAddressNumber("");
+    setCity("");
+    setState("");
+  };
+
+  const validateStep1 = (): string | null => {
+    if (!ownerName.trim()) return "Informe o nome do proprietário.";
+    if (!storeName.trim()) return "Informe o nome da loja.";
+    if (!/^[a-z0-9._-]{3,}$/.test(username.trim()))
+      return "Usuário inválido. Use minúsculas, números, ponto, hífen ou underscore.";
+    if (password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
+    if (password !== passwordConfirm) return "As senhas não coincidem.";
+    if (!/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
+    if (pin !== pinConfirm) return "Os PINs não coincidem.";
+    return null;
+  };
+
+  const goNext = () => {
+    const err = validateStep1();
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    setStep(2);
+  };
+
+  const finish = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await onSubmit({
-        full_name: fullName,
-        store_name: storeName,
-        username,
+        owner_name: ownerName.trim(),
+        store_name: storeName.trim(),
+        username: username.trim().toLowerCase(),
         password,
-        role,
-        company_group_id: role === "revendedor" ? companyGroupId : null,
+        pin,
+        company_group_id: companyGroupId,
+        commercial: {
+          document: document.trim() || null,
+          document_type: document.trim() ? documentType : null,
+          email: email.trim() || null,
+          phone: phone.trim() || null,
+          cep: cep.trim() || null,
+          address: address.trim() || null,
+          address_number: addressNumber.trim() || null,
+          city: city.trim() || null,
+          state: state.trim() || null,
+        },
       });
       setOpen(false);
-      setFullName("");
-      setStoreName("");
-      setUsername("");
-      setPassword("");
-      setRole("revendedor");
-      setCompanyGroupId(null);
-      setCompanyQuery("");
+      reset();
     } catch {
       // toast handled in mutation
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) reset();
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
-          <UserPlus className="h-4 w-4 mr-2" /> Novo usuário
+          <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Novo usuário</DialogTitle>
+          <DialogTitle>Nova empresa</DialogTitle>
           <DialogDescription>
-            Cadastre uma empresa ou administrador. O acesso é apenas por usuário e senha.
+            Etapa {step} de 2 — {step === 1 ? "Acesso e proprietário" : "Dados comerciais"}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="full_name">Nome</Label>
-            <Input
-              id="full_name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              placeholder="João da Silva"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="store_name">Nome da loja *</Label>
-            <Input
-              id="store_name"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              required
-              placeholder="Molduraria Silva"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="username">Usuário</Label>
-            <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              required
-              autoCapitalize="none"
-              pattern="[a-z0-9._\-]+"
-              placeholder="joao.silva"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Apenas letras minúsculas, números, ponto, hífen ou underscore.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Senha inicial</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="Mínimo 6 caracteres"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Tipo de acesso</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as "admin" | "revendedor")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="revendedor">Empresa</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          {role === "revendedor" && (
+        {step === 1 ? (
+          <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="company_link">Vinculado com</Label>
+              <Label htmlFor="owner_name">Nome do proprietário *</Label>
+              <Input
+                id="owner_name"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="João da Silva"
+                autoCapitalize="characters"
+                className="uppercase"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="store_name">Nome da loja *</Label>
+              <Input
+                id="store_name"
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+                placeholder="Molduraria Silva"
+                autoCapitalize="characters"
+                className="uppercase"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="username">Usuário de login *</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                autoCapitalize="none"
+                pattern="[a-z0-9._\-]+"
+                placeholder="joao.silva"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Apenas letras minúsculas, números, ponto, hífen ou underscore.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Senha inicial *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
+                  placeholder="Mín. 6 caracteres"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password_confirm">Confirmar senha *</Label>
+                <Input
+                  id="password_confirm"
+                  type="password"
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  minLength={6}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="pin">PIN do proprietário *</Label>
+                <Input
+                  id="pin"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="4 a 6 dígitos"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pin_confirm">Confirmar PIN *</Label>
+                <Input
+                  id="pin_confirm"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={pinConfirm}
+                  onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="company_link">Vincular como filial de</Label>
               <div className="relative">
                 <Input
                   id="company_link"
@@ -428,9 +534,7 @@ function CreateUserDialog({
                       ? companyQuery
                       : selectedCompany
                         ? selectedCompany.store_name || selectedCompany.full_name || ""
-                        : companyGroupId === null && !companyOpen
-                          ? ""
-                          : companyQuery
+                        : ""
                   }
                   placeholder="Nenhum vínculo"
                   onFocus={() => {
@@ -483,22 +587,104 @@ function CreateUserDialog({
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Empresas vinculadas compartilham cadastros como produtos, clientes, arquitetos e transportadoras.
-                Pedidos e orçamentos continuam separados por empresa.
+                Opcional. Empresas vinculadas compartilham produtos, clientes, arquitetos e transportadoras.
               </p>
             </div>
-          )}
 
-          <DialogFooter>
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95"
-            >
-              {submitting ? "Criando..." : "Criar usuário"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={goNext}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+              >
+                Próximo
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <form onSubmit={finish} className="space-y-4">
+            <div className="grid grid-cols-[110px,1fr] gap-3">
+              <div className="space-y-1.5">
+                <Label>Tipo</Label>
+                <Select value={documentType} onValueChange={(v) => setDocumentType(v as "CPF" | "CNPJ")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CNPJ">CNPJ</SelectItem>
+                    <SelectItem value="CPF">CPF</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="document">{documentType}</Label>
+                <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-[140px,1fr,110px] gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="cep">CEP</Label>
+                <Input id="cep" value={cep} onChange={(e) => setCep(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="address">Logradouro</Label>
+                <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="address_number">Número</Label>
+                <Input
+                  id="address_number"
+                  value={addressNumber}
+                  onChange={(e) => setAddressNumber(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-[1fr,110px] gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="city">Cidade</Label>
+                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="state">UF</Label>
+                <Input
+                  id="state"
+                  value={state}
+                  onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
+                  maxLength={2}
+                  className="uppercase"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(1)}
+                disabled={submitting}
+              >
+                Voltar
+              </Button>
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95"
+              >
+                {submitting ? "Criando..." : "Criar empresa"}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
