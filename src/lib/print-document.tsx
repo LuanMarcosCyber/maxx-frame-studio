@@ -494,7 +494,8 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
   const totalItens = items.reduce((s, it) => s + Number(it.subtotal || 0), 0);
 
   const diversos = extractDiversos(items);
-  const frames = items;
+  const hideFrames = kind === "pedido" && isDiversosOnly(items) && diversos.length > 0;
+  const frames = hideFrames ? [] : items;
 
   const storeName = profile?.store_name || profile?.full_name || "Loja";
   const docLabel = kind === "pedido" ? "Pedido" : "Orçamento";
