@@ -1127,6 +1127,10 @@ export type Database = {
       clear_active_company: { Args: never; Returns: undefined }
       company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
       count_active_internal_users: { Args: never; Returns: number }
+      create_company_owner_operator: {
+        Args: { _company_id: string; _owner_name: string; _pin_hash: string }
+        Returns: string
+      }
       get_effective_profile: {
         Args: never
         Returns: {
@@ -1305,6 +1309,10 @@ export type Database = {
       revert_order_stock: { Args: { _order_id: string }; Returns: Json }
       set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
+      update_company_commercial: {
+        Args: { _company_id: string; _data: Json }
+        Returns: undefined
+      }
       upsert_company_product_override: {
         Args: {
           _base_price_override: number
