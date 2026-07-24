@@ -73,7 +73,7 @@ export function OperatorSwitcher({
     try {
       const result = await validate({ data: { operator_id: selected.id, pin } });
       setActiveOperator(result as never);
-      toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
+      toast.success(`Usuário ativo: ${(result as { full_name: string }).full_name}`);
       onSwitched?.(selected);
       setOpen(false);
 
@@ -86,7 +86,7 @@ export function OperatorSwitcher({
 
   function clear() {
     setActiveOperator(null);
-    toast.success("Operador removido.");
+    toast.success("Usuário removido.");
   }
 
   return (
@@ -97,17 +97,17 @@ export function OperatorSwitcher({
         type="button"
         onClick={() => setOpen(true)}
         className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm"
-        title={activeOperator ? "Trocar operador" : "Selecionar operador"}
+        title={activeOperator ? "Trocar usuário" : "Selecionar usuário"}
       >
         <UserCircle2 className="h-4 w-4" />
         <span className="truncate max-w-[140px]">
           {activeOperator ? (
             <>
-              <span className="opacity-70">Operador:</span>{" "}
+              <span className="opacity-70">Usuário:</span>{" "}
               <span className="font-medium">{activeOperator.full_name}</span>
             </>
           ) : (
-            <span className="opacity-80">Selecionar operador</span>
+            <span className="opacity-80">Selecionar usuário</span>
           )}
         </span>
       </button>
@@ -118,12 +118,12 @@ export function OperatorSwitcher({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {step === "choose" ? "Selecionar operador" : `PIN de ${selected?.full_name ?? ""}`}
+              {step === "choose" ? "Selecionar usuário" : `PIN de ${selected?.full_name ?? ""}`}
             </DialogTitle>
             <DialogDescription>
               {step === "choose"
-                ? "Escolha o colaborador que está operando o sistema neste momento."
-                : "Digite o PIN de 4 a 6 dígitos para ativar o operador."}
+                ? "Escolha o usuário que está operando o sistema neste momento."
+                : "Digite o PIN de 4 a 6 dígitos para ativar o usuário."}
             </DialogDescription>
           </DialogHeader>
 
@@ -133,7 +133,7 @@ export function OperatorSwitcher({
                 <p className="text-sm text-muted-foreground py-4 text-center">Carregando...</p>
               ) : operators.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
-                  Nenhum operador cadastrado.
+                  Nenhum usuário cadastrado.
                 </p>
               ) : (
                 operators.map((op) => {
@@ -147,7 +147,7 @@ export function OperatorSwitcher({
                       onClick={() => {
                         if (isActive) return;
                         if (!op.has_pin) {
-                          toast.error("Este colaborador ainda não possui PIN cadastrado.");
+                          toast.error("Este usuário ainda não possui PIN cadastrado.");
                           return;
                         }
                         setSelected(op);
@@ -183,7 +183,7 @@ export function OperatorSwitcher({
               {activeOperator && (
                 <div className="pt-2 border-t">
                   <Button variant="outline" className="w-full" onClick={clear}>
-                    Remover operador ativo
+                    Remover usuário ativo
                   </Button>
                 </div>
               )}
