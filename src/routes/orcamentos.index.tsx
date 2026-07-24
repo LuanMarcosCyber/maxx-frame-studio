@@ -85,6 +85,7 @@ function Orcamentos() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const nextDocumentNumberFn = useServerFn(nextDocumentNumber);
+  const { requirePin } = useOperator();
   const { view: viewParam } = Route.useSearch();
 
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
