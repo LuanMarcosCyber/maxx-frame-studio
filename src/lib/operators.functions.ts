@@ -184,9 +184,9 @@ export const updateOperator = createServerFn({ method: "POST" })
       owner_user_id: string;
       operational_account_id: string | null;
     } | null;
-    if (!row || row.owner_user_id !== ownerId) throw new Error("Operador não encontrado.");
+    if (!row || row.owner_user_id !== ownerId) throw new Error("Usuário não encontrado.");
     if (isOperational && row.operational_account_id !== context.userId) {
-      throw new Error("Sem permissão para editar este operador.");
+      throw new Error("Sem permissão para editar este usuário.");
     }
 
     const patch: Record<string, unknown> = {};
@@ -225,9 +225,9 @@ export const deleteOperator = createServerFn({ method: "POST" })
       owner_user_id: string;
       operational_account_id: string | null;
     } | null;
-    if (!row || row.owner_user_id !== ownerId) throw new Error("Operador não encontrado.");
+    if (!row || row.owner_user_id !== ownerId) throw new Error("Usuário não encontrado.");
     if (isOperational && row.operational_account_id !== context.userId) {
-      throw new Error("Sem permissão para excluir este operador.");
+      throw new Error("Sem permissão para excluir este usuário.");
     }
     const { error } = await supabaseAdmin.from("operators").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

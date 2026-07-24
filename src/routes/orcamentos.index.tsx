@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
 import { isDiversosOnly } from "@/lib/frame-detection";
@@ -84,6 +85,7 @@ function Orcamentos() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const nextDocumentNumberFn = useServerFn(nextDocumentNumber);
+  const { requirePin } = useOperator();
   const { view: viewParam } = Route.useSearch();
 
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
@@ -188,6 +190,8 @@ function Orcamentos() {
 
   async function handleDelete() {
     if (!deleting) return;
+    const ok = await requirePin("excluir orçamento");
+    if (!ok) return;
     const { error } = await supabase.from("budgets").delete().eq("id", deleting.id);
     if (error) {
       toast.error("Não foi possível excluir o orçamento.");
@@ -348,7 +352,7 @@ function Orcamentos() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 {showCollaborator && (
-                  <th className="font-medium py-3 px-6">Operador</th>
+                  <th className="font-medium py-3 px-6">Usuário</th>
                 )}
                 <th className="font-medium py-3 px-3">Número</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
@@ -1144,7 +1148,7 @@ function ResumoDialog({
               <Info label="Cliente" value={budget.client_name} />
               <Info label="Data" value={fmtDate(budget.created_at)} />
               <Info label="Status" value={budget.status} />
-              <Info label="Operador" value={creatorName} />
+              <Info label="Usuário" value={creatorName} />
               <Info
                 label="Forma de pagamento"
                 value={gStr("formaPagamento") || "—"}

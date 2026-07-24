@@ -113,7 +113,7 @@ function collaboratorLabel(
 
 function Pedidos() {
   const { session, role, profile } = useAuth();
-  const { activeOperator } = useOperator();
+  const { activeOperator, requirePin } = useOperator();
   const showCollaborator = role !== "colaborador";
   const canDelete = activeOperator
     ? activeOperator.permissions.can_delete_orders
@@ -264,6 +264,8 @@ function Pedidos() {
   async function handleDelete() {
     const t = target ?? viewing;
     if (!t) return;
+    const ok = await requirePin("excluir pedido");
+    if (!ok) return;
     // Devolve estoque antes de excluir (idempotente; ignora se não havia baixa).
     const { error: rvErr } = await supabase.rpc("revert_order_stock", { _order_id: t.id });
     if (rvErr) {
@@ -361,7 +363,7 @@ function Pedidos() {
             <thead>
               <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground border-y border-border">
                 {showCollaborator && (
-                  <th className="font-medium py-3 px-6">Operador</th>
+                  <th className="font-medium py-3 px-6">Usuário</th>
                 )}
                 <th className="font-medium py-3 px-3">Pedido</th>
                 <th className="font-medium py-3 px-3">Cliente</th>
