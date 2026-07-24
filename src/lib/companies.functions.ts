@@ -107,21 +107,21 @@ export const createCompanyWithOwner = createServerFn({ method: "POST" })
 
     try {
       // 2. Update profile with store info + commercial data
-      const commercial = data.commercial ?? {};
-      const profilePatch: Record<string, unknown> = {
+      const c = data.commercial ?? {};
+      const profilePatch = {
         store_name: storeName,
         full_name: ownerName,
         company_group_id: data.company_group_id ?? null,
+        ...(c.document ? { document: c.document } : {}),
+        ...(c.document_type ? { document_type: c.document_type } : {}),
+        ...(c.email ? { email: c.email } : {}),
+        ...(c.phone ? { phone: c.phone } : {}),
+        ...(c.cep ? { cep: c.cep } : {}),
+        ...(c.address ? { address: c.address } : {}),
+        ...(c.address_number ? { address_number: c.address_number } : {}),
+        ...(c.city ? { city: c.city } : {}),
+        ...(c.state ? { state: c.state } : {}),
       };
-      if (commercial.document) profilePatch.document = commercial.document;
-      if (commercial.document_type) profilePatch.document_type = commercial.document_type;
-      if (commercial.email) profilePatch.email = commercial.email;
-      if (commercial.phone) profilePatch.phone = commercial.phone;
-      if (commercial.cep) profilePatch.cep = commercial.cep;
-      if (commercial.address) profilePatch.address = commercial.address;
-      if (commercial.address_number) profilePatch.address_number = commercial.address_number;
-      if (commercial.city) profilePatch.city = commercial.city;
-      if (commercial.state) profilePatch.state = commercial.state;
 
       const { error: profErr } = await supabaseAdmin
         .from("profiles")
