@@ -97,6 +97,7 @@ function Orcamentos() {
   const [linkSaving, setLinkSaving] = useState(false);
   const [askApproveAfterLink, setAskApproveAfterLink] = useState<BudgetRow | null>(null);
   const [printingFor, setPrintingFor] = useState<BudgetRow | null>(null);
+  const [diversosOnlyConfirm, setDiversosOnlyConfirm] = useState(false);
 
   const { data: clientList = [] } = useQuery({
     queryKey: ["clients", "picker"],
