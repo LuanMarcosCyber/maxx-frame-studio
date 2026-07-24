@@ -37,6 +37,7 @@ import {
 } from "@/components/suppliers/SupplierPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { cn, naturalCompare } from "@/lib/utils";
 import { bulkDeleteProductsByCategory, deleteProductById } from "@/lib/products.functions";
