@@ -150,6 +150,7 @@ function buildPageList(current: number, total: number): Array<number | "…"> {
 
 function Produtos() {
   const { session, user, role, profile, ownerUserId } = useAuth();
+  const { requirePin } = useOperator();
   const queryClient = useQueryClient();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
   const deleteProductByIdFn = useServerFn(deleteProductById);
@@ -643,6 +644,8 @@ function Produtos() {
 
   const handleBulkDelete = async () => {
     if (!user) return;
+    const okPin = await requirePin("excluir todos os produtos da categoria");
+    if (!okPin) return;
     const previous = queryClient.getQueryData<Product[]>(["products"]);
     // Optimistic remove of all rows in this category.
     queryClient.setQueryData<Product[]>(["products"], (current = []) =>
@@ -1505,6 +1508,8 @@ function Produtos() {
               disabled={restoring || restoreConfirm.trim().toUpperCase() !== "RESTAURAR"}
               onClick={async (e) => {
                 e.preventDefault();
+                const okPin = await requirePin("restaurar catálogo padrão");
+                if (!okPin) return;
                 setRestoring(true);
                 const toastId = toast.loading("Restaurando catálogo padrão...");
                 try {
