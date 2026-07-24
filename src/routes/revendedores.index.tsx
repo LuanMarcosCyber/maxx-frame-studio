@@ -112,7 +112,7 @@ function Content() {
   });
 
   const createMut = useMutation({
-    mutationFn: (data: Parameters<typeof create>[0]["data"]) => create({ data }),
+    mutationFn: (data: Parameters<typeof createCompanyWithOwner>[0] extends { data: infer D } ? D : never) => create({ data } as never),
     onSuccess: () => {
       toast.success("Empresa criada com sucesso.");
       qc.invalidateQueries({ queryKey: ["admin", "users"] });
