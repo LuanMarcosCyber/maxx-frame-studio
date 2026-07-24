@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Bell, Search, Menu, Check, X, Eye } from "lucide-react";
+import { Bell, Search, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtPct } from "@/lib/utils";
 import { toast } from "sonner";
@@ -12,10 +13,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SidebarContents } from "./AppSidebar";
 import { OperatorSwitcher } from "./OperatorSwitcher";
+
 
 interface AppHeaderProps {
   title: string;
@@ -33,14 +42,31 @@ type DiscountRequest = {
 };
 
 export function AppHeader({ title, subtitle }: AppHeaderProps) {
-  const { profile, role, session } = useAuth();
+  const { profile, role, session, signOut } = useAuth();
+  const { activeOperator, clearActiveOperator } = useOperator();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [switchOpen, setSwitchOpen] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
 
   const canSeeNotifications = role === "admin" || role === "revendedor";
   const currentUserId = session?.user?.id ?? null;
+
+  const companyLabel = profile?.store_name || profile?.full_name || "Empresa";
+  const userLabel = activeOperator?.full_name || profile?.full_name || "Usuário";
+
+  async function handleSwitchUser() {
+    clearActiveOperator();
+    setSwitchOpen(true);
+  }
+
+  async function handleLeaveCompany() {
+    clearActiveOperator();
+    await signOut();
+    navigate({ to: "/login", replace: true });
+  }
+
 
   const { data: requests = [] } = useQuery({
     queryKey: ["discount-requests", "pending", currentUserId],
@@ -184,7 +210,36 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 border-l border-white/10 pl-3 sm:pl-4">
-          <OperatorSwitcher />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm max-w-[280px]"
+                title="Sessão"
+              >
+                <UserCircle2 className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  <span className="opacity-70">{companyLabel}</span>
+                  <span className="opacity-50"> — </span>
+                  <span className="font-medium">Usuário: {userLabel}</span>
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-70 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                <div className="font-semibold text-foreground truncate">{companyLabel}</div>
+                <div className="truncate">Usuário: {userLabel}</div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSwitchUser}>
+                <RefreshCw className="h-4 w-4 mr-2" /> Trocar usuário
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLeaveCompany} className="text-red-600">
+                <LogOut className="h-4 w-4 mr-2" /> Sair da empresa
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             type="button"
             aria-label="Notificações"
@@ -198,8 +253,9 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
               </span>
             )}
           </button>
-
+          <OperatorSwitcher open={switchOpen} onOpenChange={setSwitchOpen} hideTrigger />
         </div>
+
       </div>
 
       <Dialog open={notifOpen} onOpenChange={setNotifOpen}>
