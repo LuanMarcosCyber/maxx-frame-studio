@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          company_id: string
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          id: string
+          internal_user_id: string | null
+          metadata: Json
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          company_id: string
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          internal_user_id?: string | null
+          metadata?: Json
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          company_id?: string
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          id?: string
+          internal_user_id?: string | null
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_internal_user_id_fkey"
+            columns: ["internal_user_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       architects: {
         Row: {
           created_at: string
@@ -518,7 +562,10 @@ export type Database = {
           can_delete_orders: boolean
           can_edit_budgets: boolean
           created_at: string
+          failed_pin_attempts: number
           id: string
+          is_global_admin: boolean
+          locked_until: string | null
           max_discount_percent: number
           name: string
           nickname: string | null
@@ -534,7 +581,10 @@ export type Database = {
           can_delete_orders?: boolean
           can_edit_budgets?: boolean
           created_at?: string
+          failed_pin_attempts?: number
           id?: string
+          is_global_admin?: boolean
+          locked_until?: string | null
           max_discount_percent?: number
           name: string
           nickname?: string | null
@@ -550,7 +600,10 @@ export type Database = {
           can_delete_orders?: boolean
           can_edit_budgets?: boolean
           created_at?: string
+          failed_pin_attempts?: number
           id?: string
+          is_global_admin?: boolean
+          locked_until?: string | null
           max_discount_percent?: number
           name?: string
           nickname?: string | null
@@ -1073,6 +1126,7 @@ export type Database = {
       }
       clear_active_company: { Args: never; Returns: undefined }
       company_group_owner_ids: { Args: { _owner: string }; Returns: string[] }
+      count_active_internal_users: { Args: never; Returns: number }
       get_effective_profile: {
         Args: never
         Returns: {
@@ -1128,6 +1182,10 @@ export type Database = {
         Returns: boolean
       }
       is_collaborator: { Args: { _user_id: string }; Returns: boolean }
+      is_internal_global_admin: {
+        Args: { _operator_id: string }
+        Returns: boolean
+      }
       list_switchable_companies: {
         Args: never
         Returns: {
@@ -1227,6 +1285,10 @@ export type Database = {
           global_products: number
           particular_products: number
         }[]
+      }
+      register_pin_attempt: {
+        Args: { _operator_id: string; _success: boolean }
+        Returns: Json
       }
       reset_company_product_override: {
         Args: { _global_product_id: string }

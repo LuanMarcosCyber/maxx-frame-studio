@@ -1,133 +1,84 @@
-# Refatoração: Catálogo Global de Fornecedores
 
-Nova arquitetura onde produtos padrão vivem **dentro do Fornecedor Global**, não na conta do Admin. Empresas leem esse catálogo via JOIN (sem cópias físicas) e mantêm suas próprias configurações comerciais.
+# Nova estrutura de acesso: Empresas + Usuários internos com PIN
 
-**Decisões confirmadas:**
-- Zerar catálogo atual e reimportar manualmente
-- Preço-base global, com override opcional por empresa
-- Snapshot em orçamentos/pedidos é suficiente (histórico preservado)
-- Entrega fatiada em fases
+Esta etapa entrega toda a nova experiência (UI, fluxos, permissões, migração de dados). A estrutura antiga de "Contas" permanece no backend por compatibilidade, mas some da interface e não é mais usada por nenhum fluxo novo. A remoção definitiva das tabelas antigas fica para uma etapa futura.
 
----
+## Modelo mental
 
-## Fase 1 — Fundação (backend + leitura unificada)
+```text
+Administrador Global (flag no usuário interno)
+ └── Empresa (login principal Supabase = usuário atual da empresa)
+      └── Usuários internos (PIN + permissões individuais)
+           ├── Proprietário (criado junto com a empresa, todas as permissões da empresa)
+           └── Demais usuários (permissões definidas caso a caso)
+```
 
-**Banco de dados**
-- Nova tabela `global_supplier_products`: `id, supplier_id, category, code, description, base_price, width_cm, ncm, active, created_at, updated_at` (UNIQUE em `supplier_id + category + code`)
-- Nova tabela `company_product_overrides`: por `owner_user_id + global_product_id` guarda margem, perda, comissão, mão de obra e opcionalmente `base_price_override`
-- Manter `company_supplier_config` já existente (config padrão por fornecedor+categoria da empresa)
-- Nova coluna `suppliers.publish_catalog` (booleano) — só aparece para fornecedores globais
+O login principal identifica só a empresa. As permissões efetivas vêm do usuário interno ativo, nunca do login.
 
-**RLS**
-- `global_supplier_products`: SELECT para todos autenticados; INSERT/UPDATE/DELETE só Admin
-- `company_product_overrides`: SELECT/mutação só para o dono (`owner_user_id = owner_user_id(auth.uid())`)
+## Regras de login e PIN (conforme suas respostas)
 
-**RPCs de leitura unificada**
-- `list_visible_products()`: UNION de (a) produtos particulares da empresa ativa + (b) `global_supplier_products` de fornecedores globais com `publish_catalog=true`, já aplicando override/config-padrão da empresa
-- Substitui as leituras diretas de `products` na tela Produtos
+- 1 usuário interno ativo na empresa: entra direto após o login, sem tela "Quem está usando?" e sem PIN no login. Nome aparece no topo.
+- 2+ usuários internos ativos: após o login, o sistema bloqueia e obriga escolher usuário + PIN.
+- Ações sensíveis (mesmo com 1 usuário) exigem PIN: criar/editar usuário, alterar permissões, redefinir PIN, restaurar catálogo, alteração em massa, excluir produtos, excluir pedidos, e outras operações críticas equivalentes.
+- Menu de sessão passa a ter "Trocar usuário" (mantém login da empresa, volta para a seleção) e "Sair da empresa" (logout completo).
+- PIN: 4 a 6 dígitos numéricos, hash seguro, bloqueio temporário após várias tentativas erradas, redefinível pelo proprietário/Admin Global. PIN inicial do Evandro na migração: `123456` (alterável na tela Usuários como qualquer outro).
 
-**Limpeza destrutiva** (com backup em tabela `_backup_products_pre_global`)
-- Apagar `products` com `source_global_product_id IS NOT NULL` (cópias distribuídas)
-- Apagar produtos particulares do Admin/Evandro que hoje servem como "fonte" (marcados pelo trigger antigo)
-- Remover triggers `distribute_on_new_company`, `replicate_new_global_product` e função `distribute_auto_products`
-- Remover flags `auto_distribute`, `distribute_category` de `suppliers` (substituídas por `publish_catalog`)
+## Migração de dados (sem apagar nada antigo)
 
-**Frontend (leitura)**
-- `src/routes/produtos.tsx` passa a consumir a nova RPC unificada
-- Badge visual "Global" nos itens vindos do catálogo (não editáveis tecnicamente)
+Para cada empresa (perfis com `parent_user_id IS NULL`):
+- O login Supabase atual continua sendo o login principal da empresa (nenhuma nova credencial).
+- Cada `operator` ativo vira um usuário interno da empresa, preservando nome, PIN (hash existente) e permissões.
+- Se a empresa não tiver nenhum usuário interno, cria-se automaticamente um usuário "Proprietário" com o nome do perfil da empresa e PIN inicial `123456`, marcado com todas as permissões administrativas da empresa.
+- Empresa do Evandro: garante um usuário interno "Evandro" com PIN `123456` e flag `is_global_admin = true`.
+- Nenhum pedido, orçamento, produto, cliente, estoque ou histórico é tocado.
 
----
+Contas operacionais existentes (`profiles.parent_user_id IS NOT NULL`) continuam funcionando no backend, mas somem da UI e não podem mais ser criadas.
 
-## Fase 2 — Cadastro e importação do catálogo global
+## Mudanças de UI (remover "Contas" da experiência)
 
-**Cadastro de fornecedor (`src/routes/fornecedores.tsx`)**
-- Quando `is_global=true`, exibir seção "Catálogo padrão do fornecedor" com checkbox `publish_catalog`
-- Botão final vira "Próximo: importar catálogo" quando `publish_catalog` marcado
-- Fluxo em 2 passos: dados → importação (ou "importar depois")
+- Sidebar / Dashboard / atalhos / cadastros: aba "Contas" removida. Substituída por "Usuários" (usuários internos da empresa ativa).
+- Menu Admin Global do Evandro: "Empresas", "Usuários" (da empresa dele) e demais funções administrativas. Sem "Contas".
+- Textos, filtros, toasts, mensagens: revisados para nunca mais mencionar "Conta", "Conta operacional", "Conta vinculada", "Usuário/Conta", "Loja sem vínculo".
+- Cabeçalho: mostra "Empresa: X — Usuário: Y". Menu de sessão com "Trocar usuário" e "Sair da empresa".
+- Cadastro de empresa (Admin Global): formulário único com blocos Dados da empresa / Acesso principal (login + senha) / Usuário proprietário (nome + PIN + confirmação). Ao salvar, cria empresa + login + usuário proprietário em uma transação.
+- Tela "Usuários" (dentro da empresa): lista todos os usuários internos ativos, inclusive o proprietário (não é oculto). Ações: criar, editar, definir permissões, redefinir PIN, ativar/desativar. Cada ação sensível exige PIN.
+- Tela "Quem está usando?" com nome, função e iniciais/foto de cada usuário ativo, seguida de tela de PIN. Só aparece quando há 2+ usuários.
 
-**Novo modo no importador (`ProductImportWizard.tsx`)**
-- Prop `mode: "company" | "global-catalog"`
-- Modo global: fornecedor e categoria pré-fixados; passo extra "Escolher categoria" filtrado pelas `categories` do fornecedor
-- Remove campos margem/perda/comissão/mão de obra do mapeamento e dos defaults
-- Grava em `global_supplier_products` (não em `products`)
-- Mantém upload/drag-drop/detecção de header/preview/uppercase/conversão mm→cm
+## Permissões e isolamento
 
-**Detalhes do fornecedor global**
-- Seção "Catálogos padrão" listando por categoria (qtd, última atualização, ações Atualizar/Visualizar/Remover)
-- Confirmação forte na remoção ("afetará todas as empresas")
+- Permissões efetivas vêm do usuário interno ativo (armazenadas no registro dele). O login principal por si só não libera nada além do mínimo.
+- Flag `is_global_admin` no usuário interno concede visão global (Empresas, logs de todas as empresas, catálogo global).
+- Todo usuário interno é obrigatoriamente vinculado a uma empresa. Sem exceção, exceto o Admin Global que pode "entrar" em outras empresas para administração.
+- RLS existente já é por `owner_user_id`; nenhuma mudança de escopo comercial. Adiciona-se apenas a validação de PIN e o gate de "usuário ativo" para ações sensíveis.
 
-**Atualização de catálogo existente**
-- Diálogo pré-importação: atualizar existentes / criar somente novos / ambos / desativar ausentes
-- Deduplicação por `supplier_id + category + code`
+## Logs
 
----
-
-## Fase 3 — Configurações comerciais por empresa
-
-**Wizard inicial (adaptar `SupplierConfigWizard.tsx`)**
-- Trocar fonte de dados: `get_supplier_wizard_state` passa a listar fornecedores globais com `publish_catalog=true` que ainda não têm `company_supplier_config` para a empresa ativa
-- Fluxo já existente permanece (margem/perda/comissão + mão de obra em Perfil)
-
-**Personalização por produto**
-- Na edição de um produto global: radio "Usar configuração padrão da empresa" vs "Personalizar este produto"
-- "Personalizar" cria linha em `company_product_overrides`
-- Botão "Voltar a usar configuração padrão" remove o override
-
-**Configuração em massa** (novo botão em Produtos, ao lado de Aumento de preço)
-- Wizard 5 passos: categoria → fornecedor → campos → escopo (todos / só padrão / específicos) → prévia
-- Aviso obrigatório: "Esta alteração afetará somente a empresa [NOME]"
-- RPC `apply_bulk_company_config` grava em `company_supplier_config` e/ou `company_product_overrides`
-
----
-
-## Fase 4 — Aumento de preço + isolamento final
-
-**Aumento de preço (`PriceIncreaseWizard.tsx`)**
-- Se Admin + fornecedor global + catálogo global: altera `global_supplier_products.base_price` com aviso "afetará todas as empresas"
-- Se empresa comum + produto global: apenas cria/atualiza `base_price_override` em `company_product_overrides` (novo modo)
-- Se produto particular: comportamento atual
-
-**Validações RLS finais**
-- Empresa comum não altera `global_supplier_products` (bloqueio duplo UI+RLS)
-- Testes: alterar margem/perda/comissão em empresa A não afeta B nem Admin
-
----
+- Toda ação relevante grava: empresa, usuário interno, função, ação, entidade, dados relevantes, timestamp.
+- Admin Global vê logs de todas as empresas. Usuários comuns só se tiverem permissão.
+- Exemplos gravados: criação de usuário, criação de orçamento, alteração de margem, criação de empresa.
 
 ## Detalhes técnicos
 
-**Novas tabelas (resumo SQL)**
-```
-global_supplier_products (
-  id uuid pk, supplier_id uuid fk suppliers,
-  category text, code text, description text,
-  base_price numeric, width_cm numeric, ncm text,
-  active bool default true, unique(supplier_id, category, code)
-)
+Backend (uma migração):
+- Nova tabela `internal_users` (id, company_id → profiles.id, full_name, role_label, pin_hash, is_active, is_global_admin, permissões booleanas + max_discount_percent, failed_pin_attempts, locked_until, created_at, updated_at). GRANT + RLS scoped por empresa; leitura só pela própria empresa ou Admin Global.
+- Nova tabela `activity_logs` (id, company_id, internal_user_id, action, entity, entity_id, metadata jsonb, created_at). GRANT + RLS.
+- Funções `SECURITY DEFINER`: `create_company_with_owner`, `create_internal_user`, `update_internal_user`, `reset_internal_user_pin`, `validate_internal_user_pin` (com contagem/bloqueio), `list_internal_users`, `has_internal_permission`. EXECUTE apenas para `authenticated`.
+- Migração de dados: copia `operators` ativos para `internal_users`; cria "Proprietário" onde faltar; cria "Evandro" com `is_global_admin` e PIN `123456`. Tabela `operators` intocada.
 
-company_product_overrides (
-  id uuid pk, owner_user_id uuid, global_product_id uuid fk,
-  profit_margin numeric, waste_percentage numeric,
-  commission_percentage numeric, labor_cost numeric,
-  base_price_override numeric null,
-  unique(owner_user_id, global_product_id)
-)
-```
+Frontend:
+- Novo contexto `InternalUserProvider` (substitui/estende `OperatorProvider`) com estado do usuário interno ativo em `sessionStorage`, permissões efetivas e helper `requirePin(action)` que abre modal de PIN e reautentica quando necessário.
+- Nova rota/gate `/selecionar-usuario` chamada pelo `_authenticated` layout: se `count(users) >= 2` e não houver ativo, redireciona para lá; se `count == 1`, ativa automaticamente.
+- Refactor de `login.tsx`: nada muda no passo 1 (login da empresa); no pós-login, roteia conforme regra acima.
+- Refactor de `AppHeader` / `AppSidebar`: exibe empresa + usuário, "Trocar usuário", "Sair da empresa". Sidebar sem "Contas".
+- Refactor da rota `operadores.tsx` para `usuarios.tsx` (rota nova, `/usuarios`) consumindo `internal_users`. Rota antiga `operadores.tsx` fica como redirect temporário para `/usuarios`.
+- Refactor de `admin-users.functions.ts` e telas do Admin Global (`revendedores.*` → renomeadas para `empresas.*`) para o novo formulário unificado (dados + acesso + proprietário).
+- Nas ações sensíveis (restaurar catálogo, alteração em massa, exclusões, gerência de usuários), envolver o handler com `requirePin("acao")` antes de disparar.
+- Varredura de textos para eliminar qualquer menção a "Conta"/"Operador" na UI.
 
-**Prioridade de cálculo (backend, aplicada na RPC de leitura)**
-1. `company_product_overrides` (produto específico)
-2. `company_supplier_config` (fornecedor+categoria)
-3. Sem config → flag "Configuração pendente" na UI
+Nada é feito com:
+- Pedidos, orçamentos, produtos, clientes, estoque, históricos, RLS comercial, catálogo global.
+- Estrutura antiga de `profiles.parent_user_id` / `operators` no banco (permanece).
 
-**Arquivos afetados por fase**
+## Validação
 
-Fase 1: migração SQL + `src/routes/produtos.tsx` + `src/lib/products.functions.ts`
-
-Fase 2: `src/routes/fornecedores.tsx` + `src/components/produtos/ProductImportWizard.tsx` + novo componente `SupplierCatalogsSection.tsx`
-
-Fase 3: `src/components/produtos/SupplierConfigWizard.tsx` + novo `BulkConfigWizard.tsx` + edição de produto em `produtos.tsx`
-
-Fase 4: `src/components/produtos/PriceIncreaseWizard.tsx` + revisão de RLS
-
----
-
-Se aprovar, começo pela **Fase 1** (migração + RPC unificada + limpeza com backup). Cada fase termina com verificação antes da próxima.
+Rodo os 5 cenários da sua descrição via Playwright após implementar (Admin Global, nova empresa, proprietária, funcionária com permissões limitadas, troca de usuário) e confirmo com screenshots que a tela "Quem está usando?" aparece apenas com 2+ usuários e que o PIN é pedido nas ações sensíveis.

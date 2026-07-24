@@ -184,7 +184,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 border-l border-white/10 pl-3 sm:pl-4">
-          {profile?.parent_user_id ? <OperatorSwitcher /> : null}
+          <OperatorSwitcher />
           <button
             type="button"
             aria-label="Notificações"

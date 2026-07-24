@@ -63,7 +63,6 @@ const arquitetos: Item = { title: "Arquitetos", url: "/arquitetos", icon: Compas
 const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras", icon: Truck };
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3 };
 const revendedores: Item = { title: "Empresas", url: "/revendedores", icon: Users };
-const colaboradores: Item = { title: "Contas", url: "/colaboradores", icon: UserCog };
 const operadores: Item = { title: "Usuários", url: "/operadores", icon: UsersRound };
 
 const conta: Item = { title: "Conta", url: "/conta", icon: User };
@@ -81,7 +80,7 @@ function useSidebarData() {
   const isOperational = !!profile?.parent_user_id;
   if (role === "admin") {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, revendedores, colaboradores, operadores];
+    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, revendedores, operadores];
     bottomItems = [conta, configuracoes];
   } else if (role === "colaborador" || isOperational) {
     mainItems = [dashboard, orcamentos, pedidos];
@@ -89,9 +88,10 @@ function useSidebarData() {
     bottomItems = [conta];
   } else {
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, colaboradores, operadores];
+    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, operadores];
     bottomItems = [conta, configuracoes];
   }
+
 
 
   const isActive = (url: string) =>
