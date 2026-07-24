@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
+import { isDiversosOnly } from "@/lib/frame-detection";
 
 export const Route = createFileRoute("/orcamentos/")({
   head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
@@ -96,6 +97,7 @@ function Orcamentos() {
   const [linkSaving, setLinkSaving] = useState(false);
   const [askApproveAfterLink, setAskApproveAfterLink] = useState<BudgetRow | null>(null);
   const [printingFor, setPrintingFor] = useState<BudgetRow | null>(null);
+  const [diversosOnlyConfirm, setDiversosOnlyConfirm] = useState(false);
 
   const { data: clientList = [] } = useQuery({
     queryKey: ["clients", "picker"],
@@ -197,6 +199,30 @@ function Orcamentos() {
     await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
   }
 
+  async function checkDiversosOnlyThenApprove() {
+    if (!approving) return;
+    try {
+      const { data: itemsRaw } = await supabase
+        .from("budget_items")
+        .select("data")
+        .eq("budget_id", approving.id);
+      const items = (itemsRaw ?? []).map((r) => ({
+        data: (r as { data: Record<string, unknown> | null }).data ?? {},
+      }));
+      const fallback =
+        items.length === 0
+          ? [{ data: (approving.details ?? {}) as Record<string, unknown> }]
+          : items;
+      if (isDiversosOnly(fallback)) {
+        setDiversosOnlyConfirm(true);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    handleApprove();
+  }
+
   async function handleApprove() {
     if (!approving || !session?.user?.id) return;
     setApproveLoading(true);
@@ -278,6 +304,7 @@ function Orcamentos() {
 
 
       toast.success("Orçamento aprovado e movido para Pedidos.");
+      setDiversosOnlyConfirm(false);
       setApproving(null);
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
       await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
@@ -560,12 +587,43 @@ function Orcamentos() {
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                handleApprove();
+                checkDiversosOnlyThenApprove();
               }}
               disabled={approveLoading}
               className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
               {approveLoading ? "Aprovando..." : "Aprovar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={diversosOnlyConfirm}
+        onOpenChange={(o) => !o && !approveLoading && setDiversosOnlyConfirm(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pedido somente com Produtos Diversos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Toda a estrutura de quadro deste orçamento está vazia.
+              <br />
+              Foi identificado que este pedido contém apenas Produtos Diversos.
+              <br />
+              Deseja gerar o pedido somente com esses produtos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveLoading}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleApprove();
+              }}
+              disabled={approveLoading}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {approveLoading ? "Aprovando..." : "Continuar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtDocument, onlyDigits } from "@/lib/utils";
 import { getInheritedStoreProfile } from "@/lib/store-profile.functions";
+import { isDiversosOnly } from "@/lib/frame-detection";
 
 export type Variant = "loja" | "producao" | "cliente";
 export type DocKind = "pedido" | "orcamento";
@@ -493,7 +494,8 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
   const totalItens = items.reduce((s, it) => s + Number(it.subtotal || 0), 0);
 
   const diversos = extractDiversos(items);
-  const frames = items;
+  const hideFrames = kind === "pedido" && isDiversosOnly(items) && diversos.length > 0;
+  const frames = hideFrames ? [] : items;
 
   const storeName = profile?.store_name || profile?.full_name || "Loja";
   const docLabel = kind === "pedido" ? "Pedido" : "Orçamento";
