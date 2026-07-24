@@ -99,7 +99,7 @@ function Content() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const list = useServerFn(listResellers);
-  const create = useServerFn(createUser);
+  const create = useServerFn(createCompanyWithOwner);
   const reset = useServerFn(resetPassword);
   const del = useServerFn(deleteUser);
 
@@ -112,16 +112,9 @@ function Content() {
   });
 
   const createMut = useMutation({
-    mutationFn: (data: {
-      full_name: string;
-      store_name: string;
-      username: string;
-      password: string;
-      role: "admin" | "revendedor";
-      company_group_id: string | null;
-    }) => create({ data }),
+    mutationFn: (data: Parameters<typeof create>[0]["data"]) => create({ data }),
     onSuccess: () => {
-      toast.success("Usuário criado com sucesso.");
+      toast.success("Empresa criada com sucesso.");
       qc.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (e: Error) => toast.error(e.message),
