@@ -1231,10 +1231,10 @@ function ResumoDialog({
               </div>
             )}
 
-            {activeItem && (
+            {activeItem && itemRows.length > 0 && (
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Item {activeIdx + 1}
+                  Item {activeIdx + 1}{diversosOnly ? " — Produtos Diversos" : ""}
                 </div>
                 <div className="rounded-lg border border-border divide-y divide-border">
                   {itemRows.map((r, i) => (
@@ -1281,29 +1281,35 @@ function ResumoDialog({
                     </div>
                   ),
                 )}
-              <div className="flex items-center justify-between px-4 py-3 text-sm">
-                <span className="text-muted-foreground">Instalação</span>
-                <span className="font-semibold">
-                  {moneyOrNA(instalacaoAtivo, gNum("valorInstalacao"))}
-                </span>
-              </div>
-              <div className="flex items-center justify-between px-4 py-3 text-sm">
-                <span className="text-muted-foreground">
-                  Entrega / Frete ({tipoEntrega})
-                  {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
-                    <span className="block text-xs text-foreground/70 mt-0.5">
-                      Transportadora: {gStr("transportadoraNome")}
-                    </span>
-                  )}
-                </span>
-                <span className="font-semibold">
-                  {moneyOrNA(entregaAtiva, gNum("valorEntrega"))}
-                </span>
-              </div>
-              <div className="flex items-center justify-between px-4 py-3 text-sm">
-                <span className="text-muted-foreground">Mão de obra extra</span>
-                <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
-              </div>
+              {(!diversosOnly || instalacaoAtivo) && (
+                <div className="flex items-center justify-between px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">Instalação</span>
+                  <span className="font-semibold">
+                    {moneyOrNA(instalacaoAtivo, gNum("valorInstalacao"))}
+                  </span>
+                </div>
+              )}
+              {(!diversosOnly || entregaAtiva) && (
+                <div className="flex items-center justify-between px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    Entrega / Frete ({tipoEntrega})
+                    {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
+                      <span className="block text-xs text-foreground/70 mt-0.5">
+                        Transportadora: {gStr("transportadoraNome")}
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold">
+                    {moneyOrNA(entregaAtiva, gNum("valorEntrega"))}
+                  </span>
+                </div>
+              )}
+              {(!diversosOnly || gNum("maoDeObraExtra") > 0) && (
+                <div className="flex items-center justify-between px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">MDOE</span>
+                  <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
+                </div>
+              )}
               {gNum("descontoPercentual") > 0 && (
                 <>
                   <div className="flex items-center justify-between px-4 py-3 text-sm">
