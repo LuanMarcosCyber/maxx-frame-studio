@@ -63,7 +63,7 @@ const arquitetos: Item = { title: "Arquitetos", url: "/arquitetos", icon: Compas
 const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras", icon: Truck };
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3 };
 const revendedores: Item = { title: "Empresas", url: "/revendedores", icon: Users };
-const operadores: Item = { title: "Usuários", url: "/operadores", icon: UsersRound };
+const operadores: Item = { title: "Usuários", url: "/usuarios", icon: UsersRound };
 
 const conta: Item = { title: "Conta", url: "/conta", icon: User };
 const configuracoes: Item = { title: "Configurações", url: "/configuracoes", icon: Settings };

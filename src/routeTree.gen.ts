@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as TransportadorasRouteImport } from './routes/transportadoras'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RevendedoresRouteImport } from './routes/revendedores'
@@ -38,6 +39,11 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as PedidosIdImprimirViaRouteImport } from './routes/pedidos_.$id.imprimir.$via'
 import { Route as OrcamentosIdImprimirViaRouteImport } from './routes/orcamentos_.$id.imprimir.$via'
 
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransportadorasRoute = TransportadorasRouteImport.update({
   id: '/transportadoras',
   path: '/transportadoras',
@@ -200,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/transportadoras': typeof TransportadorasRoute
+  '/usuarios': typeof UsuariosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/relatorios': typeof RelatoriosRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/transportadoras': typeof TransportadorasRoute
+  '/usuarios': typeof UsuariosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/revendedores': typeof RevendedoresRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/transportadoras': typeof TransportadorasRoute
+  '/usuarios': typeof UsuariosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/orcamentos/novo': typeof OrcamentosNovoRoute
@@ -291,6 +300,7 @@ export interface FileRouteTypes {
     | '/revendedores'
     | '/sitemap.xml'
     | '/transportadoras'
+    | '/usuarios'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/orcamentos/novo'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/sitemap.xml'
     | '/transportadoras'
+    | '/usuarios'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/orcamentos/novo'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/revendedores'
     | '/sitemap.xml'
     | '/transportadoras'
+    | '/usuarios'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/orcamentos/novo'
@@ -380,6 +392,7 @@ export interface RootRouteChildren {
   RevendedoresRoute: typeof RevendedoresRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TransportadorasRoute: typeof TransportadorasRoute
+  UsuariosRoute: typeof UsuariosRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -391,6 +404,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transportadoras': {
       id: '/transportadoras'
       path: '/transportadoras'
@@ -636,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   RevendedoresRoute: RevendedoresRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TransportadorasRoute: TransportadorasRoute,
+  UsuariosRoute: UsuariosRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
