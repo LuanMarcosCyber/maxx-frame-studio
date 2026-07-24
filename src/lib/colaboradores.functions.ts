@@ -190,7 +190,7 @@ export const validateOperatorPin = createServerFn({ method: "POST" })
     }
     return {
       id: op.id as string,
-      full_name: (op.full_name as string | null) ?? (op.username as string | null) ?? "Operador",
+      full_name: (op.full_name as string | null) ?? (op.username as string | null) ?? "Usuário",
       username: op.username as string | null,
       permissions: {
         can_edit_budgets: !!op.can_edit_budgets,
