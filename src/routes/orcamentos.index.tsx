@@ -587,12 +587,43 @@ function Orcamentos() {
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                handleApprove();
+                checkDiversosOnlyThenApprove();
               }}
               disabled={approveLoading}
               className="bg-emerald-600 text-white hover:bg-emerald-700"
             >
               {approveLoading ? "Aprovando..." : "Aprovar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={diversosOnlyConfirm}
+        onOpenChange={(o) => !o && !approveLoading && setDiversosOnlyConfirm(false)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pedido somente com Produtos Diversos</AlertDialogTitle>
+            <AlertDialogDescription>
+              Toda a estrutura de quadro deste orçamento está vazia.
+              <br />
+              Foi identificado que este pedido contém apenas Produtos Diversos.
+              <br />
+              Deseja gerar o pedido somente com esses produtos?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveLoading}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleApprove();
+              }}
+              disabled={approveLoading}
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {approveLoading ? "Aprovando..." : "Continuar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
