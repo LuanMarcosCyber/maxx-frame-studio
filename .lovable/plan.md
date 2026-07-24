@@ -1,84 +1,131 @@
 
-# Nova estrutura de acesso: Empresas + Usuários internos com PIN
+# Finalizar a estrutura Empresas + Usuários internos com PIN
 
-Esta etapa entrega toda a nova experiência (UI, fluxos, permissões, migração de dados). A estrutura antiga de "Contas" permanece no backend por compatibilidade, mas some da interface e não é mais usada por nenhum fluxo novo. A remoção definitiva das tabelas antigas fica para uma etapa futura.
+Escopo grande e destrutivo. Verificações no banco antes de planejar:
 
-## Modelo mental
+- `profiles` com `parent_user_id IS NOT NULL`: **0 registros**. Ou seja, hoje já não existe nenhuma "Conta de acesso" viva — a remoção da estrutura antiga não precisa migrar dados de contas operacionais para usuários internos.
+- Tabela `operators` já possui todos os campos exigidos por "usuário interno": `pin_hash`, permissões, `is_global_admin`, `failed_pin_attempts`, `locked_until`, `owner_user_id`.
+- Existem 7 empresas raiz. Migrações anteriores já criaram um usuário interno "Proprietário" para cada empresa que não tinha nenhum, e um "Evandro" com `is_global_admin=true` (PIN inicial `123456`).
 
-```text
-Administrador Global (flag no usuário interno)
- └── Empresa (login principal Supabase = usuário atual da empresa)
-      └── Usuários internos (PIN + permissões individuais)
-           ├── Proprietário (criado junto com a empresa, todas as permissões da empresa)
-           └── Demais usuários (permissões definidas caso a caso)
-```
+Com isso, a limpeza fica muito mais barata: em vez de re-arquitetar auth, basta consolidar o modelo já existente e remover a UI/backends de "Conta".
 
-O login principal identifica só a empresa. As permissões efetivas vêm do usuário interno ativo, nunca do login.
+---
 
-## Regras de login e PIN (conforme suas respostas)
+## 1. Banco (uma migração)
 
-- 1 usuário interno ativo na empresa: entra direto após o login, sem tela "Quem está usando?" e sem PIN no login. Nome aparece no topo.
-- 2+ usuários internos ativos: após o login, o sistema bloqueia e obriga escolher usuário + PIN.
-- Ações sensíveis (mesmo com 1 usuário) exigem PIN: criar/editar usuário, alterar permissões, redefinir PIN, restaurar catálogo, alteração em massa, excluir produtos, excluir pedidos, e outras operações críticas equivalentes.
-- Menu de sessão passa a ter "Trocar usuário" (mantém login da empresa, volta para a seleção) e "Sair da empresa" (logout completo).
-- PIN: 4 a 6 dígitos numéricos, hash seguro, bloqueio temporário após várias tentativas erradas, redefinível pelo proprietário/Admin Global. PIN inicial do Evandro na migração: `123456` (alterável na tela Usuários como qualquer outro).
+- Renomear conceitualmente `operators` como usuários internos, sem renomear a tabela (menos risco). Introduzir view `public.internal_users` como alias somente-leitura de `operators` para código novo. Novo código escreve pela função RPC.
+- `profiles`: manter a coluna `parent_user_id` por ora (não deletar), mas:
+  - Bloquear novas inserções com `parent_user_id NOT NULL` via trigger.
+  - Remover `account_type = 'operacional'` da lógica de `owner_user_id()`, `is_collaborator()`, RLS. Toda RLS passa a assumir que `profiles.id` = empresa.
+  - `handle_new_user()` continua criando `profiles` para o login da empresa, mas nunca mais para conta operacional.
+- Adicionar coluna `profiles.owner_full_name` opcional (para exibir "Nome do proprietário" separado de `full_name` da loja) — ou reutilizar campos existentes: usar `store_name` = nome da loja, `full_name` = nome do proprietário. Isso alinha com a UI atual e evita nova coluna.
+- Novas funções `SECURITY DEFINER` (EXECUTE só para `authenticated`):
+  - `create_company_with_owner(_login, _password_ignored, _owner_name, _store_name, _pin)` — chamada de servidor; roda dentro da functions com `supabaseAdmin` (a senha e o `auth.users` são criados pelo server function, não no SQL). O SQL só cria `profiles`, primeiro `operators` com PIN + permissões máximas.
+  - `create_internal_user(_name, _role_label, _pin, _permissions jsonb, _active)` — company_id implícito da empresa ativa.
+  - `update_internal_user(_id, ...)`, `reset_internal_user_pin(_id, _new_pin)`, `set_internal_user_active(_id, _active)`.
+  - `validate_internal_user_pin(_id, _pin) → { ok, locked_until }`.
+  - `list_internal_users()` — retorna usuários da empresa ativa (Admin Global pode passar `_company_id`).
+- Manter tabelas `activity_logs`, `company_switch_audit`, `price_increase_history` como estão.
+- Adicionar policies faltantes se alguma referência a `parent_user_id` sumir do escopo.
 
-## Migração de dados (sem apagar nada antigo)
+Nada de `DROP TABLE operators`, nem `DROP COLUMN parent_user_id` nesta etapa — remoção só depois da validação (item 8).
 
-Para cada empresa (perfis com `parent_user_id IS NULL`):
-- O login Supabase atual continua sendo o login principal da empresa (nenhuma nova credencial).
-- Cada `operator` ativo vira um usuário interno da empresa, preservando nome, PIN (hash existente) e permissões.
-- Se a empresa não tiver nenhum usuário interno, cria-se automaticamente um usuário "Proprietário" com o nome do perfil da empresa e PIN inicial `123456`, marcado com todas as permissões administrativas da empresa.
-- Empresa do Evandro: garante um usuário interno "Evandro" com PIN `123456` e flag `is_global_admin = true`.
-- Nenhum pedido, orçamento, produto, cliente, estoque ou histórico é tocado.
+## 2. Server functions (TanStack)
 
-Contas operacionais existentes (`profiles.parent_user_id IS NOT NULL`) continuam funcionando no backend, mas somem da UI e não podem mais ser criadas.
+- `src/lib/companies.functions.ts` (novo):
+  - `createCompanyWithOwner` — dentro do handler carrega `supabaseAdmin`, valida entradas com Zod, verifica unicidade do username, cria `auth.users` (email `login@totalmaxx.local`, senha), insere `profiles` (id=user.id, store_name, full_name=nome do proprietário, campos comerciais opcionais vazios), chama RPC para inserir `operators` proprietário (todas permissões + PIN hash scrypt), grava `activity_logs`. Rollback: se qualquer passo falhar, deletar user recém-criado.
+  - `updateCompanyCommercial(company_id, dadosComerciais)` — grava CNPJ, razão social, endereço etc. Chamado pela etapa 2.
+- `src/lib/internal-users.functions.ts` (novo, thin wrapper sobre `operators`):
+  - `listInternalUsers`, `createInternalUser`, `updateInternalUser`, `resetInternalUserPin`, `setInternalUserActive`, `validateInternalUserPin`.
+  - Reutiliza o hash scrypt já usado por `operators.functions.ts`.
+- Manter `operators.functions.ts` funcionando (usado por `SessionUserGate`) mas apontar todos os novos usos ao novo módulo.
 
-## Mudanças de UI (remover "Contas" da experiência)
+## 3. UI — cadastro de empresa em 2 etapas
 
-- Sidebar / Dashboard / atalhos / cadastros: aba "Contas" removida. Substituída por "Usuários" (usuários internos da empresa ativa).
-- Menu Admin Global do Evandro: "Empresas", "Usuários" (da empresa dele) e demais funções administrativas. Sem "Contas".
-- Textos, filtros, toasts, mensagens: revisados para nunca mais mencionar "Conta", "Conta operacional", "Conta vinculada", "Usuário/Conta", "Loja sem vínculo".
-- Cabeçalho: mostra "Empresa: X — Usuário: Y". Menu de sessão com "Trocar usuário" e "Sair da empresa".
-- Cadastro de empresa (Admin Global): formulário único com blocos Dados da empresa / Acesso principal (login + senha) / Usuário proprietário (nome + PIN + confirmação). Ao salvar, cria empresa + login + usuário proprietário em uma transação.
-- Tela "Usuários" (dentro da empresa): lista todos os usuários internos ativos, inclusive o proprietário (não é oculto). Ações: criar, editar, definir permissões, redefinir PIN, ativar/desativar. Cada ação sensível exige PIN.
-- Tela "Quem está usando?" com nome, função e iniciais/foto de cada usuário ativo, seguida de tela de PIN. Só aparece quando há 2+ usuários.
+- Nova rota/tela reaproveitando o modal existente em `src/routes/revendedores.index.tsx`. Substituir o formulário atual por um wizard de 2 etapas dentro do mesmo Dialog. Título "Nova empresa".
+- Etapa 1 — Acesso e proprietário:
+  - Nome do proprietário (uppercase automático, obrigatório).
+  - Nome da loja (uppercase).
+  - Usuário de login (regex `[a-z0-9._-]+`, checagem de disponibilidade via server fn com `supabaseAdmin.auth.admin.listUsers` filtrando email `login@totalmaxx.local`).
+  - Senha inicial + confirmação (mín. 6).
+  - PIN + confirmação (4–6 dígitos numéricos).
+  - Botão "Próximo" — apenas valida, não persiste.
+- Etapa 2 — Dados comerciais:
+  - CNPJ com busca BrasilAPI (já usado em Fornecedores/Transportadoras), IE, e-mail, telefone, WhatsApp, CEP via BrasilAPI/ViaCEP (padrão do sistema), logradouro, número, complemento, bairro, cidade, estado.
+  - Botões "Voltar" / "Criar empresa" — dispara `createCompanyWithOwner` + `updateCompanyCommercial` numa única promessa; em erro exibe toast e permite corrigir.
 
-## Permissões e isolamento
+## 4. UI — tela "Usuários"
 
-- Permissões efetivas vêm do usuário interno ativo (armazenadas no registro dele). O login principal por si só não libera nada além do mínimo.
-- Flag `is_global_admin` no usuário interno concede visão global (Empresas, logs de todas as empresas, catálogo global).
-- Todo usuário interno é obrigatoriamente vinculado a uma empresa. Sem exceção, exceto o Admin Global que pode "entrar" em outras empresas para administração.
-- RLS existente já é por `owner_user_id`; nenhuma mudança de escopo comercial. Adiciona-se apenas a validação de PIN e o gate de "usuário ativo" para ações sensíveis.
+- Renomear rota de `/operadores` para `/usuarios` (manter `/operadores` como redirect). Título "Usuários".
+- Cards de usuário com Nome, Função, badges de permissão, indicador Ativo, botão editar/redefinir PIN/ativar-desativar.
+- Novo/Editar usuário: modal simples com Nome, Função (texto livre), PIN + confirmação, checkboxes de permissões, `max_discount_percent`, toggle Ativo. Sem qualquer menção a "Conta".
+- Admin Global: filtro de empresa (Select) que troca o `company_id` da listagem via `switch_active_company` temporariamente ou passando `_company_id` para as RPCs.
+- O proprietário aparece normalmente. Nenhuma linha oculta.
 
-## Logs
+## 5. Login / seleção de usuário / PIN
 
-- Toda ação relevante grava: empresa, usuário interno, função, ação, entidade, dados relevantes, timestamp.
-- Admin Global vê logs de todas as empresas. Usuários comuns só se tiverem permissão.
-- Exemplos gravados: criação de usuário, criação de orçamento, alteração de margem, criação de empresa.
+- `SessionUserGate` já existe e faz o gate. Ajustes:
+  - Se `count(usuários ativos) === 1`, auto-selecionar e não abrir modal.
+  - Se `>= 2`, exigir seleção + PIN.
+- `AppHeader`: mostrar "Empresa X — Usuário Y" e menu com "Trocar usuário" (limpa `activeOperator`, mantém sessão auth) e "Sair da empresa" (`signOut`).
+- Introduzir helper `requirePin(action)` em `useOperator` que abre modal, chama `validate_internal_user_pin`, resolve promise. Reutilizado para ações sensíveis:
+  - Criar/editar usuário, alterar permissões, redefinir PIN.
+  - Restaurar catálogo, alteração em massa.
+  - Excluir produtos, excluir/cancelar pedidos, alterar estoque manualmente.
+  - Acessar Configurações.
+
+## 6. Textos, sidebar, atalhos
+
+- Rodar varredura por "Conta"/"Conta operacional"/"Conta vinculada"/"Loja sem vínculo"/"Operador" em todos os `.tsx` sob `src/` e trocar por "Usuário" ou "Empresa" conforme contexto.
+- `AppSidebar`: já sem "Contas". Trocar "Usuários" → apontar para `/usuarios`.
+- Remover a rota `/colaboradores` do menu e adicionar redirect para `/usuarios`.
+
+## 7. RLS
+
+- Como não existem contas operacionais e vamos bloquear a criação de novas, simplificar `is_collaborator` para `RETURNS false` (sem drop) e `owner_user_id` para deixar de considerar `parent_user_id`. Nenhuma policy precisa mudar porque `owner_user_id()` continua sendo o ponto único de escopo.
+- Verificar policies em `operators`, `products`, `clients`, `budgets`, `orders`, `architects`, `carriers`, `suppliers`, `stock_movements`, `activity_logs`. Ajustar apenas se referenciarem `parent_user_id`.
+
+## 8. Remoção final (não nesta migração)
+
+Antes do drop:
+- Rodar `SELECT count(*) FROM profiles WHERE parent_user_id IS NOT NULL` — deve permanecer 0.
+- Rodar `SELECT count(*) FROM operators WHERE operational_account_id IS NOT NULL` — se >0, migrar para NULL após auditoria.
+
+Somente numa migração posterior:
+- `DROP COLUMN operators.operational_account_id`, `DROP COLUMN profiles.parent_user_id`, `DROP COLUMN profiles.account_type`, `DROP TYPE account_type`.
+- Remover `colaboradores.functions.ts`, `colaboradores.tsx`, `is_collaborator()`.
+
+Isto fica marcado como TODO no plano; não executamos nesta iteração para preservar reversibilidade.
+
+## 9. Validação Playwright
+
+Rodar os 5 cenários listados via Playwright em `http://localhost:8080` com screenshots:
+
+1. Admin cria nova empresa (2 etapas) → proprietário aparece em `/usuarios`, login funciona.
+2. Empresa 1 usuário → login direto, nome no topo, PIN só em ação sensível.
+3. Proprietário cria 2º usuário (PIN exigido) → próximo login mostra "Quem está usando?".
+4. Evandro Admin Global → usuário auto-selecionado, tela Empresas + logs.
+5. Confirmar produtos/pedidos/orçamentos anteriores acessíveis.
+
+Se qualquer cenário falhar, corrigir antes de encerrar.
 
 ## Detalhes técnicos
 
-Backend (uma migração):
-- Nova tabela `internal_users` (id, company_id → profiles.id, full_name, role_label, pin_hash, is_active, is_global_admin, permissões booleanas + max_discount_percent, failed_pin_attempts, locked_until, created_at, updated_at). GRANT + RLS scoped por empresa; leitura só pela própria empresa ou Admin Global.
-- Nova tabela `activity_logs` (id, company_id, internal_user_id, action, entity, entity_id, metadata jsonb, created_at). GRANT + RLS.
-- Funções `SECURITY DEFINER`: `create_company_with_owner`, `create_internal_user`, `update_internal_user`, `reset_internal_user_pin`, `validate_internal_user_pin` (com contagem/bloqueio), `list_internal_users`, `has_internal_permission`. EXECUTE apenas para `authenticated`.
-- Migração de dados: copia `operators` ativos para `internal_users`; cria "Proprietário" onde faltar; cria "Evandro" com `is_global_admin` e PIN `123456`. Tabela `operators` intocada.
+- Hash de PIN: manter `scrypt:<salt>:<hash>` já usado em `operators.functions.ts`.
+- `create_company_with_owner` executa dentro de `createServerFn` com `supabaseAdmin` (não numa RPC SQL) porque `auth.users` só pode ser criado via Admin API.
+- Rollback do create: `try { create user; try { insert profile; try { insert operator } catch { deleteUser } } catch { deleteUser } }`.
+- Uniqueness do login: `profiles.username_key` já existe; usar como check secundário além do email.
+- Migração SQL: só `CREATE OR REPLACE FUNCTION` + trigger de bloqueio, sem DROPs.
 
-Frontend:
-- Novo contexto `InternalUserProvider` (substitui/estende `OperatorProvider`) com estado do usuário interno ativo em `sessionStorage`, permissões efetivas e helper `requirePin(action)` que abre modal de PIN e reautentica quando necessário.
-- Nova rota/gate `/selecionar-usuario` chamada pelo `_authenticated` layout: se `count(users) >= 2` e não houver ativo, redireciona para lá; se `count == 1`, ativa automaticamente.
-- Refactor de `login.tsx`: nada muda no passo 1 (login da empresa); no pós-login, roteia conforme regra acima.
-- Refactor de `AppHeader` / `AppSidebar`: exibe empresa + usuário, "Trocar usuário", "Sair da empresa". Sidebar sem "Contas".
-- Refactor da rota `operadores.tsx` para `usuarios.tsx` (rota nova, `/usuarios`) consumindo `internal_users`. Rota antiga `operadores.tsx` fica como redirect temporário para `/usuarios`.
-- Refactor de `admin-users.functions.ts` e telas do Admin Global (`revendedores.*` → renomeadas para `empresas.*`) para o novo formulário unificado (dados + acesso + proprietário).
-- Nas ações sensíveis (restaurar catálogo, alteração em massa, exclusões, gerência de usuários), envolver o handler com `requirePin("acao")` antes de disparar.
-- Varredura de textos para eliminar qualquer menção a "Conta"/"Operador" na UI.
+## Fora de escopo desta iteração
 
-Nada é feito com:
-- Pedidos, orçamentos, produtos, clientes, estoque, históricos, RLS comercial, catálogo global.
-- Estrutura antiga de `profiles.parent_user_id` / `operators` no banco (permanece).
+- Renomear fisicamente `operators` → `internal_users` (apenas view alias).
+- Deletar `parent_user_id`, `account_type`, `colaboradores.*` (marcar como TODO na etapa 8).
+- Alterar auth email domain.
 
-## Validação
+## Confirmação necessária
 
-Rodo os 5 cenários da sua descrição via Playwright após implementar (Admin Global, nova empresa, proprietária, funcionária com permissões limitadas, troca de usuário) e confirmo com screenshots que a tela "Quem está usando?" aparece apenas com 2+ usuários e que o PIN é pedido nas ações sensíveis.
+Isso é uma reforma grande em cadastro/login/RLS. Confirma prosseguir? Em particular:
+
+1. Reutilizar `profiles.full_name` = "Nome do proprietário" e `store_name` = "Nome da loja" (sem nova coluna)?
+2. Manter `parent_user_id`/`account_type`/`operators.operational_account_id` no banco por ora (drop na próxima etapa após validação)?
