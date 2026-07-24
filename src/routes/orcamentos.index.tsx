@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
 import { isDiversosOnly } from "@/lib/frame-detection";
