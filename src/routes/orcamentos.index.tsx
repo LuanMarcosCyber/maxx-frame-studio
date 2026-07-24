@@ -304,6 +304,7 @@ function Orcamentos() {
 
 
       toast.success("Orçamento aprovado e movido para Pedidos.");
+      setDiversosOnlyConfirm(false);
       setApproving(null);
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
       await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
