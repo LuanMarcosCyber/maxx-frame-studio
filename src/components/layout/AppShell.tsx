@@ -3,6 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { SessionUserGate } from "./SessionUserGate";
 
 interface AppShellProps {
   title: string;
