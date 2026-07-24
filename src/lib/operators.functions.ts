@@ -244,31 +244,43 @@ export const validateOperatorPinV2 = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => validateSchema.parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { ownerId, isOperational } = await resolveCaller(supabaseAdmin, context.userId);
+    const { ownerId } = await resolveCaller(supabaseAdmin, context.userId);
 
     const { data: op, error } = await supabaseAdmin
       .from("operators")
       .select(
-        "id, name, nickname, active, owner_user_id, operational_account_id, pin_hash, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent",
+        "id, name, nickname, active, owner_user_id, pin_hash, locked_until, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent",
       )
       .eq("id", data.operator_id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     const row = op as Record<string, unknown> | null;
-    if (
-      !row ||
-      row.owner_user_id !== ownerId ||
-      !row.active ||
-      (isOperational && row.operational_account_id !== context.userId)
-    ) {
-      throw new Error("Operador inválido.");
+    if (!row || row.owner_user_id !== ownerId || !row.active) {
+      throw new Error("Usuário inválido.");
     }
-    if (!row.pin_hash || !verifyPin(data.pin, row.pin_hash as string)) {
-      throw new Error("PIN incorreto.");
+    const lockedUntil = row.locked_until ? new Date(row.locked_until as string) : null;
+    if (lockedUntil && lockedUntil.getTime() > Date.now()) {
+      const err = new Error(
+        `Usuário bloqueado até ${lockedUntil.toLocaleTimeString("pt-BR")}.`,
+      );
+      (err as unknown as { locked_until: string }).locked_until =
+        lockedUntil.toISOString();
+      throw err;
     }
+    const ok = !!row.pin_hash && verifyPin(data.pin, row.pin_hash as string);
+    try {
+      await supabaseAdmin.rpc("register_pin_attempt", {
+        _operator_id: data.operator_id,
+        _success: ok,
+      });
+    } catch (e) {
+      // best-effort
+      console.warn("register_pin_attempt falhou", e);
+    }
+    if (!ok) throw new Error("PIN incorreto.");
     return {
       id: row.id as string,
-      full_name: (row.name as string) ?? "Operador",
+      full_name: (row.name as string) ?? "Usuário",
       username: (row.nickname as string | null) ?? null,
       permissions: {
         can_edit_budgets: !!row.can_edit_budgets,
@@ -279,6 +291,7 @@ export const validateOperatorPinV2 = createServerFn({ method: "POST" })
       },
     };
   });
+
 
 /** List Contas de Acesso (operational accounts) for a given company/owner. */
 export const listOperationalAccounts = createServerFn({ method: "GET" })
