@@ -997,7 +997,10 @@ function ResumoDialog({
   const colagemAtivo = d.colagemAtivo === "sim";
   const impressaoAtivo = d.impressaoAtivo === "sim";
 
-  const itemRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
+  const isPedido = !!orderNumber;
+  const diversosOnly = isPedido && isDiversosOnly(items);
+
+  const frameRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
     ? [
         {
           label: "Tamanho original",
@@ -1088,29 +1091,33 @@ function ResumoDialog({
           value: moneyOrNA(impressaoAtivo, dNum(d, "valorImpressao")),
           sub: impressaoAtivo ? productLabel(d, "impressaoCode", "impressaoDescription") : undefined,
         },
-        ...(Array.isArray(d.produtosDiversos) && (d.produtosDiversos as unknown[]).length > 0
-          ? [
-              ...(d.produtosDiversos as Array<Record<string, unknown>>).map((di, i) => {
-                const qtd = Number(di.quantidade) || 1;
-                const unit = Number(di.valorUnitario) || 0;
-                const total = Number(di.total) || unit * qtd;
-                const code = typeof di.code === "string" ? di.code : "";
-                const nome = typeof di.nome === "string" ? di.nome : "Produto";
-                return {
-                  label: `${code ? `${code} · ` : ""}${nome}`,
-                  value: fmtMoney(total),
-                  sub: `${qtd}× ${fmtMoney(unit)}`,
-                  key: `div-${i}`,
-                };
-              }),
-              {
-                label: "Total Produtos Diversos",
-                value: fmtMoney(dNum(d, "valorDiversos")),
-              },
-            ]
-          : []),
       ]
     : [];
+
+  const diversosRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
+    && Array.isArray(d.produtosDiversos) && (d.produtosDiversos as unknown[]).length > 0
+    ? [
+        ...(d.produtosDiversos as Array<Record<string, unknown>>).map((di, i) => {
+          const qtd = Number(di.quantidade) || 1;
+          const unit = Number(di.valorUnitario) || 0;
+          const total = Number(di.total) || unit * qtd;
+          const code = typeof di.code === "string" ? di.code : "";
+          const nome = typeof di.nome === "string" ? di.nome : "Produto";
+          return {
+            label: `${code ? `${code} · ` : ""}${nome}`,
+            value: fmtMoney(total),
+            sub: `Qtd ${qtd} × ${fmtMoney(unit)}`,
+            key: `div-${i}`,
+          };
+        }),
+        {
+          label: "Total Produtos Diversos",
+          value: fmtMoney(dNum(d, "valorDiversos")),
+        },
+      ]
+    : [];
+
+  const itemRows = diversosOnly ? diversosRows : [...frameRows, ...diversosRows];
 
   return (
     <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
