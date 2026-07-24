@@ -210,7 +210,36 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 border-l border-white/10 pl-3 sm:pl-4">
-          <OperatorSwitcher />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm max-w-[280px]"
+                title="Sessão"
+              >
+                <UserCircle2 className="h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  <span className="opacity-70">{companyLabel}</span>
+                  <span className="opacity-50"> — </span>
+                  <span className="font-medium">Usuário: {userLabel}</span>
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-70 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                <div className="font-semibold text-foreground truncate">{companyLabel}</div>
+                <div className="truncate">Usuário: {userLabel}</div>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSwitchUser}>
+                <RefreshCw className="h-4 w-4 mr-2" /> Trocar usuário
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLeaveCompany} className="text-red-600">
+                <LogOut className="h-4 w-4 mr-2" /> Sair da empresa
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             type="button"
             aria-label="Notificações"
@@ -224,8 +253,9 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
               </span>
             )}
           </button>
-
+          <OperatorSwitcher open={switchOpen} onOpenChange={setSwitchOpen} hideTrigger />
         </div>
+
       </div>
 
       <Dialog open={notifOpen} onOpenChange={setNotifOpen}>
