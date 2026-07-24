@@ -42,14 +42,31 @@ type DiscountRequest = {
 };
 
 export function AppHeader({ title, subtitle }: AppHeaderProps) {
-  const { profile, role, session } = useAuth();
+  const { profile, role, session, signOut } = useAuth();
+  const { activeOperator, clearActiveOperator } = useOperator();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [switchOpen, setSwitchOpen] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
 
   const canSeeNotifications = role === "admin" || role === "revendedor";
   const currentUserId = session?.user?.id ?? null;
+
+  const companyLabel = profile?.store_name || profile?.full_name || "Empresa";
+  const userLabel = activeOperator?.full_name || profile?.full_name || "Usuário";
+
+  async function handleSwitchUser() {
+    clearActiveOperator();
+    setSwitchOpen(true);
+  }
+
+  async function handleLeaveCompany() {
+    clearActiveOperator();
+    await signOut();
+    navigate({ to: "/login", replace: true });
+  }
+
 
   const { data: requests = [] } = useQuery({
     queryKey: ["discount-requests", "pending", currentUserId],
