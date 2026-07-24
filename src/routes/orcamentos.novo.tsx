@@ -899,7 +899,7 @@ function NovoOrcamento() {
   const [pendingSaveOpts, setPendingSaveOpts] = useState<
     { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean } | null
   >(null);
-  // Controls the shared header OperatorSwitcher dialog when opened via "Trocar operador".
+  // Controls the shared header OperatorSwitcher dialog when opened via "Trocar usuário".
   const [operatorSwitcherOpen, setOperatorSwitcherOpen] = useState(false);
 
 
@@ -954,7 +954,7 @@ function NovoOrcamento() {
       setActiveOperator(result as never);
       setVendedorNome((result as { full_name: string }).full_name);
       setOperatorConfirmed(true);
-      toast.success(`Operador ativo: ${(result as { full_name: string }).full_name}`);
+      toast.success(`Usuário ativo: ${(result as { full_name: string }).full_name}`);
       setPinDialogOpen(false);
       setPendingOperator(null);
       setPinValue("");
@@ -1675,7 +1675,7 @@ function NovoOrcamento() {
       setPinValue("");
       setPendingSaveOpts(opts);
       setPinDialogOpen(true);
-      toast.message("Confirme o PIN do operador para salvar este orçamento.");
+      toast.message("Confirme o PIN do usuário para salvar este orçamento.");
       return;
     }
     if (!clienteNome.trim()) {
@@ -4375,7 +4375,7 @@ function NovoOrcamento() {
           <AlertDialogHeader>
             <AlertDialogTitle>Desconto acima do permitido</AlertDialogTitle>
             <AlertDialogDescription>
-              Este desconto ultrapassa o limite permitido para o operador atual.
+              Este desconto ultrapassa o limite permitido para o usuário atual.
               Deseja solicitar autorização ao responsável pela loja?
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -4546,14 +4546,14 @@ function NovoOrcamento() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {pendingSaveOpts ? "Confirmar operador" : "Mudar operador?"}
+              {pendingSaveOpts ? "Confirmar usuário" : "Mudar usuário?"}
             </DialogTitle>
             <DialogDescription>
               {pendingSaveOpts
-                ? "Confirme o PIN do operador para salvar este orçamento."
+                ? "Confirme o PIN do usuário para salvar este orçamento."
                 : (
                   <>
-                    Você está alterando o operador do orçamento de{" "}
+                    Você está alterando o usuário do orçamento de{" "}
                     <strong>{activeOperator?.full_name ?? "—"}</strong> para{" "}
                     <strong>{pendingOperator?.full_name ?? ""}</strong>. Para confirmar,
                     informe o PIN de {pendingOperator?.full_name ?? ""}.
@@ -4602,7 +4602,7 @@ function NovoOrcamento() {
                     setTimeout(() => setOperatorSwitcherOpen(true), 50);
                   }}
                 >
-                  Trocar operador
+                  Trocar usuário
                 </Button>
               )}
 

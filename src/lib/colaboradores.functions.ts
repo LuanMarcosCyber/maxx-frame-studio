@@ -183,7 +183,7 @@ export const validateOperatorPin = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!op || op.parent_user_id !== ownerId || !op.active) {
-      throw new Error("Operador inválido.");
+      throw new Error("Usuário inválido.");
     }
     if (!op.pin_hash || !verifyPin(data.pin, op.pin_hash as string)) {
       throw new Error("PIN incorreto.");
