@@ -199,6 +199,30 @@ function Orcamentos() {
     await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
   }
 
+  async function checkDiversosOnlyThenApprove() {
+    if (!approving) return;
+    try {
+      const { data: itemsRaw } = await supabase
+        .from("budget_items")
+        .select("data")
+        .eq("budget_id", approving.id);
+      const items = (itemsRaw ?? []).map((r) => ({
+        data: (r as { data: Record<string, unknown> | null }).data ?? {},
+      }));
+      const fallback =
+        items.length === 0
+          ? [{ data: (approving.details ?? {}) as Record<string, unknown> }]
+          : items;
+      if (isDiversosOnly(fallback)) {
+        setDiversosOnlyConfirm(true);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    handleApprove();
+  }
+
   async function handleApprove() {
     if (!approving || !session?.user?.id) return;
     setApproveLoading(true);
