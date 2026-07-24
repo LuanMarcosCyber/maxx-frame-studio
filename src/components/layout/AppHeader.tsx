@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Bell, Search, Menu, Check, X, Eye } from "lucide-react";
+import { Bell, Search, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtPct } from "@/lib/utils";
 import { toast } from "sonner";
@@ -12,10 +13,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SidebarContents } from "./AppSidebar";
 import { OperatorSwitcher } from "./OperatorSwitcher";
+
 
 interface AppHeaderProps {
   title: string;
