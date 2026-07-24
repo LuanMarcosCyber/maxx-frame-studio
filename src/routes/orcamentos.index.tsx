@@ -190,6 +190,8 @@ function Orcamentos() {
 
   async function handleDelete() {
     if (!deleting) return;
+    const ok = await requirePin("excluir orçamento");
+    if (!ok) return;
     const { error } = await supabase.from("budgets").delete().eq("id", deleting.id);
     if (error) {
       toast.error("Não foi possível excluir o orçamento.");
