@@ -163,16 +163,17 @@ export const updateCompanyCommercial = createServerFn({ method: "POST" })
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const c = data.commercial;
-    const payload: Record<string, unknown> = {};
-    if (c.document !== undefined) payload.document = c.document;
-    if (c.document_type !== undefined) payload.document_type = c.document_type;
-    if (c.email !== undefined) payload.email = c.email;
-    if (c.phone !== undefined) payload.phone = c.phone;
-    if (c.cep !== undefined) payload.cep = c.cep;
-    if (c.address !== undefined) payload.address = c.address;
-    if (c.address_number !== undefined) payload.address_number = c.address_number;
-    if (c.city !== undefined) payload.city = c.city;
-    if (c.state !== undefined) payload.state = c.state;
+    const payload = {
+      ...(c.document !== undefined ? { document: c.document } : {}),
+      ...(c.document_type !== undefined ? { document_type: c.document_type } : {}),
+      ...(c.email !== undefined ? { email: c.email } : {}),
+      ...(c.phone !== undefined ? { phone: c.phone } : {}),
+      ...(c.cep !== undefined ? { cep: c.cep } : {}),
+      ...(c.address !== undefined ? { address: c.address } : {}),
+      ...(c.address_number !== undefined ? { address_number: c.address_number } : {}),
+      ...(c.city !== undefined ? { city: c.city } : {}),
+      ...(c.state !== undefined ? { state: c.state } : {}),
+    };
     const { error } = await supabaseAdmin
       .from("profiles")
       .update(payload)
