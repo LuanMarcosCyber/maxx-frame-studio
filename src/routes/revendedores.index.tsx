@@ -529,7 +529,7 @@ function NewCompanyWizard({
           <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova empresa</DialogTitle>
           <DialogDescription>
@@ -544,8 +544,8 @@ function NewCompanyWizard({
               <Input
                 id="owner_name"
                 value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="João da Silva"
+                onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
+                placeholder="JOÃO DA SILVA"
                 autoCapitalize="characters"
                 className="uppercase"
               />
@@ -555,8 +555,8 @@ function NewCompanyWizard({
               <Input
                 id="store_name"
                 value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Molduraria Silva"
+                onChange={(e) => setStoreName(e.target.value.toUpperCase())}
+                placeholder="MOLDURARIA SILVA"
                 autoCapitalize="characters"
                 className="uppercase"
               />
