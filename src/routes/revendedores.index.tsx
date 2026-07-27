@@ -700,69 +700,195 @@ function NewCompanyWizard({
             </DialogFooter>
           </div>
         ) : (
-          <form onSubmit={finish} className="space-y-4">
-            <div className="grid grid-cols-[110px,1fr] gap-3">
-              <div className="space-y-1.5">
-                <Label>Tipo</Label>
-                <Select value={documentType} onValueChange={(v) => setDocumentType(v as "CPF" | "CNPJ")}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CNPJ">CNPJ</SelectItem>
-                    <SelectItem value="CPF">CPF</SelectItem>
-                  </SelectContent>
-                </Select>
+          <form onSubmit={finish} className="space-y-5">
+            {/* Identificação fiscal */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Identificação fiscal
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-[110px,1fr,auto] gap-3">
+                <div className="space-y-1.5">
+                  <Label>Tipo</Label>
+                  <Select value={documentType} onValueChange={(v) => setDocumentType(v as "CPF" | "CNPJ")}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CNPJ">CNPJ</SelectItem>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="document">{documentType}</Label>
+                  <Input
+                    id="document"
+                    value={document}
+                    onChange={(e) => setDocument(e.target.value)}
+                    onBlur={(e) => {
+                      if (documentType === "CNPJ" && onlyDigits(e.target.value).length === 14) {
+                        setDocument(fmtCNPJ(e.target.value));
+                      }
+                    }}
+                    placeholder={documentType === "CNPJ" ? "00.000.000/0000-00" : "000.000.000-00"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="opacity-0 select-none">.</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={cnpjLoading || documentType !== "CNPJ"}
+                    onClick={() => lookupCnpj(document)}
+                  >
+                    {cnpjLoading ? "Buscando..." : "Buscar CNPJ"}
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="document">{documentType}</Label>
-                <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="legal_name">Razão social</Label>
+                  <Input
+                    id="legal_name"
+                    value={legalName}
+                    onChange={(e) => setLegalName(e.target.value.toUpperCase())}
+                    className="uppercase"
+                    autoCapitalize="characters"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="trade_name">Nome fantasia</Label>
+                  <Input
+                    id="trade_name"
+                    value={tradeName}
+                    onChange={(e) => setTradeName(e.target.value.toUpperCase())}
+                    className="uppercase"
+                    autoCapitalize="characters"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ie">Inscrição estadual</Label>
+                  <Input
+                    id="ie"
+                    value={stateRegistration}
+                    onChange={(e) => setStateRegistration(e.target.value)}
+                    placeholder="Isento ou nº da IE"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </section>
+
+            {/* Contato */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Contato
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="whatsapp">WhatsApp</Label>
+                  <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-[140px,1fr,110px] gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="cep">CEP</Label>
-                <Input id="cep" value={cep} onChange={(e) => setCep(e.target.value)} />
+            </section>
+
+            {/* Endereço */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Endereço
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-[160px,1fr] gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cep">CEP</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="cep"
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      onBlur={(e) => {
+                        if (onlyDigits(e.target.value).length === 8) void lookupCep(e.target.value);
+                      }}
+                      placeholder="00000-000"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={cepLoading}
+                      onClick={() => lookupCep(cep)}
+                    >
+                      {cepLoading ? "..." : "Buscar"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="address">Logradouro</Label>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="address">Logradouro</Label>
-                <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px,1fr,1fr] gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="address_number">Número</Label>
+                  <Input
+                    id="address_number"
+                    value={addressNumber}
+                    onChange={(e) => setAddressNumber(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="complement">Complemento</Label>
+                  <Input
+                    id="complement"
+                    value={complement}
+                    onChange={(e) => setComplement(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="neighborhood">Bairro</Label>
+                  <Input
+                    id="neighborhood"
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="address_number">Número</Label>
-                <Input
-                  id="address_number"
-                  value={addressNumber}
-                  onChange={(e) => setAddressNumber(e.target.value)}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr,110px] gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="state">UF</Label>
+                  <Input
+                    id="state"
+                    value={state}
+                    onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
+                    maxLength={2}
+                    className="uppercase"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-[1fr,110px] gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="city">Cidade</Label>
-                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="state">UF</Label>
-                <Input
-                  id="state"
-                  value={state}
-                  onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
-                  maxLength={2}
-                  className="uppercase"
-                />
-              </div>
-            </div>
+            </section>
 
             <DialogFooter className="gap-2">
               <Button
