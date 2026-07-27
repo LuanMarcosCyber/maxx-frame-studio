@@ -1154,15 +1154,20 @@ export type Database = {
           avatar_url: string
           cep: string
           city: string
+          complement: string
           document: string
           document_type: string
           email: string
           full_name: string
           id: string
           is_switched: boolean
+          legal_name: string
+          neighborhood: string
           phone: string
           state: string
+          state_registration: string
           store_name: string
+          whatsapp: string
         }[]
       }
       get_store_profile: {
@@ -1324,6 +1329,10 @@ export type Database = {
       revert_order_stock: { Args: { _order_id: string }; Returns: Json }
       set_active_company_avatar: { Args: { _avatar: string }; Returns: string }
       switch_active_company: { Args: { _company_id: string }; Returns: string }
+      update_active_company_commercial: {
+        Args: { _data: Json }
+        Returns: undefined
+      }
       update_company_commercial: {
         Args: { _company_id: string; _data: Json }
         Returns: undefined

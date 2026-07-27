@@ -35,7 +35,14 @@ import {
   deleteOperator,
 } from "@/lib/operators.functions";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
+
+const OWNER_LABEL = "proprietário";
+const isOwnerRow = (nick: string | null | undefined) => {
+  const n = (nick ?? "").trim().toLowerCase();
+  return n === "proprietário" || n === "proprietario";
+};
 
 export const Route = createFileRoute("/usuarios")({
   head: () => ({
@@ -90,7 +97,10 @@ const emptyForm: FormState = {
 
 function UsuariosPage() {
   const { role, loading } = useAuth();
+  const { activeOperator, requirePin } = useOperator();
   const canManage = role === "revendedor" || role === "admin";
+  const isOwner =
+    role === "admin" || isOwnerRow(activeOperator?.username ?? null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -146,12 +156,24 @@ function UsuariosPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  function openCreate() {
+  async function guardOwnerAction(action: string): Promise<boolean> {
+    if (!isOwner) {
+      toast.error("Apenas o proprietário da empresa pode gerenciar usuários.");
+      return false;
+    }
+    const ok = await requirePin(action);
+    if (!ok) return false;
+    return true;
+  }
+
+  async function openCreate() {
+    if (!(await guardOwnerAction("criar usuário"))) return;
     setForm(emptyForm);
     setDialogOpen(true);
   }
 
-  function openEdit(o: Op) {
+  async function openEdit(o: Op) {
+    if (!(await guardOwnerAction("editar usuário"))) return;
     setForm({
       id: o.id,
       name: o.name,
@@ -164,6 +186,30 @@ function UsuariosPage() {
       max_discount_percent: o.max_discount_percent,
     });
     setDialogOpen(true);
+  }
+
+  async function requestToggle(o: Op) {
+    if (!(await guardOwnerAction(o.active ? "desativar usuário" : "ativar usuário"))) return;
+    if (o.active && isOwnerRow(o.nickname)) {
+      const activeOwners = rows.filter((r) => r.active && isOwnerRow(r.nickname)).length;
+      if (activeOwners <= 1) {
+        toast.error("Defina outro proprietário ativo antes de desativar este.");
+        return;
+      }
+    }
+    toggleMut.mutate({ id: o.id, active: !o.active });
+  }
+
+  async function requestDelete(o: Op) {
+    if (!(await guardOwnerAction("excluir usuário"))) return;
+    if (isOwnerRow(o.nickname)) {
+      const otherOwners = rows.filter((r) => r.id !== o.id && r.active && isOwnerRow(r.nickname)).length;
+      if (otherOwners === 0) {
+        toast.error("Defina outro proprietário ativo antes de excluir este.");
+        return;
+      }
+    }
+    setDeleting(o);
   }
 
   async function handleSave(e: FormEvent) {
@@ -264,11 +310,20 @@ function UsuariosPage() {
           </div>
           <Button
             onClick={openCreate}
-            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+            disabled={!isOwner}
+            title={isOwner ? "Novo usuário" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand disabled:cursor-not-allowed"
           >
             <Plus className="h-4 w-4 mr-1.5" /> Novo Usuário
           </Button>
         </div>
+
+        {!isOwner && (
+          <div className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            Apenas o proprietário da empresa pode gerenciar usuários. Você pode visualizar a lista, mas as ações estão bloqueadas.
+          </div>
+        )}
+        <div aria-hidden className="hidden">{OWNER_LABEL}</div>
 
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
@@ -341,10 +396,9 @@ function UsuariosPage() {
                     <td className="py-3.5 px-3">
                       <Switch
                         checked={o.active}
-                        onCheckedChange={(v) =>
-                          toggleMut.mutate({ id: o.id, active: v })
-                        }
-                        disabled={toggleMut.isPending}
+                        onCheckedChange={() => requestToggle(o)}
+                        disabled={toggleMut.isPending || !isOwner}
+                        title={isOwner ? undefined : "Apenas o proprietário da empresa pode gerenciar usuários."}
                       />
                     </td>
                     <td className="py-3.5 px-6 text-right">
@@ -352,45 +406,46 @@ function UsuariosPage() {
                         <button
                           type="button"
                           onClick={() => openEdit(o)}
+                          disabled={!isOwner}
                           aria-label="Editar"
-                          title="Editar"
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          title={isOwner ? "Editar" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Pencil className="h-4 w-4 text-muted-foreground" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            openEdit(o);
-                            // Foca o campo PIN via microtask
+                          onClick={async () => {
+                            await openEdit(o);
                             setTimeout(() => {
                               const el = document.getElementById("op-pin");
                               el?.focus();
                             }, 100);
                           }}
+                          disabled={!isOwner}
                           aria-label="Redefinir PIN"
-                          title="Redefinir PIN"
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          title={isOwner ? "Redefinir PIN" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <KeyRound className="h-4 w-4 text-muted-foreground" />
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
-                            toggleMut.mutate({ id: o.id, active: !o.active })
-                          }
+                          onClick={() => requestToggle(o)}
+                          disabled={!isOwner}
                           aria-label={o.active ? "Desativar" : "Ativar"}
-                          title={o.active ? "Desativar" : "Ativar"}
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          title={isOwner ? (o.active ? "Desativar" : "Ativar") : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Power className="h-4 w-4 text-muted-foreground" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => setDeleting(o)}
+                          onClick={() => requestDelete(o)}
+                          disabled={!isOwner}
                           aria-label="Excluir"
-                          title="Excluir"
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
+                          title={isOwner ? "Excluir" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </button>

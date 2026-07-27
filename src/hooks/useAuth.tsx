@@ -12,14 +12,19 @@ interface Profile {
   username: string | null;
   email: string | null;
   phone: string | null;
+  whatsapp: string | null;
   document: string | null;
   document_type: string | null;
   address: string | null;
   cep: string | null;
   address_number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
   city: string | null;
   state: string | null;
   store_name: string | null;
+  legal_name: string | null;
+  state_registration: string | null;
   parent_user_id: string | null;
   account_type: "admin" | "revendedor" | "operacional" | null;
   active: boolean;
@@ -81,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase
         .from("profiles")
-        .select("full_name, username, email, phone, document, document_type, address, cep, address_number, city, state, store_name, parent_user_id, account_type, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
+        .select("full_name, username, email, phone, whatsapp, document, document_type, address, cep, address_number, complement, neighborhood, city, state, store_name, legal_name, state_registration, parent_user_id, account_type, active, avatar_url, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -104,19 +109,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ? "colaborador"
             : "revendedor";
     setRole(resolvedRole);
-    const baseProfile = (profileRow as Profile | null) ?? {
+    const baseProfile: Profile = (profileRow as Profile | null) ?? {
         full_name: null,
         username: null,
         email: null,
         phone: null,
+        whatsapp: null,
         document: null,
         document_type: null,
         address: null,
         cep: null,
         address_number: null,
+        complement: null,
+        neighborhood: null,
         city: null,
         state: null,
         store_name: null,
+        legal_name: null,
+        state_registration: null,
         parent_user_id: null,
         account_type: null,
         active: true,
@@ -134,26 +144,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // e parent_user_id para contas de acesso). Sobrescreve identidade visual + dados
     // comerciais para refletir a empresa ativa.
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: effRows } = await (supabase.rpc as any)("get_effective_profile");
       const eff = Array.isArray(effRows) ? effRows[0] : effRows;
       if (eff) {
         if (eff.id) setEffectiveOwnerId(eff.id as string);
+        const pick = <T,>(val: T | null | undefined, fallback: T | null) =>
+          eff.is_switched ? (val ?? null) : ((val ?? fallback) as T | null);
         mergedProfile = {
           ...mergedProfile,
-          // Empresas vinculadas NÃO compartilham identidade. Ao trocar,
-          // usamos estritamente os campos da empresa ativa (sem fallback
-          // para os dados da conta de login) para evitar vazamento visual.
-          avatar_url: eff.is_switched ? (eff.avatar_url ?? null) : (eff.avatar_url ?? mergedProfile.avatar_url),
-          store_name: eff.is_switched ? (eff.store_name ?? null) : (eff.store_name ?? mergedProfile.store_name),
-          email: eff.is_switched ? (eff.email ?? null) : (eff.email ?? mergedProfile.email),
-          phone: eff.is_switched ? (eff.phone ?? null) : (eff.phone ?? mergedProfile.phone),
-          document: eff.is_switched ? (eff.document ?? null) : (eff.document ?? mergedProfile.document),
-          document_type: eff.is_switched ? (eff.document_type ?? null) : (eff.document_type ?? mergedProfile.document_type),
-          cep: eff.is_switched ? (eff.cep ?? null) : (eff.cep ?? mergedProfile.cep),
-          address: eff.is_switched ? (eff.address ?? null) : (eff.address ?? mergedProfile.address),
-          address_number: eff.is_switched ? (eff.address_number ?? null) : (eff.address_number ?? mergedProfile.address_number),
-          city: eff.is_switched ? (eff.city ?? null) : (eff.city ?? mergedProfile.city),
-          state: eff.is_switched ? (eff.state ?? null) : (eff.state ?? mergedProfile.state),
+          avatar_url: pick(eff.avatar_url, mergedProfile.avatar_url),
+          store_name: pick(eff.store_name, mergedProfile.store_name),
+          legal_name: pick(eff.legal_name, mergedProfile.legal_name),
+          state_registration: pick(eff.state_registration, mergedProfile.state_registration),
+          email: pick(eff.email, mergedProfile.email),
+          phone: pick(eff.phone, mergedProfile.phone),
+          whatsapp: pick(eff.whatsapp, mergedProfile.whatsapp),
+          document: pick(eff.document, mergedProfile.document),
+          document_type: pick(eff.document_type, mergedProfile.document_type),
+          cep: pick(eff.cep, mergedProfile.cep),
+          address: pick(eff.address, mergedProfile.address),
+          address_number: pick(eff.address_number, mergedProfile.address_number),
+          complement: pick(eff.complement, mergedProfile.complement),
+          neighborhood: pick(eff.neighborhood, mergedProfile.neighborhood),
+          city: pick(eff.city, mergedProfile.city),
+          state: pick(eff.state, mergedProfile.state),
           full_name: eff.is_switched
             ? (eff.full_name ?? mergedProfile.full_name)
             : mergedProfile.full_name,
