@@ -184,9 +184,8 @@ function Dashboard() {
     ...commonOpts,
   });
   const productsQuery = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProductsList,
-    select: (arr) => arr.length,
+    queryKey: ["products", "count"],
+    queryFn: fetchProductsCount,
     ...commonOpts,
   });
 
