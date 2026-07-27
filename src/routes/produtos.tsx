@@ -218,6 +218,16 @@ function Produtos() {
     }
   }, [wizardPending.length, wizardAutoOpened]);
 
+  // Abertura forçada via ?configWizard=1 (vindo do gate de Novo Orçamento).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("configWizard") === "1" && wizardPending.length > 0) {
+      setWizardOpen(true);
+      setWizardAutoOpened(true);
+    }
+  }, [wizardPending.length]);
+
   const updateField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));

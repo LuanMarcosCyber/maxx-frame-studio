@@ -289,11 +289,17 @@ type WizardPayload = {
   commercial: {
     document?: string | null;
     document_type?: "CPF" | "CNPJ" | null;
+    legal_name?: string | null;
+    trade_name?: string | null;
+    state_registration?: string | null;
     email?: string | null;
     phone?: string | null;
+    whatsapp?: string | null;
     cep?: string | null;
     address?: string | null;
     address_number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
     city?: string | null;
     state?: string | null;
   };
@@ -324,13 +330,21 @@ function NewCompanyWizard({
   // Step 2 (commercial)
   const [document, setDocument] = useState("");
   const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">("CNPJ");
+  const [legalName, setLegalName] = useState("");
+  const [tradeName, setTradeName] = useState("");
+  const [stateRegistration, setStateRegistration] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [cep, setCep] = useState("");
   const [address, setAddress] = useState("");
   const [addressNumber, setAddressNumber] = useState("");
+  const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
 
   const listCompanies = useServerFn(listAllCompanies);
   const { data: companies = [] } = useQuery({
@@ -346,6 +360,76 @@ function NewCompanyWizard({
       )
     : companies;
 
+  const onlyDigits = (s: string) => s.replace(/\D+/g, "");
+  const fmtCEP = (v: string) => {
+    const d = onlyDigits(v);
+    return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : v;
+  };
+  const fmtCNPJ = (v: string) => {
+    const d = onlyDigits(v);
+    return d.length === 14
+      ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+      : v;
+  };
+
+  async function lookupCep(raw: string) {
+    const digits = onlyDigits(raw);
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.warning("CEP não encontrado.");
+        return;
+      }
+      setCep(fmtCEP(digits));
+      if (!address.trim() && data.logradouro) setAddress(String(data.logradouro).toUpperCase());
+      if (!neighborhood.trim() && data.bairro) setNeighborhood(String(data.bairro).toUpperCase());
+      if (!city.trim() && data.localidade) setCity(String(data.localidade).toUpperCase());
+      if (!state.trim() && data.uf) setState(String(data.uf).toUpperCase());
+    } catch {
+      toast.error("Não foi possível buscar o CEP.");
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
+  async function lookupCnpj(raw: string) {
+    const digits = onlyDigits(raw);
+    if (digits.length !== 14) {
+      toast.warning("Informe um CNPJ válido (14 dígitos).");
+      return;
+    }
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!res.ok) {
+        toast.warning("CNPJ não encontrado.");
+        return;
+      }
+      const data = await res.json();
+      setDocument(fmtCNPJ(digits));
+      setDocumentType("CNPJ");
+      if (data.razao_social) setLegalName(String(data.razao_social).toUpperCase());
+      if (data.nome_fantasia) setTradeName(String(data.nome_fantasia).toUpperCase());
+      if (data.email && !email.trim()) setEmail(String(data.email).toLowerCase());
+      if (data.ddd_telefone_1 && !phone.trim()) setPhone(String(data.ddd_telefone_1));
+      if (data.cep) setCep(fmtCEP(String(data.cep)));
+      if (data.logradouro) setAddress(String(data.logradouro).toUpperCase());
+      if (data.numero) setAddressNumber(String(data.numero));
+      if (data.complemento) setComplement(String(data.complemento).toUpperCase());
+      if (data.bairro) setNeighborhood(String(data.bairro).toUpperCase());
+      if (data.municipio) setCity(String(data.municipio).toUpperCase());
+      if (data.uf) setState(String(data.uf).toUpperCase());
+      toast.success("Dados do CNPJ preenchidos.");
+    } catch {
+      toast.error("Não foi possível buscar o CNPJ.");
+    } finally {
+      setCnpjLoading(false);
+    }
+  }
+
   const reset = () => {
     setStep(1);
     setOwnerName("");
@@ -359,11 +443,17 @@ function NewCompanyWizard({
     setCompanyQuery("");
     setDocument("");
     setDocumentType("CNPJ");
+    setLegalName("");
+    setTradeName("");
+    setStateRegistration("");
     setEmail("");
     setPhone("");
+    setWhatsapp("");
     setCep("");
     setAddress("");
     setAddressNumber("");
+    setComplement("");
+    setNeighborhood("");
     setCity("");
     setState("");
   };
@@ -386,6 +476,8 @@ function NewCompanyWizard({
       toast.error(err);
       return;
     }
+    // Pré-preenche o nome fantasia com o nome da loja informado na etapa 1.
+    if (!tradeName.trim()) setTradeName(storeName.trim().toUpperCase());
     setStep(2);
   };
 
@@ -393,8 +485,8 @@ function NewCompanyWizard({
     e.preventDefault();
     try {
       await onSubmit({
-        owner_name: ownerName.trim(),
-        store_name: storeName.trim(),
+        owner_name: ownerName.trim().toUpperCase(),
+        store_name: (tradeName.trim() || storeName.trim()).toUpperCase(),
         username: username.trim().toLowerCase(),
         password,
         pin,
@@ -402,11 +494,17 @@ function NewCompanyWizard({
         commercial: {
           document: document.trim() || null,
           document_type: document.trim() ? documentType : null,
+          legal_name: legalName.trim() ? legalName.trim().toUpperCase() : null,
+          trade_name: tradeName.trim() ? tradeName.trim().toUpperCase() : null,
+          state_registration: stateRegistration.trim() || null,
           email: email.trim() || null,
           phone: phone.trim() || null,
+          whatsapp: whatsapp.trim() || null,
           cep: cep.trim() || null,
           address: address.trim() || null,
           address_number: addressNumber.trim() || null,
+          complement: complement.trim() || null,
+          neighborhood: neighborhood.trim() || null,
           city: city.trim() || null,
           state: state.trim() || null,
         },
@@ -431,7 +529,7 @@ function NewCompanyWizard({
           <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova empresa</DialogTitle>
           <DialogDescription>
@@ -446,8 +544,8 @@ function NewCompanyWizard({
               <Input
                 id="owner_name"
                 value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="João da Silva"
+                onChange={(e) => setOwnerName(e.target.value.toUpperCase())}
+                placeholder="JOÃO DA SILVA"
                 autoCapitalize="characters"
                 className="uppercase"
               />
@@ -457,8 +555,8 @@ function NewCompanyWizard({
               <Input
                 id="store_name"
                 value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Molduraria Silva"
+                onChange={(e) => setStoreName(e.target.value.toUpperCase())}
+                placeholder="MOLDURARIA SILVA"
                 autoCapitalize="characters"
                 className="uppercase"
               />
@@ -602,69 +700,195 @@ function NewCompanyWizard({
             </DialogFooter>
           </div>
         ) : (
-          <form onSubmit={finish} className="space-y-4">
-            <div className="grid grid-cols-[110px,1fr] gap-3">
-              <div className="space-y-1.5">
-                <Label>Tipo</Label>
-                <Select value={documentType} onValueChange={(v) => setDocumentType(v as "CPF" | "CNPJ")}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CNPJ">CNPJ</SelectItem>
-                    <SelectItem value="CPF">CPF</SelectItem>
-                  </SelectContent>
-                </Select>
+          <form onSubmit={finish} className="space-y-5">
+            {/* Identificação fiscal */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Identificação fiscal
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-[110px,1fr,auto] gap-3">
+                <div className="space-y-1.5">
+                  <Label>Tipo</Label>
+                  <Select value={documentType} onValueChange={(v) => setDocumentType(v as "CPF" | "CNPJ")}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CNPJ">CNPJ</SelectItem>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="document">{documentType}</Label>
+                  <Input
+                    id="document"
+                    value={document}
+                    onChange={(e) => setDocument(e.target.value)}
+                    onBlur={(e) => {
+                      if (documentType === "CNPJ" && onlyDigits(e.target.value).length === 14) {
+                        setDocument(fmtCNPJ(e.target.value));
+                      }
+                    }}
+                    placeholder={documentType === "CNPJ" ? "00.000.000/0000-00" : "000.000.000-00"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="opacity-0 select-none">.</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={cnpjLoading || documentType !== "CNPJ"}
+                    onClick={() => lookupCnpj(document)}
+                  >
+                    {cnpjLoading ? "Buscando..." : "Buscar CNPJ"}
+                  </Button>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="document">{documentType}</Label>
-                <Input id="document" value={document} onChange={(e) => setDocument(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="legal_name">Razão social</Label>
+                  <Input
+                    id="legal_name"
+                    value={legalName}
+                    onChange={(e) => setLegalName(e.target.value.toUpperCase())}
+                    className="uppercase"
+                    autoCapitalize="characters"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="trade_name">Nome fantasia</Label>
+                  <Input
+                    id="trade_name"
+                    value={tradeName}
+                    onChange={(e) => setTradeName(e.target.value.toUpperCase())}
+                    className="uppercase"
+                    autoCapitalize="characters"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ie">Inscrição estadual</Label>
+                  <Input
+                    id="ie"
+                    value={stateRegistration}
+                    onChange={(e) => setStateRegistration(e.target.value)}
+                    placeholder="Isento ou nº da IE"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </section>
+
+            {/* Contato */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Contato
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="whatsapp">WhatsApp</Label>
+                  <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-[140px,1fr,110px] gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="cep">CEP</Label>
-                <Input id="cep" value={cep} onChange={(e) => setCep(e.target.value)} />
+            </section>
+
+            {/* Endereço */}
+            <section className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Endereço
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-[160px,1fr] gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cep">CEP</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="cep"
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      onBlur={(e) => {
+                        if (onlyDigits(e.target.value).length === 8) void lookupCep(e.target.value);
+                      }}
+                      placeholder="00000-000"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={cepLoading}
+                      onClick={() => lookupCep(cep)}
+                    >
+                      {cepLoading ? "..." : "Buscar"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="address">Logradouro</Label>
+                  <Input
+                    id="address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="address">Logradouro</Label>
-                <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-[140px,1fr,1fr] gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="address_number">Número</Label>
+                  <Input
+                    id="address_number"
+                    value={addressNumber}
+                    onChange={(e) => setAddressNumber(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="complement">Complemento</Label>
+                  <Input
+                    id="complement"
+                    value={complement}
+                    onChange={(e) => setComplement(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="neighborhood">Bairro</Label>
+                  <Input
+                    id="neighborhood"
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="address_number">Número</Label>
-                <Input
-                  id="address_number"
-                  value={addressNumber}
-                  onChange={(e) => setAddressNumber(e.target.value)}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr,110px] gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="state">UF</Label>
+                  <Input
+                    id="state"
+                    value={state}
+                    onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
+                    maxLength={2}
+                    className="uppercase"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-[1fr,110px] gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="city">Cidade</Label>
-                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="state">UF</Label>
-                <Input
-                  id="state"
-                  value={state}
-                  onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
-                  maxLength={2}
-                  className="uppercase"
-                />
-              </div>
-            </div>
+            </section>
 
             <DialogFooter className="gap-2">
               <Button

@@ -48,6 +48,7 @@ import {
   User,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NovoOrcamentoButton } from "@/components/NovoOrcamentoButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
@@ -350,12 +351,14 @@ function Pedidos() {
               </SelectContent>
             </Select>
           </div>
-          <Button
-            onClick={() => navigate({ to: "/orcamentos/novo" })}
-            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Novo Pedido
-          </Button>
+          <NovoOrcamentoButton
+            label={
+              <>
+                <Plus className="h-4 w-4 mr-1.5" /> Novo Pedido
+              </>
+            }
+          />
+
         </div>
 
         <div className="overflow-x-auto -mx-6">
