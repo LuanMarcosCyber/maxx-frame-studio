@@ -289,11 +289,17 @@ type WizardPayload = {
   commercial: {
     document?: string | null;
     document_type?: "CPF" | "CNPJ" | null;
+    legal_name?: string | null;
+    trade_name?: string | null;
+    state_registration?: string | null;
     email?: string | null;
     phone?: string | null;
+    whatsapp?: string | null;
     cep?: string | null;
     address?: string | null;
     address_number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
     city?: string | null;
     state?: string | null;
   };
