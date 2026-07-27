@@ -119,10 +119,19 @@ async function fetchOrdersPart(monthStart: string) {
   return { count: countRes.count ?? 0, revenue, recent };
 }
 
-async function fetchProductsList() {
-  const { data, error } = await supabase.rpc("list_visible_products");
+async function fetchProductsCount() {
+  // Use paginated RPC to get the true total_count (includes global + own),
+  // exactly matching what Produtos screen shows across all categories.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)("list_visible_products_page", {
+    _category: null,
+    _search: null,
+    _limit: 1,
+    _offset: 0,
+  });
   if (error) throw error;
-  return (data ?? []) as unknown[];
+  const rows = (data ?? []) as Array<{ total_count: number | string }>;
+  return rows.length > 0 ? Number(rows[0].total_count ?? 0) : 0;
 }
 
 const quickActions = [
