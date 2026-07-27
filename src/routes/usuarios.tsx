@@ -156,12 +156,24 @@ function UsuariosPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  function openCreate() {
+  async function guardOwnerAction(action: string): Promise<boolean> {
+    if (!isOwner) {
+      toast.error("Apenas o proprietário da empresa pode gerenciar usuários.");
+      return false;
+    }
+    const ok = await requirePin(action);
+    if (!ok) return false;
+    return true;
+  }
+
+  async function openCreate() {
+    if (!(await guardOwnerAction("criar usuário"))) return;
     setForm(emptyForm);
     setDialogOpen(true);
   }
 
-  function openEdit(o: Op) {
+  async function openEdit(o: Op) {
+    if (!(await guardOwnerAction("editar usuário"))) return;
     setForm({
       id: o.id,
       name: o.name,
@@ -174,6 +186,30 @@ function UsuariosPage() {
       max_discount_percent: o.max_discount_percent,
     });
     setDialogOpen(true);
+  }
+
+  async function requestToggle(o: Op) {
+    if (!(await guardOwnerAction(o.active ? "desativar usuário" : "ativar usuário"))) return;
+    if (o.active && isOwnerRow(o.nickname)) {
+      const activeOwners = rows.filter((r) => r.active && isOwnerRow(r.nickname)).length;
+      if (activeOwners <= 1) {
+        toast.error("Defina outro proprietário ativo antes de desativar este.");
+        return;
+      }
+    }
+    toggleMut.mutate({ id: o.id, active: !o.active });
+  }
+
+  async function requestDelete(o: Op) {
+    if (!(await guardOwnerAction("excluir usuário"))) return;
+    if (isOwnerRow(o.nickname)) {
+      const otherOwners = rows.filter((r) => r.id !== o.id && r.active && isOwnerRow(r.nickname)).length;
+      if (otherOwners === 0) {
+        toast.error("Defina outro proprietário ativo antes de excluir este.");
+        return;
+      }
+    }
+    setDeleting(o);
   }
 
   async function handleSave(e: FormEvent) {
