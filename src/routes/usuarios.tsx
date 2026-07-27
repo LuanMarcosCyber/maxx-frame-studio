@@ -97,7 +97,10 @@ const emptyForm: FormState = {
 
 function UsuariosPage() {
   const { role, loading } = useAuth();
+  const { activeOperator, requirePin } = useOperator();
   const canManage = role === "revendedor" || role === "admin";
+  const isOwner =
+    role === "admin" || isOwnerRow(activeOperator?.username ?? null);
   const navigate = useNavigate();
 
   useEffect(() => {
