@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { FileText, ShoppingCart, Package, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -10,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/avatar";
 import { fmtCPF, fmtCNPJ, onlyDigits } from "@/lib/utils";
-import { getInheritedStoreProfile } from "@/lib/store-profile.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/conta")({
@@ -21,74 +20,74 @@ export const Route = createFileRoute("/conta")({
   component: Conta,
 });
 
-type DocType = "cpf" | "cnpj";
+type DocType = "CPF" | "CNPJ";
+
+const upper = (v: string) => v.toUpperCase();
 
 function Conta() {
   const { user, profile, role, refreshProfile } = useAuth();
+  const { activeOperator } = useOperator();
+  // Somente o proprietário da empresa (login raiz) ou admin editam.
+  // Contas de acesso legadas (com parent_user_id) permanecem read-only.
   const isChildAccount = !!profile?.parent_user_id || profile?.account_type === "operacional" || role === "colaborador";
-  const readOnly = isChildAccount;
+  const isOwnerOperator =
+    (activeOperator?.username ?? "").trim().toLowerCase() === "proprietário" ||
+    (activeOperator?.username ?? "").trim().toLowerCase() === "proprietario";
+  const canEdit = !isChildAccount && (role === "admin" || !activeOperator || isOwnerOperator);
+  const readOnly = !canEdit;
+
   const [form, setForm] = useState({
     full_name: "",
     store_name: "",
+    legal_name: "",
+    state_registration: "",
     email: "",
     phone: "",
-    document_type: "cnpj" as DocType,
+    whatsapp: "",
+    document_type: "CNPJ" as DocType,
     document: "",
     cep: "",
     address: "",
     address_number: "",
+    complement: "",
+    neighborhood: "",
     city: "",
     state: "",
     avatar_url: "",
   });
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
-  const loadStoreProfile = useServerFn(getInheritedStoreProfile);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const own: Record<string, string | null> =
-        (profile as unknown as Record<string, string | null> | null) ?? {};
-      let inherited: Record<string, string | null> | null = null;
-
-      if (isChildAccount && user?.id) {
-        try {
-          inherited = (await loadStoreProfile({ data: { user_id: user.id } })) as Record<string, string | null> | null;
-        } catch (error) {
-          console.error("Erro ao carregar dados comerciais herdados", error);
-        }
-      }
-
-      if (cancelled) return;
-      // Child account: own full_name/username stays; all commercial data comes from parent.
-      const commercial = isChildAccount ? (inherited ?? own) : own;
-      const dt = (commercial?.document_type as DocType | null) ?? null;
-      const inferred: DocType =
-        dt ?? (onlyDigits(commercial?.document ?? "").length === 11 ? "cpf" : "cnpj");
-      setForm({
-        full_name: own?.full_name ?? "",
-        store_name: commercial?.store_name ?? "",
-        email: commercial?.email ?? "",
-        phone: commercial?.phone ?? "",
-        document_type: inferred,
-        document: commercial?.document ?? "",
-        cep: commercial?.cep ?? "",
-        address: commercial?.address ?? "",
-        address_number: commercial?.address_number ?? "",
-        city: commercial?.city ?? "",
-        state: commercial?.state ?? "",
-        avatar_url: commercial?.avatar_url ?? own?.avatar_url ?? "",
-      });
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [profile, isChildAccount, user?.id, loadStoreProfile]);
-
-
-
+    const p = (profile ?? {}) as Record<string, string | null> | null;
+    if (!p) return;
+    const dtRaw = (p.document_type ?? "").toString().toUpperCase();
+    const inferred: DocType =
+      dtRaw === "CPF" || dtRaw === "CNPJ"
+        ? (dtRaw as DocType)
+        : onlyDigits(p.document ?? "").length === 11
+          ? "CPF"
+          : "CNPJ";
+    setForm({
+      full_name: p.full_name ?? "",
+      store_name: p.store_name ?? "",
+      legal_name: p.legal_name ?? "",
+      state_registration: p.state_registration ?? "",
+      email: p.email ?? "",
+      phone: p.phone ?? "",
+      whatsapp: p.whatsapp ?? "",
+      document_type: inferred,
+      document: p.document ?? "",
+      cep: p.cep ?? "",
+      address: p.address ?? "",
+      address_number: p.address_number ?? "",
+      complement: p.complement ?? "",
+      neighborhood: p.neighborhood ?? "",
+      city: p.city ?? "",
+      state: p.state ?? "",
+      avatar_url: p.avatar_url ?? "",
+    });
+  }, [profile]);
 
   const displayName = profile?.full_name || profile?.username || "";
   const username = profile?.username || "";
@@ -115,6 +114,10 @@ function Conta() {
     (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const onChangeUpper =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((f) => ({ ...f, [k]: upper(e.target.value) }));
+
   async function lookupCep(rawCep: string) {
     const cep = onlyDigits(rawCep);
     if (cep.length !== 8) return;
@@ -128,9 +131,10 @@ function Conta() {
       }
       setForm((f) => ({
         ...f,
-        address: data.logradouro || f.address,
-        city: data.localidade || f.city,
-        state: data.uf || f.state,
+        address: upper(data.logradouro || f.address),
+        neighborhood: upper(data.bairro || f.neighborhood),
+        city: upper(data.localidade || f.city),
+        state: upper(data.uf || f.state),
       }));
     } catch {
       toast.error("Não foi possível buscar o CEP.");
@@ -141,35 +145,36 @@ function Conta() {
 
   const onDocBlur = () => {
     const formatted =
-      form.document_type === "cpf"
-        ? fmtCPF(form.document)
-        : fmtCNPJ(form.document);
+      form.document_type === "CPF" ? fmtCPF(form.document) : fmtCNPJ(form.document);
     if (formatted !== form.document) setForm((f) => ({ ...f, document: formatted }));
   };
 
   const onSave = async () => {
-    if (!user) return;
+    if (!user || readOnly) return;
     setSaving(true);
     const documentFormatted =
-      form.document_type === "cpf"
-        ? fmtCPF(form.document)
-        : fmtCNPJ(form.document);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
+      form.document_type === "CPF" ? fmtCPF(form.document) : fmtCNPJ(form.document);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.rpc as any)("update_active_company_commercial", {
+      _data: {
         full_name: form.full_name || null,
-        store_name: form.store_name || null,
+        store_name: upper(form.store_name || "") || null,
+        legal_name: upper(form.legal_name || "") || null,
+        state_registration: form.state_registration || null,
         email: form.email || null,
         phone: form.phone || null,
+        whatsapp: form.whatsapp || null,
         document_type: form.document_type,
         document: documentFormatted || null,
         cep: form.cep || null,
         address: form.address || null,
         address_number: form.address_number || null,
+        complement: form.complement || null,
+        neighborhood: form.neighborhood || null,
         city: form.city || null,
         state: form.state || null,
-      })
-      .eq("id", user.id);
+      },
+    });
     setSaving(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
@@ -179,72 +184,63 @@ function Conta() {
     toast.success("Dados atualizados com sucesso");
   };
 
-
   const roCls = readOnly ? "cursor-not-allowed opacity-70 bg-muted/40" : "";
 
   return (
-    <AppShell title="Minha Conta" subtitle="Dados do usuário e perfil">
+    <AppShell title="Minha Conta" subtitle="Dados da empresa e do proprietário">
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="p-6 lg:col-span-2">
-          <h2 className="text-base font-semibold mb-1">Informações pessoais</h2>
+          <h2 className="text-base font-semibold mb-1">Dados comerciais da empresa</h2>
           <p className="text-xs text-muted-foreground mb-6">
             {readOnly
-              ? "Dados comerciais herdados da conta principal (somente leitura)."
-              : "Atualize seus dados de cadastro"}
+              ? "Somente o proprietário da empresa pode editar estes dados."
+              : "Atualize os dados comerciais desta empresa."}
           </p>
           <div className="grid sm:grid-cols-6 gap-4">
-            <div className="space-y-1.5 sm:col-span-6">
-              <Label htmlFor="nome">Nome completo</Label>
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="nome">Nome do proprietário</Label>
               <Input
                 id="nome"
                 value={form.full_name}
-                onChange={onChange("full_name")}
-                placeholder="Seu nome completo"
-                readOnly={readOnly}
-                disabled={readOnly}
-                className={roCls}
-              />
-            </div>
-
-
-
-
-            {!isChildAccount && (
-              <div className="space-y-1.5 sm:col-span-6">
-                <Label htmlFor="loja">Nome da loja</Label>
-                <Input
-                  id="loja"
-                  value={form.store_name}
-                  onChange={onChange("store_name")}
-                  placeholder="Ex.: Molduraria Silva"
-                  readOnly={readOnly}
-                  disabled={readOnly}
-                  className={roCls}
-                />
-              </div>
-            )}
-
-
-            <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={onChange("email")}
-                placeholder="seuemail@empresa.com"
+                onChange={onChangeUpper("full_name")}
+                placeholder="Nome completo"
                 readOnly={readOnly}
                 disabled={readOnly}
                 className={roCls}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="tel">Telefone</Label>
+              <Label htmlFor="loja">Nome da loja (fantasia)</Label>
               <Input
-                id="tel"
-                value={form.phone}
-                onChange={onChange("phone")}
-                placeholder="(11) 99999-9999"
+                id="loja"
+                value={form.store_name}
+                onChange={onChangeUpper("store_name")}
+                placeholder="Ex.: KAU MOLDURAS"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-4">
+              <Label htmlFor="razao">Razão social</Label>
+              <Input
+                id="razao"
+                value={form.legal_name}
+                onChange={onChangeUpper("legal_name")}
+                placeholder="KAU MOLDURAS LTDA"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="ie">Inscrição estadual</Label>
+              <Input
+                id="ie"
+                value={form.state_registration}
+                onChange={onChange("state_registration")}
+                placeholder="Isento ou número"
                 readOnly={readOnly}
                 disabled={readOnly}
                 className={roCls}
@@ -256,37 +252,67 @@ function Conta() {
                 <Label>Tipo de documento</Label>
                 <RadioGroup
                   value={form.document_type}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, document_type: v as DocType }))
-                  }
+                  onValueChange={(v) => setForm((f) => ({ ...f, document_type: v as DocType }))}
                   className="flex gap-3"
                 >
                   <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
-                    <RadioGroupItem value="cpf" id="dt-cpf" />
+                    <RadioGroupItem value="CPF" id="dt-cpf" />
                     <span className="text-sm">CPF</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border px-3 py-2 hover:bg-accent transition">
-                    <RadioGroupItem value="cnpj" id="dt-cnpj" />
+                    <RadioGroupItem value="CNPJ" id="dt-cnpj" />
                     <span className="text-sm">CNPJ</span>
                   </label>
                 </RadioGroup>
               </div>
             )}
 
-            <div className="space-y-1.5 sm:col-span-6">
-              <Label htmlFor="doc">
-                {form.document_type === "cpf" ? "CPF" : "CNPJ"}
-              </Label>
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="doc">{form.document_type === "CPF" ? "CPF" : "CNPJ"}</Label>
               <Input
                 id="doc"
                 value={form.document}
                 onChange={onChange("document")}
                 onBlur={readOnly ? undefined : onDocBlur}
-                placeholder={
-                  form.document_type === "cpf"
-                    ? "000.000.000-00"
-                    : "00.000.000/0000-00"
-                }
+                placeholder={form.document_type === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={onChange("email")}
+                placeholder="empresa@dominio.com"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="tel">Telefone</Label>
+              <Input
+                id="tel"
+                value={form.phone}
+                onChange={onChange("phone")}
+                placeholder="(11) 3333-3333"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="wpp">WhatsApp</Label>
+              <Input
+                id="wpp"
+                value={form.whatsapp}
+                onChange={onChange("whatsapp")}
+                placeholder="(11) 99999-9999"
                 readOnly={readOnly}
                 disabled={readOnly}
                 className={roCls}
@@ -312,7 +338,7 @@ function Conta() {
               </div>
             </div>
             <div className="space-y-1.5 sm:col-span-3">
-              <Label htmlFor="rua">Rua</Label>
+              <Label htmlFor="rua">Logradouro</Label>
               <Input
                 id="rua"
                 value={form.address}
@@ -335,6 +361,32 @@ function Conta() {
                 className={roCls}
               />
             </div>
+
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="comp">Complemento</Label>
+              <Input
+                id="comp"
+                value={form.complement}
+                onChange={onChange("complement")}
+                placeholder="Sala, andar, etc."
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="bairro">Bairro</Label>
+              <Input
+                id="bairro"
+                value={form.neighborhood}
+                onChange={onChange("neighborhood")}
+                placeholder="Bairro"
+                readOnly={readOnly}
+                disabled={readOnly}
+                className={roCls}
+              />
+            </div>
+
             <div className="space-y-1.5 sm:col-span-4">
               <Label htmlFor="cidade">Cidade</Label>
               <Input
@@ -364,7 +416,6 @@ function Conta() {
             </div>
           </div>
 
-
           {!readOnly && (
             <div className="flex justify-end mt-6">
               <Button
@@ -377,7 +428,6 @@ function Conta() {
             </div>
           )}
         </Card>
-
 
         <div className="space-y-6">
           <Card className="p-6">
@@ -399,21 +449,9 @@ function Conta() {
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-4">Minhas estatísticas</h2>
             <div className="space-y-3">
-              <StatRow
-                icon={<FileText className="h-4 w-4" />}
-                label="Orçamentos"
-                value={stats?.budgets ?? 0}
-              />
-              <StatRow
-                icon={<ShoppingCart className="h-4 w-4" />}
-                label="Pedidos"
-                value={stats?.orders ?? 0}
-              />
-              <StatRow
-                icon={<Package className="h-4 w-4" />}
-                label="Produtos"
-                value={stats?.products ?? 0}
-              />
+              <StatRow icon={<FileText className="h-4 w-4" />} label="Orçamentos" value={stats?.budgets ?? 0} />
+              <StatRow icon={<ShoppingCart className="h-4 w-4" />} label="Pedidos" value={stats?.orders ?? 0} />
+              <StatRow icon={<Package className="h-4 w-4" />} label="Produtos" value={stats?.products ?? 0} />
             </div>
           </Card>
         </div>
