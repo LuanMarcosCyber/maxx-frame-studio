@@ -35,7 +35,14 @@ import {
   deleteOperator,
 } from "@/lib/operators.functions";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
+
+const OWNER_LABEL = "proprietário";
+const isOwnerRow = (nick: string | null | undefined) => {
+  const n = (nick ?? "").trim().toLowerCase();
+  return n === "proprietário" || n === "proprietario";
+};
 
 export const Route = createFileRoute("/usuarios")({
   head: () => ({
