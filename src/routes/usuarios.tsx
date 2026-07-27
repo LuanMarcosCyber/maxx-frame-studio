@@ -310,11 +310,20 @@ function UsuariosPage() {
           </div>
           <Button
             onClick={openCreate}
-            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+            disabled={!isOwner}
+            title={isOwner ? "Novo usuário" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+            className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand disabled:cursor-not-allowed"
           >
             <Plus className="h-4 w-4 mr-1.5" /> Novo Usuário
           </Button>
         </div>
+
+        {!isOwner && (
+          <div className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            Apenas o proprietário da empresa pode gerenciar usuários. Você pode visualizar a lista, mas as ações estão bloqueadas.
+          </div>
+        )}
+        <div aria-hidden className="hidden">{OWNER_LABEL}</div>
 
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
