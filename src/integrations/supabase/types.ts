@@ -828,20 +828,25 @@ export type Database = {
           cep: string | null
           city: string | null
           company_group_id: string | null
+          complement: string | null
           created_at: string
           document: string | null
           document_type: string | null
           email: string | null
           full_name: string | null
           id: string
+          legal_name: string | null
           max_discount_percent: number
+          neighborhood: string | null
           parent_user_id: string | null
           phone: string | null
           pin_hash: string | null
           state: string | null
+          state_registration: string | null
           store_name: string | null
           updated_at: string
           username: string | null
+          whatsapp: string | null
         }
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
@@ -857,20 +862,25 @@ export type Database = {
           cep?: string | null
           city?: string | null
           company_group_id?: string | null
+          complement?: string | null
           created_at?: string
           document?: string | null
           document_type?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          legal_name?: string | null
           max_discount_percent?: number
+          neighborhood?: string | null
           parent_user_id?: string | null
           phone?: string | null
           pin_hash?: string | null
           state?: string | null
+          state_registration?: string | null
           store_name?: string | null
           updated_at?: string
           username?: string | null
+          whatsapp?: string | null
         }
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
@@ -886,20 +896,25 @@ export type Database = {
           cep?: string | null
           city?: string | null
           company_group_id?: string | null
+          complement?: string | null
           created_at?: string
           document?: string | null
           document_type?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          legal_name?: string | null
           max_discount_percent?: number
+          neighborhood?: string | null
           parent_user_id?: string | null
           phone?: string | null
           pin_hash?: string | null
           state?: string | null
+          state_registration?: string | null
           store_name?: string | null
           updated_at?: string
           username?: string | null
+          whatsapp?: string | null
         }
         Relationships: [
           {

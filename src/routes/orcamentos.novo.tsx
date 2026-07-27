@@ -897,8 +897,10 @@ function NovoOrcamento() {
   const [operatorConfirmed, setOperatorConfirmed] = useState(false);
   // Pending save opts, used to resume handleSalvar after PIN confirm at save time.
   const [pendingSaveOpts, setPendingSaveOpts] = useState<
-    { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean } | null
+    { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean; skipPinCheck?: boolean } | null
   >(null);
+  // Lock que bloqueia entradas concorrentes em handleSalvar (duplo clique).
+  const saveInFlightRef = useRef(false);
   // Controls the shared header OperatorSwitcher dialog when opened via "Trocar usuário".
   const [operatorSwitcherOpen, setOperatorSwitcherOpen] = useState(false);
 
@@ -963,7 +965,7 @@ function NovoOrcamento() {
       setPendingSaveOpts(null);
       if (resume) {
         setTimeout(() => {
-          void handleSalvar(resume);
+          void handleSalvar({ ...resume, skipPinCheck: true });
         }, 0);
       }
     } catch (err) {
@@ -1651,8 +1653,12 @@ function NovoOrcamento() {
     };
   }, [isEdit, editId, session?.user?.id, loadedId]);
 
-  async function handleSalvar(opts: { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean } = {}) {
+  async function handleSalvar(opts: { approve?: boolean; skipDiscountCheck?: boolean; pendingDiscount?: boolean; skipPinCheck?: boolean } = {}) {
     const approve = !!opts.approve;
+    // Trava contra duplo clique e re-entradas concorrentes.
+    if (saveInFlightRef.current) return;
+    saveInFlightRef.current = true;
+    try {
     if (!session?.user?.id) {
       toast.error("Sessão expirada. Faça login novamente.");
       return;
@@ -1665,7 +1671,7 @@ function NovoOrcamento() {
     // If the operator was auto-filled from the active session and never confirmed
     // via the PIN switch flow, require the PIN before saving.
     // Admins: bypass — o campo Colaborador aceita nome livre sem PIN.
-    if (!operatorConfirmed && activeOperator && role !== "admin") {
+    if (!opts.skipPinCheck && !operatorConfirmed && activeOperator && role !== "admin") {
       setPendingOperator({
         id: activeOperator.id,
         full_name: activeOperator.full_name,
@@ -2010,6 +2016,9 @@ function NovoOrcamento() {
     } finally {
       setSalvando(false);
       setAprovando(false);
+    }
+    } finally {
+      saveInFlightRef.current = false;
     }
   }
 

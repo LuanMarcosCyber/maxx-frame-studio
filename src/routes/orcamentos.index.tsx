@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { NovoOrcamentoButton } from "@/components/NovoOrcamentoButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
@@ -340,11 +341,8 @@ function Orcamentos() {
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Buscar por cliente ou número..." className="pl-9" />
           </div>
-          <Button asChild className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
-            <Link to="/orcamentos/novo">
-              <Plus className="h-4 w-4 mr-1.5" /> Novo Orçamento
-            </Link>
-          </Button>
+          <NovoOrcamentoButton />
+
         </div>
 
         <div className="overflow-x-auto -mx-6">
