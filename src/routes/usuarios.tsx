@@ -396,10 +396,9 @@ function UsuariosPage() {
                     <td className="py-3.5 px-3">
                       <Switch
                         checked={o.active}
-                        onCheckedChange={(v) =>
-                          toggleMut.mutate({ id: o.id, active: v })
-                        }
-                        disabled={toggleMut.isPending}
+                        onCheckedChange={() => requestToggle(o)}
+                        disabled={toggleMut.isPending || !isOwner}
+                        title={isOwner ? undefined : "Apenas o proprietário da empresa pode gerenciar usuários."}
                       />
                     </td>
                     <td className="py-3.5 px-6 text-right">
@@ -407,45 +406,46 @@ function UsuariosPage() {
                         <button
                           type="button"
                           onClick={() => openEdit(o)}
+                          disabled={!isOwner}
                           aria-label="Editar"
-                          title="Editar"
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          title={isOwner ? "Editar" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Pencil className="h-4 w-4 text-muted-foreground" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            openEdit(o);
-                            // Foca o campo PIN via microtask
+                          onClick={async () => {
+                            await openEdit(o);
                             setTimeout(() => {
                               const el = document.getElementById("op-pin");
                               el?.focus();
                             }, 100);
                           }}
+                          disabled={!isOwner}
                           aria-label="Redefinir PIN"
-                          title="Redefinir PIN"
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          title={isOwner ? "Redefinir PIN" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <KeyRound className="h-4 w-4 text-muted-foreground" />
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
-                            toggleMut.mutate({ id: o.id, active: !o.active })
-                          }
+                          onClick={() => requestToggle(o)}
+                          disabled={!isOwner}
                           aria-label={o.active ? "Desativar" : "Ativar"}
-                          title={o.active ? "Desativar" : "Ativar"}
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
+                          title={isOwner ? (o.active ? "Desativar" : "Ativar") : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Power className="h-4 w-4 text-muted-foreground" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => setDeleting(o)}
+                          onClick={() => requestDelete(o)}
+                          disabled={!isOwner}
                           aria-label="Excluir"
-                          title="Excluir"
-                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition"
+                          title={isOwner ? "Excluir" : "Apenas o proprietário da empresa pode gerenciar usuários."}
+                          className="h-8 w-8 grid place-items-center rounded-md hover:bg-destructive/10 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </button>
