@@ -330,13 +330,21 @@ function NewCompanyWizard({
   // Step 2 (commercial)
   const [document, setDocument] = useState("");
   const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">("CNPJ");
+  const [legalName, setLegalName] = useState("");
+  const [tradeName, setTradeName] = useState("");
+  const [stateRegistration, setStateRegistration] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [cep, setCep] = useState("");
   const [address, setAddress] = useState("");
   const [addressNumber, setAddressNumber] = useState("");
+  const [complement, setComplement] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
 
   const listCompanies = useServerFn(listAllCompanies);
   const { data: companies = [] } = useQuery({
@@ -352,6 +360,76 @@ function NewCompanyWizard({
       )
     : companies;
 
+  const onlyDigits = (s: string) => s.replace(/\D+/g, "");
+  const fmtCEP = (v: string) => {
+    const d = onlyDigits(v);
+    return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : v;
+  };
+  const fmtCNPJ = (v: string) => {
+    const d = onlyDigits(v);
+    return d.length === 14
+      ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+      : v;
+  };
+
+  async function lookupCep(raw: string) {
+    const digits = onlyDigits(raw);
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (data.erro) {
+        toast.warning("CEP não encontrado.");
+        return;
+      }
+      setCep(fmtCEP(digits));
+      if (!address.trim() && data.logradouro) setAddress(String(data.logradouro).toUpperCase());
+      if (!neighborhood.trim() && data.bairro) setNeighborhood(String(data.bairro).toUpperCase());
+      if (!city.trim() && data.localidade) setCity(String(data.localidade).toUpperCase());
+      if (!state.trim() && data.uf) setState(String(data.uf).toUpperCase());
+    } catch {
+      toast.error("Não foi possível buscar o CEP.");
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
+  async function lookupCnpj(raw: string) {
+    const digits = onlyDigits(raw);
+    if (digits.length !== 14) {
+      toast.warning("Informe um CNPJ válido (14 dígitos).");
+      return;
+    }
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`);
+      if (!res.ok) {
+        toast.warning("CNPJ não encontrado.");
+        return;
+      }
+      const data = await res.json();
+      setDocument(fmtCNPJ(digits));
+      setDocumentType("CNPJ");
+      if (data.razao_social) setLegalName(String(data.razao_social).toUpperCase());
+      if (data.nome_fantasia) setTradeName(String(data.nome_fantasia).toUpperCase());
+      if (data.email && !email.trim()) setEmail(String(data.email).toLowerCase());
+      if (data.ddd_telefone_1 && !phone.trim()) setPhone(String(data.ddd_telefone_1));
+      if (data.cep) setCep(fmtCEP(String(data.cep)));
+      if (data.logradouro) setAddress(String(data.logradouro).toUpperCase());
+      if (data.numero) setAddressNumber(String(data.numero));
+      if (data.complemento) setComplement(String(data.complemento).toUpperCase());
+      if (data.bairro) setNeighborhood(String(data.bairro).toUpperCase());
+      if (data.municipio) setCity(String(data.municipio).toUpperCase());
+      if (data.uf) setState(String(data.uf).toUpperCase());
+      toast.success("Dados do CNPJ preenchidos.");
+    } catch {
+      toast.error("Não foi possível buscar o CNPJ.");
+    } finally {
+      setCnpjLoading(false);
+    }
+  }
+
   const reset = () => {
     setStep(1);
     setOwnerName("");
@@ -365,11 +443,17 @@ function NewCompanyWizard({
     setCompanyQuery("");
     setDocument("");
     setDocumentType("CNPJ");
+    setLegalName("");
+    setTradeName("");
+    setStateRegistration("");
     setEmail("");
     setPhone("");
+    setWhatsapp("");
     setCep("");
     setAddress("");
     setAddressNumber("");
+    setComplement("");
+    setNeighborhood("");
     setCity("");
     setState("");
   };
@@ -392,6 +476,8 @@ function NewCompanyWizard({
       toast.error(err);
       return;
     }
+    // Pré-preenche o nome fantasia com o nome da loja informado na etapa 1.
+    if (!tradeName.trim()) setTradeName(storeName.trim().toUpperCase());
     setStep(2);
   };
 
@@ -399,8 +485,8 @@ function NewCompanyWizard({
     e.preventDefault();
     try {
       await onSubmit({
-        owner_name: ownerName.trim(),
-        store_name: storeName.trim(),
+        owner_name: ownerName.trim().toUpperCase(),
+        store_name: (tradeName.trim() || storeName.trim()).toUpperCase(),
         username: username.trim().toLowerCase(),
         password,
         pin,
@@ -408,11 +494,17 @@ function NewCompanyWizard({
         commercial: {
           document: document.trim() || null,
           document_type: document.trim() ? documentType : null,
+          legal_name: legalName.trim() ? legalName.trim().toUpperCase() : null,
+          trade_name: tradeName.trim() ? tradeName.trim().toUpperCase() : null,
+          state_registration: stateRegistration.trim() || null,
           email: email.trim() || null,
           phone: phone.trim() || null,
+          whatsapp: whatsapp.trim() || null,
           cep: cep.trim() || null,
           address: address.trim() || null,
           address_number: addressNumber.trim() || null,
+          complement: complement.trim() || null,
+          neighborhood: neighborhood.trim() || null,
           city: city.trim() || null,
           state: state.trim() || null,
         },
