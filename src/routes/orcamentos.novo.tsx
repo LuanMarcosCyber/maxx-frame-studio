@@ -2666,6 +2666,9 @@ function NovoOrcamento() {
                         e.preventDefault();
                         (e.target as HTMLInputElement).blur();
                         setActive("paspatur");
+                        setTimeout(() => {
+                          document.getElementById("paspatur-ativo")?.focus();
+                        }, 30);
                       }
                     }}
                   />
