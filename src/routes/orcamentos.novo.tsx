@@ -2628,6 +2628,22 @@ function NovoOrcamento() {
               <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
                   <div className="space-y-1.5">
+                    <Label htmlFor="largura">Largura (cm)</Label>
+                    <Input
+                      id="largura"
+                      inputMode="decimal"
+                      placeholder="0"
+                      value={largura}
+                      onChange={(e) => setLargura(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("altura")?.focus();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="altura">Altura (cm)</Label>
                     <Input
                       id="altura"
@@ -2640,22 +2656,6 @@ function NovoOrcamento() {
                           e.preventDefault();
                           (e.target as HTMLInputElement).blur();
                           setActive("paspatur");
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="largura">Largura (cm)</Label>
-                    <Input
-                      id="largura"
-                      inputMode="decimal"
-                      placeholder="0"
-                      value={largura}
-                      onChange={(e) => setLargura(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          document.getElementById("altura")?.focus();
                         }
                       }}
                     />
