@@ -2659,8 +2659,7 @@ function NovoOrcamento() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          (e.target as HTMLInputElement).blur();
-                          setActive("paspatur");
+                          document.getElementById("mao-obra-extra")?.focus();
                         }
                       }}
                     />
@@ -2672,10 +2671,18 @@ function NovoOrcamento() {
                     label="MDOE (R$)"
                     value={maoDeObraExtraStr}
                     onChange={(v) => setMaoDeObraExtraStr(sanitizeMoneyStr(v))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.target as HTMLInputElement).blur();
+                        setActive("paspatur");
+                      }
+                    }}
                   />
 
                 </div>
               </div>
+
 
               <div ref={previewArtRef} className="mt-10 w-full overflow-hidden flex justify-center">
                 <div className="inline-flex items-start gap-4 max-w-full">
