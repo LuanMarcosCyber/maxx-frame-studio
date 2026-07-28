@@ -209,7 +209,7 @@ function Dashboard() {
   };
 
   const displayName =
-    profile?.full_name || profile?.username || "de volta";
+    profile?.store_name || profile?.full_name || profile?.username || "";
   const subtitle =
     role === "admin"
       ? "Gerencie orçamentos, pedidos, produtos e revendedores da sua empresa."
@@ -247,8 +247,7 @@ function Dashboard() {
           <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_top_right,white,transparent_60%)]" />
           <div className="relative px-8 py-12 lg:px-12 lg:py-16">
             <p className="text-3xl lg:text-4xl font-bold tracking-tight">
-              Bem-vindo de volta
-              {profile?.full_name ? `, ${profile.full_name}` : displayName !== "de volta" ? `, ${displayName}` : ""}
+              Bem-vindo de volta{displayName ? `, ${displayName}` : ""}
             </p>
             <p className="mt-3 text-base lg:text-lg text-brand-foreground/85 max-w-2xl leading-relaxed">
               {subtitle}
