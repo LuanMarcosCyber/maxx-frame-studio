@@ -2418,6 +2418,9 @@ function NovoOrcamento() {
                       if (checked) {
                         setClienteId(null);
                         setClienteSugestoesOpen(false);
+                        if (clienteNome.trim().length === 0) {
+                          setClienteNome("Consumidor");
+                        }
                       }
                     }}
                   />
