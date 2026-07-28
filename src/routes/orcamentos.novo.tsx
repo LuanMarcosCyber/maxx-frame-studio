@@ -83,6 +83,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
+import { perfilLinearMeters } from "@/lib/measures";
 import { toast } from "sonner";
 import { listActiveOperatorsV2 as listActiveOperators, validateOperatorPinV2 as validateOperatorPin } from "@/lib/operators.functions";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
@@ -440,7 +441,11 @@ function computeItemValues(
 
   let valorPerfilPrincipal = 0;
   if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
-    const perim = ((alturaFinal + larguraFinal) * 2) / 100;
+    const perim = perfilLinearMeters(
+      alturaFinal,
+      larguraFinal,
+      P.perfil.frame_width_cm ?? 0,
+    );
     const base = perim * Number(P.perfil.value_per_meter);
     const cp = base * (1 + Number(P.perfil.waste_percentage) / 100);
     valorPerfilPrincipal =
@@ -459,7 +464,11 @@ function computeItemValues(
     larguraPerfilAdicional > 0 &&
     alturaPerfilAdicional > 0
   ) {
-    const perim = ((alturaPerfilAdicional + larguraPerfilAdicional) * 2) / 100;
+    const perim = perfilLinearMeters(
+      alturaPerfilAdicional,
+      larguraPerfilAdicional,
+      P.perfilAdicional.frame_width_cm ?? 0,
+    );
     const base = perim * Number(P.perfilAdicional.value_per_meter);
     const cp = base * (1 + Number(P.perfilAdicional.waste_percentage) / 100);
     valorPerfilAdicional =
@@ -582,6 +591,7 @@ function buildItemDetails(
     perfilAdicionalId: snap.perfilAdicionalId,
     perfilAdicionalCode: P.perfilAdicional?.code ?? null,
     perfilAdicionalDescription: P.perfilAdicional?.description ?? null,
+    perfilAdicionalFrameWidthCm: P.perfilAdicional?.frame_width_cm ?? null,
     larguraPerfilAdicional: v.larguraPerfilAdicional,
     alturaPerfilAdicional: v.alturaPerfilAdicional,
     vidroTipo: snap.vidroTipo,
@@ -2408,6 +2418,9 @@ function NovoOrcamento() {
                       if (checked) {
                         setClienteId(null);
                         setClienteSugestoesOpen(false);
+                        if (clienteNome.trim().length === 0) {
+                          setClienteNome("Consumidor");
+                        }
                       }
                     }}
                   />
@@ -2618,22 +2631,6 @@ function NovoOrcamento() {
               <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
                   <div className="space-y-1.5">
-                    <Label htmlFor="altura">Altura (cm)</Label>
-                    <Input
-                      id="altura"
-                      inputMode="decimal"
-                      placeholder="0"
-                      value={altura}
-                      onChange={(e) => setAltura(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          document.getElementById("largura")?.focus();
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label htmlFor="largura">Largura (cm)</Label>
                     <Input
                       id="largura"
@@ -2641,6 +2638,22 @@ function NovoOrcamento() {
                       placeholder="0"
                       value={largura}
                       onChange={(e) => setLargura(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          document.getElementById("altura")?.focus();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="altura">Altura (cm)</Label>
+                    <Input
+                      id="altura"
+                      inputMode="decimal"
+                      placeholder="0"
+                      value={altura}
+                      onChange={(e) => setAltura(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();

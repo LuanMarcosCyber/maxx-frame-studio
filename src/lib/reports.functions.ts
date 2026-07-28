@@ -378,13 +378,19 @@ function extractParts(item: Record<string, unknown>): PartExtract[] {
   const aF = num(item.alturaFinal);
   const lF = num(item.larguraFinal);
   const areaMain = (aF * lF) / 10000; // m²
-  const perimMain = (2 * (aF + lF)) / 100; // m
+  const fwPrincipal = num(item.perfilFrameWidthCm);
+  // Perfil = perímetro externo + 4× largura da moldura (sobra dos cortes 45°)
+  const perimMain = aF > 0 && lF > 0 ? (2 * (aF + lF) + 4 * fwPrincipal) / 100 : 0;
   const aAdic = num(item.alturaAdicional);
   const lAdic = num(item.larguraAdicional);
   const areaAdic = (aAdic * lAdic) / 10000;
   const aPerfilAdic = num(item.alturaPerfilAdicional);
   const lPerfilAdic = num(item.larguraPerfilAdicional);
-  const perimPerfilAdic = (2 * (aPerfilAdic + lPerfilAdic)) / 100;
+  const fwAdic = num(item.perfilAdicionalFrameWidthCm);
+  const perimPerfilAdic =
+    aPerfilAdic > 0 && lPerfilAdic > 0
+      ? (2 * (aPerfilAdic + lPerfilAdic) + 4 * fwAdic) / 100
+      : 0;
   const vidroQtd = Math.max(1, Math.floor(num(item.vidroQuantidade) || 1));
 
   const keys: {
