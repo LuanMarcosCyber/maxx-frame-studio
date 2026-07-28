@@ -451,11 +451,7 @@ function Orcamentos() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); tryApprove(b); }}
-                          title={
-                            b.client_id
-                              ? "Aprovar orçamento"
-                              : "Selecione um cliente cadastrado para aprovar"
-                          }
+                          title="Aprovar orçamento"
                           aria-label="Aprovar orçamento"
                           className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-emerald-100 hover:text-emerald-700 transition cursor-pointer"
                         >
