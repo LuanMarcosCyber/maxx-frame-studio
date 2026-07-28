@@ -441,7 +441,11 @@ function computeItemValues(
 
   let valorPerfilPrincipal = 0;
   if (P.perfil && alturaFinal > 0 && larguraFinal > 0) {
-    const perim = ((alturaFinal + larguraFinal) * 2) / 100;
+    const perim = perfilLinearMeters(
+      alturaFinal,
+      larguraFinal,
+      P.perfil.frame_width_cm ?? 0,
+    );
     const base = perim * Number(P.perfil.value_per_meter);
     const cp = base * (1 + Number(P.perfil.waste_percentage) / 100);
     valorPerfilPrincipal =
@@ -460,7 +464,11 @@ function computeItemValues(
     larguraPerfilAdicional > 0 &&
     alturaPerfilAdicional > 0
   ) {
-    const perim = ((alturaPerfilAdicional + larguraPerfilAdicional) * 2) / 100;
+    const perim = perfilLinearMeters(
+      alturaPerfilAdicional,
+      larguraPerfilAdicional,
+      P.perfilAdicional.frame_width_cm ?? 0,
+    );
     const base = perim * Number(P.perfilAdicional.value_per_meter);
     const cp = base * (1 + Number(P.perfilAdicional.waste_percentage) / 100);
     valorPerfilAdicional =
