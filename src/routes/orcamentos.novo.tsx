@@ -83,6 +83,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
+import { perfilLinearMeters } from "@/lib/measures";
 import { toast } from "sonner";
 import { listActiveOperatorsV2 as listActiveOperators, validateOperatorPinV2 as validateOperatorPin } from "@/lib/operators.functions";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
