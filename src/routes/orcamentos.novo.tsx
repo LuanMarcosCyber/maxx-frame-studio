@@ -1698,10 +1698,7 @@ function NovoOrcamento() {
       setClientWarning("required");
       return;
     }
-    if (approve && !clienteId) {
-      setClientWarning("unlinked");
-      return;
-    }
+
 
     if (valorTotal <= 0) {
       toast.error("Valor total inválido. Verifique os itens do orçamento.");
