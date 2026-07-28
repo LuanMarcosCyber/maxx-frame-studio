@@ -702,7 +702,8 @@ function NovoOrcamento() {
 
   const [active, setActive] = useState<StepKey>("tamanho");
 
-  // Enter avança para a próxima etapa quando não há campo em edição.
+  // Enter avança para a próxima etapa (ou foca o primeiro campo da etapa Tamanho)
+  // quando não há campo em edição.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const isEditable = (el: Element | null): boolean => {
@@ -719,6 +720,14 @@ function NovoOrcamento() {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isEditable(document.activeElement)) return;
+      // Na etapa Tamanho, se nenhum campo estiver em foco, foca Largura para
+      // iniciar a sequência Largura → Altura → MDOE → Paspatur pelo teclado.
+      const larguraEl = document.getElementById("largura") as HTMLInputElement | null;
+      if (larguraEl && active === "tamanho") {
+        e.preventDefault();
+        larguraEl.focus();
+        return;
+      }
       const btn = document.getElementById("orc-next-step-btn") as HTMLButtonElement | null;
       if (btn && !btn.disabled) {
         e.preventDefault();
@@ -727,7 +736,8 @@ function NovoOrcamento() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [active]);
+
 
 
   // Items list (persisted snapshots) and which one is active
