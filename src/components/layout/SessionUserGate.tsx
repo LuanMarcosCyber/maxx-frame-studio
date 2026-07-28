@@ -83,31 +83,16 @@ export function SessionUserGate({ children }: { children: ReactNode }) {
   }
 
   if (needsSelection) {
+    // Renderiza a app normalmente e sobrepõe o mesmo modal usado na troca
+    // de usuário. Sem navegação para outra página.
     return (
       <>
-        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center">
-          <img
-            src={logoTotalMaxx}
-            alt="Total Maxx"
-            className="max-h-20 w-auto object-contain mb-6"
-          />
-          <UserCircle2 className="h-10 w-10 text-muted-foreground mb-3" />
-          <h1 className="text-2xl font-bold tracking-tight">Quem está usando?</h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-md">
-            Escolha o seu usuário para continuar. Cada ação será registrada em seu nome.
-          </p>
-          <button
-            type="button"
-            onClick={() => setDialogOpen(true)}
-            className="mt-6 px-5 py-2.5 rounded-md bg-gradient-brand text-brand-foreground text-sm font-medium shadow-brand hover:opacity-95"
-          >
-            Selecionar usuário
-          </button>
-        </div>
+        {children}
         <OperatorSwitcher open={dialogOpen} onOpenChange={setDialogOpen} hideTrigger />
       </>
     );
   }
+
 
   return <>{children}</>;
 }
