@@ -591,6 +591,7 @@ function buildItemDetails(
     perfilAdicionalId: snap.perfilAdicionalId,
     perfilAdicionalCode: P.perfilAdicional?.code ?? null,
     perfilAdicionalDescription: P.perfilAdicional?.description ?? null,
+    perfilAdicionalFrameWidthCm: P.perfilAdicional?.frame_width_cm ?? null,
     larguraPerfilAdicional: v.larguraPerfilAdicional,
     alturaPerfilAdicional: v.alturaPerfilAdicional,
     vidroTipo: snap.vidroTipo,
