@@ -702,7 +702,8 @@ function NovoOrcamento() {
 
   const [active, setActive] = useState<StepKey>("tamanho");
 
-  // Enter avança para a próxima etapa quando não há campo em edição.
+  // Enter avança para a próxima etapa (ou foca o primeiro campo da etapa Tamanho)
+  // quando não há campo em edição.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const isEditable = (el: Element | null): boolean => {
@@ -719,6 +720,14 @@ function NovoOrcamento() {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isEditable(document.activeElement)) return;
+      // Na etapa Tamanho, se nenhum campo estiver em foco, foca Largura para
+      // iniciar a sequência Largura → Altura → MDOE → Paspatur pelo teclado.
+      const larguraEl = document.getElementById("largura") as HTMLInputElement | null;
+      if (larguraEl && active === "tamanho") {
+        e.preventDefault();
+        larguraEl.focus();
+        return;
+      }
       const btn = document.getElementById("orc-next-step-btn") as HTMLButtonElement | null;
       if (btn && !btn.disabled) {
         e.preventDefault();
@@ -727,7 +736,8 @@ function NovoOrcamento() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [active]);
+
 
 
   // Items list (persisted snapshots) and which one is active
@@ -927,12 +937,14 @@ function NovoOrcamento() {
     enabled: !!session,
   });
 
-  // Auto-fill collaborator field with the active operator name on new budgets.
+  // Mantém o campo "Usuário" sempre sincronizado com o usuário ativo do sistema.
+  // Toda vez que o operador ativo muda (via header, seletor, etc.), refletimos
+  // o novo nome no orçamento.
   useEffect(() => {
-    if (isEdit) return;
     if (!activeOperator) return;
-    setVendedorNome((prev) => (prev.trim() ? prev : activeOperator.full_name));
-  }, [isEdit, activeOperator]);
+    setVendedorNome(activeOperator.full_name);
+  }, [activeOperator?.id, activeOperator?.full_name]);
+
 
   function handleSelectOperator(op: {
     id: string;
@@ -1698,10 +1710,7 @@ function NovoOrcamento() {
       setClientWarning("required");
       return;
     }
-    if (approve && !clienteId) {
-      setClientWarning("unlinked");
-      return;
-    }
+
 
     if (valorTotal <= 0) {
       toast.error("Valor total inválido. Verifique os itens do orçamento.");
@@ -2421,6 +2430,10 @@ function NovoOrcamento() {
                         if (clienteNome.trim().length === 0) {
                           setClienteNome("Consumidor");
                         }
+                      } else {
+                        if (clienteNome.trim().toLowerCase() === "consumidor") {
+                          setClienteNome("");
+                        }
                       }
                     }}
                   />
@@ -2431,6 +2444,7 @@ function NovoOrcamento() {
                     Não vincular a cliente cadastrado
                   </Label>
                 </div>
+
 
                 {clienteId && !naoVincularCliente && (
                   <p className="text-xs text-muted-foreground">
@@ -2657,8 +2671,7 @@ function NovoOrcamento() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          (e.target as HTMLInputElement).blur();
-                          setActive("paspatur");
+                          document.getElementById("mao-obra-extra")?.focus();
                         }
                       }}
                     />
@@ -2670,10 +2683,18 @@ function NovoOrcamento() {
                     label="MDOE (R$)"
                     value={maoDeObraExtraStr}
                     onChange={(v) => setMaoDeObraExtraStr(sanitizeMoneyStr(v))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.target as HTMLInputElement).blur();
+                        setActive("paspatur");
+                      }
+                    }}
                   />
 
                 </div>
               </div>
+
 
               <div ref={previewArtRef} className="mt-10 w-full overflow-hidden flex justify-center">
                 <div className="inline-flex items-start gap-4 max-w-full">
