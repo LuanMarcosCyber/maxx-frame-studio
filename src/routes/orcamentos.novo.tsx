@@ -2421,6 +2421,10 @@ function NovoOrcamento() {
                         if (clienteNome.trim().length === 0) {
                           setClienteNome("Consumidor");
                         }
+                      } else {
+                        if (clienteNome.trim().toLowerCase() === "consumidor") {
+                          setClienteNome("");
+                        }
                       }
                     }}
                   />
@@ -2431,6 +2435,7 @@ function NovoOrcamento() {
                     Não vincular a cliente cadastrado
                   </Label>
                 </div>
+
 
                 {clienteId && !naoVincularCliente && (
                   <p className="text-xs text-muted-foreground">
