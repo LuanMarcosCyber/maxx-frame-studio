@@ -722,11 +722,24 @@ function NovoOrcamento() {
       if (isEditable(document.activeElement)) return;
       // Na etapa Tamanho, se nenhum campo estiver em foco, foca Largura para
       // iniciar a sequência Largura → Altura → MDOE → Paspatur pelo teclado.
-      const larguraEl = document.getElementById("largura") as HTMLInputElement | null;
-      if (larguraEl && active === "tamanho") {
-        e.preventDefault();
-        larguraEl.focus();
-        return;
+      if (active === "tamanho") {
+        const larguraEl = document.getElementById("largura") as HTMLInputElement | null;
+        if (larguraEl) {
+          e.preventDefault();
+          larguraEl.focus();
+          return;
+        }
+      }
+      // Na etapa Paspatur, o ENTER deve OBRIGATORIAMENTE focar o campo de
+      // seleção de Paspatur — mesmo quando o valor padrão "Não" já está
+      // selecionado. Só depois desse passo é que o usuário avança para Perfil.
+      if (active === "paspatur") {
+        const paspaturEl = document.getElementById("paspatur-ativo") as HTMLElement | null;
+        if (paspaturEl) {
+          e.preventDefault();
+          paspaturEl.focus();
+          return;
+        }
       }
       const btn = document.getElementById("orc-next-step-btn") as HTMLButtonElement | null;
       if (btn && !btn.disabled) {
