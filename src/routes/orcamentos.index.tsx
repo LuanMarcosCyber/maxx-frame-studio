@@ -325,10 +325,7 @@ function Orcamentos() {
   }
 
   function tryApprove(b: BudgetRow) {
-    if (!b.client_id) {
-      setClientMissingFor(b);
-      return;
-    }
+    // Permite aprovar mesmo sem cliente cadastrado (venda avulsa / Consumidor).
     setApproving(b);
   }
 
