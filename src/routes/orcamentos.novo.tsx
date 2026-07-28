@@ -2727,7 +2727,22 @@ function NovoOrcamento() {
                   value={paspaturAtivo}
                   onValueChange={(v) => handlePaspaturAtivoChange(v as "sim" | "nao")}
                 >
-                  <SelectTrigger id="paspatur-ativo">
+                  <SelectTrigger
+                    id="paspatur-ativo"
+                    onKeyDownCapture={(e) => {
+                      if (e.key !== "Enter") return;
+                      const state = (e.currentTarget as HTMLElement).getAttribute("data-state");
+                      if (state !== "closed") return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (paspaturAtivo === "sim") {
+                        setTimeout(() => document.getElementById("m-esq")?.focus(), 20);
+                      } else {
+                        setActive("perfil");
+                        setTimeout(() => document.getElementById("perfil")?.focus(), 30);
+                      }
+                    }}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
