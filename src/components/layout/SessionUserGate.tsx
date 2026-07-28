@@ -5,9 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { listActiveOperatorsV2 } from "@/lib/operators.functions";
 import { OperatorSwitcher } from "./OperatorSwitcher";
-import { UserCircle2, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import logoTotalMaxx from "@/assets/totalmaxx-logo.png";
 import { Button } from "@/components/ui/button";
+
 
 type Op = { id: string; full_name: string; username: string | null; has_pin: boolean };
 
