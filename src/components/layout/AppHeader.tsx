@@ -57,9 +57,11 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
   const userLabel = activeOperator?.full_name || profile?.full_name || "Usuário";
 
   async function handleSwitchUser() {
-    clearActiveOperator();
+    // Abre o modal centralizado sem limpar o usuário ativo — evita cair na
+    // tela cheia "Quem está usando?" enquanto o usuário escolhe outro.
     setSwitchOpen(true);
   }
+
 
   async function handleLeaveCompany() {
     clearActiveOperator();
