@@ -937,12 +937,14 @@ function NovoOrcamento() {
     enabled: !!session,
   });
 
-  // Auto-fill collaborator field with the active operator name on new budgets.
+  // Mantém o campo "Usuário" sempre sincronizado com o usuário ativo do sistema.
+  // Toda vez que o operador ativo muda (via header, seletor, etc.), refletimos
+  // o novo nome no orçamento.
   useEffect(() => {
-    if (isEdit) return;
     if (!activeOperator) return;
-    setVendedorNome((prev) => (prev.trim() ? prev : activeOperator.full_name));
-  }, [isEdit, activeOperator]);
+    setVendedorNome(activeOperator.full_name);
+  }, [activeOperator?.id, activeOperator?.full_name]);
+
 
   function handleSelectOperator(op: {
     id: string;
