@@ -722,11 +722,24 @@ function NovoOrcamento() {
       if (isEditable(document.activeElement)) return;
       // Na etapa Tamanho, se nenhum campo estiver em foco, foca Largura para
       // iniciar a sequência Largura → Altura → MDOE → Paspatur pelo teclado.
-      const larguraEl = document.getElementById("largura") as HTMLInputElement | null;
-      if (larguraEl && active === "tamanho") {
-        e.preventDefault();
-        larguraEl.focus();
-        return;
+      if (active === "tamanho") {
+        const larguraEl = document.getElementById("largura") as HTMLInputElement | null;
+        if (larguraEl) {
+          e.preventDefault();
+          larguraEl.focus();
+          return;
+        }
+      }
+      // Na etapa Paspatur, o ENTER deve OBRIGATORIAMENTE focar o campo de
+      // seleção de Paspatur — mesmo quando o valor padrão "Não" já está
+      // selecionado. Só depois desse passo é que o usuário avança para Perfil.
+      if (active === "paspatur") {
+        const paspaturEl = document.getElementById("paspatur-ativo") as HTMLElement | null;
+        if (paspaturEl) {
+          e.preventDefault();
+          paspaturEl.focus();
+          return;
+        }
       }
       const btn = document.getElementById("orc-next-step-btn") as HTMLButtonElement | null;
       if (btn && !btn.disabled) {
@@ -881,7 +894,7 @@ function NovoOrcamento() {
   const [clienteNome, setClienteNome] = useState<string>("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   
-  const [naoVincularCliente, setNaoVincularCliente] = useState(false);
+  
   const [clienteSugestoesOpen, setClienteSugestoesOpen] = useState(false);
   const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
   const [aprovando, setAprovando] = useState(false);
@@ -2306,7 +2319,6 @@ function NovoOrcamento() {
                 <Popover
                   open={
                     clienteSugestoesOpen &&
-                    !naoVincularCliente &&
                     clienteNome.trim().length > 0 &&
                     clientes.some((c) =>
                       c.name.toLowerCase().includes(clienteNome.trim().toLowerCase()),
@@ -2334,40 +2346,35 @@ function NovoOrcamento() {
                           if (v !== clienteNome) setClienteNome(v);
                         }}
                         onFocus={() => {
-                          if (!naoVincularCliente && clienteNome.trim().length > 0) {
+                          if (clienteNome.trim().length > 0) {
                             setClienteSugestoesOpen(true);
                           }
                         }}
                         onChange={(e) => {
                           setClienteNome(e.target.value);
                           if (clienteId) setClienteId(null);
-                          if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                          setClienteSugestoesOpen(true);
                         }}
                         onKeyDown={(e) => {
                           if (e.key !== "Enter") return;
                           e.preventDefault();
                           const advance = () =>
                             document.getElementById("top-arquiteto")?.focus();
-                          if (naoVincularCliente) {
-                            advance();
-                            return;
-                          }
                           const q = clienteNome.trim().toLowerCase();
-                          if (clienteId) {
+                          if (clienteId || q.length === 0) {
                             advance();
                             return;
                           }
-                          const matches = clientes.filter((c) =>
-                            c.name.toLowerCase().includes(q),
+                          // Se houver correspondência exata, vincula; senão, mantém texto livre
+                          const exact = clientes.find(
+                            (c) => c.name.toLowerCase() === q,
                           );
-                          if (matches.length > 0) {
-                            const c = matches[0];
-                            setClienteId(c.id);
-                            setClienteNome(c.name);
+                          if (exact) {
+                            setClienteId(exact.id);
+                            setClienteNome(exact.name);
                             setClienteSugestoesOpen(false);
-                          } else if (q.length === 0) {
-                            advance();
                           }
+                          advance();
                         }}
                       />
                     </div>
@@ -2417,36 +2424,7 @@ function NovoOrcamento() {
                   </PopoverContent>
                 </Popover>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <Checkbox
-                    id="top-nao-vincular-cliente"
-                    checked={naoVincularCliente}
-                    onCheckedChange={(v) => {
-                      const checked = v === true;
-                      setNaoVincularCliente(checked);
-                      if (checked) {
-                        setClienteId(null);
-                        setClienteSugestoesOpen(false);
-                        if (clienteNome.trim().length === 0) {
-                          setClienteNome("Consumidor");
-                        }
-                      } else {
-                        if (clienteNome.trim().toLowerCase() === "consumidor") {
-                          setClienteNome("");
-                        }
-                      }
-                    }}
-                  />
-                  <Label
-                    htmlFor="top-nao-vincular-cliente"
-                    className="text-xs font-normal text-muted-foreground cursor-pointer"
-                  >
-                    Não vincular a cliente cadastrado
-                  </Label>
-                </div>
-
-
-                {clienteId && !naoVincularCliente && (
+                {clienteId && (
                   <p className="text-xs text-muted-foreground">
                     Cliente cadastrado vinculado a este orçamento.
                   </p>
@@ -2688,6 +2666,9 @@ function NovoOrcamento() {
                         e.preventDefault();
                         (e.target as HTMLInputElement).blur();
                         setActive("paspatur");
+                        setTimeout(() => {
+                          document.getElementById("paspatur-ativo")?.focus();
+                        }, 30);
                       }
                     }}
                   />
@@ -2746,7 +2727,22 @@ function NovoOrcamento() {
                   value={paspaturAtivo}
                   onValueChange={(v) => handlePaspaturAtivoChange(v as "sim" | "nao")}
                 >
-                  <SelectTrigger id="paspatur-ativo">
+                  <SelectTrigger
+                    id="paspatur-ativo"
+                    onKeyDownCapture={(e) => {
+                      if (e.key !== "Enter") return;
+                      const state = (e.currentTarget as HTMLElement).getAttribute("data-state");
+                      if (state !== "closed") return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (paspaturAtivo === "sim") {
+                        setTimeout(() => document.getElementById("m-esq")?.focus(), 20);
+                      } else {
+                        setActive("perfil");
+                        setTimeout(() => document.getElementById("perfil")?.focus(), 30);
+                      }
+                    }}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
