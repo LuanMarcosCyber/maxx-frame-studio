@@ -881,7 +881,7 @@ function NovoOrcamento() {
   const [clienteNome, setClienteNome] = useState<string>("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   
-  const [naoVincularCliente, setNaoVincularCliente] = useState(false);
+  
   const [clienteSugestoesOpen, setClienteSugestoesOpen] = useState(false);
   const [clientWarning, setClientWarning] = useState<null | "required" | "unlinked">(null);
   const [aprovando, setAprovando] = useState(false);
@@ -2306,7 +2306,6 @@ function NovoOrcamento() {
                 <Popover
                   open={
                     clienteSugestoesOpen &&
-                    !naoVincularCliente &&
                     clienteNome.trim().length > 0 &&
                     clientes.some((c) =>
                       c.name.toLowerCase().includes(clienteNome.trim().toLowerCase()),
@@ -2334,40 +2333,35 @@ function NovoOrcamento() {
                           if (v !== clienteNome) setClienteNome(v);
                         }}
                         onFocus={() => {
-                          if (!naoVincularCliente && clienteNome.trim().length > 0) {
+                          if (clienteNome.trim().length > 0) {
                             setClienteSugestoesOpen(true);
                           }
                         }}
                         onChange={(e) => {
                           setClienteNome(e.target.value);
                           if (clienteId) setClienteId(null);
-                          if (!naoVincularCliente) setClienteSugestoesOpen(true);
+                          setClienteSugestoesOpen(true);
                         }}
                         onKeyDown={(e) => {
                           if (e.key !== "Enter") return;
                           e.preventDefault();
                           const advance = () =>
                             document.getElementById("top-arquiteto")?.focus();
-                          if (naoVincularCliente) {
-                            advance();
-                            return;
-                          }
                           const q = clienteNome.trim().toLowerCase();
-                          if (clienteId) {
+                          if (clienteId || q.length === 0) {
                             advance();
                             return;
                           }
-                          const matches = clientes.filter((c) =>
-                            c.name.toLowerCase().includes(q),
+                          // Se houver correspondência exata, vincula; senão, mantém texto livre
+                          const exact = clientes.find(
+                            (c) => c.name.toLowerCase() === q,
                           );
-                          if (matches.length > 0) {
-                            const c = matches[0];
-                            setClienteId(c.id);
-                            setClienteNome(c.name);
+                          if (exact) {
+                            setClienteId(exact.id);
+                            setClienteNome(exact.name);
                             setClienteSugestoesOpen(false);
-                          } else if (q.length === 0) {
-                            advance();
                           }
+                          advance();
                         }}
                       />
                     </div>
@@ -2417,36 +2411,7 @@ function NovoOrcamento() {
                   </PopoverContent>
                 </Popover>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <Checkbox
-                    id="top-nao-vincular-cliente"
-                    checked={naoVincularCliente}
-                    onCheckedChange={(v) => {
-                      const checked = v === true;
-                      setNaoVincularCliente(checked);
-                      if (checked) {
-                        setClienteId(null);
-                        setClienteSugestoesOpen(false);
-                        if (clienteNome.trim().length === 0) {
-                          setClienteNome("Consumidor");
-                        }
-                      } else {
-                        if (clienteNome.trim().toLowerCase() === "consumidor") {
-                          setClienteNome("");
-                        }
-                      }
-                    }}
-                  />
-                  <Label
-                    htmlFor="top-nao-vincular-cliente"
-                    className="text-xs font-normal text-muted-foreground cursor-pointer"
-                  >
-                    Não vincular a cliente cadastrado
-                  </Label>
-                </div>
-
-
-                {clienteId && !naoVincularCliente && (
+                {clienteId && (
                   <p className="text-xs text-muted-foreground">
                     Cliente cadastrado vinculado a este orçamento.
                   </p>
