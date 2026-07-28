@@ -2638,7 +2638,8 @@ function NovoOrcamento() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          document.getElementById("largura")?.focus();
+                          (e.target as HTMLInputElement).blur();
+                          setActive("paspatur");
                         }
                       }}
                     />
@@ -2654,8 +2655,7 @@ function NovoOrcamento() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          (e.target as HTMLInputElement).blur();
-                          setActive("paspatur");
+                          document.getElementById("altura")?.focus();
                         }
                       }}
                     />
