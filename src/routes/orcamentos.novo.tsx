@@ -2572,7 +2572,8 @@ function NovoOrcamento() {
                     Selecione um arquiteto para aplicar o RT automaticamente.
                   </p>
                 )}
-
+                  </div>
+                )}
               </div>
             </div>
           </Card>
