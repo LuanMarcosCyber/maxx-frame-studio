@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Search, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
+import { Bell, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
