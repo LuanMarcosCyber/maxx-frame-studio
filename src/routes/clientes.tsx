@@ -62,6 +62,7 @@ type ClientRow = {
   address_number: string | null;
   city: string | null;
   state: string | null;
+  state_registration: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -79,6 +80,7 @@ type FormState = {
   address_number: string;
   city: string;
   state: string;
+  state_registration: string;
   notes: string;
 };
 
@@ -94,6 +96,7 @@ const emptyForm: FormState = {
   address_number: "",
   city: "",
   state: "",
+  state_registration: "",
   notes: "",
 };
 
