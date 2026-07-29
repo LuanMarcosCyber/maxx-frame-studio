@@ -36,6 +36,7 @@ import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "l
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fmtCPF, fmtCNPJ } from "@/lib/utils";
+import { clientDedupeKey } from "@/lib/client-dedupe";
 import { toast } from "sonner";
 import { ClientImportWizard } from "@/components/clientes/ClientImportWizard";
 
