@@ -635,6 +635,14 @@ function Clientes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ClientImportWizard
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }}
+      />
     </AppShell>
   );
 }
