@@ -383,23 +383,36 @@ function Clientes() {
   return (
     <AppShell title="Clientes" subtitle="Cadastro e gestão de clientes">
       <Card className="p-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-2">
           <div className="relative w-full sm:max-w-sm">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome, telefone ou CPF/CNPJ..."
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           {canCreateClients && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={() => setImportOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-1.5" /> Importar Clientes
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  setDeleteAllText("");
+                  setDeleteAllOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" /> Excluir Todos
               </Button>
               <Button
                 onClick={openCreate}
@@ -410,6 +423,13 @@ function Clientes() {
             </div>
           )}
         </div>
+
+        <p className="text-sm text-muted-foreground mb-5">
+          {totalCount.toLocaleString("pt-BR")}{" "}
+          {term ? "cliente(s) encontrado(s)" : "clientes cadastrados"}
+        </p>
+
+
 
 
         <div className="overflow-x-auto -mx-6">
