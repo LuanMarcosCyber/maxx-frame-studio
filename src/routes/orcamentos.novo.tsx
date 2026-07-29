@@ -1013,6 +1013,7 @@ function NovoOrcamento() {
   const [arquitetoId, setArquitetoId] = useState<string | null>(null);
   const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
   const [arquitetoSugestoesOpen, setArquitetoSugestoesOpen] = useState(false);
+  const [origemCompra, setOrigemCompra] = useState<string>("Presencial");
 
   // Força CAPS LOCK nos campos Colaborador / Cliente / Arquiteto,
   // mas SOMENTE quando não há composição do IME em andamento (Android/iOS).
