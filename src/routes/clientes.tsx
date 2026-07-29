@@ -32,11 +32,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fmtCPF, fmtCNPJ } from "@/lib/utils";
 import { toast } from "sonner";
+import { ClientImportWizard } from "@/components/clientes/ClientImportWizard";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Total Maxx ERP" }] }),
