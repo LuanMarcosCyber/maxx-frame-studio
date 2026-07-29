@@ -55,6 +55,7 @@ type FieldKey =
   | "neighborhood"
   | "city"
   | "state"
+  | "state_registration"
   | "notes";
 
 type FieldDef = { key: FieldKey; label: string; required?: boolean };
