@@ -107,6 +107,7 @@ function Clientes() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -114,33 +115,68 @@ function Clientes() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllText, setDeleteAllText] = useState("");
+  const [deletingAll, setDeletingAll] = useState(false);
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["clients"],
+  const PAGE_SIZE = 100;
+  const term = search.trim();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["clients", "list", term, page],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("clients")
         .select(
           "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, notes, created_at",
-        )
-        .order("name", { ascending: true });
+          { count: "exact" },
+        );
+      if (term) {
+        const esc = term.replace(/[%,()]/g, " ");
+        q = q.or(
+          [
+            `name.ilike.%${esc}%`,
+            `document.ilike.%${esc}%`,
+            `commercial_phone.ilike.%${esc}%`,
+            `mobile_phone.ilike.%${esc}%`,
+            `email.ilike.%${esc}%`,
+          ].join(","),
+        );
+      }
+      const from = (page - 1) * PAGE_SIZE;
+      const { data, error, count } = await q
+        .order("name", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
       if (error) throw error;
-      return (data ?? []) as ClientRow[];
+      return { rows: (data ?? []) as ClientRow[], count: count ?? 0 };
     },
   });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.commercial_phone ?? c.phone ?? "").toLowerCase().includes(q) ||
-        (c.mobile_phone ?? c.whatsapp ?? "").toLowerCase().includes(q) ||
-        (c.document ?? "").toLowerCase().includes(q),
-    );
-  }, [rows, search]);
+  const rows = data?.rows ?? [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const filtered = rows;
+
+  const pageNumbers = useMemo(() => {
+    const out: (number | "…")[] = [];
+    const add = (n: number) => !out.includes(n) && out.push(n);
+    add(1);
+    for (let n = page - 1; n <= page + 1; n++) if (n > 1 && n < totalPages) add(n);
+    if (totalPages > 1) add(totalPages);
+    const sorted = (out as number[]).sort((a, b) => a - b);
+    const res: (number | "…")[] = [];
+    sorted.forEach((n, i) => {
+      if (i > 0 && n - (sorted[i - 1] as number) > 1) res.push("…");
+      res.push(n);
+    });
+    return res;
+  }, [page, totalPages]);
+
+  async function refresh() {
+    await queryClient.invalidateQueries({ queryKey: ["clients"] });
+  }
+
 
   function openCreate() {
     setForm(emptyForm);
