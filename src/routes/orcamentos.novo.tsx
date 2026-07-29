@@ -1659,6 +1659,13 @@ function NovoOrcamento() {
       setArquitetoPerc(
         typeof d.arquitetoPercentual === "number" ? (d.arquitetoPercentual as number) : 0,
       );
+      setOrigemCompra(
+        typeof d.origemCompra === "string" && (d.origemCompra as string).trim()
+          ? (d.origemCompra as string)
+          : typeof d.arquitetoId === "string" && d.arquitetoId
+            ? "Arquiteto"
+            : "Presencial",
+      );
 
 
       // Load items
