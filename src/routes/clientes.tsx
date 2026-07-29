@@ -509,7 +509,81 @@ function Clientes() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            {pageNumbers.map((n, i) =>
+              n === "…" ? (
+                <span key={`e${i}`} className="px-2 text-muted-foreground">
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={n}
+                  size="sm"
+                  variant={n === page ? "default" : "outline"}
+                  onClick={() => setPage(n as number)}
+                >
+                  {n}
+                </Button>
+              ),
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Próximo
+            </Button>
+          </div>
+        )}
       </Card>
+
+      <Dialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir todos os clientes?</DialogTitle>
+            <DialogDescription>
+              Esta ação removerá permanentemente todos os clientes cadastrados
+              nesta empresa. Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="del-all">
+              Para confirmar, digite <b>EXCLUIR</b>
+            </Label>
+            <Input
+              id="del-all"
+              value={deleteAllText}
+              onChange={(e) => setDeleteAllText(e.target.value)}
+              placeholder="EXCLUIR"
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAllOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteAllText !== "EXCLUIR" || deletingAll}
+              onClick={handleDeleteAll}
+            >
+              {deletingAll ? "Excluindo..." : "Excluir todos"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
