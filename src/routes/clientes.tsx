@@ -294,6 +294,24 @@ function Clientes() {
         state: form.state.trim() || null,
         notes: form.notes.trim() || null,
       };
+
+      // Duplicado somente quando TODOS os campos principais forem idênticos
+      const key = clientDedupeKey(payload);
+      let existsQuery = supabase
+        .from("clients")
+        .select(
+          "id, name, document, phone, whatsapp, commercial_phone, mobile_phone, email, address, address_number, cep, city, state",
+        )
+        .eq("name", payload.name)
+        .limit(200);
+      if (form.id) existsQuery = existsQuery.neq("id", form.id);
+      const { data: candidates } = await existsQuery;
+      if ((candidates ?? []).some((c: any) => clientDedupeKey(c) === key)) {
+        toast.error("Já existe um cliente idêntico cadastrado.");
+        setSaving(false);
+        return;
+      }
+
       if (form.id) {
         const { error } = await supabase
           .from("clients")
@@ -309,7 +327,7 @@ function Clientes() {
         if (error) throw error;
         toast.success("Cliente criado.");
       }
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
       setDialogOpen(false);
       setForm(emptyForm);
@@ -328,11 +346,36 @@ function Clientes() {
       toast.error("Não foi possível excluir o cliente.");
     } else {
       toast.success("Cliente excluído.");
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
     }
     setDeleting(null);
   }
+
+  async function handleDeleteAll() {
+    const owner = ownerUserId ?? session?.user?.id;
+    if (!owner) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    setDeletingAll(true);
+    try {
+      const { error } = await supabase.from("clients").delete().eq("user_id", owner);
+      if (error) throw error;
+      setPage(1);
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
+      toast.success("Todos os clientes foram excluídos.");
+      setDeleteAllOpen(false);
+      setDeleteAllText("");
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível excluir os clientes.");
+    } finally {
+      setDeletingAll(false);
+    }
+  }
+
 
   const isPJ = form.customer_type === "pessoa_juridica";
 
