@@ -82,7 +82,6 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         .select("id, budget_id, budget_number, requested_percent, status, created_at, requested_by")
         .eq("status", "pending")
         .eq("owner_user_id", currentUserId)
-        .neq("requested_by", currentUserId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as DiscountRequest[];
