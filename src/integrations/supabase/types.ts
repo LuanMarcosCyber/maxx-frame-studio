@@ -265,6 +265,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           state: string | null
+          state_registration: string | null
           updated_at: string
           user_id: string
           whatsapp: string | null
@@ -285,6 +286,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           state?: string | null
+          state_registration?: string | null
           updated_at?: string
           user_id: string
           whatsapp?: string | null
@@ -305,6 +307,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           state?: string | null
+          state_registration?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string | null

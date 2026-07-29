@@ -27,12 +27,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Search, Plus, Eye, Pencil, Trash2, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fmtCPF, fmtCNPJ } from "@/lib/utils";
@@ -62,6 +62,7 @@ type ClientRow = {
   address_number: string | null;
   city: string | null;
   state: string | null;
+  state_registration: string | null;
   notes: string | null;
   created_at: string;
 };
@@ -79,6 +80,7 @@ type FormState = {
   address_number: string;
   city: string;
   state: string;
+  state_registration: string;
   notes: string;
 };
 
@@ -94,6 +96,7 @@ const emptyForm: FormState = {
   address_number: "",
   city: "",
   state: "",
+  state_registration: "",
   notes: "",
 };
 
@@ -113,6 +116,7 @@ function Clientes() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
+  const [viewing, setViewing] = useState<ClientRow | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -130,7 +134,7 @@ function Clientes() {
       let q = supabase
         .from("clients")
         .select(
-          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, notes, created_at",
+          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, state_registration, notes, created_at",
           { count: "exact" },
         );
       if (term) {
@@ -199,6 +203,7 @@ function Clientes() {
       address_number: c.address_number ?? "",
       city: c.city ?? "",
       state: c.state ?? "",
+      state_registration: c.state_registration ?? "",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
@@ -293,6 +298,7 @@ function Clientes() {
         address_number: form.address_number.trim() || null,
         city: form.city.trim() || null,
         state: form.state.trim() || null,
+        state_registration: form.state_registration.trim() || null,
         notes: form.notes.trim() || null,
       };
 
@@ -432,6 +438,7 @@ function Clientes() {
 
 
 
+        <TooltipProvider delayDuration={200}>
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
             <thead>
@@ -477,31 +484,51 @@ function Clientes() {
                     <td className="py-3.5 px-3 text-muted-foreground">
                       {c.email || "—"}
                     </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label="Ações"
-                            className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition"
-                          >
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(c)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeleting(c)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <td className="py-3.5 px-6">
+                      <div className="flex items-center justify-end gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label="Visualizar"
+                              onClick={() => setViewing(c)}
+                            >
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Visualizar</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label="Editar"
+                              onClick={() => openEdit(c)}
+                            >
+                              <Pencil className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              aria-label="Excluir"
+                              onClick={() => setDeleting(c)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Excluir</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -509,6 +536,7 @@ function Clientes() {
             </tbody>
           </table>
         </div>
+        </TooltipProvider>
 
         {totalPages > 1 && (
           <div className="flex flex-wrap items-center justify-center gap-1.5 pt-5">
@@ -763,6 +791,18 @@ function Clientes() {
               />
             </div>
 
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="cli-ie">Inscrição Estadual</Label>
+              <Input
+                id="cli-ie"
+                value={form.state_registration}
+                onChange={(e) =>
+                  setForm({ ...form, state_registration: e.target.value.toUpperCase() })
+                }
+                placeholder="ISENTO / 000.000.000.000"
+              />
+            </div>
+
             <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="cli-notes">Observações</Label>
               <Textarea
@@ -809,6 +849,64 @@ function Clientes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{viewing?.name}</DialogTitle>
+            <DialogDescription>
+              {viewing ? customerTypeLabel(viewing.customer_type) : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {viewing && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              {[
+                ["CPF/CNPJ", viewing.document],
+                ["Inscrição Estadual", viewing.state_registration],
+                ["Telefone comercial", viewing.commercial_phone || viewing.phone],
+                ["Telefone celular", viewing.mobile_phone || viewing.whatsapp],
+                ["E-mail", viewing.email],
+                ["CEP", viewing.cep],
+                ["Endereço", viewing.address],
+                ["Número", viewing.address_number],
+                ["Cidade", viewing.city],
+                ["UF", viewing.state],
+              ].map(([label, value]) => (
+                <div key={label as string}>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {label}
+                  </p>
+                  <p className="font-medium break-words">{value || "—"}</p>
+                </div>
+              ))}
+              {viewing.notes && (
+                <div className="col-span-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Observações
+                  </p>
+                  <p className="whitespace-pre-wrap">{viewing.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewing(null)}>
+              Fechar
+            </Button>
+            {viewing && canCreateClients && (
+              <Button
+                onClick={() => {
+                  const c = viewing;
+                  setViewing(null);
+                  openEdit(c);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-1.5" /> Editar
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ClientImportWizard
         open={importOpen}

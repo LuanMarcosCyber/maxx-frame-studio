@@ -55,6 +55,7 @@ type FieldKey =
   | "neighborhood"
   | "city"
   | "state"
+  | "state_registration"
   | "notes";
 
 type FieldDef = { key: FieldKey; label: string; required?: boolean };
@@ -72,6 +73,7 @@ const FIELDS: FieldDef[] = [
   { key: "neighborhood", label: "Bairro" },
   { key: "city", label: "Cidade" },
   { key: "state", label: "Estado" },
+  { key: "state_registration", label: "Inscrição Estadual" },
   { key: "notes", label: "Observações" },
 ];
 
@@ -106,6 +108,10 @@ const AUTO_MAP: { key: FieldKey; keywords: string[] }[] = [
   { key: "neighborhood", keywords: ["bairro"] },
   { key: "city", keywords: ["cidade", "municipio", "município"] },
   { key: "state", keywords: ["estado", "uf"] },
+  {
+    key: "state_registration",
+    keywords: ["inscricao", "inscrição", "ie", "estadual", "insc"],
+  },
   { key: "notes", keywords: ["observ", "obs", "nota"] },
 ];
 
@@ -403,6 +409,7 @@ export function ClientImportWizard({ open, onOpenChange, onImported }: Props) {
         address_number: built.address_number || null,
         city: built.city || null,
         state: (built.state || "").toUpperCase().slice(0, 2) || null,
+        state_registration: built.state_registration || null,
         notes: built.notes || null,
       };
 
