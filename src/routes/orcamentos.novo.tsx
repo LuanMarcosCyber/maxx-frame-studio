@@ -1878,6 +1878,7 @@ function NovoOrcamento() {
         arquitetoNome: arquitetoNome.trim(),
         arquitetoId: arquitetoId,
         arquitetoPercentual: arquitetoId ? Number(arquitetoPerc.toFixed(2)) : 0,
+        origemCompra,
         operatorId: activeOperator?.id ?? null,
         operatorName: activeOperator?.full_name ?? null,
       };
