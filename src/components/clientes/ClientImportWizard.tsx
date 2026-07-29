@@ -32,6 +32,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn, fmtCPF, fmtCNPJ } from "@/lib/utils";
+import { clientDedupeKey } from "@/lib/client-dedupe";
 
 type Props = {
   open: boolean;
