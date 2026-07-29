@@ -108,6 +108,10 @@ const AUTO_MAP: { key: FieldKey; keywords: string[] }[] = [
   { key: "neighborhood", keywords: ["bairro"] },
   { key: "city", keywords: ["cidade", "municipio", "município"] },
   { key: "state", keywords: ["estado", "uf"] },
+  {
+    key: "state_registration",
+    keywords: ["inscricao", "inscrição", "ie", "estadual", "insc"],
+  },
   { key: "notes", keywords: ["observ", "obs", "nota"] },
 ];
 
