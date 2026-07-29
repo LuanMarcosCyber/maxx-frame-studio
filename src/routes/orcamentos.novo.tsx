@@ -2441,7 +2441,36 @@ function NovoOrcamento() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="top-arquiteto">Arquiteto</Label>
+                <Label htmlFor="top-origem">Origem da Compra</Label>
+                <Select
+                  value={origemCompra}
+                  onValueChange={(v) => {
+                    setOrigemCompra(v);
+                    if (v !== "Arquiteto") {
+                      setArquitetoId(null);
+                      setArquitetoNome("");
+                      setArquitetoPerc(0);
+                      setArquitetoSugestoesOpen(false);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="top-origem">
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Presencial", "Arquiteto", "Site", "Mercado Livre", "Amazon", "Shopee", "Outros"].map(
+                      (o) => (
+                        <SelectItem key={o} value={o}>
+                          {o}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+
+                {origemCompra === "Arquiteto" && (
+                  <div className="space-y-1.5 pt-1">
+                    <Label htmlFor="top-arquiteto">Arquiteto</Label>
                 <Popover
                   open={
                     arquitetoSugestoesOpen &&
