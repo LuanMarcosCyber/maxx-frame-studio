@@ -314,12 +314,20 @@ function Clientes() {
             />
           </div>
           {canCreateClients && (
-            <Button
-              onClick={openCreate}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-1.5" /> Importar Clientes
+              </Button>
+              <Button
+                onClick={openCreate}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
+              </Button>
+            </div>
           )}
         </div>
 
