@@ -1013,6 +1013,7 @@ function NovoOrcamento() {
   const [arquitetoId, setArquitetoId] = useState<string | null>(null);
   const [arquitetoPerc, setArquitetoPerc] = useState<number>(0);
   const [arquitetoSugestoesOpen, setArquitetoSugestoesOpen] = useState(false);
+  const [origemCompra, setOrigemCompra] = useState<string>("Presencial");
 
   // Força CAPS LOCK nos campos Colaborador / Cliente / Arquiteto,
   // mas SOMENTE quando não há composição do IME em andamento (Android/iOS).
@@ -1658,6 +1659,13 @@ function NovoOrcamento() {
       setArquitetoPerc(
         typeof d.arquitetoPercentual === "number" ? (d.arquitetoPercentual as number) : 0,
       );
+      setOrigemCompra(
+        typeof d.origemCompra === "string" && (d.origemCompra as string).trim()
+          ? (d.origemCompra as string)
+          : typeof d.arquitetoId === "string" && d.arquitetoId
+            ? "Arquiteto"
+            : "Presencial",
+      );
 
 
       // Load items
@@ -1870,6 +1878,7 @@ function NovoOrcamento() {
         arquitetoNome: arquitetoNome.trim(),
         arquitetoId: arquitetoId,
         arquitetoPercentual: arquitetoId ? Number(arquitetoPerc.toFixed(2)) : 0,
+        origemCompra,
         operatorId: activeOperator?.id ?? null,
         operatorName: activeOperator?.full_name ?? null,
       };
@@ -2359,7 +2368,7 @@ function NovoOrcamento() {
                           if (e.key !== "Enter") return;
                           e.preventDefault();
                           const advance = () =>
-                            document.getElementById("top-arquiteto")?.focus();
+                            document.getElementById("top-origem")?.focus();
                           const q = clienteNome.trim().toLowerCase();
                           if (clienteId || q.length === 0) {
                             advance();
@@ -2432,7 +2441,36 @@ function NovoOrcamento() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="top-arquiteto">Arquiteto</Label>
+                <Label htmlFor="top-origem">Origem da Compra</Label>
+                <Select
+                  value={origemCompra}
+                  onValueChange={(v) => {
+                    setOrigemCompra(v);
+                    if (v !== "Arquiteto") {
+                      setArquitetoId(null);
+                      setArquitetoNome("");
+                      setArquitetoPerc(0);
+                      setArquitetoSugestoesOpen(false);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="top-origem">
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Presencial", "Arquiteto", "Site", "Mercado Livre", "Amazon", "Shopee", "Outros"].map(
+                      (o) => (
+                        <SelectItem key={o} value={o}>
+                          {o}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+
+                {origemCompra === "Arquiteto" && (
+                  <div className="space-y-1.5 pt-1">
+                    <Label htmlFor="top-arquiteto">Arquiteto</Label>
                 <Popover
                   open={
                     arquitetoSugestoesOpen &&
@@ -2563,7 +2601,8 @@ function NovoOrcamento() {
                     Selecione um arquiteto para aplicar o RT automaticamente.
                   </p>
                 )}
-
+                  </div>
+                )}
               </div>
             </div>
           </Card>
