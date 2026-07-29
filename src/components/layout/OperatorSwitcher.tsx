@@ -27,6 +27,8 @@ export type OperatorSwitcherProps = {
   hideTrigger?: boolean;
   /** Called after an operator is successfully activated via PIN. */
   onSwitched?: (op: Op) => void;
+  /** Selection is mandatory: modal cannot be dismissed without choosing a user. */
+  mandatory?: boolean;
 };
 
 export function OperatorSwitcher({
@@ -34,12 +36,14 @@ export function OperatorSwitcher({
   onOpenChange,
   hideTrigger,
   onSwitched,
+  mandatory,
 }: OperatorSwitcherProps = {}) {
   const { activeOperator, setActiveOperator } = useOperator();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? !!openProp : internalOpen;
   const setOpen = (v: boolean) => {
+    if (!v && mandatory) return;
     if (!isControlled) setInternalOpen(v);
     onOpenChange?.(v);
   };
@@ -115,10 +119,26 @@ export function OperatorSwitcher({
 
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          className="max-w-md"
+          hideClose={mandatory}
+          onEscapeKeyDown={(e) => {
+            if (mandatory) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if (mandatory) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (mandatory) e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>
-              {step === "choose" ? "Selecionar usuário" : `PIN de ${selected?.full_name ?? ""}`}
+              {step === "choose"
+                ? mandatory
+                  ? "Quem está utilizando o sistema?"
+                  : "Selecionar usuário"
+                : `PIN de ${selected?.full_name ?? ""}`}
             </DialogTitle>
             <DialogDescription>
               {step === "choose"
@@ -180,7 +200,7 @@ export function OperatorSwitcher({
                 })
 
               )}
-              {activeOperator && (
+              {activeOperator && !mandatory && (
                 <div className="pt-2 border-t">
                   <Button variant="outline" className="w-full" onClick={clear}>
                     Remover usuário ativo
