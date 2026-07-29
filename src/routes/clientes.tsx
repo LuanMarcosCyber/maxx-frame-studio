@@ -438,6 +438,7 @@ function Clientes() {
 
 
 
+        <TooltipProvider delayDuration={200}>
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
             <thead>
@@ -535,6 +536,7 @@ function Clientes() {
             </tbody>
           </table>
         </div>
+        </TooltipProvider>
 
         {totalPages > 1 && (
           <div className="flex flex-wrap items-center justify-center gap-1.5 pt-5">
