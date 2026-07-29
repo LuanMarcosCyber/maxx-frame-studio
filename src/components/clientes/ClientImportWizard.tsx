@@ -372,8 +372,7 @@ export function ClientImportWizard({ open, onOpenChange, onImported }: Props) {
     const ownerId = ownerUserId ?? session.user.id;
     const errors: { line: number; reason: string }[] = [];
     const payloads: any[] = [];
-    const seenDocs = new Set<string>();
-    const seenNamePhones = new Set<string>();
+    const seenKeys = new Set<string>();
 
     rows.forEach((r, idx) => {
       const built = buildRow(r, mapping);
@@ -386,22 +385,8 @@ export function ClientImportWizard({ open, onOpenChange, onImported }: Props) {
       const customer_type = digits.length === 14 ? "pessoa_juridica" : "pessoa_fisica";
       const commercial = built.commercial_phone || null;
       const mobile = built.mobile_phone || null;
-      const nameKey =
-        normalize(built.name) + "|" + onlyDigits(commercial ?? mobile ?? "");
 
-      // in-file dedupe
-      if (digits && seenDocs.has(digits)) {
-        errors.push({ line: idx + 2, reason: "Duplicado na planilha (CPF/CNPJ)" });
-        return;
-      }
-      if (!digits && seenNamePhones.has(nameKey)) {
-        errors.push({ line: idx + 2, reason: "Duplicado na planilha (nome+telefone)" });
-        return;
-      }
-      if (digits) seenDocs.add(digits);
-      else seenNamePhones.add(nameKey);
-
-      payloads.push({
+      const payload = {
         user_id: ownerId,
         name: built.name.toUpperCase(),
         customer_type,
@@ -418,50 +403,39 @@ export function ClientImportWizard({ open, onOpenChange, onImported }: Props) {
         city: built.city || null,
         state: (built.state || "").toUpperCase().slice(0, 2) || null,
         notes: built.notes || null,
-        _line: idx + 2,
-        _dedupeDoc: digits,
-        _dedupeName: nameKey,
-      });
+      };
+
+      // duplicado apenas se TODOS os campos principais forem iguais
+      const key = clientDedupeKey(payload);
+      if (seenKeys.has(key)) {
+        errors.push({ line: idx + 2, reason: "Registro idêntico na planilha" });
+        return;
+      }
+      seenKeys.add(key);
+
+      payloads.push({ ...payload, _line: idx + 2, _key: key });
     });
 
     try {
       // Fetch existing clients for dedupe
       const { data: existing, error: exErr } = await supabase
         .from("clients")
-        .select("name, document, phone, whatsapp, commercial_phone, mobile_phone");
+        .select(
+          "name, document, phone, whatsapp, commercial_phone, mobile_phone, email, address, address_number, cep, city, state",
+        );
       if (exErr) throw exErr;
-      const existingDocs = new Set<string>();
-      const existingNamePhones = new Set<string>();
-      for (const c of existing ?? []) {
-        const d = onlyDigits((c as any).document ?? "");
-        if (d) existingDocs.add(d);
-        const phones = [
-          (c as any).commercial_phone,
-          (c as any).mobile_phone,
-          (c as any).phone,
-          (c as any).whatsapp,
-        ].filter(Boolean);
-        for (const p of phones) {
-          existingNamePhones.add(
-            normalize((c as any).name ?? "") + "|" + onlyDigits(p),
-          );
-        }
-        if (!phones.length) {
-          existingNamePhones.add(normalize((c as any).name ?? "") + "|");
-        }
-      }
+      const existingKeys = new Set<string>(
+        (existing ?? []).map((c: any) => clientDedupeKey(c)),
+      );
 
       let duplicates = 0;
       const toInsert: any[] = [];
       for (const p of payloads) {
-        const isDup = p._dedupeDoc
-          ? existingDocs.has(p._dedupeDoc)
-          : existingNamePhones.has(p._dedupeName);
-        if (isDup) {
+        if (existingKeys.has(p._key)) {
           duplicates++;
           continue;
         }
-        const { _line, _dedupeDoc, _dedupeName, ...clean } = p;
+        const { _line, _key, ...clean } = p;
         toInsert.push(clean);
       }
 
