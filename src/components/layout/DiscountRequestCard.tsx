@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Check, X as XIcon, BellRing } from "lucide-react";
+import { Check, X as XIcon, BellRing, Eye } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ export function DiscountRequestCard() {
   const { session } = useAuth();
   const { activeOperator } = useOperator();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const currentUserId = session?.user?.id ?? null;
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
@@ -201,7 +203,19 @@ export function DiscountRequestCard() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                disabled={!r.budget_id}
+                onClick={() =>
+                  r.budget_id &&
+                  navigate({ to: "/orcamentos", search: { view: r.budget_id } })
+                }
+              >
+                <Eye className="h-4 w-4 mr-1" /> Visualizar orçamento
+              </Button>
               <Button
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -222,7 +236,7 @@ export function DiscountRequestCard() {
                 aria-label="Fechar"
                 onClick={() => dismiss(r.id)}
                 className="h-8 w-8 grid place-items-center rounded-md text-emerald-900/70 hover:bg-emerald-100"
-                title="Fechar (mantém na lista de notificações)"
+                title="Fechar (a solicitação continua pendente)"
               >
                 <XIcon className="h-4 w-4" />
               </button>

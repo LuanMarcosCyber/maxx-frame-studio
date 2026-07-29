@@ -1,18 +1,8 @@
 import { useState } from "react";
-import { Bell, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
+import { Menu, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
-import { supabase } from "@/integrations/supabase/client";
-import { fmtPct } from "@/lib/utils";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { SidebarContents } from "./AppSidebar";
 import { OperatorSwitcher } from "./OperatorSwitcher";
 
@@ -31,27 +20,13 @@ interface AppHeaderProps {
   subtitle?: string;
 }
 
-type DiscountRequest = {
-  id: string;
-  budget_id: string | null;
-  budget_number: string | null;
-  requested_percent: number;
-  status: string;
-  created_at: string;
-  requested_by: string;
-};
-
 export function AppHeader({ title, subtitle }: AppHeaderProps) {
-  const { profile, role, session, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const { activeOperator, clearActiveOperator } = useOperator();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
   const [switchOpen, setSwitchOpen] = useState(false);
   const navigate = useNavigate();
-  const qc = useQueryClient();
 
-  const canSeeNotifications = role === "admin" || role === "revendedor";
-  const currentUserId = session?.user?.id ?? null;
 
   const companyLabel = profile?.store_name || profile?.full_name || "Empresa";
   const userLabel = activeOperator?.full_name || profile?.full_name || "Usuário";
@@ -69,106 +44,6 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
     navigate({ to: "/login", replace: true });
   }
 
-
-  const { data: requests = [] } = useQuery({
-    queryKey: ["discount-requests", "pending", currentUserId],
-    enabled: !!currentUserId && canSeeNotifications,
-    refetchInterval: 30000,
-    queryFn: async (): Promise<DiscountRequest[]> => {
-      if (!currentUserId) return [];
-      // Only the closest responsible (owner) sees these; requester never sees own.
-      const { data, error } = await supabase
-        .from("discount_approval_requests")
-        .select("id, budget_id, budget_number, requested_percent, status, created_at, requested_by")
-        .eq("status", "pending")
-        .eq("owner_user_id", currentUserId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as DiscountRequest[];
-    },
-  });
-
-  const requesterIds = Array.from(new Set(requests.map((r) => r.requested_by)));
-  const { data: namesMap = new Map<string, string>() } = useQuery({
-    queryKey: ["profiles", "names", "notif", requesterIds],
-    enabled: requesterIds.length > 0,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, username")
-        .in("id", requesterIds);
-      const m = new Map<string, string>();
-      (data ?? []).forEach((p) => m.set(p.id, p.full_name || p.username || "Colaborador"));
-      return m;
-    },
-  });
-
-  async function decide(req: DiscountRequest, status: "approved" | "rejected") {
-    try {
-      if (status === "approved" && req.budget_id) {
-        // Fetch budget and re-apply the requested discount to details + total.
-        const { data: b, error: bErr } = await supabase
-          .from("budgets")
-          .select("id, details, total_value")
-          .eq("id", req.budget_id)
-          .maybeSingle();
-        if (bErr) throw bErr;
-        if (b) {
-          const details = { ...(b.details as Record<string, unknown> | null ?? {}) };
-          const subtotalSemDesconto = Number(details.subtotalSemDesconto ?? b.total_value ?? 0);
-          const pct = Number(req.requested_percent);
-          const descontoValor = subtotalSemDesconto * (pct / 100);
-          const subtotalComDesconto = Math.max(0, subtotalSemDesconto - descontoValor);
-          const valorSinal = Math.min(
-            subtotalComDesconto,
-            Number(details.valorSinal ?? 0),
-          );
-          const valorAReceber = Math.max(0, subtotalComDesconto - valorSinal);
-          details.descontoPercentual = Number(pct.toFixed(2));
-          details.descontoPercStr = String(pct);
-          details.descontoValor = Number(descontoValor.toFixed(2));
-          details.subtotalComDesconto = Number(subtotalComDesconto.toFixed(2));
-          details.valorSinal = Number(valorSinal.toFixed(2));
-          details.valorAReceber = Number(valorAReceber.toFixed(2));
-          const newTotal = Number(subtotalComDesconto.toFixed(2));
-          const { error: uErr } = await supabase
-            .from("budgets")
-            .update({ details: details as never, total_value: newTotal })
-            .eq("id", req.budget_id);
-          if (uErr) throw uErr;
-          // If a linked order exists, keep totals in sync.
-          await supabase
-            .from("orders")
-            .update({ total_value: newTotal })
-            .eq("budget_id", req.budget_id);
-        }
-      }
-      const { error } = await supabase
-        .from("discount_approval_requests")
-        .update({
-          status,
-          decided_by: session?.user?.id,
-          decided_at: new Date().toISOString(),
-        })
-        .eq("id", req.id);
-      if (error) throw error;
-      toast.success(status === "approved" ? "Desconto aprovado." : "Solicitação rejeitada.");
-      qc.invalidateQueries({ queryKey: ["discount-requests"] });
-      qc.invalidateQueries({ queryKey: ["budgets"] });
-      qc.invalidateQueries({ queryKey: ["orders"] });
-    } catch (e) {
-      console.error(e);
-      toast.error("Falha ao atualizar solicitação.");
-    }
-  }
-
-  function openBudget(req: DiscountRequest) {
-    if (!req.budget_id) return;
-    setNotifOpen(false);
-    navigate({ to: "/orcamentos", search: { view: req.budget_id } });
-  }
-
-  const pendingCount = requests.length;
 
   return (
     <header className="bg-gradient-brand text-brand-foreground shadow-brand">
@@ -235,77 +110,11 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            type="button"
-            aria-label="Notificações"
-            onClick={() => canSeeNotifications && setNotifOpen(true)}
-            className="relative h-10 w-10 grid place-items-center rounded-md bg-white/10 hover:bg-white/15 transition border border-white/10"
-          >
-            <Bell className="h-4 w-4" />
-            {canSeeNotifications && pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-                {pendingCount}
-              </span>
-            )}
-          </button>
           <OperatorSwitcher open={switchOpen} onOpenChange={setSwitchOpen} hideTrigger />
         </div>
 
       </div>
 
-      <Dialog open={notifOpen} onOpenChange={setNotifOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Solicitações de desconto</DialogTitle>
-          </DialogHeader>
-          {requests.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">
-              Nenhuma solicitação pendente.
-            </p>
-          ) : (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              {requests.map((r) => (
-                <div key={r.id} className="rounded-lg border p-3 space-y-2">
-                  <div className="text-sm">
-                    <span className="font-semibold">
-                      {namesMap.get(r.requested_by) || "Colaborador"}
-                    </span>{" "}
-                    solicitou aprovação para aplicar{" "}
-                    <span className="font-semibold">
-                      {fmtPct(r.requested_percent)}
-                    </span>{" "}
-                    de desconto no orçamento{" "}
-                    <span className="font-mono">{r.budget_number || "—"}</span>.
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {new Date(r.created_at).toLocaleString("pt-BR")}
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button
-                      size="sm"
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                      onClick={() => decide(r, "approved")}
-                    >
-                      <Check className="h-3.5 w-3.5 mr-1" /> Aprovar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                      onClick={() => decide(r, "rejected")}
-                    >
-                      <X className="h-3.5 w-3.5 mr-1" /> Rejeitar
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => openBudget(r)}>
-                      <Eye className="h-3.5 w-3.5 mr-1" /> Visualizar
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </header>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,14 +15,13 @@ type Op = { id: string; full_name: string; username: string | null; has_pin: boo
 /**
  * Após o login por Empresa, garante que um Usuário Interno esteja ativo:
  * - 0 usuários ativos: bloqueia com mensagem clara.
- * - 1 usuário ativo: auto-seleciona sem exigir PIN.
- * - 2+ usuários ativos: exige "Quem está usando?" + PIN.
+ * - 1+ usuários ativos: exige sempre "Quem está utilizando o sistema?" + PIN.
+ *   Nunca há seleção automática (inclusive do Proprietário).
  */
 export function SessionUserGate({ children }: { children: ReactNode }) {
   const { session, effectiveOwnerId, signOut } = useAuth();
-  const { activeOperator, setActiveOperator } = useOperator();
+  const { activeOperator } = useOperator();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const autoSelectedRef = useRef<string | null>(null);
 
   const list = useServerFn(listActiveOperatorsV2);
   const { data: operators = [], isLoading } = useQuery<Op[]>({
@@ -31,29 +30,9 @@ export function SessionUserGate({ children }: { children: ReactNode }) {
     enabled: !!session,
   });
 
-  // Auto-select when there is exactly 1 active user.
-  useEffect(() => {
-    if (!session || activeOperator) return;
-    if (operators.length !== 1) return;
-    const only = operators[0];
-    if (autoSelectedRef.current === only.id) return;
-    autoSelectedRef.current = only.id;
-    setActiveOperator({
-      id: only.id,
-      full_name: only.full_name,
-      username: only.username,
-      permissions: {
-        can_edit_budgets: true,
-        can_create_products: true,
-        can_create_clients: true,
-        can_delete_orders: true,
-        max_discount_percent: 100,
-      },
-    });
-  }, [operators, session, activeOperator, setActiveOperator]);
-
-  const needsSelection =
-    !activeOperator && operators.length >= 2;
+  // Seleção de usuário é obrigatória — o sistema nunca assume um usuário
+  // automaticamente, mesmo quando existe apenas um cadastrado.
+  const needsSelection = !activeOperator && operators.length >= 1;
 
   useEffect(() => {
     if (needsSelection) setDialogOpen(true);
@@ -89,7 +68,12 @@ export function SessionUserGate({ children }: { children: ReactNode }) {
     return (
       <>
         {children}
-        <OperatorSwitcher open={dialogOpen} onOpenChange={setDialogOpen} hideTrigger />
+        <OperatorSwitcher
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          hideTrigger
+          mandatory
+        />
       </>
     );
   }
