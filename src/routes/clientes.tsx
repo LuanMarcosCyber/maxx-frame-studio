@@ -32,11 +32,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fmtCPF, fmtCNPJ } from "@/lib/utils";
 import { toast } from "sonner";
+import { ClientImportWizard } from "@/components/clientes/ClientImportWizard";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Total Maxx ERP" }] }),
@@ -112,6 +113,7 @@ function Clientes() {
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -312,12 +314,20 @@ function Clientes() {
             />
           </div>
           {canCreateClients && (
-            <Button
-              onClick={openCreate}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
-            >
-              <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-1.5" /> Importar Clientes
+              </Button>
+              <Button
+                onClick={openCreate}
+                className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+              >
+                <Plus className="h-4 w-4 mr-1.5" /> Novo Cliente
+              </Button>
+            </div>
           )}
         </div>
 
@@ -625,6 +635,14 @@ function Clientes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ClientImportWizard
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }}
+      />
     </AppShell>
   );
 }
