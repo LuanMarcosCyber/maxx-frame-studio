@@ -133,7 +133,7 @@ function Clientes() {
       let q = supabase
         .from("clients")
         .select(
-          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, notes, created_at",
+          "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, state_registration, notes, created_at",
           { count: "exact" },
         );
       if (term) {
@@ -202,6 +202,7 @@ function Clientes() {
       address_number: c.address_number ?? "",
       city: c.city ?? "",
       state: c.state ?? "",
+      state_registration: c.state_registration ?? "",
       notes: c.notes ?? "",
     });
     setDialogOpen(true);
@@ -296,6 +297,7 @@ function Clientes() {
         address_number: form.address_number.trim() || null,
         city: form.city.trim() || null,
         state: form.state.trim() || null,
+        state_registration: form.state_registration.trim() || null,
         notes: form.notes.trim() || null,
       };
 
