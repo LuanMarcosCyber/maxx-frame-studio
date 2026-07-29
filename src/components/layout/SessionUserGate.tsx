@@ -15,8 +15,8 @@ type Op = { id: string; full_name: string; username: string | null; has_pin: boo
 /**
  * Após o login por Empresa, garante que um Usuário Interno esteja ativo:
  * - 0 usuários ativos: bloqueia com mensagem clara.
- * - 1 usuário ativo: auto-seleciona sem exigir PIN.
- * - 2+ usuários ativos: exige "Quem está usando?" + PIN.
+ * - 1+ usuários ativos: exige sempre "Quem está utilizando o sistema?" + PIN.
+ *   Nunca há seleção automática (inclusive do Proprietário).
  */
 export function SessionUserGate({ children }: { children: ReactNode }) {
   const { session, effectiveOwnerId, signOut } = useAuth();
