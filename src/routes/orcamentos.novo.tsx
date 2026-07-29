@@ -2368,7 +2368,7 @@ function NovoOrcamento() {
                           if (e.key !== "Enter") return;
                           e.preventDefault();
                           const advance = () =>
-                            document.getElementById("top-arquiteto")?.focus();
+                            document.getElementById("top-origem")?.focus();
                           const q = clienteNome.trim().toLowerCase();
                           if (clienteId || q.length === 0) {
                             advance();
