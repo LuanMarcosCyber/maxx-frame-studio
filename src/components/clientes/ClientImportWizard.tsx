@@ -409,6 +409,7 @@ export function ClientImportWizard({ open, onOpenChange, onImported }: Props) {
         address_number: built.address_number || null,
         city: built.city || null,
         state: (built.state || "").toUpperCase().slice(0, 2) || null,
+        state_registration: built.state_registration || null,
         notes: built.notes || null,
       };
 
