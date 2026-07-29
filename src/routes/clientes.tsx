@@ -763,6 +763,18 @@ function Clientes() {
               />
             </div>
 
+            <div className="space-y-1.5 sm:col-span-3">
+              <Label htmlFor="cli-ie">Inscrição Estadual</Label>
+              <Input
+                id="cli-ie"
+                value={form.state_registration}
+                onChange={(e) =>
+                  setForm({ ...form, state_registration: e.target.value.toUpperCase() })
+                }
+                placeholder="ISENTO / 000.000.000.000"
+              />
+            </div>
+
             <div className="space-y-1.5 sm:col-span-6">
               <Label htmlFor="cli-notes">Observações</Label>
               <Textarea
