@@ -73,6 +73,7 @@ const FIELDS: FieldDef[] = [
   { key: "neighborhood", label: "Bairro" },
   { key: "city", label: "Cidade" },
   { key: "state", label: "Estado" },
+  { key: "state_registration", label: "Inscrição Estadual" },
   { key: "notes", label: "Observações" },
 ];
 
