@@ -850,6 +850,64 @@ function Clientes() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{viewing?.name}</DialogTitle>
+            <DialogDescription>
+              {viewing ? customerTypeLabel(viewing.customer_type) : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {viewing && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              {[
+                ["CPF/CNPJ", viewing.document],
+                ["Inscrição Estadual", viewing.state_registration],
+                ["Telefone comercial", viewing.commercial_phone || viewing.phone],
+                ["Telefone celular", viewing.mobile_phone || viewing.whatsapp],
+                ["E-mail", viewing.email],
+                ["CEP", viewing.cep],
+                ["Endereço", viewing.address],
+                ["Número", viewing.address_number],
+                ["Cidade", viewing.city],
+                ["UF", viewing.state],
+              ].map(([label, value]) => (
+                <div key={label as string}>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {label}
+                  </p>
+                  <p className="font-medium break-words">{value || "—"}</p>
+                </div>
+              ))}
+              {viewing.notes && (
+                <div className="col-span-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Observações
+                  </p>
+                  <p className="whitespace-pre-wrap">{viewing.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewing(null)}>
+              Fechar
+            </Button>
+            {viewing && canCreateClients && (
+              <Button
+                onClick={() => {
+                  const c = viewing;
+                  setViewing(null);
+                  openEdit(c);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-1.5" /> Editar
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ClientImportWizard
         open={importOpen}
         onOpenChange={setImportOpen}
