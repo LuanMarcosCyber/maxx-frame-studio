@@ -36,6 +36,7 @@ import { Search, Plus, MoreHorizontal, Pencil, Trash2, Loader2, Upload } from "l
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { fmtCPF, fmtCNPJ } from "@/lib/utils";
+import { clientDedupeKey } from "@/lib/client-dedupe";
 import { toast } from "sonner";
 import { ClientImportWizard } from "@/components/clientes/ClientImportWizard";
 
@@ -107,6 +108,7 @@ function Clientes() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -114,33 +116,68 @@ function Clientes() {
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+  const [deleteAllText, setDeleteAllText] = useState("");
+  const [deletingAll, setDeletingAll] = useState(false);
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["clients"],
+  const PAGE_SIZE = 100;
+  const term = search.trim();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["clients", "list", term, page],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("clients")
         .select(
           "id, name, customer_type, commercial_phone, mobile_phone, phone, whatsapp, email, document, cep, address, address_number, city, state, notes, created_at",
-        )
-        .order("name", { ascending: true });
+          { count: "exact" },
+        );
+      if (term) {
+        const esc = term.replace(/[%,()]/g, " ");
+        q = q.or(
+          [
+            `name.ilike.%${esc}%`,
+            `document.ilike.%${esc}%`,
+            `commercial_phone.ilike.%${esc}%`,
+            `mobile_phone.ilike.%${esc}%`,
+            `email.ilike.%${esc}%`,
+          ].join(","),
+        );
+      }
+      const from = (page - 1) * PAGE_SIZE;
+      const { data, error, count } = await q
+        .order("name", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
       if (error) throw error;
-      return (data ?? []) as ClientRow[];
+      return { rows: (data ?? []) as ClientRow[], count: count ?? 0 };
     },
   });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.commercial_phone ?? c.phone ?? "").toLowerCase().includes(q) ||
-        (c.mobile_phone ?? c.whatsapp ?? "").toLowerCase().includes(q) ||
-        (c.document ?? "").toLowerCase().includes(q),
-    );
-  }, [rows, search]);
+  const rows = data?.rows ?? [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const filtered = rows;
+
+  const pageNumbers = useMemo(() => {
+    const out: (number | "…")[] = [];
+    const add = (n: number) => !out.includes(n) && out.push(n);
+    add(1);
+    for (let n = page - 1; n <= page + 1; n++) if (n > 1 && n < totalPages) add(n);
+    if (totalPages > 1) add(totalPages);
+    const sorted = (out as number[]).sort((a, b) => a - b);
+    const res: (number | "…")[] = [];
+    sorted.forEach((n, i) => {
+      if (i > 0 && n - (sorted[i - 1] as number) > 1) res.push("…");
+      res.push(n);
+    });
+    return res;
+  }, [page, totalPages]);
+
+  async function refresh() {
+    await queryClient.invalidateQueries({ queryKey: ["clients"] });
+  }
+
 
   function openCreate() {
     setForm(emptyForm);
@@ -258,6 +295,24 @@ function Clientes() {
         state: form.state.trim() || null,
         notes: form.notes.trim() || null,
       };
+
+      // Duplicado somente quando TODOS os campos principais forem idênticos
+      const key = clientDedupeKey(payload);
+      let existsQuery = supabase
+        .from("clients")
+        .select(
+          "id, name, document, phone, whatsapp, commercial_phone, mobile_phone, email, address, address_number, cep, city, state",
+        )
+        .eq("name", payload.name)
+        .limit(200);
+      if (form.id) existsQuery = existsQuery.neq("id", form.id);
+      const { data: candidates } = await existsQuery;
+      if ((candidates ?? []).some((c: any) => clientDedupeKey(c) === key)) {
+        toast.error("Já existe um cliente idêntico cadastrado.");
+        setSaving(false);
+        return;
+      }
+
       if (form.id) {
         const { error } = await supabase
           .from("clients")
@@ -273,7 +328,7 @@ function Clientes() {
         if (error) throw error;
         toast.success("Cliente criado.");
       }
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
       setDialogOpen(false);
       setForm(emptyForm);
@@ -292,34 +347,72 @@ function Clientes() {
       toast.error("Não foi possível excluir o cliente.");
     } else {
       toast.success("Cliente excluído.");
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
     }
     setDeleting(null);
   }
+
+  async function handleDeleteAll() {
+    const owner = ownerUserId ?? session?.user?.id;
+    if (!owner) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    setDeletingAll(true);
+    try {
+      const { error } = await supabase.from("clients").delete().eq("user_id", owner);
+      if (error) throw error;
+      setPage(1);
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
+      toast.success("Todos os clientes foram excluídos.");
+      setDeleteAllOpen(false);
+      setDeleteAllText("");
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível excluir os clientes.");
+    } finally {
+      setDeletingAll(false);
+    }
+  }
+
 
   const isPJ = form.customer_type === "pessoa_juridica";
 
   return (
     <AppShell title="Clientes" subtitle="Cadastro e gestão de clientes">
       <Card className="p-6">
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-2">
           <div className="relative w-full sm:max-w-sm">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nome, telefone ou CPF/CNPJ..."
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           {canCreateClients && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 onClick={() => setImportOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-1.5" /> Importar Clientes
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  setDeleteAllText("");
+                  setDeleteAllOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" /> Excluir Todos
               </Button>
               <Button
                 onClick={openCreate}
@@ -330,6 +423,13 @@ function Clientes() {
             </div>
           )}
         </div>
+
+        <p className="text-sm text-muted-foreground mb-5">
+          {totalCount.toLocaleString("pt-BR")}{" "}
+          {term ? "cliente(s) encontrado(s)" : "clientes cadastrados"}
+        </p>
+
+
 
 
         <div className="overflow-x-auto -mx-6">
@@ -409,7 +509,81 @@ function Clientes() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Button>
+            {pageNumbers.map((n, i) =>
+              n === "…" ? (
+                <span key={`e${i}`} className="px-2 text-muted-foreground">
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={n}
+                  size="sm"
+                  variant={n === page ? "default" : "outline"}
+                  onClick={() => setPage(n as number)}
+                >
+                  {n}
+                </Button>
+              ),
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Próximo
+            </Button>
+          </div>
+        )}
       </Card>
+
+      <Dialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir todos os clientes?</DialogTitle>
+            <DialogDescription>
+              Esta ação removerá permanentemente todos os clientes cadastrados
+              nesta empresa. Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="del-all">
+              Para confirmar, digite <b>EXCLUIR</b>
+            </Label>
+            <Input
+              id="del-all"
+              value={deleteAllText}
+              onChange={(e) => setDeleteAllText(e.target.value)}
+              placeholder="EXCLUIR"
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteAllOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteAllText !== "EXCLUIR" || deletingAll}
+              onClick={handleDeleteAll}
+            >
+              {deletingAll ? "Excluindo..." : "Excluir todos"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
