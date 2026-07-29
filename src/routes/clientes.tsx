@@ -113,6 +113,7 @@ function Clientes() {
   const [deleting, setDeleting] = useState<ClientRow | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["clients"],
