@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { UserCircle2, KeyRound } from "lucide-react";
@@ -43,10 +43,11 @@ export function OperatorSwitcher({
   const isControlled = openProp !== undefined;
   const open = isControlled ? !!openProp : internalOpen;
   const setOpen = (v: boolean) => {
-    if (!v && mandatory) return;
+    if (!v && mandatory && !allowCloseRef.current) return;
     if (!isControlled) setInternalOpen(v);
     onOpenChange?.(v);
   };
+  const allowCloseRef = useRef(false);
   const [step, setStep] = useState<"choose" | "pin">("choose");
   const [selected, setSelected] = useState<Op | null>(null);
   const [pin, setPin] = useState("");
@@ -79,7 +80,9 @@ export function OperatorSwitcher({
       setActiveOperator(result as never);
       toast.success(`Usuário ativo: ${(result as { full_name: string }).full_name}`);
       onSwitched?.(selected);
+      allowCloseRef.current = true;
       setOpen(false);
+      allowCloseRef.current = false;
 
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "PIN incorreto.");
