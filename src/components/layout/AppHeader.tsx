@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Search, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
+import { Bell, Menu, Check, X, Eye, UserCircle2, LogOut, RefreshCw, ChevronDown } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,7 +82,6 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         .select("id, budget_id, budget_number, requested_percent, status, created_at, requested_by")
         .eq("status", "pending")
         .eq("owner_user_id", currentUserId)
-        .neq("requested_by", currentUserId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as DiscountRequest[];
@@ -202,14 +201,8 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
             )}
           </div>
 
-          <div className="hidden lg:flex items-center gap-2 bg-white/10 backdrop-blur rounded-md px-3 py-2 w-72 border border-white/10 shrink-0 ml-auto">
-            <Search className="h-4 w-4 text-brand-foreground/70" />
-            <input
-              placeholder="Buscar no sistema..."
-              className="bg-transparent text-sm placeholder:text-brand-foreground/50 focus:outline-none w-full"
-            />
-          </div>
         </div>
+
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 border-l border-white/10 pl-3 sm:pl-4">
           <DropdownMenu>

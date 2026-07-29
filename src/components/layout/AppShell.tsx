@@ -4,6 +4,7 @@ import { AppHeader } from "./AppHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { SessionUserGate } from "./SessionUserGate";
+import { DiscountRequestCard } from "./DiscountRequestCard";
 
 interface AppShellProps {
   title: string;
@@ -21,6 +22,7 @@ export function AppShell({ title, subtitle, children }: AppShellProps) {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
           <AppHeader title={title} subtitle={subtitle} />
+          <DiscountRequestCard />
           <main className="flex-1 p-4 sm:p-6 lg:p-10 bg-background">
             {blocked ? (
               <div className="max-w-md mx-auto mt-10 rounded-lg border border-border bg-card p-8 text-center shadow-sm">
