@@ -38,6 +38,7 @@ import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
 import { isDiversosOnly } from "@/lib/frame-detection";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/orcamentos/")({
   head: () => ({ meta: [{ title: "Orçamentos — Total Maxx ERP" }] }),
@@ -85,6 +86,7 @@ function Orcamentos() {
   const canEditBudgets = role !== "colaborador" || !!profile?.can_edit_budgets;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
   const nextDocumentNumberFn = useServerFn(nextDocumentNumber);
   const { requirePin } = useOperator();
   const { view: viewParam } = Route.useSearch();
@@ -199,6 +201,7 @@ function Orcamentos() {
       return;
     }
     toast.success("Orçamento excluído.");
+    logAct({ action: "budget.deleted", entity: "budget", entityId: deleting.id, description: `Excluiu o orçamento ${deleting.number ?? ""} de ${deleting.client_name ?? ""}.` });
     setDeleting(null);
     await queryClient.invalidateQueries({ queryKey: ["budgets"] });
     await queryClient.invalidateQueries({ queryKey: ["budgets", "pending"] });
@@ -309,6 +312,7 @@ function Orcamentos() {
 
 
       toast.success("Orçamento aprovado e movido para Pedidos.");
+      logAct({ action: "budget.converted", entity: "budget", entityId: approving?.id, description: `Transformou o orçamento ${approving?.number ?? ""} de ${approving?.client_name ?? ""} em pedido.` });
       setDiversosOnlyConfirm(false);
       setApproving(null);
       await queryClient.invalidateQueries({ queryKey: ["budgets"] });
