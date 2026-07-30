@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PermissionGuard } from "@/components/layout/PermissionGuard";
+import { useServerFn } from "@tanstack/react-start";
+import { listActivityLogs } from "@/lib/activity-logs.functions";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { History, Search } from "lucide-react";
@@ -60,6 +62,7 @@ const PERIODS = [
 ];
 
 function HistoricoPage() {
+  const listLogs = useServerFn(listActivityLogs);
   const [search, setSearch] = useState("");
   const [user, setUser] = useState("all");
   const [action, setAction] = useState("all");
@@ -68,12 +71,7 @@ function HistoricoPage() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["activity-logs"],
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)("list_activity_logs", {
-        _limit: 500,
-        _offset: 0,
-      });
-      if (error) throw error;
-      return (data ?? []) as LogRow[];
+      return (await listLogs()) as LogRow[];
     },
   });
 

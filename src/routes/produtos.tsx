@@ -163,7 +163,7 @@ function Produtos() {
   const deleteProductByIdFn = useServerFn(deleteProductById);
 
   const isColaborador = role === "colaborador";
-  const canEdit = role === "admin" || role === "revendedor" || (isColaborador && !!profile?.can_create_products);
+  const canEdit = role === "admin" || hasPermission("products");
   const showInternal = !isColaborador;
   const showCommission = role === "admin" || role === "revendedor";
 
