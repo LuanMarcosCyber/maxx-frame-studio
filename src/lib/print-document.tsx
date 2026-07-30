@@ -728,12 +728,18 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
         .footer { margin-top:10px; padding-top:4px; border-top:1px solid #000;
           font-size:9px; color:#000; text-align:center; }
-        .print-actions { position:fixed; top:10px; right:10px; display:flex; gap:8px; z-index:10; }
+        .print-actions { position:fixed; top:10px; right:10px; display:flex;
+          flex-direction:column; align-items:stretch; gap:8px; z-index:10; }
         .print-actions button { background:#000; color:#fff; border:none;
           border-radius:6px; padding:8px 14px; font-size:12px; cursor:pointer;
-          box-shadow:0 2px 6px rgba(0,0,0,.15); }
+          box-shadow:0 2px 6px rgba(0,0,0,.15); white-space:nowrap; }
         .print-actions button.secondary { background:#fff; color:#000;
           border:1px solid #000; }
+        .print-actions button[disabled] { opacity:.6; cursor:progress; }
+
+        /* Área de visualização com escala responsiva (não afeta o PDF/impressão) */
+        .sheet-viewport { width:100%; overflow:hidden; }
+        .sheet-scaler { transform-origin: top left; width:210mm; }
 
         /* Guia fixo de impressão à esquerda (não imprime) */
         .print-guide { position:fixed; top:12px; left:12px; width:240px;
@@ -747,8 +753,20 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .print-guide strong { font-weight:700; }
         @media (max-width: 1100px) { .print-guide { display:none; } }
 
+        @media (max-width: 820px) {
+          .sheet { margin:0; box-shadow:none; }
+          .print-actions { top:auto; bottom:0; left:0; right:0;
+            flex-direction:row; justify-content:center; flex-wrap:wrap;
+            background:rgba(255,255,255,.96); padding:8px;
+            border-top:1px solid #ddd; box-shadow:0 -2px 8px rgba(0,0,0,.08); }
+          .print-actions button { flex:1 1 auto; min-width:96px; padding:10px 12px; font-size:13px; }
+          .sheet-viewport { padding-bottom:64px; }
+        }
+
         @media print {
           html, body { background:#fff; }
+          .sheet-viewport { overflow:visible; height:auto !important; padding-bottom:0; }
+          .sheet-scaler { transform:none !important; width:auto; }
           .sheet { box-shadow:none; margin:0; width:auto; min-height:auto; padding:0; }
           .print-actions, .print-guide { display:none; }
         }
@@ -772,15 +790,28 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       </aside>
 
       <div className="print-actions">
-        <button type="button" className="secondary" onClick={() => window.close()}>
-          Fechar
-        </button>
-        <button type="button" onClick={() => window.print()}>
+        {!isMobile && (
+          <button type="button" className="secondary" onClick={() => window.close()}>
+            Fechar
+          </button>
+        )}
+        <button type="button" onClick={() => window.print()} disabled={!!busy}>
           Imprimir
         </button>
+        <button type="button" onClick={handleDownload} disabled={!!busy}>
+          {busy === "pdf" ? "Gerando…" : "Baixar PDF"}
+        </button>
+        {isMobile && (
+          <button type="button" className="secondary" onClick={handleShare} disabled={!!busy}>
+            {busy === "share" ? "Gerando…" : "Compartilhar"}
+          </button>
+        )}
       </div>
 
-      <div className="sheet">
+      <div className="sheet-viewport" ref={viewportRef}>
+      <div className="sheet-scaler" ref={scalerRef}>
+      <div className="sheet" ref={sheetRef}>
+
         {/* 1. Cabeçalho da loja (emissora) */}
         <div className="store-header">
           <div className="brand">
