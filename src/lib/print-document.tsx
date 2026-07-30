@@ -344,6 +344,47 @@ function ComponentsTable({
 export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; via: string }) {
   const variant: Variant = via === "producao" || via === "cliente" ? via : "loja";
   const loadStoreProfile = useServerFn(getInheritedStoreProfile);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const scalerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [busy, setBusy] = useState<null | "pdf" | "share">(null);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 820px)");
+    const onChange = () => setIsMobile(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  // Escala responsiva: mantém o documento em A4 no DOM (layout único),
+  // apenas reduzindo visualmente para caber em telas pequenas.
+  useEffect(() => {
+    const fit = () => {
+      const sheet = sheetRef.current;
+      const scaler = scalerRef.current;
+      const viewport = viewportRef.current;
+      if (!sheet || !scaler || !viewport) return;
+      const available = viewport.clientWidth;
+      const natural = sheet.offsetWidth;
+      if (!available || !natural) return;
+      const scale = Math.min(1, available / natural);
+      scaler.style.transform = scale < 1 ? `scale(${scale})` : "";
+      viewport.style.height = scale < 1 ? `${sheet.offsetHeight * scale}px` : "";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
+    if (ro && sheetRef.current) ro.observe(sheetRef.current);
+    const t = setTimeout(fit, 400);
+    return () => {
+      window.removeEventListener("resize", fit);
+      ro?.disconnect();
+      clearTimeout(t);
+    };
+  });
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["print", kind, id],
