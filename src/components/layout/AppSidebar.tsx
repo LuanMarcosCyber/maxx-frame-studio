@@ -373,55 +373,33 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
       </nav>
 
 
-      <div className="p-4 border-t border-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="w-full flex items-center gap-3 rounded-md bg-gradient-brand text-brand-foreground border border-black/10 shadow-brand p-3 text-left transition outline-none hover:brightness-110 focus-visible:ring-2 focus-visible:ring-white/40"
-              aria-label="Menu da conta"
-            >
-              <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-white/15 ring-1 ring-white/25 grid place-items-center text-sm font-semibold text-brand-foreground uppercase">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile?.full_name || "Usuário"}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  getInitials(profile?.full_name || profile?.username)
-                )}
-              </div>
-              <div className="leading-tight min-w-0 flex-1">
-                <div className="text-sm font-semibold truncate text-brand-foreground">
-                  {profile?.full_name || profile?.username || "Usuário"}
-                </div>
-                {canSwitchCompany && activeCompany ? (
-                  <div className="text-[11px] text-brand-foreground/80 truncate flex items-center gap-1">
-                    <Building2 className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{activeCompany.store_name || activeCompany.full_name || "Empresa"}</span>
-                  </div>
-                ) : profile?.username ? (
-                  <div className="text-[11px] text-brand-foreground/80 font-mono truncate">
-                    @{profile.username}
-                  </div>
-                ) : null}
-              </div>
-              <ChevronUp className="h-4 w-4 text-brand-foreground shrink-0" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-64 mb-1">
-            <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span className="text-sm">{profile?.full_name || profile?.username || "Usuário"}</span>
-              {profile?.username && (
-                <span className="text-[11px] text-muted-foreground font-normal font-mono">
-                  @{profile.username}
-                </span>
-              )}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {canSwitchCompany && companies.filter((c) => !c.is_active).length > 0 && (
-              <>
+      {(canSwitchCompany || true) && (
+        <div className="p-3 border-t border-border space-y-2">
+          {/* Identificação Empresa + Usuário — apenas no mobile (no desktop fica no topo) */}
+          <div className="md:hidden rounded-md bg-gradient-brand text-brand-foreground shadow-brand px-3 py-2.5">
+            <div className="text-sm font-semibold truncate uppercase">
+              {profile?.store_name || profile?.full_name || "Empresa"}
+            </div>
+            <div className="text-[11px] text-brand-foreground/80 truncate">
+              Usuário: {activeOperator?.full_name || profile?.full_name || "Usuário"}
+            </div>
+          </div>
+
+          {canSwitchCompany && companies.filter((c) => !c.is_active).length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-foreground/75 hover:bg-accent hover:text-foreground transition"
+                >
+                  <Building2 className="h-4 w-4" />
+                  <span className="flex-1 text-left truncate">
+                    {activeCompany?.store_name || activeCompany?.full_name || "Empresa"}
+                  </span>
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-64 mb-1">
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
                   Empresas vinculadas
                 </DropdownMenuLabel>
@@ -443,34 +421,32 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
                             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
                         </div>
-                        <span className="flex-1 truncate text-sm">
-                          Entrar na empresa {label}
-                        </span>
+                        <span className="flex-1 truncate text-sm">Entrar na empresa {label}</span>
                         {switching === c.id && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />}
                       </DropdownMenuItem>
                     );
                   })}
                 <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem onClick={() => { onNavigate?.(); navigate({ to: "/conta" }); }}>
-              <User className="h-4 w-4 mr-2" /> Minha conta
-            </DropdownMenuItem>
-            {(role === "admin" || role === "revendedor") && (
-              <DropdownMenuItem onClick={() => { onNavigate?.(); navigate({ to: "/configuracoes" }); }}>
-                <Settings className="h-4 w-4 mr-2" /> Configurações
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleSignOut}
-              className="text-destructive focus:text-destructive"
-            >
-              <LogOut className="h-4 w-4 mr-2" /> Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <LogOut className="h-4 w-4 mr-2" /> Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="md:hidden w-full flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-destructive hover:bg-accent transition"
+          >
+            <LogOut className="h-4 w-4" /> Sair
+          </button>
+        </div>
+      )}
+
 
     </div>
   );
