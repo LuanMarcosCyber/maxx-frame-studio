@@ -143,6 +143,15 @@ export function DiscountRequestCard() {
       toast.success(
         status === "approved" ? "Desconto aprovado." : "Solicitação recusada.",
       );
+      logAct({
+        action: status === "approved" ? "discount.approved" : "discount.rejected",
+        entity: "budget",
+        entityId: req.budget_id,
+        description:
+          status === "approved"
+            ? `Aprovou a solicitação de desconto do orçamento ${req.budget_number ?? req.budget_id}.`
+            : `Recusou a solicitação de desconto do orçamento ${req.budget_number ?? req.budget_id}.`,
+      });
       qc.invalidateQueries({ queryKey: ["discount-requests"] });
       qc.invalidateQueries({ queryKey: ["budgets"] });
       qc.invalidateQueries({ queryKey: ["orders"] });

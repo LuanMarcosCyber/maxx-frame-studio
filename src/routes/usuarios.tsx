@@ -151,6 +151,7 @@ function UsuariosPage() {
     mutationFn: (id: string) => del({ data: { id } }),
     onSuccess: () => {
       toast.success("Usuário excluído.");
+      logAct({ action: "user.deleted", entity: "user", description: `Excluiu o usuário ${deleting?.name ?? ""}.` });
       setDeleting(null);
       qc.invalidateQueries({ queryKey: ["operators"] });
       qc.invalidateQueries({ queryKey: ["active-operators"] });
@@ -248,6 +249,7 @@ function UsuariosPage() {
           },
         });
         toast.success("Usuário atualizado.");
+        logAct({ action: form.pin ? "user.pin_changed" : "user.updated", entity: "user", entityId: form.id, description: form.pin ? `Alterou o PIN do usuário ${form.name.trim()}.` : `Editou o usuário ${form.name.trim()}.` });
       } else {
         await create({
           data: {
@@ -259,6 +261,7 @@ function UsuariosPage() {
           },
         });
         toast.success("Usuário criado.");
+        logAct({ action: "user.created", entity: "user", description: `Cadastrou o usuário ${form.name.trim()}.` });
       }
       qc.invalidateQueries({ queryKey: ["operators"] });
       qc.invalidateQueries({ queryKey: ["active-operators"] });
