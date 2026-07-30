@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { validateOperatorPinV2 } from "@/lib/operators.functions";
 import {
   can,
-  OWNER_PERMISSIONS,
+  EMPTY_PERMISSIONS,
   type OperatorPermissions,
   type PermissionKey,
 } from "@/lib/permissions";
@@ -44,6 +44,8 @@ interface OperatorContextValue {
   setActiveOperator: (op: ActiveOperator | null) => void;
   clearActiveOperator: () => void;
   effectivePermissions: OperatorPermissions;
+  /** true quando já existe um usuário interno ativo (permissões carregadas). */
+  permissionsReady: boolean;
   effectiveOperatorName: string;
   /** Avalia uma permissão do usuário interno ativo (proprietário passa sempre). */
   hasPermission: (key: PermissionKey) => boolean;
@@ -151,15 +153,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Sem usuário interno ativo, a sessão pertence à própria empresa (login
-  // principal), que tem acesso irrestrito. O SessionUserGate obriga a seleção.
+  // As permissões pertencem SEMPRE ao usuário interno ativo — nunca à empresa.
+  // Enquanto ninguém for selecionado, nada protegido é liberado.
   const effectivePermissions: OperatorPermissions = useMemo(() => {
     if (activeOperator) return activeOperator.permissions;
-    return {
-      ...OWNER_PERMISSIONS,
-      max_discount_percent: Number(profile?.max_discount_percent ?? 100),
-    };
-  }, [activeOperator, profile]);
+    return { ...EMPTY_PERMISSIONS };
+  }, [activeOperator]);
 
   const hasPermission = useCallback(
     (key: PermissionKey) => can(effectivePermissions, key),
@@ -178,6 +177,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         setActiveOperator,
         clearActiveOperator,
         effectivePermissions,
+        permissionsReady: !!activeOperator,
         effectiveOperatorName,
         hasPermission,
         requirePin,

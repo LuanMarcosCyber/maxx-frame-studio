@@ -77,9 +77,11 @@ const sidebarBg = "#F8F9FB";
 function useSidebarData() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
-  const { effectivePermissions, hasPermission } = useOperator();
+  const { effectivePermissions, hasPermission, permissionsReady } = useOperator();
 
-  const isOwnerAccess = role === "admin" || effectivePermissions.is_owner;
+  // A empresa NUNCA define privilégios — apenas o usuário interno ativo.
+  const isOwnerAccess = effectivePermissions.is_owner;
+  const isGlobalAdmin = role === "admin" && isOwnerAccess;
 
   let mainItems: Item[];
   let cadastroItems: Item[];
@@ -94,7 +96,7 @@ function useSidebarData() {
       fornecedores,
       arquitetos,
       transportadoras,
-      ...(role === "admin" ? [revendedores] : []),
+      ...(isGlobalAdmin ? [revendedores] : []),
       operadores,
     ];
     bottomItems = [conta, configuracoes];
@@ -112,7 +114,8 @@ function useSidebarData() {
     bottomItems = [conta];
   }
 
-  const showHistorico = isOwnerAccess || hasPermission("history");
+  // Antes da seleção do usuário nenhum menu protegido é renderizado.
+  const showHistorico = permissionsReady && hasPermission("history");
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);

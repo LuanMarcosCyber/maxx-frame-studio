@@ -97,10 +97,12 @@ export const listActiveOperatorsV2 = createServerFn({ method: "GET" })
     const { ownerId, isOperational } = await resolveCaller(supabaseAdmin, context.userId);
     let q = supabaseAdmin
       .from("operators")
-      .select("id, name, nickname, pin_hash")
+      .select("id, name, nickname, pin_hash, is_owner")
       .eq("owner_user_id", ownerId)
       .eq("active", true)
-      .order("name", { ascending: true });
+      // Proprietário primeiro, depois por ordem de criação (mais antigos antes).
+      .order("is_owner", { ascending: false })
+      .order("created_at", { ascending: true });
     if (isOperational) q = q.eq("operational_account_id", context.userId);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
