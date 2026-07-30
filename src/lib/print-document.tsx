@@ -547,6 +547,46 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
   const showFinance = variant !== "producao";
   const showPreview = variant === "producao";
 
+  const pdfName = `${docLabel}-${order.number || id}-${variant}.pdf`
+    .replace(/\s+/g, "-")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const buildPdf = async () => {
+    const el = sheetRef.current;
+    if (!el) return null;
+    return await generateSheetPdfBlob(el);
+  };
+
+  const handleDownload = async () => {
+    if (busy) return;
+    setBusy("pdf");
+    try {
+      const blob = await buildPdf();
+      if (blob) downloadBlob(blob, pdfName);
+    } catch {
+      window.print();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleShare = async () => {
+    if (busy) return;
+    setBusy("share");
+    try {
+      const blob = await buildPdf();
+      if (!blob) return;
+      const ok = canShareFiles() && (await sharePdf(blob, pdfName, `${docLabel} ${order.number || ""}`.trim()));
+      if (!ok) downloadBlob(blob, pdfName);
+    } catch {
+      window.print();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   return (
     <>
       <style>{`
