@@ -328,6 +328,7 @@ function Clientes() {
           .eq("id", form.id);
         if (error) throw error;
         toast.success("Cliente atualizado.");
+        logAct({ action: "client.updated", entity: "client", entityId: form.id, description: `Editou o cliente ${payload.name}.` });
       } else {
         const { error } = await supabase.from("clients").insert({
           user_id: ownerUserId ?? session.user.id,
@@ -335,6 +336,7 @@ function Clientes() {
         });
         if (error) throw error;
         toast.success("Cliente criado.");
+        logAct({ action: "client.created", entity: "client", description: `Cadastrou o cliente ${payload.name}.` });
       }
       await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
@@ -355,6 +357,7 @@ function Clientes() {
       toast.error("Não foi possível excluir o cliente.");
     } else {
       toast.success("Cliente excluído.");
+      logAct({ action: "client.deleted", entity: "client", entityId: deleting.id, description: `Excluiu o cliente ${deleting.name}.` });
       await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
     }
@@ -375,6 +378,7 @@ function Clientes() {
       await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
       toast.success("Todos os clientes foram excluídos.");
+      logAct({ action: "client.deleted", entity: "client", description: "Excluiu todos os clientes da empresa." });
       setDeleteAllOpen(false);
       setDeleteAllText("");
     } catch (e) {

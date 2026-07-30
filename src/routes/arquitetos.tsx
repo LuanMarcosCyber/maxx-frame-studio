@@ -157,6 +157,7 @@ function Arquitetos() {
           .eq("id", form.id);
         if (error) throw error;
         toast.success("Arquiteto atualizado.");
+        logAct({ action: "architect.updated", entity: "architect", entityId: form.id, description: `Editou o arquiteto ${payload.name}.` });
       } else {
         const { error } = await supabase.from("architects").insert({
           user_id: ownerUserId ?? session.user.id,
@@ -164,6 +165,7 @@ function Arquitetos() {
         });
         if (error) throw error;
         toast.success("Arquiteto criado.");
+        logAct({ action: "architect.created", entity: "architect", description: `Cadastrou o arquiteto ${payload.name}.` });
       }
       await queryClient.invalidateQueries({ queryKey: ["architects"] });
       await queryClient.invalidateQueries({ queryKey: ["architects", "picker"] });
@@ -186,6 +188,7 @@ function Arquitetos() {
       toast.error("Não foi possível excluir o arquiteto.");
     } else {
       toast.success("Arquiteto excluído.");
+      logAct({ action: "architect.deleted", entity: "architect", entityId: deleting.id, description: `Excluiu o arquiteto ${deleting.name}.` });
       await queryClient.invalidateQueries({ queryKey: ["architects"] });
       await queryClient.invalidateQueries({ queryKey: ["architects", "picker"] });
     }
