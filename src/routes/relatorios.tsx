@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { fmtMoney, fmtDateTime, fmtPct, cn } from "@/lib/utils";
 import {
   getVendasOptions,
@@ -144,6 +145,7 @@ const STATUS_OPTIONS = [
 
 function Relatorios() {
   const { role, session } = useAuth();
+  const { effectivePermissions } = useOperator();
   // Privilégios globais são do usuário (proprietário), não da empresa.
   const isAdmin = role === "admin" && effectivePermissions.is_owner;
   const [selected, setSelected] = useState<ReportKey | null>(null);
