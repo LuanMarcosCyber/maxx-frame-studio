@@ -96,6 +96,27 @@ export function OperatorSwitcher({
     toast.success("Usuário removido.");
   }
 
+  /** Sai da empresa sem exigir PIN, voltando para a tela de login. */
+  async function leaveCompany() {
+    if (leaving) return;
+    setLeaving(true);
+    try {
+      setActiveOperator(null);
+      try {
+        await clearActiveCompanyFn();
+      } catch {
+        // best-effort
+      }
+      await qc.cancelQueries();
+      qc.clear();
+      await signOut();
+      navigate({ to: "/login", replace: true });
+    } finally {
+      setLeaving(false);
+    }
+  }
+
+
   return (
     <>
       {!hideTrigger && (
