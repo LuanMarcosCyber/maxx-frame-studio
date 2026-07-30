@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { History, Search } from "lucide-react";
@@ -33,7 +34,11 @@ export const Route = createFileRoute("/historico")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: HistoricoPage,
+  component: () => (
+    <PermissionGuard permission="history">
+      <HistoricoPage />
+    </PermissionGuard>
+  ),
 });
 
 type LogRow = {

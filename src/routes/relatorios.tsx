@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -95,7 +96,11 @@ export const Route = createFileRoute("/relatorios")({
       },
     ],
   }),
-  component: Relatorios,
+  component: () => (
+    <PermissionGuard permission="reports">
+      <Relatorios />
+    </PermissionGuard>
+  ),
 });
 
 type ReportKey =

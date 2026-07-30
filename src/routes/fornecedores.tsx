@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
@@ -60,7 +61,11 @@ export const Route = createFileRoute("/fornecedores")({
       },
     ],
   }),
-  component: Fornecedores,
+  component: () => (
+    <PermissionGuard permission="suppliers">
+      <Fornecedores />
+    </PermissionGuard>
+  ),
 });
 
 type SupplierRow = {

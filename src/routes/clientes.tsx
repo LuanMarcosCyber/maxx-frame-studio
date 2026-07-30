@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
@@ -43,7 +44,11 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Total Maxx ERP" }] }),
-  component: Clientes,
+  component: () => (
+    <PermissionGuard permission="clients">
+      <Clientes />
+    </PermissionGuard>
+  ),
 });
 
 type CustomerType = "pessoa_fisica" | "pessoa_juridica";
