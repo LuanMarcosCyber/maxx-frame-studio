@@ -22,13 +22,15 @@ import {
   LogOut,
   Building2,
   Trash2,
+  History,
 
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
-import { getInitials, fileToAvatarDataUrl } from "@/lib/avatar";
+import { fileToAvatarDataUrl } from "@/lib/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useOperator } from "@/hooks/useOperator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -64,6 +66,8 @@ const transportadoras: Item = { title: "Transportadoras", url: "/transportadoras
 const relatorios: Item = { title: "Relatórios", url: "/relatorios", icon: BarChart3 };
 const revendedores: Item = { title: "Empresas", url: "/revendedores", icon: Users };
 const operadores: Item = { title: "Usuários", url: "/usuarios", icon: UsersRound };
+
+const historico: Item = { title: "Histórico do Sistema", url: "/historico", icon: History };
 
 const conta: Item = { title: "Conta", url: "/conta", icon: User };
 const configuracoes: Item = { title: "Configurações", url: "/configuracoes", icon: Settings };
@@ -236,6 +240,7 @@ function ProfileAvatar() {
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
   const { profile, role, signOut } = useAuth();
+  const { activeOperator } = useOperator();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [switching, setSwitching] = useState<string | null>(null);
@@ -365,6 +370,8 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
             {cadastroItems.map((i) => renderLink(i, true))}
           </div>
         )}
+
+        {renderLink(historico)}
 
         <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Sistema
