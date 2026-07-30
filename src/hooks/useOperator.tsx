@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { validateOperatorPinV2 } from "@/lib/operators.functions";
 import {
   can,
-  OWNER_PERMISSIONS,
+  EMPTY_PERMISSIONS,
   type OperatorPermissions,
   type PermissionKey,
 } from "@/lib/permissions";
