@@ -156,7 +156,7 @@ function buildPageList(current: number, total: number): Array<number | "…"> {
 
 function Produtos() {
   const { session, user, role, profile, ownerUserId } = useAuth();
-  const { requirePin } = useOperator();
+  const { requirePin, hasPermission } = useOperator();
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
