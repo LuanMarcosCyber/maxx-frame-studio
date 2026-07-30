@@ -370,33 +370,38 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
         </div>
         {mainItems.map((i) => renderLink(i))}
 
-        <button
-          type="button"
-          onClick={() => setCadastroOpen((v) => !v)}
-          className={cn(
-            "mt-1 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
-            cadastroHasActive
-              ? "text-foreground"
-              : "text-foreground/75 hover:bg-accent hover:text-foreground",
-          )}
-          aria-expanded={cadastroOpen}
-        >
-          <FolderPlus className="h-4 w-4" />
-          <span className="flex-1 text-left">Cadastro</span>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform",
-              cadastroOpen && "rotate-180",
+        {cadastroItems.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setCadastroOpen((v) => !v)}
+              className={cn(
+                "mt-1 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
+                cadastroHasActive
+                  ? "text-foreground"
+                  : "text-foreground/75 hover:bg-accent hover:text-foreground",
+              )}
+              aria-expanded={cadastroOpen}
+            >
+              <FolderPlus className="h-4 w-4" />
+              <span className="flex-1 text-left">Cadastro</span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  cadastroOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {cadastroOpen && (
+              <div className="space-y-1">
+                {cadastroItems.map((i) => renderLink(i, true))}
+              </div>
             )}
-          />
-        </button>
-        {cadastroOpen && (
-          <div className="space-y-1">
-            {cadastroItems.map((i) => renderLink(i, true))}
-          </div>
+          </>
         )}
 
-        {renderLink(historico)}
+        {showHistorico && renderLink(historico)}
+
 
         <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Sistema
