@@ -44,6 +44,8 @@ interface OperatorContextValue {
   setActiveOperator: (op: ActiveOperator | null) => void;
   clearActiveOperator: () => void;
   effectivePermissions: OperatorPermissions;
+  /** true quando já existe um usuário interno ativo (permissões carregadas). */
+  permissionsReady: boolean;
   effectiveOperatorName: string;
   /** Avalia uma permissão do usuário interno ativo (proprietário passa sempre). */
   hasPermission: (key: PermissionKey) => boolean;
@@ -175,6 +177,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         setActiveOperator,
         clearActiveOperator,
         effectivePermissions,
+        permissionsReady: !!activeOperator,
         effectiveOperatorName,
         hasPermission,
         requirePin,
