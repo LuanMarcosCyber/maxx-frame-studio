@@ -50,6 +50,17 @@ export async function assertOperatorPermission(key: PermissionKey): Promise<void
   }
 }
 
+/**
+ * Valida a permissão apenas quando há um usuário interno ativo.
+ * Usado em fluxos que também aceitam contas sem operador (Admin Global).
+ */
+export async function assertOperatorPermissionIfPresent(key: PermissionKey): Promise<void> {
+  const op = await currentOperator();
+  if (op && !can(op.permissions, key)) {
+    throw new Error("Você não possui permissão para esta ação.");
+  }
+}
+
 /** Limite de desconto efetivo do usuário interno ativo. */
 export async function operatorDiscountLimit(): Promise<number> {
   const op = await currentOperator();
