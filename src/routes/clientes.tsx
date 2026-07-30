@@ -39,6 +39,7 @@ import { fmtCPF, fmtCNPJ } from "@/lib/utils";
 import { clientDedupeKey } from "@/lib/client-dedupe";
 import { toast } from "sonner";
 import { ClientImportWizard } from "@/components/clientes/ClientImportWizard";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Total Maxx ERP" }] }),
@@ -109,6 +110,7 @@ function Clientes() {
   const { session, ownerUserId, role, profile } = useAuth();
   const canCreateClients = role !== "colaborador" || !!profile?.can_create_clients;
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);

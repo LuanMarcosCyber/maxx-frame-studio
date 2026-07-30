@@ -41,6 +41,7 @@ import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { cn, naturalCompare } from "@/lib/utils";
 import { bulkDeleteProductsByCategory, deleteProductById } from "@/lib/products.functions";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
@@ -152,6 +153,7 @@ function Produtos() {
   const { session, user, role, profile, ownerUserId } = useAuth();
   const { requirePin } = useOperator();
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
   const deleteProductByIdFn = useServerFn(deleteProductById);
 

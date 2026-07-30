@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { fmtCNPJ, fmtCEP, onlyDigits } from "@/lib/utils";
 import { SUPPLIER_CATEGORIES } from "@/components/suppliers/SupplierPicker";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 
 export const Route = createFileRoute("/fornecedores")({
@@ -143,6 +144,7 @@ function fmtPhoneBR(raw: string): string {
 function Fornecedores() {
   const { session, role, ownerUserId } = useAuth();
   const qc = useQueryClient();
+  const logAct = useActivityLog();
   const isAdmin = role === "admin";
 
   const [search, setSearch] = useState("");

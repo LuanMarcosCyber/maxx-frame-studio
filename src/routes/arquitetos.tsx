@@ -34,6 +34,7 @@ import { Search, Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/arquitetos")({
   head: () => ({ meta: [{ title: "Arquitetos — Total Maxx ERP" }] }),
@@ -76,6 +77,7 @@ function parsePct(s: string): number {
 function Arquitetos() {
   const { session, ownerUserId } = useAuth();
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
 
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);

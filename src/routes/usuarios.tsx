@@ -37,6 +37,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 const OWNER_LABEL = "proprietário";
 const isOwnerRow = (nick: string | null | undefined) => {
@@ -108,6 +109,7 @@ function UsuariosPage() {
   }, [loading, role, canManage, navigate]);
 
   const qc = useQueryClient();
+  const logAct = useActivityLog();
 
   const list = useServerFn(listOperators);
   const create = useServerFn(createOperator);

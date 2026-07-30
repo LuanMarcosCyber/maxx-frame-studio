@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { fmtCNPJ, onlyDigits } from "@/lib/utils";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/transportadoras")({
   head: () => ({ meta: [{ title: "Transportadoras — Total Maxx ERP" }] }),
@@ -102,6 +103,7 @@ function fmtCEP(raw: string): string {
 function Transportadoras() {
   const { session, ownerUserId } = useAuth();
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
 
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
