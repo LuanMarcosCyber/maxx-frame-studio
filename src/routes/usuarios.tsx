@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -34,16 +35,16 @@ import {
   updateOperator,
   deleteOperator,
 } from "@/lib/operators.functions";
+import {
+  REGISTRATION_KEYS,
+  REGISTRATION_LABELS,
+  REGISTRATION_FIELD,
+  type OperatorPermissions,
+} from "@/lib/permissions";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { useActivityLog } from "@/hooks/useActivityLog";
-
-const OWNER_LABEL = "proprietário";
-const isOwnerRow = (nick: string | null | undefined) => {
-  const n = (nick ?? "").trim().toLowerCase();
-  return n === "proprietário" || n === "proprietario";
-};
 
 export const Route = createFileRoute("/usuarios")({
   head: () => ({
@@ -59,49 +60,44 @@ export const Route = createFileRoute("/usuarios")({
   component: UsuariosPage,
 });
 
-type Op = {
+type Op = OperatorPermissions & {
   id: string;
   name: string;
   nickname: string | null;
   active: boolean;
   has_pin: boolean;
-  can_edit_budgets: boolean;
-  can_create_products: boolean;
-  can_create_clients: boolean;
-  can_delete_orders: boolean;
-  max_discount_percent: number;
   created_at: string;
 };
 
-type FormState = {
+type FormState = OperatorPermissions & {
   id?: string;
   name: string;
   nickname: string;
   pin: string;
-  can_edit_budgets: boolean;
-  can_create_products: boolean;
-  can_create_clients: boolean;
-  can_delete_orders: boolean;
-  max_discount_percent: number;
 };
 
 const emptyForm: FormState = {
   name: "",
   nickname: "",
   pin: "",
-  can_edit_budgets: true,
-  can_create_products: true,
-  can_create_clients: true,
+  is_owner: false,
+  can_access_reports: false,
+  can_access_history: false,
   can_delete_orders: false,
+  can_manage_registrations: false,
+  reg_clients: false,
+  reg_products: false,
+  reg_suppliers: false,
+  reg_architects: false,
+  reg_carriers: false,
   max_discount_percent: 10,
 };
 
 function UsuariosPage() {
   const { role, loading } = useAuth();
-  const { activeOperator, requirePin } = useOperator();
+  const { effectivePermissions, requirePin } = useOperator();
   const canManage = role === "revendedor" || role === "admin";
-  const isOwner =
-    role === "admin" || isOwnerRow(activeOperator?.username ?? null);
+  const isOwner = role === "admin" || effectivePermissions.is_owner;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -119,12 +115,13 @@ function UsuariosPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [regOpen, setRegOpen] = useState(false);
   const [deleting, setDeleting] = useState<Op | null>(null);
   const [saving, setSaving] = useState(false);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["operators"],
-    queryFn: () => list() as Promise<Op[]>,
+    queryFn: () => list() as unknown as Promise<Op[]>,
   });
 
   const filtered = useMemo(() => {
@@ -172,6 +169,7 @@ function UsuariosPage() {
   async function openCreate() {
     if (!(await guardOwnerAction("criar usuário"))) return;
     setForm(emptyForm);
+    setRegOpen(false);
     setDialogOpen(true);
   }
 
@@ -182,19 +180,26 @@ function UsuariosPage() {
       name: o.name,
       nickname: o.nickname ?? "",
       pin: "",
-      can_edit_budgets: o.can_edit_budgets,
-      can_create_products: o.can_create_products,
-      can_create_clients: o.can_create_clients,
+      is_owner: o.is_owner,
+      can_access_reports: o.can_access_reports,
+      can_access_history: o.can_access_history,
       can_delete_orders: o.can_delete_orders,
+      can_manage_registrations: o.can_manage_registrations,
+      reg_clients: o.reg_clients,
+      reg_products: o.reg_products,
+      reg_suppliers: o.reg_suppliers,
+      reg_architects: o.reg_architects,
+      reg_carriers: o.reg_carriers,
       max_discount_percent: o.max_discount_percent,
     });
+    setRegOpen(o.can_manage_registrations);
     setDialogOpen(true);
   }
 
   async function requestToggle(o: Op) {
     if (!(await guardOwnerAction(o.active ? "desativar usuário" : "ativar usuário"))) return;
-    if (o.active && isOwnerRow(o.nickname)) {
-      const activeOwners = rows.filter((r) => r.active && isOwnerRow(r.nickname)).length;
+    if (o.active && o.is_owner) {
+      const activeOwners = rows.filter((r) => r.active && r.is_owner).length;
       if (activeOwners <= 1) {
         toast.error("Defina outro proprietário ativo antes de desativar este.");
         return;
@@ -205,8 +210,8 @@ function UsuariosPage() {
 
   async function requestDelete(o: Op) {
     if (!(await guardOwnerAction("excluir usuário"))) return;
-    if (isOwnerRow(o.nickname)) {
-      const otherOwners = rows.filter((r) => r.id !== o.id && r.active && isOwnerRow(r.nickname)).length;
+    if (o.is_owner) {
+      const otherOwners = rows.filter((r) => r.id !== o.id && r.active && r.is_owner).length;
       if (otherOwners === 0) {
         toast.error("Defina outro proprietário ativo antes de excluir este.");
         return;
@@ -231,11 +236,17 @@ function UsuariosPage() {
     }
     setSaving(true);
     try {
+      const manage = form.can_manage_registrations;
       const perms = {
-        can_edit_budgets: form.can_edit_budgets,
-        can_create_products: form.can_create_products,
-        can_create_clients: form.can_create_clients,
+        can_access_reports: form.can_access_reports,
+        can_access_history: form.can_access_history,
         can_delete_orders: form.can_delete_orders,
+        can_manage_registrations: manage,
+        reg_clients: manage && form.reg_clients,
+        reg_products: manage && form.reg_products,
+        reg_suppliers: manage && form.reg_suppliers,
+        reg_architects: manage && form.reg_architects,
+        reg_carriers: manage && form.reg_carriers,
         max_discount_percent: Number(form.max_discount_percent) || 0,
       };
       if (form.id) {
@@ -328,7 +339,6 @@ function UsuariosPage() {
             Apenas o proprietário da empresa pode gerenciar usuários. Você pode visualizar a lista, mas as ações estão bloqueadas.
           </div>
         )}
-        <div aria-hidden className="hidden">{OWNER_LABEL}</div>
 
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-sm">
@@ -370,33 +380,34 @@ function UsuariosPage() {
                       )}
                     </td>
                     <td className="py-3.5 px-3">
-                      <div className="flex flex-wrap gap-1">
-                        {o.can_edit_budgets && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Orçamentos
-                          </Badge>
-                        )}
-                        {o.can_create_products && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Produtos
-                          </Badge>
-                        )}
-                        {o.can_create_clients && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Clientes
-                          </Badge>
-                        )}
-                        {o.can_delete_orders && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Exclui pedidos
-                          </Badge>
-                        )}
-                        {o.max_discount_percent > 0 && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Desc. {o.max_discount_percent}%
-                          </Badge>
-                        )}
-                      </div>
+                      {o.is_owner ? (
+                        <Badge className="text-[10px] bg-gradient-brand text-brand-foreground">
+                          Proprietário — acesso total
+                        </Badge>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {o.can_access_reports && (
+                            <Badge variant="outline" className="text-[10px]">Relatórios</Badge>
+                          )}
+                          {o.can_access_history && (
+                            <Badge variant="outline" className="text-[10px]">Histórico</Badge>
+                          )}
+                          {o.can_delete_orders && (
+                            <Badge variant="outline" className="text-[10px]">Exclui pedidos</Badge>
+                          )}
+                          {o.can_manage_registrations &&
+                            REGISTRATION_KEYS.filter((k) => o[REGISTRATION_FIELD[k]]).map((k) => (
+                              <Badge key={k} variant="outline" className="text-[10px]">
+                                {REGISTRATION_LABELS[k]}
+                              </Badge>
+                            ))}
+                          {o.max_discount_percent > 0 && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              Desc. {o.max_discount_percent}%
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-3">
                       <Switch
@@ -524,60 +535,95 @@ function UsuariosPage() {
 
             <div className="border-t pt-4 space-y-3">
               <div className="text-sm font-medium">Permissões</div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <label className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span className="text-sm">Editar orçamentos</span>
-                  <Switch
-                    checked={form.can_edit_budgets}
-                    onCheckedChange={(v) =>
-                      setForm({ ...form, can_edit_budgets: v })
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span className="text-sm">Criar produtos</span>
-                  <Switch
-                    checked={form.can_create_products}
-                    onCheckedChange={(v) =>
-                      setForm({ ...form, can_create_products: v })
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span className="text-sm">Criar clientes</span>
-                  <Switch
-                    checked={form.can_create_clients}
-                    onCheckedChange={(v) =>
-                      setForm({ ...form, can_create_clients: v })
-                    }
-                  />
-                </label>
-                <label className="flex items-center justify-between border rounded-md px-3 py-2">
-                  <span className="text-sm">Excluir pedidos</span>
-                  <Switch
-                    checked={form.can_delete_orders}
-                    onCheckedChange={(v) =>
-                      setForm({ ...form, can_delete_orders: v })
-                    }
-                  />
-                </label>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="op-disc">Desconto máximo (%)</Label>
-                  <Input
-                    id="op-disc"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.5}
-                    value={form.max_discount_percent}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        max_discount_percent: Number(e.target.value),
-                      })
-                    }
-                  />
+
+              {form.is_owner ? (
+                <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  Proprietário da empresa: acesso irrestrito a todos os módulos.
                 </div>
+              ) : (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                      <span className="text-sm">Acessar Relatórios</span>
+                      <Switch
+                        checked={form.can_access_reports}
+                        onCheckedChange={(v) => setForm({ ...form, can_access_reports: v })}
+                      />
+                    </label>
+                    <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                      <span className="text-sm">Acessar Histórico do Sistema</span>
+                      <Switch
+                        checked={form.can_access_history}
+                        onCheckedChange={(v) => setForm({ ...form, can_access_history: v })}
+                      />
+                    </label>
+                    <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                      <span className="text-sm">Excluir Pedidos</span>
+                      <Switch
+                        checked={form.can_delete_orders}
+                        onCheckedChange={(v) => setForm({ ...form, can_delete_orders: v })}
+                      />
+                    </label>
+                    <label className="flex items-center justify-between border rounded-md px-3 py-2">
+                      <span className="text-sm">Permitir Cadastros</span>
+                      <Switch
+                        checked={form.can_manage_registrations}
+                        onCheckedChange={(v) => {
+                          setForm({ ...form, can_manage_registrations: v });
+                          setRegOpen(v);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {form.can_manage_registrations && regOpen && (
+                    <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2 animate-in fade-in-0 zoom-in-95">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Quais cadastros este usuário pode acessar?
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        {REGISTRATION_KEYS.map((k) => {
+                          const field = REGISTRATION_FIELD[k];
+                          return (
+                            <label
+                              key={k}
+                              className="flex items-center gap-2 rounded-md bg-background border px-3 py-2 cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={!!form[field]}
+                                onCheckedChange={(v) =>
+                                  setForm({ ...form, [field]: v === true } as FormState)
+                                }
+                              />
+                              <span className="text-sm">{REGISTRATION_LABELS[k]}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        O cadastro de Usuários é exclusivo do proprietário e não pode ser liberado.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="op-disc">Desconto máximo (%)</Label>
+                <Input
+                  id="op-disc"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={form.max_discount_percent}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      max_discount_percent: Number(e.target.value),
+                    })
+                  }
+                />
               </div>
             </div>
 
