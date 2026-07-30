@@ -151,15 +151,12 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Sem usuário interno ativo, a sessão pertence à própria empresa (login
-  // principal), que tem acesso irrestrito. O SessionUserGate obriga a seleção.
+  // As permissões pertencem SEMPRE ao usuário interno ativo — nunca à empresa.
+  // Enquanto ninguém for selecionado, nada protegido é liberado.
   const effectivePermissions: OperatorPermissions = useMemo(() => {
     if (activeOperator) return activeOperator.permissions;
-    return {
-      ...OWNER_PERMISSIONS,
-      max_discount_percent: Number(profile?.max_discount_percent ?? 100),
-    };
-  }, [activeOperator, profile]);
+    return { ...EMPTY_PERMISSIONS };
+  }, [activeOperator]);
 
   const hasPermission = useCallback(
     (key: PermissionKey) => can(effectivePermissions, key),
