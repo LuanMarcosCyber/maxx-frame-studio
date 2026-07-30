@@ -77,32 +77,57 @@ const sidebarBg = "#F8F9FB";
 function useSidebarData() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
+  const { effectivePermissions, hasPermission } = useOperator();
+
+  const isOwnerAccess = role === "admin" || effectivePermissions.is_owner;
 
   let mainItems: Item[];
   let cadastroItems: Item[];
   let bottomItems: Item[];
-  const isOperational = !!profile?.parent_user_id;
-  if (role === "admin") {
+
+  if (isOwnerAccess) {
+    // Proprietário / Administrador Global: acesso irrestrito.
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, revendedores, operadores];
+    cadastroItems = [
+      clientes,
+      produtos,
+      fornecedores,
+      arquitetos,
+      transportadoras,
+      ...(role === "admin" ? [revendedores] : []),
+      operadores,
+    ];
     bottomItems = [conta, configuracoes];
-  } else if (role === "colaborador" || isOperational) {
-    mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras];
-    bottomItems = [conta];
   } else {
-    mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, operadores];
-    bottomItems = [conta, configuracoes];
+    // Funcionário: somente o que o proprietário liberou.
+    mainItems = [dashboard, orcamentos, pedidos];
+    if (hasPermission("reports")) mainItems.push(relatorios);
+    cadastroItems = [
+      hasPermission("clients") ? clientes : null,
+      hasPermission("products") ? produtos : null,
+      hasPermission("suppliers") ? fornecedores : null,
+      hasPermission("architects") ? arquitetos : null,
+      hasPermission("carriers") ? transportadoras : null,
+    ].filter(Boolean) as Item[];
+    bottomItems = [conta];
   }
 
-
+  const showHistorico = isOwnerAccess || hasPermission("history");
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  return { mainItems, cadastroItems, bottomItems, isActive, profile, pathname };
+  return {
+    mainItems,
+    cadastroItems,
+    bottomItems,
+    showHistorico,
+    isActive,
+    profile,
+    pathname,
+  };
 }
+
 
 
 function ProfileAvatar() {
@@ -238,7 +263,8 @@ function ProfileAvatar() {
 
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
-  const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
+  const { mainItems, cadastroItems, bottomItems, showHistorico, isActive, pathname } =
+    useSidebarData();
   const { profile, role, signOut } = useAuth();
   const { activeOperator } = useOperator();
   const navigate = useNavigate();
@@ -345,33 +371,38 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
         </div>
         {mainItems.map((i) => renderLink(i))}
 
-        <button
-          type="button"
-          onClick={() => setCadastroOpen((v) => !v)}
-          className={cn(
-            "mt-1 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
-            cadastroHasActive
-              ? "text-foreground"
-              : "text-foreground/75 hover:bg-accent hover:text-foreground",
-          )}
-          aria-expanded={cadastroOpen}
-        >
-          <FolderPlus className="h-4 w-4" />
-          <span className="flex-1 text-left">Cadastro</span>
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform",
-              cadastroOpen && "rotate-180",
+        {cadastroItems.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setCadastroOpen((v) => !v)}
+              className={cn(
+                "mt-1 w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all",
+                cadastroHasActive
+                  ? "text-foreground"
+                  : "text-foreground/75 hover:bg-accent hover:text-foreground",
+              )}
+              aria-expanded={cadastroOpen}
+            >
+              <FolderPlus className="h-4 w-4" />
+              <span className="flex-1 text-left">Cadastro</span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  cadastroOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {cadastroOpen && (
+              <div className="space-y-1">
+                {cadastroItems.map((i) => renderLink(i, true))}
+              </div>
             )}
-          />
-        </button>
-        {cadastroOpen && (
-          <div className="space-y-1">
-            {cadastroItems.map((i) => renderLink(i, true))}
-          </div>
+          </>
         )}
 
-        {renderLink(historico)}
+        {showHistorico && renderLink(historico)}
+
 
         <div className="px-3 pt-6 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Sistema

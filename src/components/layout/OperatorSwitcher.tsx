@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { UserCircle2, KeyRound } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { UserCircle2, KeyRound, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOperator } from "@/hooks/useOperator";
+import { useAuth } from "@/hooks/useAuth";
+import { clearActiveCompany } from "@/lib/company-switch.functions";
 import { listActiveOperatorsV2, validateOperatorPinV2 } from "@/lib/operators.functions";
 
 type Op = { id: string; full_name: string; username: string | null; has_pin: boolean };
@@ -52,6 +55,11 @@ export function OperatorSwitcher({
   const [selected, setSelected] = useState<Op | null>(null);
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const clearActiveCompanyFn = useServerFn(clearActiveCompany);
 
   const list = useServerFn(listActiveOperatorsV2);
 
@@ -95,6 +103,27 @@ export function OperatorSwitcher({
     setActiveOperator(null);
     toast.success("Usuário removido.");
   }
+
+  /** Sai da empresa sem exigir PIN, voltando para a tela de login. */
+  async function leaveCompany() {
+    if (leaving) return;
+    setLeaving(true);
+    try {
+      setActiveOperator(null);
+      try {
+        await clearActiveCompanyFn();
+      } catch {
+        // best-effort
+      }
+      await qc.cancelQueries();
+      qc.clear();
+      await signOut();
+      navigate({ to: "/login", replace: true });
+    } finally {
+      setLeaving(false);
+    }
+  }
+
 
   return (
     <>
@@ -210,7 +239,21 @@ export function OperatorSwitcher({
                   </Button>
                 </div>
               )}
+              {/* Saída sem PIN — evita que alguém fique preso na empresa
+                  quando não souber o PIN de nenhum usuário. */}
+              <div className="pt-2 border-t">
+                <button
+                  type="button"
+                  onClick={leaveCompany}
+                  disabled={leaving}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-destructive transition disabled:opacity-50"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  {leaving ? "Saindo..." : "Sair da empresa"}
+                </button>
+              </div>
             </div>
+
           ) : (
             <form onSubmit={confirmPin} className="space-y-4">
               <div className="space-y-1.5">

@@ -83,7 +83,8 @@ function collaboratorLabel(row: BudgetRow, names: Map<string, string>) {
 function Orcamentos() {
   const { session, ownerUserId, role, profile } = useAuth();
   const showCollaborator = role !== "colaborador";
-  const canEditBudgets = role !== "colaborador" || !!profile?.can_edit_budgets;
+  // Todo usuário pode editar orçamentos (a permissão dedicada foi removida).
+  const canEditBudgets = true;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const logAct = useActivityLog();

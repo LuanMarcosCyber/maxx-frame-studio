@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
@@ -38,7 +39,11 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/arquitetos")({
   head: () => ({ meta: [{ title: "Arquitetos — Total Maxx ERP" }] }),
-  component: Arquitetos,
+  component: () => (
+    <PermissionGuard permission="architects">
+      <Arquitetos />
+    </PermissionGuard>
+  ),
 });
 
 type ArchitectRow = {

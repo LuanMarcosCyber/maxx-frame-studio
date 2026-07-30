@@ -115,11 +115,9 @@ function collaboratorLabel(
 
 function Pedidos() {
   const { session, role, profile } = useAuth();
-  const { activeOperator, requirePin } = useOperator();
+  const { activeOperator, requirePin, hasPermission } = useOperator();
   const showCollaborator = role !== "colaborador";
-  const canDelete = activeOperator
-    ? activeOperator.permissions.can_delete_orders
-    : role !== "colaborador" || !!profile?.can_delete_orders;
+  const canDelete = role === "admin" || hasPermission("delete_orders");
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
   const navigate = useNavigate();

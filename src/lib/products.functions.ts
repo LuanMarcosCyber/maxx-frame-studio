@@ -94,6 +94,9 @@ export const bulkDeleteProductsByCategory = createServerFn({ method: "POST" })
         : message;
     };
 
+    // Usuário interno ativo precisa ter o cadastro de Produtos liberado.
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermissionIfPresent("products");
+
     const { data: profile, error: profileError } = await admin
       .from("profiles")
       .select("id, active, parent_user_id, can_create_products, account_type")
@@ -374,6 +377,9 @@ export const deleteProductById = createServerFn({ method: "POST" })
         ? `Ainda existe vínculo na tabela ${relation}. Motivo: ${message}`
         : message;
     };
+
+    // Usuário interno ativo precisa ter o cadastro de Produtos liberado.
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermissionIfPresent("products");
 
     const { data: profile, error: profileError } = await admin
       .from("profiles")

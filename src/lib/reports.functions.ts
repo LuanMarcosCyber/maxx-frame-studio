@@ -160,6 +160,7 @@ async function resolveEmpresaScope(
 export const getVendasOptions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<VendasOptions> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const { supabase, userId } = context;
 
     const { data: adminRow } = await supabase.rpc("has_role", {
@@ -269,6 +270,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<VendasReport> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const { supabase } = context;
     const scope = await resolveEmpresaScope(context, data.empresaUserId);
     const { isAdmin, client, userIds } = scope;
@@ -449,6 +451,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ProdutosFornecedoresReport> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const scope = await resolveEmpresaScope(context, data.empresaUserId);
     const { client, userIds } = scope;
 
@@ -779,6 +782,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: OrcamentosFilters) => data)
   .handler(async ({ data, context }): Promise<OrcamentosReport> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const scope = await resolveEmpresaScope(context, data.empresaUserId);
     const { isAdmin, client, userIds } = scope;
 
@@ -992,6 +996,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: ClientesFilters) => data)
   .handler(async ({ data, context }): Promise<ClientesReport> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const scope = await resolveEmpresaScope(context, data.empresaUserId);
     const { client, userIds } = scope;
 
@@ -1246,6 +1251,7 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ColaboradoresReport> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const scope = await resolveEmpresaScope(context, data.empresaUserId);
     const { client, userIds } = scope;
 
@@ -1454,6 +1460,7 @@ export const getEmpresasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<EmpresasReport> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const { supabase, userId } = context;
     const { data: adminRow } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -1643,6 +1650,7 @@ export const getInsightsReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<{ insights: Insight[] }> => {
+    await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const scope = await resolveEmpresaScope(context, data.empresaUserId);
     const { client, userIds } = scope;
 

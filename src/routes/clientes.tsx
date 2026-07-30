@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useOperator } from "@/hooks/useOperator";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
@@ -43,7 +45,11 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Total Maxx ERP" }] }),
-  component: Clientes,
+  component: () => (
+    <PermissionGuard permission="clients">
+      <Clientes />
+    </PermissionGuard>
+  ),
 });
 
 type CustomerType = "pessoa_fisica" | "pessoa_juridica";
@@ -108,7 +114,8 @@ const onlyDigits = (s: string) => (s || "").replace(/\D+/g, "");
 
 function Clientes() {
   const { session, ownerUserId, role, profile } = useAuth();
-  const canCreateClients = role !== "colaborador" || !!profile?.can_create_clients;
+  const { hasPermission } = useOperator();
+  const canCreateClients = role === "admin" || hasPermission("clients");
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
 

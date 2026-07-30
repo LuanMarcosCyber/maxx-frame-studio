@@ -12,6 +12,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/useAuth";
 import { validateOperatorPinV2 } from "@/lib/operators.functions";
 import {
+  can,
+  OWNER_PERMISSIONS,
+  type OperatorPermissions,
+  type PermissionKey,
+} from "@/lib/permissions";
+import { setOperatorToken } from "@/lib/operator-token";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -22,18 +29,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export interface OperatorPermissions {
-  can_edit_budgets: boolean;
-  can_create_products: boolean;
-  can_create_clients: boolean;
-  can_delete_orders: boolean;
-  max_discount_percent: number;
-}
+export type { OperatorPermissions } from "@/lib/permissions";
 
 export interface ActiveOperator {
   id: string;
   full_name: string;
   username: string | null;
+  token?: string;
   permissions: OperatorPermissions;
 }
 
@@ -43,6 +45,8 @@ interface OperatorContextValue {
   clearActiveOperator: () => void;
   effectivePermissions: OperatorPermissions;
   effectiveOperatorName: string;
+  /** Avalia uma permissão do usuário interno ativo (proprietário passa sempre). */
+  hasPermission: (key: PermissionKey) => boolean;
   requirePin: (action: string) => Promise<boolean>;
 }
 
@@ -75,15 +79,19 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }
     try {
       const raw = sessionStorage.getItem(storageKey);
-      setActiveOperatorState(raw ? (JSON.parse(raw) as ActiveOperator) : null);
+      const parsed = raw ? (JSON.parse(raw) as ActiveOperator) : null;
+      setActiveOperatorState(parsed);
+      setOperatorToken(parsed?.token ?? null);
     } catch {
       setActiveOperatorState(null);
+      setOperatorToken(null);
     }
   }, [storageKey]);
 
   const setActiveOperator = useCallback(
     (op: ActiveOperator | null) => {
       setActiveOperatorState(op);
+      setOperatorToken(op?.token ?? null);
       lastPinAtRef.current = op ? Date.now() : 0;
       if (!storageKey || typeof window === "undefined") return;
       if (op) sessionStorage.setItem(storageKey, JSON.stringify(op));
@@ -129,7 +137,11 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     setPinLoading(true);
     setPinError(null);
     try {
-      await validatePin({ data: { operator_id: activeOperator.id, pin: pinValue } });
+      const result = (await validatePin({
+        data: { operator_id: activeOperator.id, pin: pinValue },
+      })) as unknown as ActiveOperator;
+      // Renova o token assinado a cada confirmação de PIN.
+      setActiveOperator({ ...activeOperator, ...result });
       lastPinAtRef.current = Date.now();
       setPinLoading(false);
       closePin(true);
@@ -139,16 +151,20 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Sem usuário interno ativo, a sessão pertence à própria empresa (login
+  // principal), que tem acesso irrestrito. O SessionUserGate obriga a seleção.
   const effectivePermissions: OperatorPermissions = useMemo(() => {
     if (activeOperator) return activeOperator.permissions;
     return {
-      can_edit_budgets: profile?.can_edit_budgets ?? true,
-      can_create_products: profile?.can_create_products ?? true,
-      can_create_clients: profile?.can_create_clients ?? true,
-      can_delete_orders: profile?.can_delete_orders ?? false,
+      ...OWNER_PERMISSIONS,
       max_discount_percent: Number(profile?.max_discount_percent ?? 100),
     };
   }, [activeOperator, profile]);
+
+  const hasPermission = useCallback(
+    (key: PermissionKey) => can(effectivePermissions, key),
+    [effectivePermissions],
+  );
 
   const effectiveOperatorName = useMemo(
     () => activeOperator?.full_name ?? profile?.full_name ?? profile?.username ?? "",
@@ -163,6 +179,7 @@ export function OperatorProvider({ children }: { children: ReactNode }) {
         clearActiveOperator,
         effectivePermissions,
         effectiveOperatorName,
+        hasPermission,
         requirePin,
       }}
     >
@@ -224,4 +241,9 @@ export function useOperator() {
   const ctx = useContext(OperatorContext);
   if (!ctx) throw new Error("useOperator must be used within OperatorProvider");
   return ctx;
+}
+
+/** Atalho para checar uma permissão em qualquer componente. */
+export function usePermission(key: PermissionKey): boolean {
+  return useOperator().hasPermission(key);
 }

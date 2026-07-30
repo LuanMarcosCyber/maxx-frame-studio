@@ -563,14 +563,15 @@ export type Database = {
       operators: {
         Row: {
           active: boolean
-          can_create_clients: boolean
-          can_create_products: boolean
+          can_access_history: boolean
+          can_access_reports: boolean
           can_delete_orders: boolean
-          can_edit_budgets: boolean
+          can_manage_registrations: boolean
           created_at: string
           failed_pin_attempts: number
           id: string
           is_global_admin: boolean
+          is_owner: boolean
           locked_until: string | null
           max_discount_percent: number
           name: string
@@ -578,18 +579,24 @@ export type Database = {
           operational_account_id: string | null
           owner_user_id: string
           pin_hash: string
+          reg_architects: boolean
+          reg_carriers: boolean
+          reg_clients: boolean
+          reg_products: boolean
+          reg_suppliers: boolean
           updated_at: string
         }
         Insert: {
           active?: boolean
-          can_create_clients?: boolean
-          can_create_products?: boolean
+          can_access_history?: boolean
+          can_access_reports?: boolean
           can_delete_orders?: boolean
-          can_edit_budgets?: boolean
+          can_manage_registrations?: boolean
           created_at?: string
           failed_pin_attempts?: number
           id?: string
           is_global_admin?: boolean
+          is_owner?: boolean
           locked_until?: string | null
           max_discount_percent?: number
           name: string
@@ -597,18 +604,24 @@ export type Database = {
           operational_account_id?: string | null
           owner_user_id: string
           pin_hash: string
+          reg_architects?: boolean
+          reg_carriers?: boolean
+          reg_clients?: boolean
+          reg_products?: boolean
+          reg_suppliers?: boolean
           updated_at?: string
         }
         Update: {
           active?: boolean
-          can_create_clients?: boolean
-          can_create_products?: boolean
+          can_access_history?: boolean
+          can_access_reports?: boolean
           can_delete_orders?: boolean
-          can_edit_budgets?: boolean
+          can_manage_registrations?: boolean
           created_at?: string
           failed_pin_attempts?: number
           id?: string
           is_global_admin?: boolean
+          is_owner?: boolean
           locked_until?: string | null
           max_discount_percent?: number
           name?: string
@@ -616,6 +629,11 @@ export type Database = {
           operational_account_id?: string | null
           owner_user_id?: string
           pin_hash?: string
+          reg_architects?: boolean
+          reg_carriers?: boolean
+          reg_clients?: boolean
+          reg_products?: boolean
+          reg_suppliers?: boolean
           updated_at?: string
         }
         Relationships: []

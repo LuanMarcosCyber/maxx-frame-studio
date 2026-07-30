@@ -30,6 +30,8 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
 
   const companyLabel = profile?.store_name || profile?.full_name || "Empresa";
   const userLabel = activeOperator?.full_name || profile?.full_name || "Usuário";
+  // O primeiro nome nunca some, mesmo em telas estreitas ou com nomes longos.
+  const userFirstName = userLabel.trim().split(/\s+/)[0] || userLabel;
 
   async function handleSwitchUser() {
     // Abre o modal centralizado sem limpar o usuário ativo — evita cair na
@@ -84,19 +86,24 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm max-w-[280px]"
-                title="Sessão"
+                className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 border border-white/10 transition text-xs sm:text-sm max-w-[420px]"
+                title={`${companyLabel} — Usuário: ${userLabel}`}
               >
                 <UserCircle2 className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  <span className="opacity-70">{companyLabel}</span>
-                  <span className="opacity-50"> — </span>
-                  <span className="font-medium">Usuário: {userLabel}</span>
+                <span className="hidden lg:inline opacity-70 truncate min-w-0 max-w-[160px]">
+                  {companyLabel}
+                </span>
+                <span className="hidden lg:inline opacity-50">—</span>
+                <span className="shrink-0 whitespace-nowrap">
+                  <span className="opacity-70">Usuário: </span>
+                  <span className="font-medium xl:hidden">{userFirstName}</span>
+                  <span className="font-medium hidden xl:inline">{userLabel}</span>
                 </span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-70 shrink-0" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 <div className="font-semibold text-foreground truncate">{companyLabel}</div>
                 <div className="truncate">Usuário: {userLabel}</div>

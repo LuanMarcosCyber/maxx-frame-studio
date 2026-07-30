@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { PermissionGuard } from "@/components/layout/PermissionGuard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -54,7 +55,11 @@ export const Route = createFileRoute("/produtos")({
     ],
     links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/produtos" }],
   }),
-  component: Produtos,
+  component: () => (
+    <PermissionGuard permission="products">
+      <Produtos />
+    </PermissionGuard>
+  ),
 });
 
 const CATEGORIES = [
@@ -151,14 +156,14 @@ function buildPageList(current: number, total: number): Array<number | "…"> {
 
 function Produtos() {
   const { session, user, role, profile, ownerUserId } = useAuth();
-  const { requirePin } = useOperator();
+  const { requirePin, hasPermission } = useOperator();
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
   const deleteProductByIdFn = useServerFn(deleteProductById);
 
   const isColaborador = role === "colaborador";
-  const canEdit = role === "admin" || role === "revendedor" || (isColaborador && !!profile?.can_create_products);
+  const canEdit = role === "admin" || hasPermission("products");
   const showInternal = !isColaborador;
   const showCommission = role === "admin" || role === "revendedor";
 
