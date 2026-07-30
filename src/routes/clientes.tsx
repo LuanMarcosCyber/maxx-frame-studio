@@ -39,6 +39,7 @@ import { fmtCPF, fmtCNPJ } from "@/lib/utils";
 import { clientDedupeKey } from "@/lib/client-dedupe";
 import { toast } from "sonner";
 import { ClientImportWizard } from "@/components/clientes/ClientImportWizard";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/clientes")({
   head: () => ({ meta: [{ title: "Clientes — Total Maxx ERP" }] }),
@@ -109,6 +110,7 @@ function Clientes() {
   const { session, ownerUserId, role, profile } = useAuth();
   const canCreateClients = role !== "colaborador" || !!profile?.can_create_clients;
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -326,6 +328,7 @@ function Clientes() {
           .eq("id", form.id);
         if (error) throw error;
         toast.success("Cliente atualizado.");
+        logAct({ action: "client.updated", entity: "client", entityId: form.id, description: `Editou o cliente ${payload.name}.` });
       } else {
         const { error } = await supabase.from("clients").insert({
           user_id: ownerUserId ?? session.user.id,
@@ -333,6 +336,7 @@ function Clientes() {
         });
         if (error) throw error;
         toast.success("Cliente criado.");
+        logAct({ action: "client.created", entity: "client", description: `Cadastrou o cliente ${payload.name}.` });
       }
       await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
@@ -353,6 +357,7 @@ function Clientes() {
       toast.error("Não foi possível excluir o cliente.");
     } else {
       toast.success("Cliente excluído.");
+      logAct({ action: "client.deleted", entity: "client", entityId: deleting.id, description: `Excluiu o cliente ${deleting.name}.` });
       await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
     }
@@ -373,6 +378,7 @@ function Clientes() {
       await refresh();
       await queryClient.invalidateQueries({ queryKey: ["clients", "picker"] });
       toast.success("Todos os clientes foram excluídos.");
+      logAct({ action: "client.deleted", entity: "client", description: "Excluiu todos os clientes da empresa." });
       setDeleteAllOpen(false);
       setDeleteAllText("");
     } catch (e) {

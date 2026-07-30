@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { fmtCNPJ, fmtCEP, onlyDigits } from "@/lib/utils";
 import { SUPPLIER_CATEGORIES } from "@/components/suppliers/SupplierPicker";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 
 export const Route = createFileRoute("/fornecedores")({
@@ -143,6 +144,7 @@ function fmtPhoneBR(raw: string): string {
 function Fornecedores() {
   const { session, role, ownerUserId } = useAuth();
   const qc = useQueryClient();
+  const logAct = useActivityLog();
   const isAdmin = role === "admin";
 
   const [search, setSearch] = useState("");
@@ -388,10 +390,12 @@ function Fornecedores() {
         const { error } = await supabase.from("suppliers").update(payload).eq("id", form.id);
         if (error) throw error;
         toast.success("Fornecedor atualizado.");
+        logAct({ action: "supplier.updated", entity: "supplier", entityId: form.id, description: `Editou o fornecedor ${payload.name}.` });
       } else {
         const { error } = await supabase.from("suppliers").insert(payload);
         if (error) throw error;
         toast.success("Fornecedor cadastrado.");
+        logAct({ action: "supplier.created", entity: "supplier", description: `Cadastrou o fornecedor ${payload.name}.` });
       }
       await qc.invalidateQueries({ queryKey: ["suppliers"] });
       await qc.invalidateQueries({ queryKey: ["suppliers", "picker"] });

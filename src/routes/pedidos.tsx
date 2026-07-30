@@ -54,6 +54,7 @@ import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BudgetSummaryById } from "./orcamentos.index";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Total Maxx ERP" }] }),
@@ -120,6 +121,7 @@ function Pedidos() {
     ? activeOperator.permissions.can_delete_orders
     : role !== "colaborador" || !!profile?.can_delete_orders;
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
   const navigate = useNavigate();
   const { view: viewParam } = Route.useSearch();
   const [viewing, setViewing] = useState<OrderRow | null>(null);
@@ -243,6 +245,7 @@ function Pedidos() {
       return false;
     }
     toast.success(`Status atualizado para "${newStatus}".`);
+    logAct({ action: "order.updated", entity: "order", entityId: orderId, description: `Alterou o status do pedido para "${newStatus}".` });
     await queryClient.invalidateQueries({ queryKey: ["orders"] });
     await queryClient.invalidateQueries({ queryKey: ["products"] });
     await queryClient.invalidateQueries({ queryKey: ["products", "diversos-stock"] });
@@ -279,6 +282,7 @@ function Pedidos() {
       return;
     }
     toast.success("Pedido excluído.");
+    logAct({ action: "order.deleted", entity: "order", entityId: t.id, description: `Excluiu o pedido ${t.number ?? ""} de ${t.client_name ?? ""}.` });
     setDeleteOpen(false);
     setTarget(null);
     if (viewing && viewing.id === t.id) setViewing(null);

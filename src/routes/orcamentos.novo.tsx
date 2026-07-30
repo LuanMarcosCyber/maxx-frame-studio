@@ -88,6 +88,7 @@ import { toast } from "sonner";
 import { listActiveOperatorsV2 as listActiveOperators, validateOperatorPinV2 as validateOperatorPin } from "@/lib/operators.functions";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
 import { OperatorSwitcher } from "@/components/layout/OperatorSwitcher";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 
 export const Route = createFileRoute("/orcamentos/novo")({
@@ -697,6 +698,7 @@ function NovoOrcamento() {
   const maxDiscount = activeOperator?.permissions.max_discount_percent ?? profile?.max_discount_percent ?? 100;
   const isColaborador = role === "colaborador";
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
   const { id: editId } = Route.useSearch();
   const isEdit = !!editId;
 
@@ -2029,6 +2031,16 @@ function NovoOrcamento() {
         return { budgetId, budgetNumber } as { budgetId: string; budgetNumber: string | null };
       }
 
+      logAct({
+        action: approve ? "budget.converted" : isEdit ? "budget.updated" : "budget.created",
+        entity: "budget",
+        entityId: budgetId,
+        description: approve
+          ? `Aprovou o orçamento ${budgetNumber ?? ""} de ${clienteNome.trim()} e gerou o pedido.`
+          : isEdit
+            ? `Editou o orçamento ${budgetNumber ?? ""} de ${clienteNome.trim()}.`
+            : `Criou o orçamento ${budgetNumber ?? ""} para ${clienteNome.trim()}.`,
+      });
       toast.success(
         approve
           ? "Orçamento aprovado e pedido gerado!"
@@ -2084,6 +2096,7 @@ function NovoOrcamento() {
       });
       if (error) throw error;
       toast.success("Solicitação enviada ao administrador.");
+      logAct({ action: "discount.requested", entity: "budget", entityId: result.budgetId, description: `Solicitou desconto de ${descontoPercNum.toFixed(2)}% no orçamento ${result.budgetNumber ?? ""}.` });
       setDiscountAuthOpen(false);
       navigate({ to: "/orcamentos" });
     } catch (e) {

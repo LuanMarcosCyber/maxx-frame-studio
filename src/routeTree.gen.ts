@@ -20,6 +20,7 @@ import { Route as OrcamentosRouteImport } from './routes/orcamentos'
 import { Route as OperadoresRouteImport } from './routes/operadores'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as FornecedoresRouteImport } from './routes/fornecedores'
 import { Route as ContaRouteImport } from './routes/conta'
 import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
@@ -92,6 +93,11 @@ const McpRoute = McpRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoricoRoute = HistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FornecedoresRoute = FornecedoresRouteImport.update({
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/fornecedores': typeof FornecedoresRoute
+  '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/operadores': typeof OperadoresRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/fornecedores': typeof FornecedoresRoute
+  '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/operadores': typeof OperadoresRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/configuracoes': typeof ConfiguracoesRoute
   '/conta': typeof ContaRoute
   '/fornecedores': typeof FornecedoresRoute
+  '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/operadores': typeof OperadoresRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/fornecedores'
+    | '/historico'
     | '/login'
     | '/mcp'
     | '/operadores'
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/fornecedores'
+    | '/historico'
     | '/login'
     | '/mcp'
     | '/operadores'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/conta'
     | '/fornecedores'
+    | '/historico'
     | '/login'
     | '/mcp'
     | '/operadores'
@@ -382,6 +394,7 @@ export interface RootRouteChildren {
   ConfiguracoesRoute: typeof ConfiguracoesRoute
   ContaRoute: typeof ContaRoute
   FornecedoresRoute: typeof FornecedoresRoute
+  HistoricoRoute: typeof HistoricoRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
   OperadoresRoute: typeof OperadoresRoute
@@ -479,6 +492,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historico': {
+      id: '/historico'
+      path: '/historico'
+      fullPath: '/historico'
+      preLoaderRoute: typeof HistoricoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fornecedores': {
@@ -646,6 +666,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracoesRoute: ConfiguracoesRoute,
   ContaRoute: ContaRoute,
   FornecedoresRoute: FornecedoresRoute,
+  HistoricoRoute: HistoricoRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
   OperadoresRoute: OperadoresRoute,

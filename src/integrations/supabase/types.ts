@@ -20,6 +20,7 @@ export type Database = {
           actor_user_id: string | null
           company_id: string
           created_at: string
+          description: string | null
           entity: string | null
           entity_id: string | null
           id: string
@@ -31,6 +32,7 @@ export type Database = {
           actor_user_id?: string | null
           company_id: string
           created_at?: string
+          description?: string | null
           entity?: string | null
           entity_id?: string | null
           id?: string
@@ -42,6 +44,7 @@ export type Database = {
           actor_user_id?: string | null
           company_id?: string
           created_at?: string
+          description?: string | null
           entity?: string | null
           entity_id?: string | null
           id?: string
@@ -1213,6 +1216,19 @@ export type Database = {
         Args: { _operator_id: string }
         Returns: boolean
       }
+      list_activity_logs: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          action: string
+          created_at: string
+          description: string
+          entity: string
+          entity_id: string
+          id: string
+          metadata: Json
+          user_name: string
+        }[]
+      }
       list_switchable_companies: {
         Args: never
         Returns: {
@@ -1277,6 +1293,17 @@ export type Database = {
           waste_percentage: number
           width_cm: number
         }[]
+      }
+      log_activity: {
+        Args: {
+          _action: string
+          _description: string
+          _entity?: string
+          _entity_id?: string
+          _internal_user_id?: string
+          _metadata?: Json
+        }
+        Returns: string
       }
       natural_key: { Args: { _s: string }; Returns: string }
       next_document_number: { Args: { _kind: string }; Returns: string }

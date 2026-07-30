@@ -41,6 +41,7 @@ import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { cn, naturalCompare } from "@/lib/utils";
 import { bulkDeleteProductsByCategory, deleteProductById } from "@/lib/products.functions";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
@@ -152,6 +153,7 @@ function Produtos() {
   const { session, user, role, profile, ownerUserId } = useAuth();
   const { requirePin } = useOperator();
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
   const bulkDeleteProductsByCategoryFn = useServerFn(bulkDeleteProductsByCategory);
   const deleteProductByIdFn = useServerFn(deleteProductById);
 
@@ -482,12 +484,16 @@ function Produtos() {
             .eq("id", editing.id);
           if (error) throw error;
           toast.success("Produto atualizado.");
+        logAct({ action: "product.updated", entity: "product", entityId: editing?.id, description: `Editou o produto ${form.code.trim().toUpperCase()}.` });
+          logAct({ action: "product.updated", entity: "product", entityId: editing?.id, description: `Editou o produto ${payload.code} - ${payload.description}.` });
         } else {
           const { error } = await supabase
             .from("products")
             .insert({ ...payload, user_id: user.id });
           if (error) throw error;
           toast.success("Produto cadastrado.");
+        logAct({ action: "product.created", entity: "product", description: `Cadastrou o produto ${form.code.trim().toUpperCase()}.` });
+          logAct({ action: "product.created", entity: "product", description: `Cadastrou o produto ${payload.code} - ${payload.description}.` });
         }
         setDialogOpen(false);
         setEditing(null);
@@ -623,6 +629,7 @@ function Produtos() {
     try {
       await deleteProductByIdFn({ data: { id: target.id } });
       toast.success("Produto excluído.");
+      logAct({ action: "product.deleted", entity: "product", entityId: target.id, description: `Excluiu o produto ${target.code ?? ""} - ${target.description ?? ""}.` });
       // Background refresh — do not block UI.
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
@@ -671,6 +678,7 @@ function Produtos() {
         return;
       }
       toast.success("Todos os produtos da categoria foram excluídos com sucesso.");
+      logAct({ action: "product.deleted", entity: "product", description: `Excluiu todos os produtos da categoria ${activeCategory}.` });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });

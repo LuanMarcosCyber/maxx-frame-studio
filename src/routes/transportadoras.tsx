@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { fmtCNPJ, onlyDigits } from "@/lib/utils";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/transportadoras")({
   head: () => ({ meta: [{ title: "Transportadoras — Total Maxx ERP" }] }),
@@ -102,6 +103,7 @@ function fmtCEP(raw: string): string {
 function Transportadoras() {
   const { session, ownerUserId } = useAuth();
   const queryClient = useQueryClient();
+  const logAct = useActivityLog();
 
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -260,6 +262,7 @@ function Transportadoras() {
           .eq("id", form.id);
         if (error) throw error;
         toast.success("Transportadora atualizada.");
+        logAct({ action: "carrier.updated", entity: "carrier", entityId: form.id, description: `Editou a transportadora ${payload.name}.` });
       } else {
         const { error } = await supabase.from("carriers").insert({
           user_id: ownerUserId ?? session.user.id,
@@ -267,6 +270,7 @@ function Transportadoras() {
         });
         if (error) throw error;
         toast.success("Transportadora criada.");
+        logAct({ action: "carrier.created", entity: "carrier", description: `Cadastrou a transportadora ${payload.name}.` });
       }
       await queryClient.invalidateQueries({ queryKey: ["carriers"] });
       await queryClient.invalidateQueries({ queryKey: ["carriers", "picker"] });
@@ -289,6 +293,7 @@ function Transportadoras() {
       toast.error("Não foi possível excluir a transportadora.");
     } else {
       toast.success("Transportadora excluída.");
+      logAct({ action: "carrier.deleted", entity: "carrier", entityId: deleting.id, description: `Excluiu a transportadora ${deleting.name}.` });
       await queryClient.invalidateQueries({ queryKey: ["carriers"] });
       await queryClient.invalidateQueries({ queryKey: ["carriers", "picker"] });
     }

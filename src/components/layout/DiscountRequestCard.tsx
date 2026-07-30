@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmtPct } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 type DiscountRequest = {
   id: string;
@@ -34,6 +35,7 @@ export function DiscountRequestCard() {
   const { session } = useAuth();
   const { activeOperator } = useOperator();
   const qc = useQueryClient();
+  const logAct = useActivityLog();
   const navigate = useNavigate();
   const currentUserId = session?.user?.id ?? null;
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
@@ -141,6 +143,15 @@ export function DiscountRequestCard() {
       toast.success(
         status === "approved" ? "Desconto aprovado." : "Solicitação recusada.",
       );
+      logAct({
+        action: status === "approved" ? "discount.approved" : "discount.rejected",
+        entity: "budget",
+        entityId: req.budget_id,
+        description:
+          status === "approved"
+            ? `Aprovou a solicitação de desconto do orçamento ${req.budget_number ?? req.budget_id}.`
+            : `Recusou a solicitação de desconto do orçamento ${req.budget_number ?? req.budget_id}.`,
+      });
       qc.invalidateQueries({ queryKey: ["discount-requests"] });
       qc.invalidateQueries({ queryKey: ["budgets"] });
       qc.invalidateQueries({ queryKey: ["orders"] });
