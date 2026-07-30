@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { toPermissions } from "@/lib/permissions";
 
 function hashPin(pin: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -22,6 +23,25 @@ function verifyPin(pin: string, stored: string): boolean {
 }
 
 const pinSchema = z.string().regex(/^\d{4,6}$/, "PIN deve conter 4 a 6 dígitos.");
+
+const PERM_COLUMNS =
+  "is_owner, can_access_reports, can_access_history, can_delete_orders, can_manage_registrations, reg_clients, reg_products, reg_suppliers, reg_architects, reg_carriers, max_discount_percent";
+
+const permsSchema = {
+  is_owner: z.boolean().optional(),
+  can_access_reports: z.boolean().optional(),
+  can_access_history: z.boolean().optional(),
+  can_delete_orders: z.boolean().optional(),
+  can_manage_registrations: z.boolean().optional(),
+  reg_clients: z.boolean().optional(),
+  reg_products: z.boolean().optional(),
+  reg_suppliers: z.boolean().optional(),
+  reg_architects: z.boolean().optional(),
+  reg_carriers: z.boolean().optional(),
+  max_discount_percent: z.number().min(0).max(100).optional(),
+};
+
+const PERM_FIELDS = Object.keys(permsSchema) as Array<keyof typeof permsSchema>;
 
 /**
  * Resolve the caller context: owner (loja) and whether the caller itself is an
@@ -50,26 +70,22 @@ export const listOperators = createServerFn({ method: "GET" })
     let q = supabaseAdmin
       .from("operators")
       .select(
-        "id, name, nickname, active, operational_account_id, pin_hash, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent, created_at",
+        `id, name, nickname, active, operational_account_id, pin_hash, created_at, ${PERM_COLUMNS}`,
       )
       .eq("owner_user_id", ownerId)
       .order("name", { ascending: true });
     if (isOperational) q = q.eq("operational_account_id", context.userId);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return (data ?? []).map((o: Record<string, unknown>) => ({
+    return ((data ?? []) as Record<string, unknown>[]).map((o) => ({
       id: o.id as string,
       name: o.name as string,
       nickname: (o.nickname as string | null) ?? null,
       active: !!o.active,
       operational_account_id: (o.operational_account_id as string | null) ?? null,
       has_pin: !!o.pin_hash,
-      can_edit_budgets: !!o.can_edit_budgets,
-      can_create_products: !!o.can_create_products,
-      can_create_clients: !!o.can_create_clients,
-      can_delete_orders: !!o.can_delete_orders,
-      max_discount_percent: Number(o.max_discount_percent ?? 10),
       created_at: o.created_at as string,
+      ...toPermissions(o),
     }));
   });
 
@@ -88,7 +104,7 @@ export const listActiveOperatorsV2 = createServerFn({ method: "GET" })
     if (isOperational) q = q.eq("operational_account_id", context.userId);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
-    return (data ?? []).map((o: Record<string, unknown>) => ({
+    return ((data ?? []) as Record<string, unknown>[]).map((o) => ({
       id: o.id as string,
       full_name: o.name as string,
       username: (o.nickname as string | null) ?? null,
@@ -96,16 +112,37 @@ export const listActiveOperatorsV2 = createServerFn({ method: "GET" })
     }));
   });
 
+/**
+ * Somente o proprietário da empresa (conta principal ou usuário interno
+ * marcado como proprietário) pode gerenciar usuários.
+ */
+async function assertOwnerManager(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabaseAdmin: any,
+  callerUserId: string,
+  isOperational: boolean,
+) {
+  if (isOperational) return; // contas operacionais já são limitadas ao próprio escopo
+  const { data: adminRole } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", callerUserId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (adminRole) return;
+  const { currentOperator } = await import("@/lib/operator-guard.server");
+  const op = await currentOperator();
+  if (!op || !op.permissions.is_owner) {
+    throw new Error("Apenas o proprietário da empresa pode gerenciar usuários.");
+  }
+}
+
 const createSchema = z.object({
   name: z.string().min(1).max(120),
   nickname: z.string().max(60).optional(),
   pin: pinSchema,
   operational_account_id: z.string().uuid().nullable().optional(),
-  can_edit_budgets: z.boolean().optional(),
-  can_create_products: z.boolean().optional(),
-  can_create_clients: z.boolean().optional(),
-  can_delete_orders: z.boolean().optional(),
-  max_discount_percent: z.number().min(0).max(100).optional(),
+  ...permsSchema,
 });
 
 export const createOperator = createServerFn({ method: "POST" })
@@ -114,6 +151,7 @@ export const createOperator = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { ownerId, isOperational } = await resolveCaller(supabaseAdmin, context.userId);
+    await assertOwnerManager(supabaseAdmin, context.userId, isOperational);
 
     // Operational accounts can only create operators under themselves.
     const opAcct = isOperational
@@ -133,21 +171,27 @@ export const createOperator = createServerFn({ method: "POST" })
       }
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       owner_user_id: ownerId,
       operational_account_id: opAcct,
       name: data.name,
       nickname: data.nickname ?? null,
       pin_hash: hashPin(data.pin),
-      can_edit_budgets: data.can_edit_budgets ?? true,
-      can_create_products: data.can_create_products ?? true,
-      can_create_clients: data.can_create_clients ?? true,
+      is_owner: data.is_owner ?? false,
+      can_access_reports: data.can_access_reports ?? false,
+      can_access_history: data.can_access_history ?? false,
       can_delete_orders: data.can_delete_orders ?? false,
-      max_discount_percent: data.max_discount_percent ?? 10,
+      can_manage_registrations: data.can_manage_registrations ?? false,
+      reg_clients: data.reg_clients ?? false,
+      reg_products: data.reg_products ?? false,
+      reg_suppliers: data.reg_suppliers ?? false,
+      reg_architects: data.reg_architects ?? false,
+      reg_carriers: data.reg_carriers ?? false,
+      max_discount_percent: data.max_discount_percent ?? 0,
     };
     const { data: row, error } = await supabaseAdmin
       .from("operators")
-      .insert(payload)
+      .insert(payload as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -161,11 +205,7 @@ const updateSchema = z.object({
   active: z.boolean().optional(),
   pin: pinSchema.optional(),
   operational_account_id: z.string().uuid().nullable().optional(),
-  can_edit_budgets: z.boolean().optional(),
-  can_create_products: z.boolean().optional(),
-  can_create_clients: z.boolean().optional(),
-  can_delete_orders: z.boolean().optional(),
-  max_discount_percent: z.number().min(0).max(100).optional(),
+  ...permsSchema,
 });
 
 export const updateOperator = createServerFn({ method: "POST" })
@@ -174,6 +214,7 @@ export const updateOperator = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { ownerId, isOperational } = await resolveCaller(supabaseAdmin, context.userId);
+    await assertOwnerManager(supabaseAdmin, context.userId, isOperational);
 
     const { data: existing } = await supabaseAdmin
       .from("operators")
@@ -194,11 +235,10 @@ export const updateOperator = createServerFn({ method: "POST" })
     if (data.nickname !== undefined) patch.nickname = data.nickname;
     if (data.active !== undefined) patch.active = data.active;
     if (data.pin) patch.pin_hash = hashPin(data.pin);
-    if (data.can_edit_budgets !== undefined) patch.can_edit_budgets = data.can_edit_budgets;
-    if (data.can_create_products !== undefined) patch.can_create_products = data.can_create_products;
-    if (data.can_create_clients !== undefined) patch.can_create_clients = data.can_create_clients;
-    if (data.can_delete_orders !== undefined) patch.can_delete_orders = data.can_delete_orders;
-    if (data.max_discount_percent !== undefined) patch.max_discount_percent = data.max_discount_percent;
+    for (const field of PERM_FIELDS) {
+      const value = (data as Record<string, unknown>)[field];
+      if (value !== undefined) patch[field] = value;
+    }
     if (!isOperational && data.operational_account_id !== undefined) {
       patch.operational_account_id = data.operational_account_id;
     }
@@ -216,6 +256,7 @@ export const deleteOperator = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { ownerId, isOperational } = await resolveCaller(supabaseAdmin, context.userId);
+    await assertOwnerManager(supabaseAdmin, context.userId, isOperational);
     const { data: existing } = await supabaseAdmin
       .from("operators")
       .select("id, owner_user_id, operational_account_id")
@@ -249,7 +290,7 @@ export const validateOperatorPinV2 = createServerFn({ method: "POST" })
     const { data: op, error } = await supabaseAdmin
       .from("operators")
       .select(
-        "id, name, nickname, active, owner_user_id, pin_hash, locked_until, can_edit_budgets, can_create_products, can_create_clients, can_delete_orders, max_discount_percent",
+        `id, name, nickname, active, owner_user_id, pin_hash, locked_until, ${PERM_COLUMNS}`,
       )
       .eq("id", data.operator_id)
       .maybeSingle();
@@ -278,17 +319,14 @@ export const validateOperatorPinV2 = createServerFn({ method: "POST" })
       console.warn("register_pin_attempt falhou", e);
     }
     if (!ok) throw new Error("PIN incorreto.");
+
+    const { issueOperatorToken } = await import("@/lib/operator-token.server");
     return {
       id: row.id as string,
       full_name: (row.name as string) ?? "Usuário",
       username: (row.nickname as string | null) ?? null,
-      permissions: {
-        can_edit_budgets: !!row.can_edit_budgets,
-        can_create_products: !!row.can_create_products,
-        can_create_clients: !!row.can_create_clients,
-        can_delete_orders: !!row.can_delete_orders,
-        max_discount_percent: Number(row.max_discount_percent ?? 10),
-      },
+      token: issueOperatorToken(row.id as string, ownerId),
+      permissions: toPermissions(row),
     };
   });
 
@@ -327,7 +365,7 @@ export const listOperationalAccounts = createServerFn({ method: "GET" })
       .eq("parent_user_id", targetOwner)
       .order("full_name", { ascending: true });
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((r: Record<string, unknown>) => ({
+    return ((rows ?? []) as Record<string, unknown>[]).map((r) => ({
       id: r.id as string,
       full_name: (r.full_name as string | null) ?? (r.username as string | null) ?? "Conta",
       username: (r.username as string | null) ?? null,
