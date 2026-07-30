@@ -30,6 +30,8 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
 
   const companyLabel = profile?.store_name || profile?.full_name || "Empresa";
   const userLabel = activeOperator?.full_name || profile?.full_name || "Usuário";
+  // O primeiro nome nunca some, mesmo em telas estreitas ou com nomes longos.
+  const userFirstName = userLabel.trim().split(/\s+/)[0] || userLabel;
 
   async function handleSwitchUser() {
     // Abre o modal centralizado sem limpar o usuário ativo — evita cair na
