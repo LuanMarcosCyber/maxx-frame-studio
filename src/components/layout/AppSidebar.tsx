@@ -263,7 +263,8 @@ function ProfileAvatar() {
 
 
 export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}) {
-  const { mainItems, cadastroItems, bottomItems, isActive, pathname } = useSidebarData();
+  const { mainItems, cadastroItems, bottomItems, showHistorico, isActive, pathname } =
+    useSidebarData();
   const { profile, role, signOut } = useAuth();
   const { activeOperator } = useOperator();
   const navigate = useNavigate();
