@@ -1,5 +1,7 @@
 // Print document renderer — opened in a new tab. Does not auto-call window.print().
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { canShareFiles, downloadBlob, generateSheetPdfBlob, sharePdf } from "@/lib/print-pdf";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { fmtDocument, onlyDigits } from "@/lib/utils";
@@ -344,6 +346,47 @@ function ComponentsTable({
 export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; via: string }) {
   const variant: Variant = via === "producao" || via === "cliente" ? via : "loja";
   const loadStoreProfile = useServerFn(getInheritedStoreProfile);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const scalerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [busy, setBusy] = useState<null | "pdf" | "share">(null);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 820px)");
+    const onChange = () => setIsMobile(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  // Escala responsiva: mantém o documento em A4 no DOM (layout único),
+  // apenas reduzindo visualmente para caber em telas pequenas.
+  useEffect(() => {
+    const fit = () => {
+      const sheet = sheetRef.current;
+      const scaler = scalerRef.current;
+      const viewport = viewportRef.current;
+      if (!sheet || !scaler || !viewport) return;
+      const available = viewport.clientWidth;
+      const natural = sheet.offsetWidth;
+      if (!available || !natural) return;
+      const scale = Math.min(1, available / natural);
+      scaler.style.transform = scale < 1 ? `scale(${scale})` : "";
+      viewport.style.height = scale < 1 ? `${sheet.offsetHeight * scale}px` : "";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(fit) : null;
+    if (ro && sheetRef.current) ro.observe(sheetRef.current);
+    const t = setTimeout(fit, 400);
+    return () => {
+      window.removeEventListener("resize", fit);
+      ro?.disconnect();
+      clearTimeout(t);
+    };
+  });
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["print", kind, id],
@@ -504,6 +547,46 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
   const showFinance = variant !== "producao";
   const showPreview = variant === "producao";
 
+  const pdfName = `${docLabel}-${order.number || id}-${variant}.pdf`
+    .replace(/\s+/g, "-")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const buildPdf = async () => {
+    const el = sheetRef.current;
+    if (!el) return null;
+    return await generateSheetPdfBlob(el);
+  };
+
+  const handleDownload = async () => {
+    if (busy) return;
+    setBusy("pdf");
+    try {
+      const blob = await buildPdf();
+      if (blob) downloadBlob(blob, pdfName);
+    } catch {
+      window.print();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleShare = async () => {
+    if (busy) return;
+    setBusy("share");
+    try {
+      const blob = await buildPdf();
+      if (!blob) return;
+      const ok = canShareFiles() && (await sharePdf(blob, pdfName, `${docLabel} ${order.number || ""}`.trim()));
+      if (!ok) downloadBlob(blob, pdfName);
+    } catch {
+      window.print();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   return (
     <>
       <style>{`
@@ -645,12 +728,18 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
         .footer { margin-top:10px; padding-top:4px; border-top:1px solid #000;
           font-size:9px; color:#000; text-align:center; }
-        .print-actions { position:fixed; top:10px; right:10px; display:flex; gap:8px; z-index:10; }
+        .print-actions { position:fixed; top:10px; right:10px; display:flex;
+          flex-direction:column; align-items:stretch; gap:8px; z-index:10; }
         .print-actions button { background:#000; color:#fff; border:none;
           border-radius:6px; padding:8px 14px; font-size:12px; cursor:pointer;
-          box-shadow:0 2px 6px rgba(0,0,0,.15); }
+          box-shadow:0 2px 6px rgba(0,0,0,.15); white-space:nowrap; }
         .print-actions button.secondary { background:#fff; color:#000;
           border:1px solid #000; }
+        .print-actions button[disabled] { opacity:.6; cursor:progress; }
+
+        /* Área de visualização com escala responsiva (não afeta o PDF/impressão) */
+        .sheet-viewport { width:100%; overflow:hidden; }
+        .sheet-scaler { transform-origin: top left; width:210mm; margin:0 auto; }
 
         /* Guia fixo de impressão à esquerda (não imprime) */
         .print-guide { position:fixed; top:12px; left:12px; width:240px;
@@ -664,8 +753,20 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
         .print-guide strong { font-weight:700; }
         @media (max-width: 1100px) { .print-guide { display:none; } }
 
+        @media (max-width: 820px) {
+          .sheet { margin:0; box-shadow:none; }
+          .print-actions { top:auto; bottom:0; left:0; right:0;
+            flex-direction:row; justify-content:center; flex-wrap:wrap;
+            background:rgba(255,255,255,.96); padding:8px;
+            border-top:1px solid #ddd; box-shadow:0 -2px 8px rgba(0,0,0,.08); }
+          .print-actions button { flex:1 1 auto; min-width:96px; padding:10px 12px; font-size:13px; }
+          .sheet-viewport { padding-bottom:64px; }
+        }
+
         @media print {
           html, body { background:#fff; }
+          .sheet-viewport { overflow:visible; height:auto !important; padding-bottom:0; }
+          .sheet-scaler { transform:none !important; width:auto; }
           .sheet { box-shadow:none; margin:0; width:auto; min-height:auto; padding:0; }
           .print-actions, .print-guide { display:none; }
         }
@@ -689,15 +790,28 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
       </aside>
 
       <div className="print-actions">
-        <button type="button" className="secondary" onClick={() => window.close()}>
-          Fechar
-        </button>
-        <button type="button" onClick={() => window.print()}>
+        {!isMobile && (
+          <button type="button" className="secondary" onClick={() => window.close()}>
+            Fechar
+          </button>
+        )}
+        <button type="button" onClick={() => window.print()} disabled={!!busy}>
           Imprimir
         </button>
+        <button type="button" onClick={handleDownload} disabled={!!busy}>
+          {busy === "pdf" ? "Gerando…" : "Baixar PDF"}
+        </button>
+        {isMobile && (
+          <button type="button" className="secondary" onClick={handleShare} disabled={!!busy}>
+            {busy === "share" ? "Gerando…" : "Compartilhar"}
+          </button>
+        )}
       </div>
 
-      <div className="sheet">
+      <div className="sheet-viewport" ref={viewportRef}>
+      <div className="sheet-scaler" ref={scalerRef}>
+      <div className="sheet" ref={sheetRef}>
+
         {/* 1. Cabeçalho da loja (emissora) */}
         <div className="store-header">
           <div className="brand">
@@ -1092,6 +1206,9 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
+      </div>
+      </div>
+
     </>
   );
 }
