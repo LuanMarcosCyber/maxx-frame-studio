@@ -739,7 +739,7 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
 
         /* Área de visualização com escala responsiva (não afeta o PDF/impressão) */
         .sheet-viewport { width:100%; overflow:hidden; }
-        .sheet-scaler { transform-origin: top left; width:210mm; max-width:100%; margin:0 auto; }
+        .sheet-scaler { transform-origin: top left; width:210mm; margin:0 auto; }
 
         /* Guia fixo de impressão à esquerda (não imprime) */
         .print-guide { position:fixed; top:12px; left:12px; width:240px;
