@@ -9,7 +9,7 @@ export type ActivityLogRow = {
   entity_id: string | null;
   description: string | null;
   user_name: string | null;
-  metadata: unknown;
+  metadata: Record<string, unknown> | null;
 };
 
 /**
