@@ -117,7 +117,7 @@ function Pedidos() {
   const { session, role, profile } = useAuth();
   const { activeOperator, requirePin, hasPermission } = useOperator();
   const showCollaborator = role !== "colaborador";
-  const canDelete = role === "admin" || hasPermission("delete_orders");
+  const canDelete = hasPermission("delete_orders");
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
   const navigate = useNavigate();

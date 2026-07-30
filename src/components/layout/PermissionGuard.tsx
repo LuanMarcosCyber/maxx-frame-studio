@@ -19,13 +19,14 @@ export function PermissionGuard({
   permission: PermissionKey;
   children: ReactNode;
 }) {
-  const { role, loading } = useAuth();
-  const { activeOperator, hasPermission } = useOperator();
+  const { loading } = useAuth();
+  const { activeOperator, hasPermission, permissionsReady } = useOperator();
   const navigate = useNavigate();
 
-  const allowed = role === "admin" || hasPermission(permission);
+  // Autorização depende exclusivamente do usuário interno ativo.
+  const allowed = hasPermission(permission);
   // Aguarda a sessão/seleção de usuário para não bloquear indevidamente.
-  const ready = !loading && !!role;
+  const ready = !loading && permissionsReady;
   const blocked = ready && !allowed;
 
   useEffect(() => {

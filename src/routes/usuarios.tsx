@@ -97,7 +97,7 @@ function UsuariosPage() {
   const { role, loading } = useAuth();
   const { effectivePermissions, requirePin } = useOperator();
   const canManage = role === "revendedor" || role === "admin";
-  const isOwner = role === "admin" || effectivePermissions.is_owner;
+  const isOwner = effectivePermissions.is_owner;
   const navigate = useNavigate();
 
   useEffect(() => {

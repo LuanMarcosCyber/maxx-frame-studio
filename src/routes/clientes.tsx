@@ -115,7 +115,7 @@ const onlyDigits = (s: string) => (s || "").replace(/\D+/g, "");
 function Clientes() {
   const { session, ownerUserId, role, profile } = useAuth();
   const { hasPermission } = useOperator();
-  const canCreateClients = role === "admin" || hasPermission("clients");
+  const canCreateClients = hasPermission("clients");
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
 
