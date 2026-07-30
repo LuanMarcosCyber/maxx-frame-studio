@@ -77,32 +77,57 @@ const sidebarBg = "#F8F9FB";
 function useSidebarData() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { role, profile } = useAuth();
+  const { effectivePermissions, hasPermission } = useOperator();
+
+  const isOwnerAccess = role === "admin" || effectivePermissions.is_owner;
 
   let mainItems: Item[];
   let cadastroItems: Item[];
   let bottomItems: Item[];
-  const isOperational = !!profile?.parent_user_id;
-  if (role === "admin") {
+
+  if (isOwnerAccess) {
+    // Proprietário / Administrador Global: acesso irrestrito.
     mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, revendedores, operadores];
+    cadastroItems = [
+      clientes,
+      produtos,
+      fornecedores,
+      arquitetos,
+      transportadoras,
+      ...(role === "admin" ? [revendedores] : []),
+      operadores,
+    ];
     bottomItems = [conta, configuracoes];
-  } else if (role === "colaborador" || isOperational) {
-    mainItems = [dashboard, orcamentos, pedidos];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras];
-    bottomItems = [conta];
   } else {
-    mainItems = [dashboard, orcamentos, pedidos, relatorios];
-    cadastroItems = [clientes, produtos, fornecedores, arquitetos, transportadoras, operadores];
-    bottomItems = [conta, configuracoes];
+    // Funcionário: somente o que o proprietário liberou.
+    mainItems = [dashboard, orcamentos, pedidos];
+    if (hasPermission("reports")) mainItems.push(relatorios);
+    cadastroItems = [
+      hasPermission("clients") ? clientes : null,
+      hasPermission("products") ? produtos : null,
+      hasPermission("suppliers") ? fornecedores : null,
+      hasPermission("architects") ? arquitetos : null,
+      hasPermission("carriers") ? transportadoras : null,
+    ].filter(Boolean) as Item[];
+    bottomItems = [conta];
   }
 
-
+  const showHistorico = isOwnerAccess || hasPermission("history");
 
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname.startsWith(url);
 
-  return { mainItems, cadastroItems, bottomItems, isActive, profile, pathname };
+  return {
+    mainItems,
+    cadastroItems,
+    bottomItems,
+    showHistorico,
+    isActive,
+    profile,
+    pathname,
+  };
 }
+
 
 
 function ProfileAvatar() {
