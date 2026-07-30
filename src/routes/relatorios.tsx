@@ -144,7 +144,8 @@ const STATUS_OPTIONS = [
 
 function Relatorios() {
   const { role, session } = useAuth();
-  const isAdmin = role === "admin";
+  // Privilégios globais são do usuário (proprietário), não da empresa.
+  const isAdmin = role === "admin" && effectivePermissions.is_owner;
   const [selected, setSelected] = useState<ReportKey | null>(null);
   const [period, setPeriod] = useState<string>("mes");
   const [status, setStatus] = useState<string>("todos");
