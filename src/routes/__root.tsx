@@ -15,6 +15,7 @@ import { OperatorProvider } from "@/hooks/useOperator";
 import { CompanySwitchProvider } from "@/components/layout/CompanySwitchOverlay";
 import { VersionUpdateProvider } from "@/lib/version-manager";
 import { useMobileKeyboardScroll } from "@/hooks/use-mobile-keyboard-scroll";
+import { useEnterAsTab } from "@/hooks/use-enter-as-tab";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -155,6 +156,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useMobileKeyboardScroll();
+  useEnterAsTab();
 
   // Recuperação global de chunks antigos (cache stale após deploy)
   useEffect(() => {
