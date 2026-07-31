@@ -32,6 +32,36 @@ const EDITABLE_SELECTOR = [
   '[contenteditable="true"]',
 ].join(",");
 
+/** Rótulos de botões secundários que o Enter nunca deve focar. */
+const SECONDARY_RE =
+  /(cancelar|voltar|fechar|sair|remover|excluir|descartar|mostrar senha|ocultar senha|close)/i;
+
+/** Rótulos da ação principal de uma tela/modal. */
+const PRIMARY_RE =
+  /(entrar|salvar|confirmar|continuar|selecionar|ok|aplicar|criar|adicionar|avançar|concluir|finalizar)/i;
+
+function labelOf(el: HTMLElement) {
+  return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.trim();
+}
+
+/** Botões auxiliares (ícones sem texto, cancelar/voltar/olho) são ignorados. */
+function isSecondaryControl(el: HTMLElement) {
+  if (el.dataset.enterSkip !== undefined) return true;
+  if (el.tagName === "A") return true;
+  if (el.tagName !== "BUTTON" && el.getAttribute("role") !== "button") return false;
+  const label = labelOf(el);
+  if (SECONDARY_RE.test(label)) return true;
+  // Botão sem texto visível (ícone auxiliar, ex.: mostrar/ocultar senha)
+  if (!(el.textContent ?? "").trim()) return true;
+  return false;
+}
+
+function isPrimaryAction(el: HTMLElement) {
+  if (el.dataset.enterPrimary !== undefined) return true;
+  if (el instanceof HTMLButtonElement && el.type === "submit") return true;
+  return PRIMARY_RE.test(labelOf(el));
+}
+
 function isVisible(el: HTMLElement) {
   if (el.hasAttribute("disabled")) return false;
   if (el.getAttribute("aria-hidden") === "true") return false;
@@ -41,6 +71,7 @@ function isVisible(el: HTMLElement) {
   const style = window.getComputedStyle(el);
   return style.visibility !== "hidden" && style.display !== "none";
 }
+
 
 export function useEnterAsTab() {
   useEffect(() => {
