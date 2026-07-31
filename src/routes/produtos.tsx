@@ -194,6 +194,7 @@ function Produtos() {
     commercial_configs: number;
     global_products: number;
   } | null>(null);
+  const [supplierFilter, setSupplierFilter] = useState<string>("todos");
 
   // Debounce da busca e reset de página ao alterar filtros/categoria.
   useEffect(() => {
