@@ -7,13 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -24,7 +18,15 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
-import { fmtMoney, fmtDateTime, fmtPct, cn } from "@/lib/utils";
+import {
+  fmtMoney,
+  fmtDateTime,
+  fmtPct,
+  cn,
+  prettyLabel,
+  fmtCategory,
+} from "@/lib/utils";
+
 import {
   getVendasOptions,
   getVendasReport,
@@ -143,6 +145,24 @@ const STATUS_OPTIONS = [
   "Cancelado",
 ];
 
+const PERIOD_OPTIONS: ComboboxOption[] = [
+  { value: "hoje", label: "Hoje" },
+  { value: "ontem", label: "Ontem" },
+  { value: "semana", label: "Últimos 7 dias" },
+  { value: "mes", label: "Este mês" },
+  { value: "ano", label: "Este ano" },
+  { value: "todos", label: "Todos" },
+];
+
+const GRANULARITY_OPTIONS: ComboboxOption[] = [
+  { value: "dia", label: "Dia" },
+  { value: "semana", label: "Semana" },
+  { value: "mes", label: "Mês" },
+  { value: "ano", label: "Ano" },
+];
+
+
+
 function Relatorios() {
   const { role, session } = useAuth();
   const { effectivePermissions } = useOperator();
@@ -259,81 +279,84 @@ function Relatorios() {
 
               <div className="space-y-1.5">
                 <Label>Período</Label>
-                <Select value={period} onValueChange={setPeriod}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hoje">Hoje</SelectItem>
-                    <SelectItem value="ontem">Ontem</SelectItem>
-                    <SelectItem value="semana">Últimos 7 dias</SelectItem>
-                    <SelectItem value="mes">Este mês</SelectItem>
-                    <SelectItem value="ano">Este ano</SelectItem>
-                    <SelectItem value="todos">Todos</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={period}
+                  onChange={setPeriod}
+                  options={PERIOD_OPTIONS}
+                  searchPlaceholder="Pesquisar período..."
+                />
               </div>
 
               <div className="space-y-1.5">
                 <Label>Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {STATUS_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={status}
+                  onChange={setStatus}
+                  options={[
+                    { value: "todos", label: "Todos" },
+                    ...STATUS_OPTIONS.map((s) => ({ value: s, label: prettyLabel(s) })),
+                  ]}
+                  searchPlaceholder="Pesquisar status..."
+                />
               </div>
 
               <div className="space-y-1.5">
                 <Label>Cliente</Label>
-                <Select value={clientId} onValueChange={setClientId}>
-                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {(optionsQuery.data?.clients ?? []).map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={clientId}
+                  onChange={setClientId}
+                  placeholder="Todos"
+                  searchPlaceholder="Digite o nome do cliente..."
+                  emptyText="Nenhum cliente encontrado."
+                  options={[
+                    { value: "todos", label: "Todos" },
+                    ...(optionsQuery.data?.clients ?? []).map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                    })),
+                  ]}
+                />
               </div>
 
               <div className="space-y-1.5">
                 <Label>Colaborador</Label>
-                <Select value={operatorId} onValueChange={setOperatorId}>
-                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {(optionsQuery.data?.operators ?? []).map((o) => (
-                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  value={operatorId}
+                  onChange={setOperatorId}
+                  placeholder="Todos"
+                  searchPlaceholder="Digite o nome do colaborador..."
+                  emptyText="Nenhum colaborador encontrado."
+                  options={[
+                    { value: "todos", label: "Todos" },
+                    ...(optionsQuery.data?.operators ?? []).map((o) => ({
+                      value: o.id,
+                      label: o.name,
+                    })),
+                  ]}
+                />
               </div>
 
               {showEmpresaFilter && (
                 <div className="space-y-1.5">
                   <Label>Empresa</Label>
-                  <Select value={empresaUserId || "todos"} onValueChange={(v) => setEmpresaUserId(v === "todos" ? "" : v)}>
-                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                    <SelectContent>
-                      {isAdmin ? (
-                        <>
-                          <SelectItem value="todos">Todas</SelectItem>
-                          {empresasList.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                          ))}
-                        </>
-                      ) : (
-                        <>
-                          {empresasList.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                          ))}
-                          <SelectItem value="todos">Todas</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={empresaUserId || "todos"}
+                    onChange={(v) => setEmpresaUserId(v === "todos" ? "" : v)}
+                    placeholder="Todas"
+                    searchPlaceholder="Digite o nome da empresa..."
+                    emptyText="Nenhuma empresa encontrada."
+                    options={
+                      isAdmin
+                        ? [
+                            { value: "todos", label: "Todas" },
+                            ...empresasList.map((e) => ({ value: e.id, label: e.name })),
+                          ]
+                        : [
+                            ...empresasList.map((e) => ({ value: e.id, label: e.name })),
+                            { value: "todos", label: "Todas" },
+                          ]
+                    }
+                  />
                 </div>
               )}
 
@@ -341,77 +364,98 @@ function Relatorios() {
               {showCategoryFilter && (
                 <div className="space-y-1.5">
                   <Label>Categoria</Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {(optionsQuery.data?.categories ?? []).map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={category}
+                    onChange={setCategory}
+                    placeholder="Todas"
+                    searchPlaceholder="Digite a categoria..."
+                    emptyText="Nenhuma categoria encontrada."
+                    options={[
+                      { value: "todos", label: "Todas" },
+                      ...(optionsQuery.data?.categories ?? []).map((c) => ({
+                        value: c,
+                        label: fmtCategory(c),
+                        keywords: c,
+                      })),
+                    ]}
+                  />
                 </div>
               )}
 
               {showSupplierFilter && (
                 <div className="space-y-1.5">
                   <Label>Fornecedor</Label>
-                  <Select value={supplier} onValueChange={setSupplier}>
-                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      {(optionsQuery.data?.suppliers ?? []).map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={supplier}
+                    onChange={setSupplier}
+                    placeholder="Todos"
+                    searchPlaceholder="Digite o nome do fornecedor..."
+                    emptyText="Nenhum fornecedor encontrado."
+                    options={[
+                      { value: "todos", label: "Todos" },
+                      ...(optionsQuery.data?.suppliers ?? []).map((s) => ({
+                        value: s,
+                        label: prettyLabel(s),
+                        keywords: s,
+                      })),
+                    ]}
+                  />
                 </div>
               )}
 
               {showProductFilter && (
                 <div className="space-y-1.5">
                   <Label>Produto</Label>
-                  <Select value={productId} onValueChange={setProductId}>
-                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      {(optionsQuery.data?.products ?? []).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={productId}
+                    onChange={setProductId}
+                    placeholder="Todos"
+                    searchPlaceholder="Digite o código ou descrição..."
+                    emptyText="Nenhum produto encontrado."
+                    options={[
+                      { value: "todos", label: "Todos" },
+                      ...(optionsQuery.data?.products ?? []).map((p) => ({
+                        value: p.id,
+                        label: p.label,
+                      })),
+                    ]}
+                  />
                 </div>
               )}
 
               {showGranularity && (
                 <div className="space-y-1.5">
                   <Label>Agrupar por</Label>
-                  <Select value={granularity} onValueChange={setGranularity}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dia">Dia</SelectItem>
-                      <SelectItem value="semana">Semana</SelectItem>
-                      <SelectItem value="mes">Mês</SelectItem>
-                      <SelectItem value="ano">Ano</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={granularity}
+                    onChange={setGranularity}
+                    options={GRANULARITY_OPTIONS}
+                    searchPlaceholder="Pesquisar..."
+                  />
                 </div>
               )}
 
               {showCityFilter && (
                 <div className="space-y-1.5">
                   <Label>Cidade</Label>
-                  <Select value={cityFilter} onValueChange={setCityFilter}>
-                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas</SelectItem>
-                      {(optionsQuery.data?.cities ?? []).map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    value={cityFilter}
+                    onChange={setCityFilter}
+                    placeholder="Todas"
+                    searchPlaceholder="Digite o nome da cidade..."
+                    emptyText="Nenhuma cidade encontrada."
+                    options={[
+                      { value: "todos", label: "Todas" },
+                      ...(optionsQuery.data?.cities ?? []).map((c) => ({
+                        value: c,
+                        label: prettyLabel(c),
+                        keywords: c,
+                      })),
+                    ]}
+                  />
                 </div>
               )}
+
             </div>
           </Card>
         </section>
@@ -1044,8 +1088,8 @@ function ProdutosReportView({
                   <TableRow key={p.productId ?? p.code + p.name}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-muted-foreground">{p.code || "—"}</TableCell>
-                    <TableCell>{p.category}</TableCell>
-                    <TableCell>{p.supplier}</TableCell>
+                    <TableCell>{fmtCategory(p.category)}</TableCell>
+                    <TableCell>{prettyLabel(p.supplier)}</TableCell>
                     <TableCell className="text-right">{p.quantity}</TableCell>
                     <TableCell className="text-right">
                       {fmtConsumption(p.consumption, p.consumptionUnit)}
@@ -1234,7 +1278,7 @@ function OrcamentosReportView({
                     <TableCell>{r.client_name}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
-                        {r.status}
+                        {prettyLabel(r.status)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(r.value)}</TableCell>
@@ -1278,7 +1322,7 @@ function OrcamentosReportView({
                     <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
-                        {r.status}
+                        {prettyLabel(r.status)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(r.total_value)}</TableCell>

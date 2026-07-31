@@ -44,7 +44,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { fmtCNPJ, fmtCEP, onlyDigits } from "@/lib/utils";
+import { fmtCNPJ, fmtCEP, onlyDigits, fmtCategory } from "@/lib/utils";
 import { SUPPLIER_CATEGORIES } from "@/components/suppliers/SupplierPicker";
 import { ProductImportWizard } from "@/components/produtos/ProductImportWizard";
 import { useActivityLog } from "@/hooks/useActivityLog";
@@ -907,7 +907,7 @@ function Fornecedores() {
                           <tr key={p.id}>
                             <td className="py-1.5 px-2 font-mono">{p.code}</td>
                             <td className="py-1.5 px-2">{p.description}</td>
-                            <td className="py-1.5 px-2 text-muted-foreground">{p.category}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{fmtCategory(p.category)}</td>
                             <td className="py-1.5 px-2 text-right">
                               {p.base_price != null
                                 ? p.base_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
