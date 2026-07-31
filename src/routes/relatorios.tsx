@@ -188,6 +188,18 @@ function Relatorios() {
   const showGranularity = selected === "orcamentos";
   const showCityFilter = selected === "clientes";
 
+  // Cada relatório mantém apenas os filtros que lhe pertencem: ao trocar de
+  // relatório, qualquer filtro que não exista na nova tela é descartado para
+  // não interferir de forma oculta na consulta.
+  useEffect(() => {
+    if (!showCategoryFilter) setCategory("todos");
+    if (!showSupplierFilter) setSupplier("todos");
+    if (!showProductFilter) setProductId("todos");
+    if (!showGranularity) setGranularity("mes");
+    if (!showCityFilter) setCityFilter("todos");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
   const fetchOptions = useServerFn(getVendasOptions);
 
   const optionsQuery = useQuery({
