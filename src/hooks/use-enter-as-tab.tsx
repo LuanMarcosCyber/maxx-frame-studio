@@ -120,8 +120,6 @@ export function useEnterAsTab() {
       }
 
 
-      // Opt-out explícito
-      if (target.closest('[data-enter="native"]')) return;
 
       // Dropdown aberto (Radix Select / combobox / autocomplete): deixa o
       // componente selecionar o item destacado.
