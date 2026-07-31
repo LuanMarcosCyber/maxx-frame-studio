@@ -255,7 +255,7 @@ export function OperatorSwitcher({
             </div>
 
           ) : (
-            <form onSubmit={confirmPin} className="space-y-4">
+            <form onSubmit={confirmPin} className="space-y-4" data-enter="submit">
               <div className="space-y-1.5">
                 <Label htmlFor="op_pin">PIN</Label>
                 <Input

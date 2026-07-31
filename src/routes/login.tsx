@@ -91,7 +91,7 @@ function Login() {
             Entre com o usuário e senha fornecidos pelo administrador.
           </p>
 
-          <form onSubmit={onSubmit} className="space-y-4 mt-8">
+          <form onSubmit={onSubmit} className="space-y-4 mt-8" data-enter="submit">
             <div className="space-y-1.5">
               <Label htmlFor="username">Usuário</Label>
               <Input

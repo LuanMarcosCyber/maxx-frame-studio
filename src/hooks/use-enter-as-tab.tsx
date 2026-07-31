@@ -32,6 +32,36 @@ const EDITABLE_SELECTOR = [
   '[contenteditable="true"]',
 ].join(",");
 
+/** Rótulos de botões secundários que o Enter nunca deve focar. */
+const SECONDARY_RE =
+  /(cancelar|voltar|fechar|sair|remover|excluir|descartar|mostrar senha|ocultar senha|close)/i;
+
+/** Rótulos da ação principal de uma tela/modal. */
+const PRIMARY_RE =
+  /(entrar|salvar|confirmar|continuar|selecionar|ok|aplicar|criar|adicionar|avançar|concluir|finalizar)/i;
+
+function labelOf(el: HTMLElement) {
+  return `${el.getAttribute("aria-label") ?? ""} ${el.textContent ?? ""}`.trim();
+}
+
+/** Botões auxiliares (ícones sem texto, cancelar/voltar/olho) são ignorados. */
+function isSecondaryControl(el: HTMLElement) {
+  if (el.dataset.enterSkip !== undefined) return true;
+  if (el.tagName === "A") return true;
+  if (el.tagName !== "BUTTON" && el.getAttribute("role") !== "button") return false;
+  const label = labelOf(el);
+  if (SECONDARY_RE.test(label)) return true;
+  // Botão sem texto visível (ícone auxiliar, ex.: mostrar/ocultar senha)
+  if (!(el.textContent ?? "").trim()) return true;
+  return false;
+}
+
+function isPrimaryAction(el: HTMLElement) {
+  if (el.dataset.enterPrimary !== undefined) return true;
+  if (el instanceof HTMLButtonElement && el.type === "submit") return true;
+  return PRIMARY_RE.test(labelOf(el));
+}
+
 function isVisible(el: HTMLElement) {
   if (el.hasAttribute("disabled")) return false;
   if (el.getAttribute("aria-hidden") === "true") return false;
@@ -41,6 +71,19 @@ function isVisible(el: HTMLElement) {
   const style = window.getComputedStyle(el);
   return style.visibility !== "hidden" && style.display !== "none";
 }
+
+function focusNext(el: HTMLElement) {
+  el.focus();
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    try {
+      el.select();
+    } catch {
+      /* alguns tipos de input não suportam select() */
+    }
+  }
+}
+
+
 
 export function useEnterAsTab() {
   useEffect(() => {
@@ -58,11 +101,25 @@ export function useEnterAsTab() {
       // Botões / links: deixa o comportamento nativo (executa a ação).
       if (target.closest("button,a,[role='button']")) return;
 
-      // Campo editável?
-      if (!target.matches?.(EDITABLE_SELECTOR)) return;
-
       // Opt-out explícito
       if (target.closest('[data-enter="native"]')) return;
+
+      // Modal de confirmação sem campos: Enter executa a ação principal.
+      if (!target.matches?.(EDITABLE_SELECTOR)) {
+        const dialog = target.closest("[role='alertdialog'],[role='dialog']") as HTMLElement | null;
+        if (!dialog) return;
+        const actions = Array.from(
+          dialog.querySelectorAll<HTMLElement>("button,[role='button']"),
+        ).filter((el) => isVisible(el) && !isSecondaryControl(el));
+        const main = actions.find(isPrimaryAction);
+        if (main) {
+          e.preventDefault();
+          main.click();
+        }
+        return;
+      }
+
+
 
       // Dropdown aberto (Radix Select / combobox / autocomplete): deixa o
       // componente selecionar o item destacado.
@@ -80,20 +137,32 @@ export function useEnterAsTab() {
       const index = items.indexOf(target);
       if (index === -1) return;
 
-      const next = items[index + 1];
+      const primary = items.find(isPrimaryAction);
+      const rest = items.slice(index + 1).filter((el) => !isSecondaryControl(el));
+      const nextEditable = rest.find((el) => el.matches(EDITABLE_SELECTOR));
+
       e.preventDefault();
-      if (!next) return;
-      next.focus();
-      if (
-        next instanceof HTMLInputElement ||
-        next instanceof HTMLTextAreaElement
-      ) {
-        try {
-          next.select();
-        } catch {
-          /* alguns tipos de input não suportam select() */
-        }
+
+      // Ainda há campos a preencher: apenas avança o foco.
+      if (nextEditable) {
+        focusNext(nextEditable);
+        return;
       }
+
+      // Último campo: telas de ação direta (login, PIN, confirmação) executam
+      // a ação principal; formulários comuns focam o botão principal.
+      const directSubmit = target.closest('[data-enter="submit"]') !== null;
+      if (primary && (directSubmit || !rest.length)) {
+        primary.click();
+        return;
+      }
+
+      const next = rest[0] ?? primary;
+
+      if (!next) return;
+      focusNext(next);
+
+
     };
 
     document.addEventListener("keydown", handler);
