@@ -506,19 +506,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       .in("budget_id", budgetIds);
     if (itemsErr) throw itemsErr;
 
-    // 3. Fetch products for id -> supplier/category/description lookup
-    const { data: prodRows } = await client
-      .from("products")
-      .select("id, code, description, category, supplier");
-    const productMap = new Map<string, { code: string; description: string; category: string; supplier: string }>();
-    for (const p of prodRows ?? []) {
-      productMap.set(p.id, {
-        code: p.code ?? "",
-        description: p.description ?? "",
-        category: (p.category ?? "").trim() || "—",
-        supplier: (p.supplier ?? "").trim() || "—",
-      });
-    }
+    // 3. Lookup unificado id -> supplier/category/description (próprios + globais)
+    const productMap = (await buildProductLookup(client)).map;
 
     // Map: which orderId each budget belongs to (a budget may map to multiple orders in theory; we count once per order)
     const budgetToOrders = new Map<string, string[]>();
