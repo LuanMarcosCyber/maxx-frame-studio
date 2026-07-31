@@ -568,7 +568,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
             quantity: 1,
             value: part.value,
             orders: 0,
-            consumption: part.consumption,
+            consumption: finalConsumption,
             consumptionUnit: part.consumptionUnit,
             orderSet: new Set(orderIds),
           });
