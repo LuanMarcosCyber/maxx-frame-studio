@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { buildProductLookup } from "@/lib/reports-product-lookup.server";
 
 export interface VendasFilters {
   period: string; // hoje|ontem|semana|mes|ano|todos
