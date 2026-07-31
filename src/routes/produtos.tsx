@@ -35,7 +35,9 @@ import {
   SupplierPicker,
   productCategoryToSupplierCategory,
   supplierLabel,
+  useSuppliersQuery,
 } from "@/components/suppliers/SupplierPicker";
+import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
@@ -192,6 +194,7 @@ function Produtos() {
     commercial_configs: number;
     global_products: number;
   } | null>(null);
+  const [supplierFilter, setSupplierFilter] = useState<string>("todos");
 
   // Debounce da busca e reset de página ao alterar filtros/categoria.
   useEffect(() => {
@@ -203,6 +206,7 @@ function Produtos() {
   }, [search]);
   useEffect(() => {
     setPage(1);
+    setSupplierFilter("todos");
   }, [activeCategory]);
 
   // Ensure auto-distributed products exist and detect missing supplier config.
@@ -301,28 +305,69 @@ function Produtos() {
     },
   });
 
+  // Fornecedores cadastrados (globais e da própria empresa) para resolver o
+  // nome exibido e alimentar o filtro por fornecedor.
+  const { data: suppliersList = [] } = useSuppliersQuery();
+  const supplierNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    suppliersList.forEach((s) => m.set(s.id, supplierLabel(s)));
+    return m;
+  }, [suppliersList]);
+  const resolveSupplier = (p: Product): string =>
+    (p.supplier_id ? supplierNameById.get(p.supplier_id) : "") ||
+    (p.supplier ?? "").trim() ||
+    "";
+
+  /** Produtos da categoria ativa (antes do filtro de fornecedor/busca). */
+  const categoryRows = useMemo(
+    () =>
+      allProducts
+        .filter((p) => (p.category ?? "") === activeCategory)
+        .map((p) =>
+          p.category === "produtos_diversos" && stockMap
+            ? { ...p, stock_quantity: stockMap.get(p.id) ?? 0 }
+            : p,
+        ),
+    [allProducts, activeCategory, stockMap],
+  );
+
+  /** Opções do filtro: apenas fornecedores presentes na categoria atual. */
+  const supplierFilterOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    categoryRows.forEach((p) => {
+      const name = resolveSupplier(p);
+      if (!name) return;
+      map.set(p.supplier_id ?? `name:${name.toLowerCase()}`, name);
+    });
+    return [
+      { value: "todos", label: "Todos os fornecedores" },
+      ...Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
+        a.label.localeCompare(b.label, "pt-BR"),
+      ),
+    ];
+  }, [categoryRows, supplierNameById]);
 
   const filteredRows = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    const rows = allProducts
-      .filter((p) => (p.category ?? "") === activeCategory)
-      .map((p) =>
-        p.category === "produtos_diversos" && stockMap
-          ? { ...p, stock_quantity: stockMap.get(p.id) ?? 0 }
-          : p,
-      )
+    const rows = categoryRows
+      .filter((p) => {
+        if (supplierFilter === "todos") return true;
+        const key = p.supplier_id ?? `name:${resolveSupplier(p).toLowerCase()}`;
+        return key === supplierFilter;
+      })
       .filter((p) => {
         if (!q) return true;
         return (
           (p.code ?? "").toLowerCase().includes(q) ||
           (p.description ?? "").toLowerCase().includes(q) ||
           (p.name ?? "").toLowerCase().includes(q) ||
-          (p.supplier ?? "").toLowerCase().includes(q) ||
+          resolveSupplier(p).toLowerCase().includes(q) ||
           (p.barcode ?? "").toLowerCase().includes(q)
         );
       });
     return rows.sort((a, b) => naturalCompare(a.code ?? "", b.code ?? ""));
-  }, [allProducts, activeCategory, debouncedSearch, stockMap]);
+  }, [categoryRows, debouncedSearch, supplierFilter, supplierNameById]);
+
 
 
   const totalCount = filteredRows.length;
@@ -797,6 +842,19 @@ function Produtos() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <div className="w-full sm:w-64">
+              <Combobox
+                value={supplierFilter}
+                onChange={(v) => {
+                  setSupplierFilter(v);
+                  setPage(1);
+                }}
+                options={supplierFilterOptions}
+                placeholder="Filtrar por fornecedor"
+                searchPlaceholder="Digite o fornecedor..."
+                emptyText="Nenhum fornecedor encontrado."
+              />
+            </div>
             {canEdit && (
               <>
                 <Button
@@ -879,7 +937,7 @@ function Produtos() {
                       <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
                       <td className="py-3.5 px-3">{p.name ?? "—"}</td>
                       <td className="py-3.5 px-3 text-muted-foreground">
-                        {p.supplier ?? "—"}
+                        {resolveSupplier(p) || "—"}
                       </td>
                       {showInternal && (
                         <td className="py-3.5 px-3 font-semibold">
@@ -950,10 +1008,10 @@ function Produtos() {
                               </Badge>
                             )}
                           </div>
-                          {p.source === "global" && p.supplier && (
+                          {resolveSupplier(p) && (
                             <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 whitespace-normal break-words leading-snug">
                               <span className="text-muted-foreground font-normal">FORNECEDOR: </span>
-                              {p.supplier}
+                              {resolveSupplier(p)}
                             </div>
                           )}
                         </div>
