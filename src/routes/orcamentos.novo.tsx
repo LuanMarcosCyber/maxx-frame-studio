@@ -80,6 +80,7 @@ import {
 
 
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllVisibleProducts } from "@/lib/visible-products";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
@@ -173,9 +174,7 @@ function useCategoryProducts(categories: string[], enabled: boolean) {
     queryKey: ["products", "visible"],
     enabled,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_visible_products");
-      if (error) throw error;
-      return (data ?? []) as Array<Record<string, unknown>>;
+      return await fetchAllVisibleProducts();
     },
     select: (rows) => {
       const set = new Set(categories);
