@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -24,7 +25,15 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
-import { fmtMoney, fmtDateTime, fmtPct, cn } from "@/lib/utils";
+import {
+  fmtMoney,
+  fmtDateTime,
+  fmtPct,
+  cn,
+  prettyLabel,
+  fmtCategory,
+} from "@/lib/utils";
+
 import {
   getVendasOptions,
   getVendasReport,
