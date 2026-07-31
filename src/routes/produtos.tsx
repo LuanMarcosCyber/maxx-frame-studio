@@ -39,6 +39,7 @@ import {
 } from "@/components/suppliers/SupplierPicker";
 import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllVisibleProducts } from "@/lib/visible-products";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
