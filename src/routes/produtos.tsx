@@ -260,9 +260,7 @@ function Produtos() {
     queryKey: ["products"],
     enabled: !!session,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("list_visible_products");
-      if (error) throw error;
-      const arr = (data ?? []) as Array<Record<string, unknown>>;
+      const arr = await fetchAllVisibleProducts();
       return arr.map((r) => ({
         id: r.id as string,
         source: (r.source as "company" | "global") ?? "company",
