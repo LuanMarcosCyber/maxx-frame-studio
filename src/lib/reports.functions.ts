@@ -1761,10 +1761,7 @@ export const getInsightsReport = createServerFn({ method: "POST" })
     if (budgetIds.length > 0) {
       const { data: itemRows } = await client
         .from("budget_items").select("data, budget_id").in("budget_id", budgetIds);
-      const { data: prodRows } = await client
-        .from("products").select("id, code, description, supplier");
-      const pMap = new Map<string, { code: string; description: string; supplier: string }>();
-      for (const p of prodRows ?? []) pMap.set(p.id, { code: p.code ?? "", description: p.description ?? "", supplier: (p.supplier ?? "").trim() || "—" });
+      const pMap = (await buildProductLookup(client)).map;
       const supTotals = new Map<string, number>();
       const prodTotals = new Map<string, { code: string; name: string; value: number; qty: number }>();
       let grand = 0;
