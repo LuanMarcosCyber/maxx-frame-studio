@@ -40,15 +40,21 @@ function supplierDisplayName(s: {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function buildProductLookup(client: any): Promise<ProductLookup> {
-  const [ownRes, globalRes, supRes] = await Promise.all([
+  const [ownRes, globalRes, supRes, ovrRes, cfgRes] = await Promise.all([
     client
       .from("products")
-      .select("id, code, description, category, supplier, supplier_id")
+      .select(
+        "id, code, description, category, supplier, supplier_id, waste_percentage, uses_default_config",
+      )
       .order("description"),
     client
       .from("global_supplier_products")
       .select("id, code, description, category, supplier_id, active"),
     client.from("suppliers").select("id, legal_name, trade_name"),
+    client
+      .from("company_product_overrides")
+      .select("global_product_id, waste_percentage"),
+    client.from("company_supplier_config").select("supplier_id, loss"),
   ]);
 
   const supplierById = new Map<string, string>();
@@ -59,6 +65,26 @@ export async function buildProductLookup(client: any): Promise<ProductLookup> {
   }>) {
     const name = supplierDisplayName(s);
     if (name) supplierById.set(s.id, name);
+  }
+
+  // Perda padrão configurada por fornecedor (usada quando não há override)
+  const lossBySupplier = new Map<string, number>();
+  for (const c of (cfgRes?.data ?? []) as Array<{
+    supplier_id: string;
+    loss: number | null;
+  }>) {
+    lossBySupplier.set(c.supplier_id, Number(c.loss) || 0);
+  }
+
+  // Perda sobrescrita por produto global
+  const lossByGlobalProduct = new Map<string, number>();
+  for (const o of (ovrRes?.data ?? []) as Array<{
+    global_product_id: string;
+    waste_percentage: number | null;
+  }>) {
+    if (o.waste_percentage != null) {
+      lossByGlobalProduct.set(o.global_product_id, Number(o.waste_percentage) || 0);
+    }
   }
 
   const map = new Map<string, ProductMeta>();
@@ -72,6 +98,7 @@ export async function buildProductLookup(client: any): Promise<ProductLookup> {
     description: string,
     category: string,
     supplier: string,
+    wastePct: number,
   ) => {
     const cat = (category ?? "").trim();
     const sup = (supplier ?? "").trim();
@@ -80,6 +107,7 @@ export async function buildProductLookup(client: any): Promise<ProductLookup> {
       description: description ?? "",
       category: cat || "—",
       supplier: sup || "—",
+      wastePct: Number.isFinite(wastePct) && wastePct > 0 ? wastePct : 0,
     });
     if (sup) supplierSet.add(sup);
     if (cat) categorySet.add(cat);
@@ -98,12 +126,16 @@ export async function buildProductLookup(client: any): Promise<ProductLookup> {
     supplier_id: string | null;
     active?: boolean | null;
   }>) {
+    const waste =
+      lossByGlobalProduct.get(g.id) ??
+      (g.supplier_id ? (lossBySupplier.get(g.supplier_id) ?? 0) : 0);
     push(
       g.id,
       g.code ?? "",
       g.description ?? "",
       g.category ?? "",
       (g.supplier_id ? supplierById.get(g.supplier_id) : "") ?? "",
+      waste,
     );
   }
 
@@ -114,14 +146,22 @@ export async function buildProductLookup(client: any): Promise<ProductLookup> {
     category: string | null;
     supplier: string | null;
     supplier_id: string | null;
+    waste_percentage: number | null;
+    uses_default_config: boolean | null;
   }>) {
     const linked = p.supplier_id ? supplierById.get(p.supplier_id) : "";
+    const waste = p.uses_default_config
+      ? (p.supplier_id ? (lossBySupplier.get(p.supplier_id) ?? 0) : 0) ||
+        Number(p.waste_percentage) ||
+        0
+      : Number(p.waste_percentage) || 0;
     push(
       p.id,
       p.code ?? "",
       p.description ?? "",
       p.category ?? "",
       (linked || p.supplier || "").trim(),
+      waste,
     );
   }
 
