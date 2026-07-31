@@ -111,8 +111,27 @@ export function useEnterAsTab() {
       const index = items.indexOf(target);
       if (index === -1) return;
 
-      const next = items[index + 1];
+      const primary = items.find(isPrimaryAction);
+      const rest = items.slice(index + 1).filter((el) => !isSecondaryControl(el));
+      const nextEditable = rest.find((el) => el.matches(EDITABLE_SELECTOR));
+
       e.preventDefault();
+
+      // Telas de ação direta (login, PIN, confirmação): Enter executa a ação
+      // principal imediatamente.
+      const directSubmit =
+        (target.closest('[data-enter="submit"]') as HTMLElement | null) !== null;
+
+      if ((directSubmit || !nextEditable) && !rest.length && primary) {
+        primary.click();
+        return;
+      }
+      if (directSubmit && primary) {
+        primary.click();
+        return;
+      }
+
+      const next = rest[0] ?? primary;
       if (!next) return;
       next.focus();
       if (
@@ -125,6 +144,7 @@ export function useEnterAsTab() {
           /* alguns tipos de input não suportam select() */
         }
       }
+
     };
 
     document.addEventListener("keydown", handler);
