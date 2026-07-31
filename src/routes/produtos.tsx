@@ -842,6 +842,19 @@ function Produtos() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <div className="w-full sm:w-64">
+              <Combobox
+                value={supplierFilter}
+                onChange={(v) => {
+                  setSupplierFilter(v);
+                  setPage(1);
+                }}
+                options={supplierFilterOptions}
+                placeholder="Filtrar por fornecedor"
+                searchPlaceholder="Digite o fornecedor..."
+                emptyText="Nenhum fornecedor encontrado."
+              />
+            </div>
             {canEdit && (
               <>
                 <Button
