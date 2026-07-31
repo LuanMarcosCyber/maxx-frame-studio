@@ -80,6 +80,7 @@ import {
 
 
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllVisibleProducts } from "@/lib/visible-products";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { cn, fmtMeasure, roundMeasure } from "@/lib/utils";
