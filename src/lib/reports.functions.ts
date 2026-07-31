@@ -536,11 +536,16 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         const category = meta?.category ?? "—";
         const code = meta?.code || part.code || "";
         const description = meta?.description || part.description || "Produto";
+        // Consumo final = consumo base da categoria × (1 + perda %) — a perda é
+        // sempre o último passo, aplicada só no relatório (não altera pedidos/preços).
+        const wastePct = Number(meta?.wastePct) || 0;
+        const finalConsumption = part.consumption * (1 + wastePct / 100);
 
         // Filters
         if (data.supplier && data.supplier !== supplier) continue;
         if (data.category && data.category !== category) continue;
         if (data.productId && data.productId !== part.productId) continue;
+
 
         // per-product
         const pKey = part.productId;
