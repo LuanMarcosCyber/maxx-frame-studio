@@ -152,6 +152,24 @@ const STATUS_OPTIONS = [
   "Cancelado",
 ];
 
+const PERIOD_OPTIONS: ComboboxOption[] = [
+  { value: "hoje", label: "Hoje" },
+  { value: "ontem", label: "Ontem" },
+  { value: "semana", label: "Últimos 7 dias" },
+  { value: "mes", label: "Este mês" },
+  { value: "ano", label: "Este ano" },
+  { value: "todos", label: "Todos" },
+];
+
+const GRANULARITY_OPTIONS: ComboboxOption[] = [
+  { value: "dia", label: "Dia" },
+  { value: "semana", label: "Semana" },
+  { value: "mes", label: "Mês" },
+  { value: "ano", label: "Ano" },
+];
+
+
+
 function Relatorios() {
   const { role, session } = useAuth();
   const { effectivePermissions } = useOperator();
