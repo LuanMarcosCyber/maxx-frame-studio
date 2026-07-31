@@ -72,6 +72,18 @@ function isVisible(el: HTMLElement) {
   return style.visibility !== "hidden" && style.display !== "none";
 }
 
+function focusNext(el: HTMLElement) {
+  el.focus();
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    try {
+      el.select();
+    } catch {
+      /* alguns tipos de input não suportam select() */
+    }
+  }
+}
+
+
 
 export function useEnterAsTab() {
   useEffect(() => {
