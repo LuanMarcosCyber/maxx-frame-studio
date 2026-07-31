@@ -117,21 +117,22 @@ export function useEnterAsTab() {
 
       e.preventDefault();
 
-      // Telas de ação direta (login, PIN, confirmação): Enter executa a ação
-      // principal imediatamente.
-      const directSubmit =
-        (target.closest('[data-enter="submit"]') as HTMLElement | null) !== null;
-
-      if ((directSubmit || !nextEditable) && !rest.length && primary) {
-        primary.click();
+      // Ainda há campos a preencher: apenas avança o foco.
+      if (nextEditable) {
+        focusNext(nextEditable);
         return;
       }
-      if (directSubmit && primary) {
+
+      // Último campo: telas de ação direta (login, PIN, confirmação) executam
+      // a ação principal; formulários comuns focam o botão principal.
+      const directSubmit = target.closest('[data-enter="submit"]') !== null;
+      if (primary && (directSubmit || !rest.length)) {
         primary.click();
         return;
       }
 
       const next = rest[0] ?? primary;
+
       if (!next) return;
       next.focus();
       if (
