@@ -7,13 +7,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import {
   Table,
@@ -1095,8 +1088,8 @@ function ProdutosReportView({
                   <TableRow key={p.productId ?? p.code + p.name}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-muted-foreground">{p.code || "—"}</TableCell>
-                    <TableCell>{p.category}</TableCell>
-                    <TableCell>{p.supplier}</TableCell>
+                    <TableCell>{fmtCategory(p.category)}</TableCell>
+                    <TableCell>{prettyLabel(p.supplier)}</TableCell>
                     <TableCell className="text-right">{p.quantity}</TableCell>
                     <TableCell className="text-right">
                       {fmtConsumption(p.consumption, p.consumptionUnit)}
@@ -1285,7 +1278,7 @@ function OrcamentosReportView({
                     <TableCell>{r.client_name}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
-                        {r.status}
+                        {prettyLabel(r.status)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(r.value)}</TableCell>
@@ -1329,7 +1322,7 @@ function OrcamentosReportView({
                     <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
-                        {r.status}
+                        {prettyLabel(r.status)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(r.total_value)}</TableCell>
