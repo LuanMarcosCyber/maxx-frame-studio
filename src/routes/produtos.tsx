@@ -1008,10 +1008,10 @@ function Produtos() {
                               </Badge>
                             )}
                           </div>
-                          {p.source === "global" && p.supplier && (
+                          {resolveSupplier(p) && (
                             <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 whitespace-normal break-words leading-snug">
                               <span className="text-muted-foreground font-normal">FORNECEDOR: </span>
-                              {p.supplier}
+                              {resolveSupplier(p)}
                             </div>
                           )}
                         </div>
