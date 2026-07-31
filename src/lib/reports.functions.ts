@@ -227,24 +227,14 @@ export const getVendasOptions = createServerFn({ method: "GET" })
     }
 
 
-    // Products/categories/suppliers for filter dropdowns.
+    // Products/categories/suppliers for filter dropdowns (catálogo próprio + global).
     const prodClient = isAdmin
       ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
       : supabase;
-    const { data: prods } = await prodClient
-      .from("products")
-      .select("id, code, description, category, supplier")
-      .order("description");
-    const products = (prods ?? []).map((p) => ({
-      id: p.id,
-      label: `${p.code ? p.code + " - " : ""}${p.description ?? ""}`.trim(),
-    }));
-    const categories = Array.from(
-      new Set((prods ?? []).map((p) => (p.category ?? "").trim()).filter(Boolean)),
-    ).sort();
-    const suppliers = Array.from(
-      new Set((prods ?? []).map((p) => (p.supplier ?? "").trim()).filter(Boolean)),
-    ).sort();
+    const lookup = await buildProductLookup(prodClient);
+    const products = lookup.options;
+    const categories = lookup.categories;
+    const suppliers = lookup.supplierNames;
 
     const clientClient = isAdmin
       ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
