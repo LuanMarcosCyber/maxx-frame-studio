@@ -553,7 +553,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         if (pExisting) {
           pExisting.quantity += 1;
           pExisting.value += part.value;
-          pExisting.consumption += part.consumption;
+          pExisting.consumption += finalConsumption;
           if (!pExisting.consumptionUnit && part.consumptionUnit) {
             pExisting.consumptionUnit = part.consumptionUnit;
           }
