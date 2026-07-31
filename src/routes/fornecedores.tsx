@@ -907,7 +907,7 @@ function Fornecedores() {
                           <tr key={p.id}>
                             <td className="py-1.5 px-2 font-mono">{p.code}</td>
                             <td className="py-1.5 px-2">{p.description}</td>
-                            <td className="py-1.5 px-2 text-muted-foreground">{p.category}</td>
+                            <td className="py-1.5 px-2 text-muted-foreground">{fmtCategory(p.category)}</td>
                             <td className="py-1.5 px-2 text-right">
                               {p.base_price != null
                                 ? p.base_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
