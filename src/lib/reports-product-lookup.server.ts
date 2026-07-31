@@ -16,6 +16,8 @@ export type ProductMeta = {
   description: string;
   category: string;
   supplier: string;
+  /** Perda (%) efetiva do produto — aplicada por último no consumo dos relatórios */
+  wastePct: number;
 };
 
 export type ProductLookup = {
