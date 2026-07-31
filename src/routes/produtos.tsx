@@ -205,6 +205,7 @@ function Produtos() {
   }, [search]);
   useEffect(() => {
     setPage(1);
+    setSupplierFilter("todos");
   }, [activeCategory]);
 
   // Ensure auto-distributed products exist and detect missing supplier config.
