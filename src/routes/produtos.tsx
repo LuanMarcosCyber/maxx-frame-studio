@@ -35,7 +35,9 @@ import {
   SupplierPicker,
   productCategoryToSupplierCategory,
   supplierLabel,
+  useSuppliersQuery,
 } from "@/components/suppliers/SupplierPicker";
+import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
