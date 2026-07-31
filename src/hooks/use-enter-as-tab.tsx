@@ -134,17 +134,8 @@ export function useEnterAsTab() {
       const next = rest[0] ?? primary;
 
       if (!next) return;
-      next.focus();
-      if (
-        next instanceof HTMLInputElement ||
-        next instanceof HTMLTextAreaElement
-      ) {
-        try {
-          next.select();
-        } catch {
-          /* alguns tipos de input não suportam select() */
-        }
-      }
+      focusNext(next);
+
 
     };
 
