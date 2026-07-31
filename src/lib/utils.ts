@@ -133,4 +133,41 @@ export function fmtCEP(value: string | null | undefined): string {
   return `${d.slice(0, 5)}-${d.slice(5)}`;
 }
 
+/** Palavras que permanecem em minúsculas no meio do rótulo. */
+const LOWER_WORDS = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "com", "a", "o"]);
+
+/**
+ * Converte um valor técnico do banco (snake_case, kebab-case, enum em
+ * minúsculas) em um rótulo amigável para o usuário.
+ * Ex.: "produtos_diversos" → "Produtos Diversos"; "materiais-auxiliares" →
+ * "Materiais Auxiliares". Valores que já vêm formatados (com espaços e
+ * maiúsculas, como "Em produção") são preservados.
+ */
+export function prettyLabel(value: string | null | undefined): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  // Já parece um rótulo humano (tem maiúscula e não tem separador técnico).
+  if (!/[_-]/.test(raw) && /[A-ZÀ-Ý]/.test(raw)) return raw;
+  const parts = raw
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ");
+  return parts
+    .map((w, i) => {
+      const lower = w.toLowerCase();
+      if (i > 0 && LOWER_WORDS.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
+/** Alias semântico para categorias de produtos/fornecedores. */
+export function fmtCategory(value: string | null | undefined): string {
+  const v = String(value ?? "").trim();
+  if (!v || v === "—") return v || "—";
+  return prettyLabel(v);
+}
+
+
 
