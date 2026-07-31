@@ -937,7 +937,7 @@ function Produtos() {
                       <td className="py-3.5 px-6 font-mono font-semibold">{p.code}</td>
                       <td className="py-3.5 px-3">{p.name ?? "—"}</td>
                       <td className="py-3.5 px-3 text-muted-foreground">
-                        {p.supplier ?? "—"}
+                        {resolveSupplier(p) || "—"}
                       </td>
                       {showInternal && (
                         <td className="py-3.5 px-3 font-semibold">
