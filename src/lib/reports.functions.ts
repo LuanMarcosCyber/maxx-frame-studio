@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { buildProductLookup } from "@/lib/reports-product-lookup.server";
 
 export interface VendasFilters {
   period: string; // hoje|ontem|semana|mes|ano|todos
@@ -226,24 +227,14 @@ export const getVendasOptions = createServerFn({ method: "GET" })
     }
 
 
-    // Products/categories/suppliers for filter dropdowns.
+    // Products/categories/suppliers for filter dropdowns (catálogo próprio + global).
     const prodClient = isAdmin
       ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
       : supabase;
-    const { data: prods } = await prodClient
-      .from("products")
-      .select("id, code, description, category, supplier")
-      .order("description");
-    const products = (prods ?? []).map((p) => ({
-      id: p.id,
-      label: `${p.code ? p.code + " - " : ""}${p.description ?? ""}`.trim(),
-    }));
-    const categories = Array.from(
-      new Set((prods ?? []).map((p) => (p.category ?? "").trim()).filter(Boolean)),
-    ).sort();
-    const suppliers = Array.from(
-      new Set((prods ?? []).map((p) => (p.supplier ?? "").trim()).filter(Boolean)),
-    ).sort();
+    const lookup = await buildProductLookup(prodClient);
+    const products = lookup.options;
+    const categories = lookup.categories;
+    const suppliers = lookup.supplierNames;
 
     const clientClient = isAdmin
       ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
@@ -515,19 +506,8 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       .in("budget_id", budgetIds);
     if (itemsErr) throw itemsErr;
 
-    // 3. Fetch products for id -> supplier/category/description lookup
-    const { data: prodRows } = await client
-      .from("products")
-      .select("id, code, description, category, supplier");
-    const productMap = new Map<string, { code: string; description: string; category: string; supplier: string }>();
-    for (const p of prodRows ?? []) {
-      productMap.set(p.id, {
-        code: p.code ?? "",
-        description: p.description ?? "",
-        category: (p.category ?? "").trim() || "—",
-        supplier: (p.supplier ?? "").trim() || "—",
-      });
-    }
+    // 3. Lookup unificado id -> supplier/category/description (próprios + globais)
+    const productMap = (await buildProductLookup(client)).map;
 
     // Map: which orderId each budget belongs to (a budget may map to multiple orders in theory; we count once per order)
     const budgetToOrders = new Map<string, string[]>();
@@ -1781,10 +1761,7 @@ export const getInsightsReport = createServerFn({ method: "POST" })
     if (budgetIds.length > 0) {
       const { data: itemRows } = await client
         .from("budget_items").select("data, budget_id").in("budget_id", budgetIds);
-      const { data: prodRows } = await client
-        .from("products").select("id, code, description, supplier");
-      const pMap = new Map<string, { code: string; description: string; supplier: string }>();
-      for (const p of prodRows ?? []) pMap.set(p.id, { code: p.code ?? "", description: p.description ?? "", supplier: (p.supplier ?? "").trim() || "—" });
+      const pMap = (await buildProductLookup(client)).map;
       const supTotals = new Map<string, number>();
       const prodTotals = new Map<string, { code: string; name: string; value: number; qty: number }>();
       let grand = 0;
