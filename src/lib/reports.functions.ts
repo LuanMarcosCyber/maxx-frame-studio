@@ -536,11 +536,16 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         const category = meta?.category ?? "—";
         const code = meta?.code || part.code || "";
         const description = meta?.description || part.description || "Produto";
+        // Consumo final = consumo base da categoria × (1 + perda %) — a perda é
+        // sempre o último passo, aplicada só no relatório (não altera pedidos/preços).
+        const wastePct = Number(meta?.wastePct) || 0;
+        const finalConsumption = part.consumption * (1 + wastePct / 100);
 
         // Filters
         if (data.supplier && data.supplier !== supplier) continue;
         if (data.category && data.category !== category) continue;
         if (data.productId && data.productId !== part.productId) continue;
+
 
         // per-product
         const pKey = part.productId;
@@ -548,7 +553,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
         if (pExisting) {
           pExisting.quantity += 1;
           pExisting.value += part.value;
-          pExisting.consumption += part.consumption;
+          pExisting.consumption += finalConsumption;
           if (!pExisting.consumptionUnit && part.consumptionUnit) {
             pExisting.consumptionUnit = part.consumptionUnit;
           }
@@ -563,7 +568,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
             quantity: 1,
             value: part.value,
             orders: 0,
-            consumption: part.consumption,
+            consumption: finalConsumption,
             consumptionUnit: part.consumptionUnit,
             orderSet: new Set(orderIds),
           });
