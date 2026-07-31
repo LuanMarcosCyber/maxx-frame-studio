@@ -101,8 +101,24 @@ export function useEnterAsTab() {
       // Botões / links: deixa o comportamento nativo (executa a ação).
       if (target.closest("button,a,[role='button']")) return;
 
-      // Campo editável?
-      if (!target.matches?.(EDITABLE_SELECTOR)) return;
+      // Opt-out explícito
+      if (target.closest('[data-enter="native"]')) return;
+
+      // Modal de confirmação sem campos: Enter executa a ação principal.
+      if (!target.matches?.(EDITABLE_SELECTOR)) {
+        const dialog = target.closest("[role='alertdialog'],[role='dialog']") as HTMLElement | null;
+        if (!dialog) return;
+        const actions = Array.from(
+          dialog.querySelectorAll<HTMLElement>("button,[role='button']"),
+        ).filter((el) => isVisible(el) && !isSecondaryControl(el));
+        const main = actions.find(isPrimaryAction);
+        if (main) {
+          e.preventDefault();
+          main.click();
+        }
+        return;
+      }
+
 
       // Opt-out explícito
       if (target.closest('[data-enter="native"]')) return;
