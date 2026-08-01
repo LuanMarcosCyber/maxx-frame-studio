@@ -490,11 +490,18 @@ function Relatorios() {
               status,
               clientId: clientId === "todos" ? undefined : clientId,
               operatorId: operatorId === "todos" ? undefined : operatorId,
-              empresaUserId: empresaUserId || undefined,
+              empresaUserId:
+                empresaValue === EMPRESA_TODAS || empresaValue === EMPRESA_SEM_TOTALMAXX
+                  ? undefined
+                  : empresaValue,
+              excludeTotalmaxx: empresaValue === EMPRESA_SEM_TOTALMAXX,
               category: category === "todos" ? undefined : category,
               supplier: supplier === "todos" ? undefined : supplier,
               productId: productId === "todos" ? undefined : productId,
+              dateFrom: period === "personalizado" ? toISODate(dateFrom) : undefined,
+              dateTo: period === "personalizado" ? toISODate(dateTo) : undefined,
             }}
+
             granularity={granularity}
             cityFilter={cityFilter === "todos" ? undefined : cityFilter}
             search={search}
