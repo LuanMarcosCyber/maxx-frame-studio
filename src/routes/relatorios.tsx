@@ -158,6 +158,58 @@ const PERIOD_OPTIONS: ComboboxOption[] = [
 const EMPRESA_SEM_TOTALMAXX = "sem_totalmaxx";
 const EMPRESA_TODAS = "todos";
 
+/** Date -> "yyyy-mm-dd" (local, sem deslocamento de fuso). */
+function toISODate(d?: Date): string | undefined {
+  if (!d) return undefined;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function DateField({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  value?: Date;
+  onChange: (d?: Date) => void;
+  placeholder: string;
+  disabled?: (date: Date) => boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            "w-full justify-start font-normal",
+            !value && "text-muted-foreground",
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? value.toLocaleDateString("pt-BR") : placeholder}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={(d) => {
+            onChange(d ?? undefined);
+            setOpen(false);
+          }}
+          disabled={disabled}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+
 
 const GRANULARITY_OPTIONS: ComboboxOption[] = [
   { value: "dia", label: "Dia" },
