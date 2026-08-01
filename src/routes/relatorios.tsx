@@ -362,25 +362,31 @@ function Relatorios() {
                 <div className="space-y-1.5">
                   <Label>Empresa</Label>
                   <Combobox
-                    value={empresaUserId || "todos"}
-                    onChange={(v) => setEmpresaUserId(v === "todos" ? "" : v)}
-                    placeholder="Todas"
+                    value={empresaValue}
+                    onChange={(v) => {
+                      setEmpresaTouched(true);
+                      setEmpresaValue(v);
+                    }}
+                    placeholder="Todas (Sem TOTALMAXX)"
                     searchPlaceholder="Digite o nome da empresa..."
                     emptyText="Nenhuma empresa encontrada."
                     options={
                       isAdmin
                         ? [
-                            { value: "todos", label: "Todas" },
+                            { value: EMPRESA_SEM_TOTALMAXX, label: "Todas (Sem TOTALMAXX)" },
+                            { value: EMPRESA_TODAS, label: "Todas" },
                             ...empresasList.map((e) => ({ value: e.id, label: e.name })),
                           ]
                         : [
                             ...empresasList.map((e) => ({ value: e.id, label: e.name })),
-                            { value: "todos", label: "Todas" },
+                            { value: EMPRESA_SEM_TOTALMAXX, label: "Todas (Sem TOTALMAXX)" },
+                            { value: EMPRESA_TODAS, label: "Todas" },
                           ]
                     }
                   />
                 </div>
               )}
+
 
 
               {showCategoryFilter && (
