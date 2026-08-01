@@ -152,7 +152,12 @@ const PERIOD_OPTIONS: ComboboxOption[] = [
   { value: "mes", label: "Este mês" },
   { value: "ano", label: "Este ano" },
   { value: "todos", label: "Todos" },
+  { value: "personalizado", label: "Personalizado" },
 ];
+
+const EMPRESA_SEM_TOTALMAXX = "sem_totalmaxx";
+const EMPRESA_TODAS = "todos";
+
 
 const GRANULARITY_OPTIONS: ComboboxOption[] = [
   { value: "dia", label: "Dia" },
