@@ -11,6 +11,9 @@ export interface VendasFilters {
   category?: string;
   supplier?: string;
   productId?: string;
+  dateFrom?: string; // yyyy-mm-dd (period === "personalizado")
+  dateTo?: string; // yyyy-mm-dd (period === "personalizado")
+  excludeTotalmaxx?: boolean; // "Todas (Sem TOTALMAXX)"
 }
 
 export interface VendasOrder {
@@ -321,7 +324,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<VendasReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const { supabase } = context;
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { isAdmin, client, userIds } = scope;
 
     let q = client
@@ -332,7 +335,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(500);
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     if (from) q = q.gte("created_at", from);
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
@@ -501,7 +504,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ProdutosFornecedoresReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
     // 1. Fetch orders (respecting filters)
@@ -513,7 +516,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1000);
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     if (from) q = q.gte("created_at", from);
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
@@ -826,7 +829,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
   .inputValidator((data: OrcamentosFilters) => data)
   .handler(async ({ data, context }): Promise<OrcamentosReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { isAdmin, client, userIds } = scope;
 
     let q = client
@@ -837,7 +840,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1000);
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     if (from) q = q.gte("created_at", from);
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
@@ -1040,7 +1043,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
   .inputValidator((data: ClientesFilters) => data)
   .handler(async ({ data, context }): Promise<ClientesReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
 
@@ -1076,7 +1079,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const { data: budgetsData, error: bErr } = await bq;
     if (bErr) throw bErr;
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     const fromTs = from ? new Date(from).getTime() : null;
     const toTs = to ? new Date(to).getTime() : null;
     const inRange = (iso: string) => {
@@ -1295,11 +1298,11 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ColaboradoresReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
 
     // Budgets
     let bq = client
@@ -1547,7 +1550,7 @@ export const getEmpresasReport = createServerFn({ method: "POST" })
     const allUserIds = Array.from(ownerOf.keys());
 
     // 3. Period range
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
 
     // 4. Fetch orders in period
     let oq = supabaseAdmin
@@ -1694,12 +1697,12 @@ export const getInsightsReport = createServerFn({ method: "POST" })
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<{ insights: Insight[] }> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
 
     // Windows: current period vs previous same-size
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     const now = Date.now();
     const fromTs = from ? new Date(from).getTime() : new Date(now - 30 * 86400000).getTime();
     const toTs = to ? new Date(to).getTime() : now;
