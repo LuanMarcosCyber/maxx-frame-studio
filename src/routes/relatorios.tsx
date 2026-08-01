@@ -218,11 +218,12 @@ function Relatorios() {
     enabled: !!session,
   });
 
-  // Set default to active empresa on first load.
+  // Não-admin: mantém o padrão de abrir na empresa ativa, salvo escolha do usuário.
   const activeEmpresaId = optionsQuery.data?.activeEmpresaId ?? null;
   useEffect(() => {
-    if (!empresaUserId && activeEmpresaId) setEmpresaUserId(activeEmpresaId);
-  }, [activeEmpresaId, empresaUserId]);
+    if (!empresaTouched && activeEmpresaId) setEmpresaValue(activeEmpresaId);
+  }, [activeEmpresaId, empresaTouched]);
+
 
   const empresasList = optionsQuery.data?.empresas ?? [];
   const showEmpresaFilter = isAdmin || empresasList.length > 1;
