@@ -1531,10 +1531,14 @@ export const getEmpresasReport = createServerFn({ method: "POST" })
       id: string; full_name: string | null; store_name: string | null; active: boolean;
     }>;
 
-    // Filter by chosen empresa if any
+    // Filter by chosen empresa if any (or drop the internal TOTALMAXX company)
+    const excludedIds = data.empresaUserId || !data.excludeTotalmaxx
+      ? []
+      : await totalmaxxRootIds(supabaseAdmin);
     const filteredEmpresas = data.empresaUserId
       ? empresas.filter((e) => e.id === data.empresaUserId)
-      : empresas;
+      : empresas.filter((e) => !excludedIds.includes(e.id));
+
 
     // 2. Map user_id -> empresaId (self or parent)
     const empresaIds = filteredEmpresas.map((e) => e.id);
