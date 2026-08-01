@@ -86,9 +86,26 @@ export interface ProdutosFornecedoresReport {
 
 
 
-function periodRange(period: string): { from?: string; to?: string } {
+function periodRange(
+  period: string,
+  dateFrom?: string,
+  dateTo?: string,
+): { from?: string; to?: string } {
   const now = new Date();
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (period === "personalizado") {
+    const out: { from?: string; to?: string } = {};
+    if (dateFrom) {
+      const [y, m, d] = dateFrom.split("-").map(Number);
+      if (y && m && d) out.from = new Date(y, m - 1, d).toISOString();
+    }
+    if (dateTo) {
+      const [y, m, d] = dateTo.split("-").map(Number);
+      // exclusive upper bound = day after the chosen end date
+      if (y && m && d) out.to = new Date(y, m - 1, d + 1).toISOString();
+    }
+    return out;
+  }
   if (period === "hoje") {
     const f = startOfDay(now);
     return { from: f.toISOString() };
@@ -113,15 +130,36 @@ function periodRange(period: string): { from?: string; to?: string } {
   return {};
 }
 
+/** Resolve the range for a filter payload (handles "Personalizado"). */
+function filterRange(data: { period?: string; dateFrom?: string; dateTo?: string }) {
+  return periodRange(data.period || "mes", data.dateFrom, data.dateTo);
+}
+
+/** Root profile ids of the internal TOTALMAXX company (test data). */
+async function totalmaxxRootIds(supabaseAdmin: any): Promise<string[]> {
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("id, store_name, full_name")
+    .is("parent_user_id", null);
+  return ((data ?? []) as Array<{ id: string; store_name: string | null; full_name: string | null }>)
+    .filter((p) =>
+      `${p.store_name ?? ""} ${p.full_name ?? ""}`.toLowerCase().replace(/\s+/g, "").includes("totalmaxx"),
+    )
+    .map((p) => p.id);
+}
+
 /**
  * Resolve the empresa filter scope for the current user.
  * - Admin: cross-tenant read; empresaUserId may be any root profile.
  * - Non-admin: only companies from list_switchable_companies (own + linked)
  *   are authorized. Manipulated ids are rejected server-side.
+ * - excludeTotalmaxx: with no specific empresa, drops the internal TOTALMAXX
+ *   company (and its users) from the scope.
  */
 async function resolveEmpresaScope(
   context: { supabase: any; userId: string },
   empresaUserId: string | undefined,
+  excludeTotalmaxx?: boolean,
 ): Promise<{ isAdmin: boolean; client: any; userIds: string[] | null; allowedRoots: string[] }> {
   const { supabase, userId } = context;
   const { data: adminRow } = await supabase.rpc("has_role", {
@@ -145,11 +183,31 @@ async function resolveEmpresaScope(
     const { data: children } = await supabaseAdmin
       .from("profiles").select("id").eq("parent_user_id", empresaUserId);
     userIds = [empresaUserId, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+  } else if (excludeTotalmaxx) {
+    const excluded = await totalmaxxRootIds(supabaseAdmin);
+    if (excluded.length) {
+      let roots: string[] = allowedRoots;
+      if (isAdmin) {
+        const { data: allRoots } = await supabaseAdmin
+          .from("profiles").select("id").is("parent_user_id", null);
+        roots = ((allRoots ?? []) as Array<{ id: string }>).map((r) => r.id);
+      }
+      roots = roots.filter((r) => !excluded.includes(r));
+      const { data: children } = await supabaseAdmin
+        .from("profiles").select("id")
+        .in("parent_user_id", roots.length ? roots : ["00000000-0000-0000-0000-000000000000"]);
+      userIds = [...roots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+    } else if (!isAdmin && allowedRoots.length > 1) {
+      const { data: children } = await supabaseAdmin
+        .from("profiles").select("id").in("parent_user_id", allowedRoots);
+      userIds = [...allowedRoots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+    }
   } else if (!isAdmin && allowedRoots.length > 1) {
     const { data: children } = await supabaseAdmin
       .from("profiles").select("id").in("parent_user_id", allowedRoots);
     userIds = [...allowedRoots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
   }
+
 
   const needsAdmin = isAdmin || userIds !== null;
   const client = needsAdmin ? (supabaseAdmin as any) : supabase;
