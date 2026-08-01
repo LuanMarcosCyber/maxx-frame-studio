@@ -11,6 +11,9 @@ export interface VendasFilters {
   category?: string;
   supplier?: string;
   productId?: string;
+  dateFrom?: string; // yyyy-mm-dd (period === "personalizado")
+  dateTo?: string; // yyyy-mm-dd (period === "personalizado")
+  excludeTotalmaxx?: boolean; // "Todas (Sem TOTALMAXX)"
 }
 
 export interface VendasOrder {
@@ -86,9 +89,26 @@ export interface ProdutosFornecedoresReport {
 
 
 
-function periodRange(period: string): { from?: string; to?: string } {
+function periodRange(
+  period: string,
+  dateFrom?: string,
+  dateTo?: string,
+): { from?: string; to?: string } {
   const now = new Date();
   const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (period === "personalizado") {
+    const out: { from?: string; to?: string } = {};
+    if (dateFrom) {
+      const [y, m, d] = dateFrom.split("-").map(Number);
+      if (y && m && d) out.from = new Date(y, m - 1, d).toISOString();
+    }
+    if (dateTo) {
+      const [y, m, d] = dateTo.split("-").map(Number);
+      // exclusive upper bound = day after the chosen end date
+      if (y && m && d) out.to = new Date(y, m - 1, d + 1).toISOString();
+    }
+    return out;
+  }
   if (period === "hoje") {
     const f = startOfDay(now);
     return { from: f.toISOString() };
@@ -113,15 +133,36 @@ function periodRange(period: string): { from?: string; to?: string } {
   return {};
 }
 
+/** Resolve the range for a filter payload (handles "Personalizado"). */
+function filterRange(data: { period?: string; dateFrom?: string; dateTo?: string }) {
+  return periodRange(data.period || "mes", data.dateFrom, data.dateTo);
+}
+
+/** Root profile ids of the internal TOTALMAXX company (test data). */
+async function totalmaxxRootIds(supabaseAdmin: any): Promise<string[]> {
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("id, store_name, full_name")
+    .is("parent_user_id", null);
+  return ((data ?? []) as Array<{ id: string; store_name: string | null; full_name: string | null }>)
+    .filter((p) =>
+      `${p.store_name ?? ""} ${p.full_name ?? ""}`.toLowerCase().replace(/\s+/g, "").includes("totalmaxx"),
+    )
+    .map((p) => p.id);
+}
+
 /**
  * Resolve the empresa filter scope for the current user.
  * - Admin: cross-tenant read; empresaUserId may be any root profile.
  * - Non-admin: only companies from list_switchable_companies (own + linked)
  *   are authorized. Manipulated ids are rejected server-side.
+ * - excludeTotalmaxx: with no specific empresa, drops the internal TOTALMAXX
+ *   company (and its users) from the scope.
  */
 async function resolveEmpresaScope(
   context: { supabase: any; userId: string },
   empresaUserId: string | undefined,
+  excludeTotalmaxx?: boolean,
 ): Promise<{ isAdmin: boolean; client: any; userIds: string[] | null; allowedRoots: string[] }> {
   const { supabase, userId } = context;
   const { data: adminRow } = await supabase.rpc("has_role", {
@@ -145,11 +186,31 @@ async function resolveEmpresaScope(
     const { data: children } = await supabaseAdmin
       .from("profiles").select("id").eq("parent_user_id", empresaUserId);
     userIds = [empresaUserId, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+  } else if (excludeTotalmaxx) {
+    const excluded = await totalmaxxRootIds(supabaseAdmin);
+    if (excluded.length) {
+      let roots: string[] = allowedRoots;
+      if (isAdmin) {
+        const { data: allRoots } = await supabaseAdmin
+          .from("profiles").select("id").is("parent_user_id", null);
+        roots = ((allRoots ?? []) as Array<{ id: string }>).map((r) => r.id);
+      }
+      roots = roots.filter((r) => !excluded.includes(r));
+      const { data: children } = await supabaseAdmin
+        .from("profiles").select("id")
+        .in("parent_user_id", roots.length ? roots : ["00000000-0000-0000-0000-000000000000"]);
+      userIds = [...roots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+    } else if (!isAdmin && allowedRoots.length > 1) {
+      const { data: children } = await supabaseAdmin
+        .from("profiles").select("id").in("parent_user_id", allowedRoots);
+      userIds = [...allowedRoots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
+    }
   } else if (!isAdmin && allowedRoots.length > 1) {
     const { data: children } = await supabaseAdmin
       .from("profiles").select("id").in("parent_user_id", allowedRoots);
     userIds = [...allowedRoots, ...((children ?? []) as Array<{ id: string }>).map((c) => c.id)];
   }
+
 
   const needsAdmin = isAdmin || userIds !== null;
   const client = needsAdmin ? (supabaseAdmin as any) : supabase;
@@ -263,7 +324,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<VendasReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
     const { supabase } = context;
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { isAdmin, client, userIds } = scope;
 
     let q = client
@@ -274,7 +335,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(500);
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     if (from) q = q.gte("created_at", from);
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
@@ -443,7 +504,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ProdutosFornecedoresReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
     // 1. Fetch orders (respecting filters)
@@ -455,7 +516,7 @@ export const getProdutosFornecedoresReport = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1000);
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     if (from) q = q.gte("created_at", from);
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
@@ -768,7 +829,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
   .inputValidator((data: OrcamentosFilters) => data)
   .handler(async ({ data, context }): Promise<OrcamentosReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { isAdmin, client, userIds } = scope;
 
     let q = client
@@ -779,7 +840,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(1000);
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     if (from) q = q.gte("created_at", from);
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
@@ -982,7 +1043,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
   .inputValidator((data: ClientesFilters) => data)
   .handler(async ({ data, context }): Promise<ClientesReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
 
@@ -1018,7 +1079,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const { data: budgetsData, error: bErr } = await bq;
     if (bErr) throw bErr;
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     const fromTs = from ? new Date(from).getTime() : null;
     const toTs = to ? new Date(to).getTime() : null;
     const inRange = (iso: string) => {
@@ -1237,11 +1298,11 @@ export const getColaboradoresReport = createServerFn({ method: "POST" })
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<ColaboradoresReport> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
 
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
 
     // Budgets
     let bq = client
@@ -1470,10 +1531,14 @@ export const getEmpresasReport = createServerFn({ method: "POST" })
       id: string; full_name: string | null; store_name: string | null; active: boolean;
     }>;
 
-    // Filter by chosen empresa if any
+    // Filter by chosen empresa if any (or drop the internal TOTALMAXX company)
+    const excludedIds = data.empresaUserId || !data.excludeTotalmaxx
+      ? []
+      : await totalmaxxRootIds(supabaseAdmin);
     const filteredEmpresas = data.empresaUserId
       ? empresas.filter((e) => e.id === data.empresaUserId)
-      : empresas;
+      : empresas.filter((e) => !excludedIds.includes(e.id));
+
 
     // 2. Map user_id -> empresaId (self or parent)
     const empresaIds = filteredEmpresas.map((e) => e.id);
@@ -1489,7 +1554,7 @@ export const getEmpresasReport = createServerFn({ method: "POST" })
     const allUserIds = Array.from(ownerOf.keys());
 
     // 3. Period range
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
 
     // 4. Fetch orders in period
     let oq = supabaseAdmin
@@ -1636,12 +1701,12 @@ export const getInsightsReport = createServerFn({ method: "POST" })
   .inputValidator((data: VendasFilters) => data)
   .handler(async ({ data, context }): Promise<{ insights: Insight[] }> => {
     await (await import("@/lib/operator-guard.server")).assertOperatorPermission("reports");
-    const scope = await resolveEmpresaScope(context, data.empresaUserId);
+    const scope = await resolveEmpresaScope(context, data.empresaUserId, data.excludeTotalmaxx);
     const { client, userIds } = scope;
 
 
     // Windows: current period vs previous same-size
-    const { from, to } = periodRange(data.period || "mes");
+    const { from, to } = filterRange(data);
     const now = Date.now();
     const fromTs = from ? new Date(from).getTime() : new Date(now - 30 * 86400000).getTime();
     const toTs = to ? new Date(to).getTime() : now;

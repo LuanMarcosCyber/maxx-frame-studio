@@ -8,6 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -152,7 +156,64 @@ const PERIOD_OPTIONS: ComboboxOption[] = [
   { value: "mes", label: "Este mês" },
   { value: "ano", label: "Este ano" },
   { value: "todos", label: "Todos" },
+  { value: "personalizado", label: "Personalizado" },
 ];
+
+const EMPRESA_SEM_TOTALMAXX = "sem_totalmaxx";
+const EMPRESA_TODAS = "todos";
+
+/** Date -> "yyyy-mm-dd" (local, sem deslocamento de fuso). */
+function toISODate(d?: Date): string | undefined {
+  if (!d) return undefined;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function DateField({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  value?: Date;
+  onChange: (d?: Date) => void;
+  placeholder: string;
+  disabled?: (date: Date) => boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            "w-full justify-start font-normal",
+            !value && "text-muted-foreground",
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? value.toLocaleDateString("pt-BR") : placeholder}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={(d) => {
+            onChange(d ?? undefined);
+            setOpen(false);
+          }}
+          disabled={disabled}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
+
 
 const GRANULARITY_OPTIONS: ComboboxOption[] = [
   { value: "dia", label: "Dia" },
@@ -173,13 +234,17 @@ function Relatorios() {
   const [status, setStatus] = useState<string>("todos");
   const [clientId, setClientId] = useState<string>("todos");
   const [operatorId, setOperatorId] = useState<string>("todos");
-  const [empresaUserId, setEmpresaUserId] = useState<string>("");
+  const [empresaValue, setEmpresaValue] = useState<string>(EMPRESA_SEM_TOTALMAXX);
+  const [empresaTouched, setEmpresaTouched] = useState(false);
   const [category, setCategory] = useState<string>("todos");
   const [supplier, setSupplier] = useState<string>("todos");
   const [productId, setProductId] = useState<string>("todos");
   const [granularity, setGranularity] = useState<string>("mes");
   const [cityFilter, setCityFilter] = useState<string>("todos");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [search, setSearch] = useState("");
+
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
   const showCategoryFilter = selected === "produtos" || selected === "fornecedores";
@@ -209,11 +274,12 @@ function Relatorios() {
     enabled: !!session,
   });
 
-  // Set default to active empresa on first load.
+  // Não-admin: mantém o padrão de abrir na empresa ativa, salvo escolha do usuário.
   const activeEmpresaId = optionsQuery.data?.activeEmpresaId ?? null;
   useEffect(() => {
-    if (!empresaUserId && activeEmpresaId) setEmpresaUserId(activeEmpresaId);
-  }, [activeEmpresaId, empresaUserId]);
+    if (!empresaTouched && activeEmpresaId) setEmpresaValue(activeEmpresaId);
+  }, [activeEmpresaId, empresaTouched]);
+
 
   const empresasList = optionsQuery.data?.empresas ?? [];
   const showEmpresaFilter = isAdmin || empresasList.length > 1;
@@ -299,6 +365,25 @@ function Relatorios() {
                 />
               </div>
 
+              {period === "personalizado" && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Data inicial</Label>
+                    <DateField value={dateFrom} onChange={setDateFrom} placeholder="Selecionar data" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Data final</Label>
+                    <DateField
+                      value={dateTo}
+                      onChange={setDateTo}
+                      placeholder="Selecionar data"
+                      disabled={(d) => (dateFrom ? d < dateFrom : false)}
+                    />
+                  </div>
+                </>
+              )}
+
+
               <div className="space-y-1.5">
                 <Label>Status</Label>
                 <Combobox
@@ -352,25 +437,31 @@ function Relatorios() {
                 <div className="space-y-1.5">
                   <Label>Empresa</Label>
                   <Combobox
-                    value={empresaUserId || "todos"}
-                    onChange={(v) => setEmpresaUserId(v === "todos" ? "" : v)}
-                    placeholder="Todas"
+                    value={empresaValue}
+                    onChange={(v) => {
+                      setEmpresaTouched(true);
+                      setEmpresaValue(v);
+                    }}
+                    placeholder="Todas (Sem TOTALMAXX)"
                     searchPlaceholder="Digite o nome da empresa..."
                     emptyText="Nenhuma empresa encontrada."
                     options={
                       isAdmin
                         ? [
-                            { value: "todos", label: "Todas" },
+                            { value: EMPRESA_SEM_TOTALMAXX, label: "Todas (Sem TOTALMAXX)" },
+                            { value: EMPRESA_TODAS, label: "Todas" },
                             ...empresasList.map((e) => ({ value: e.id, label: e.name })),
                           ]
                         : [
                             ...empresasList.map((e) => ({ value: e.id, label: e.name })),
-                            { value: "todos", label: "Todas" },
+                            { value: EMPRESA_SEM_TOTALMAXX, label: "Todas (Sem TOTALMAXX)" },
+                            { value: EMPRESA_TODAS, label: "Todas" },
                           ]
                     }
                   />
                 </div>
               )}
+
 
 
               {showCategoryFilter && (
@@ -480,11 +571,18 @@ function Relatorios() {
               status,
               clientId: clientId === "todos" ? undefined : clientId,
               operatorId: operatorId === "todos" ? undefined : operatorId,
-              empresaUserId: empresaUserId || undefined,
+              empresaUserId:
+                empresaValue === EMPRESA_TODAS || empresaValue === EMPRESA_SEM_TOTALMAXX
+                  ? undefined
+                  : empresaValue,
+              excludeTotalmaxx: empresaValue === EMPRESA_SEM_TOTALMAXX,
               category: category === "todos" ? undefined : category,
               supplier: supplier === "todos" ? undefined : supplier,
               productId: productId === "todos" ? undefined : productId,
+              dateFrom: period === "personalizado" ? toISODate(dateFrom) : undefined,
+              dateTo: period === "personalizado" ? toISODate(dateTo) : undefined,
             }}
+
             granularity={granularity}
             cityFilter={cityFilter === "todos" ? undefined : cityFilter}
             search={search}
