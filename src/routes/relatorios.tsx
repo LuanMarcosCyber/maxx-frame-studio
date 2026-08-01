@@ -309,6 +309,25 @@ function Relatorios() {
                 />
               </div>
 
+              {period === "personalizado" && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Data inicial</Label>
+                    <DateField value={dateFrom} onChange={setDateFrom} placeholder="Selecionar data" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Data final</Label>
+                    <DateField
+                      value={dateTo}
+                      onChange={setDateTo}
+                      placeholder="Selecionar data"
+                      disabled={(d) => (dateFrom ? d < dateFrom : false)}
+                    />
+                  </div>
+                </>
+              )}
+
+
               <div className="space-y-1.5">
                 <Label>Status</Label>
                 <Combobox
