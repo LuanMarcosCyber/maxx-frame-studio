@@ -312,13 +312,16 @@ function ComponentsTable({
   rows,
   showPrices,
   priceMultiplier = 1,
+  paspaturObs,
 }: {
   rows: CompRow[];
   showPrices: boolean;
   priceMultiplier?: number;
+  paspaturObs?: string;
 }) {
   if (rows.length === 0) return null;
   const showQty = rows.some((r) => r.qtd > 1);
+  const colCount = 2 + (showQty ? 1 : 0) + (showPrices ? 1 : 0);
   return (
     <table className="comp-table">
       <thead>
@@ -331,17 +334,31 @@ function ComponentsTable({
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i}>
-            <td className="cat">{r.categoria}</td>
-            {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
-            <td className="prod">{r.produto}</td>
-            {showPrices && <td className="val">{fmtMoney(r.valor * priceMultiplier)}</td>}
-          </tr>
+          <Fragment key={i}>
+            <tr>
+              <td className="cat">{r.categoria}</td>
+              {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
+              <td className="prod">{r.produto}</td>
+              {showPrices && <td className="val">{fmtMoney(r.valor * priceMultiplier)}</td>}
+            </tr>
+            {paspaturObs && r.categoria === "Paspatur interno" && (
+              <tr className="pasp-obs-row">
+                <td colSpan={colCount}>
+                  <div className="pasp-obs-arrow">↓ OBSERVAÇÃO DO PASPATUR INTERNO</div>
+                  <div className="pasp-obs-box">
+                    <span className="warn">⚠</span>
+                    <span className="txt">{paspaturObs}</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </Fragment>
         ))}
       </tbody>
     </table>
   );
 }
+
 
 export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; via: string }) {
   const variant: Variant = via === "producao" || via === "cliente" ? via : "loja";
