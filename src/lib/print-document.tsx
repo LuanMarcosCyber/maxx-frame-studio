@@ -1001,12 +1001,6 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                                 <td>{v}</td>
                               </tr>
                             ))}
-                            {dStr(d, "paspaturAdicionalObs") && (
-                              <tr>
-                                <td className="k">Obs. Paspatur interno</td>
-                                <td>{dStr(d, "paspaturAdicionalObs")}</td>
-                              </tr>
-                            )}
                             {itemObs && (
                               <tr>
                                 <td className="k">Observações</td>
@@ -1015,7 +1009,11 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                             )}
                           </tbody>
                         </table>
-                        <ComponentsTable rows={comps} showPrices={false} />
+                        <ComponentsTable
+                          rows={comps}
+                          showPrices={false}
+                          paspaturObs={dStr(d, "paspaturAdicionalObs")}
+                        />
                       </div>
                     </div>
                   ) : (
