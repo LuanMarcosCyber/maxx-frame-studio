@@ -1026,10 +1026,11 @@ function ResumoDialog({
               {
                 label: "Paspatur interno",
                 value: fmtMoney(dNum(d, "valorPaspaturAdicional")),
-                sub: (() => {
-                  const code = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
-                  const obs = typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs : "";
-                  return obs ? `${code} · ${obs}` : code;
+                sub: productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription"),
+                note: (() => {
+                  const obs =
+                    typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs.trim() : "";
+                  return obs ? { title: "Observação do Paspatur Interno", text: obs } : undefined;
                 })(),
               },
               {
