@@ -1,5 +1,5 @@
 // Print document renderer — opened in a new tab. Does not auto-call window.print().
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { canShareFiles, downloadBlob, generateSheetPdfBlob, sharePdf } from "@/lib/print-pdf";
 import { useServerFn } from "@tanstack/react-start";
