@@ -1356,11 +1356,11 @@ function ResumoDialog({
             </div>
 
             {gStr("observacoes") && (
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                  Observações
+              <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+                  🟨 Observação do {isPedido ? "Pedido" : "Orçamento"}
                 </div>
-                <div className="text-sm text-foreground whitespace-pre-wrap rounded-md border border-border p-3 bg-muted/30">
+                <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
                   {gStr("observacoes")}
                 </div>
               </div>
