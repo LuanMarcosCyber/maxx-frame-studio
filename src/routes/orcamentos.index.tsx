@@ -1245,21 +1245,30 @@ function ResumoDialog({
                 </div>
                 <div className="rounded-lg border border-border divide-y divide-border">
                   {itemRows.map((r, i) => (
-                    <div
-                      key={r.key ?? `${r.label}-${i}`}
-                      className="flex items-start justify-between px-4 py-3 text-sm"
-                    >
-                      <div>
-                        <div className="font-medium text-foreground">{r.label}</div>
-                        {r.sub && (
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {r.sub}
+                    <div key={r.key ?? `${r.label}-${i}`}>
+                      <div className="flex items-start justify-between px-4 py-3 text-sm">
+                        <div>
+                          <div className="font-medium text-foreground">{r.label}</div>
+                          {r.sub && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {r.sub}
+                            </div>
+                          )}
+                        </div>
+                        <div className="font-semibold text-foreground whitespace-nowrap ml-4">
+                          {r.value}
+                        </div>
+                      </div>
+                      {"note" in r && r.note && (
+                        <div className="mx-4 mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+                            🟨 {r.note.title}
                           </div>
-                        )}
-                      </div>
-                      <div className="font-semibold text-foreground whitespace-nowrap ml-4">
-                        {r.value}
-                      </div>
+                          <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
+                            {r.note.text}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
