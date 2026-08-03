@@ -739,6 +739,15 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           letter-spacing:.4px; border-bottom:1px solid #000; }
         .parc-table tr:last-child td { border-bottom:none; }
 
+        .pasp-obs-row td { padding:4px 7px !important; background:#fff; }
+        .pasp-obs-arrow { font-size:9.5px; font-weight:800; text-transform:uppercase;
+          letter-spacing:.5px; text-decoration:underline; color:#000; margin:0 0 3px 10px; }
+        .pasp-obs-box { border:2px solid #000; border-radius:3px; padding:5px 8px;
+          display:flex; align-items:flex-start; gap:6px; margin-left:10px; background:#fff; }
+        .pasp-obs-box .warn { font-size:12px; font-weight:900; line-height:1.1; }
+        .pasp-obs-box .txt { font-size:11.5px; font-weight:900; color:#000;
+          text-transform:uppercase; white-space:pre-wrap; letter-spacing:.3px; }
+
         .obs-box { margin-top:4px; font-size:10px; padding:5px 7px;
           border:1px dashed #555; background:#fff; white-space:pre-wrap; border-radius:2px;
           color:#000; }
