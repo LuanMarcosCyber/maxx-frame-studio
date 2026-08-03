@@ -984,6 +984,12 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                                 <td>{v}</td>
                               </tr>
                             ))}
+                            {dStr(d, "paspaturAdicionalObs") && (
+                              <tr>
+                                <td className="k">Obs. Paspatur interno</td>
+                                <td>{dStr(d, "paspaturAdicionalObs")}</td>
+                              </tr>
+                            )}
                             {itemObs && (
                               <tr>
                                 <td className="k">Observações</td>

@@ -1000,7 +1000,13 @@ function ResumoDialog({
   const isPedido = !!orderNumber;
   const diversosOnly = isPedido && isDiversosOnly(items);
 
-  const frameRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
+  const frameRows: {
+    label: string;
+    value: string;
+    sub?: string;
+    key?: string;
+    note?: { title: string; text: string };
+  }[] = activeItem
     ? [
         {
           label: "Tamanho original",
@@ -1020,10 +1026,11 @@ function ResumoDialog({
               {
                 label: "Paspatur interno",
                 value: fmtMoney(dNum(d, "valorPaspaturAdicional")),
-                sub: (() => {
-                  const code = productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription");
-                  const obs = typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs : "";
-                  return obs ? `${code} · ${obs}` : code;
+                sub: productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription"),
+                note: (() => {
+                  const obs =
+                    typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs.trim() : "";
+                  return obs ? { title: "Observação do Paspatur Interno", text: obs } : undefined;
                 })(),
               },
               {
@@ -1237,24 +1244,36 @@ function ResumoDialog({
                   Item {activeIdx + 1}{diversosOnly ? " — Produtos Diversos" : ""}
                 </div>
                 <div className="rounded-lg border border-border divide-y divide-border">
-                  {itemRows.map((r, i) => (
-                    <div
-                      key={r.key ?? `${r.label}-${i}`}
-                      className="flex items-start justify-between px-4 py-3 text-sm"
-                    >
-                      <div>
-                        <div className="font-medium text-foreground">{r.label}</div>
-                        {r.sub && (
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {r.sub}
+                  {itemRows.map((r, i) => {
+                    const note = (r as { note?: { title: string; text: string } }).note;
+                    return (
+                    <div key={r.key ?? `${r.label}-${i}`}>
+                      <div className="flex items-start justify-between px-4 py-3 text-sm">
+                        <div>
+                          <div className="font-medium text-foreground">{r.label}</div>
+                          {r.sub && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {r.sub}
+                            </div>
+                          )}
+                        </div>
+                        <div className="font-semibold text-foreground whitespace-nowrap ml-4">
+                          {r.value}
+                        </div>
+                      </div>
+                      {note && (
+                        <div className="mx-4 mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+                            🟨 {note.title}
                           </div>
-                        )}
-                      </div>
-                      <div className="font-semibold text-foreground whitespace-nowrap ml-4">
-                        {r.value}
-                      </div>
+                          <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
+                            {note.text}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
                     <span className="font-semibold text-foreground">
                       Subtotal Item {activeIdx + 1}
@@ -1337,11 +1356,11 @@ function ResumoDialog({
             </div>
 
             {gStr("observacoes") && (
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                  Observações
+              <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+                  🟨 Observação do {isPedido ? "Pedido" : "Orçamento"}
                 </div>
-                <div className="text-sm text-foreground whitespace-pre-wrap rounded-md border border-border p-3 bg-muted/30">
+                <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
                   {gStr("observacoes")}
                 </div>
               </div>
