@@ -1159,10 +1159,12 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                     <span>{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
                   </div>
                 )}
-                <div className="row muted">
-                  <span>Desconto{descontoPerc > 0 ? ` (${descontoPerc}%)` : ""}</span>
-                  <span>{desconto > 0 ? `- ${fmtMoney(desconto)}` : fmtMoney(0)}</span>
-                </div>
+                {desconto > 0 && (
+                  <div className="row muted">
+                    <span>Desconto{descontoPerc > 0 ? ` (${descontoPerc}%)` : ""}</span>
+                    <span>{`- ${fmtMoney(desconto)}`}</span>
+                  </div>
+                )}
                 {variant === "loja" && (
                   <div className="row muted">
                     <span>Total dos itens</span>
