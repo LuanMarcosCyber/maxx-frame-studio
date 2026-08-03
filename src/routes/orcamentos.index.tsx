@@ -1244,7 +1244,9 @@ function ResumoDialog({
                   Item {activeIdx + 1}{diversosOnly ? " — Produtos Diversos" : ""}
                 </div>
                 <div className="rounded-lg border border-border divide-y divide-border">
-                  {itemRows.map((r, i) => (
+                  {itemRows.map((r, i) => {
+                    const note = (r as { note?: { title: string; text: string } }).note;
+                    return (
                     <div key={r.key ?? `${r.label}-${i}`}>
                       <div className="flex items-start justify-between px-4 py-3 text-sm">
                         <div>
@@ -1259,18 +1261,19 @@ function ResumoDialog({
                           {r.value}
                         </div>
                       </div>
-                      {"note" in r && r.note && (
+                      {note && (
                         <div className="mx-4 mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
                           <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
-                            🟨 {r.note.title}
+                            🟨 {note.title}
                           </div>
                           <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
-                            {r.note.text}
+                            {note.text}
                           </div>
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
                     <span className="font-semibold text-foreground">
                       Subtotal Item {activeIdx + 1}
