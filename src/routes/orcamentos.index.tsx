@@ -1000,7 +1000,13 @@ function ResumoDialog({
   const isPedido = !!orderNumber;
   const diversosOnly = isPedido && isDiversosOnly(items);
 
-  const frameRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
+  const frameRows: {
+    label: string;
+    value: string;
+    sub?: string;
+    key?: string;
+    note?: { title: string; text: string };
+  }[] = activeItem
     ? [
         {
           label: "Tamanho original",
