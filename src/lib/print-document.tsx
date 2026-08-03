@@ -1,5 +1,5 @@
 // Print document renderer — opened in a new tab. Does not auto-call window.print().
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { canShareFiles, downloadBlob, generateSheetPdfBlob, sharePdf } from "@/lib/print-pdf";
 import { useServerFn } from "@tanstack/react-start";
@@ -312,13 +312,16 @@ function ComponentsTable({
   rows,
   showPrices,
   priceMultiplier = 1,
+  paspaturObs,
 }: {
   rows: CompRow[];
   showPrices: boolean;
   priceMultiplier?: number;
+  paspaturObs?: string;
 }) {
   if (rows.length === 0) return null;
   const showQty = rows.some((r) => r.qtd > 1);
+  const colCount = 2 + (showQty ? 1 : 0) + (showPrices ? 1 : 0);
   return (
     <table className="comp-table">
       <thead>
@@ -331,17 +334,31 @@ function ComponentsTable({
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i}>
-            <td className="cat">{r.categoria}</td>
-            {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
-            <td className="prod">{r.produto}</td>
-            {showPrices && <td className="val">{fmtMoney(r.valor * priceMultiplier)}</td>}
-          </tr>
+          <Fragment key={i}>
+            <tr>
+              <td className="cat">{r.categoria}</td>
+              {showQty && <td className="qty">{r.qtd > 1 ? `${r.qtd}x` : ""}</td>}
+              <td className="prod">{r.produto}</td>
+              {showPrices && <td className="val">{fmtMoney(r.valor * priceMultiplier)}</td>}
+            </tr>
+            {paspaturObs && r.categoria === "Paspatur interno" && (
+              <tr className="pasp-obs-row">
+                <td colSpan={colCount}>
+                  <div className="pasp-obs-arrow">↓ OBSERVAÇÃO DO PASPATUR INTERNO</div>
+                  <div className="pasp-obs-box">
+                    <span className="warn">⚠</span>
+                    <span className="txt">{paspaturObs}</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </Fragment>
         ))}
       </tbody>
     </table>
   );
 }
+
 
 export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; via: string }) {
   const variant: Variant = via === "producao" || via === "cliente" ? via : "loja";
@@ -722,6 +739,15 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
           letter-spacing:.4px; border-bottom:1px solid #000; }
         .parc-table tr:last-child td { border-bottom:none; }
 
+        .pasp-obs-row td { padding:4px 7px !important; background:#fff; }
+        .pasp-obs-arrow { font-size:9.5px; font-weight:800; text-transform:uppercase;
+          letter-spacing:.5px; text-decoration:underline; color:#000; margin:0 0 3px 10px; }
+        .pasp-obs-box { border:2px solid #000; border-radius:3px; padding:5px 8px;
+          display:flex; align-items:flex-start; gap:6px; margin-left:10px; background:#fff; }
+        .pasp-obs-box .warn { font-size:12px; font-weight:900; line-height:1.1; }
+        .pasp-obs-box .txt { font-size:11.5px; font-weight:900; color:#000;
+          text-transform:uppercase; white-space:pre-wrap; letter-spacing:.3px; }
+
         .obs-box { margin-top:4px; font-size:10px; padding:5px 7px;
           border:1px dashed #555; background:#fff; white-space:pre-wrap; border-radius:2px;
           color:#000; }
@@ -984,12 +1010,6 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                                 <td>{v}</td>
                               </tr>
                             ))}
-                            {dStr(d, "paspaturAdicionalObs") && (
-                              <tr>
-                                <td className="k">Obs. Paspatur interno</td>
-                                <td>{dStr(d, "paspaturAdicionalObs")}</td>
-                              </tr>
-                            )}
                             {itemObs && (
                               <tr>
                                 <td className="k">Observações</td>
@@ -998,7 +1018,11 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                             )}
                           </tbody>
                         </table>
-                        <ComponentsTable rows={comps} showPrices={false} />
+                        <ComponentsTable
+                          rows={comps}
+                          showPrices={false}
+                          paspaturObs={dStr(d, "paspaturAdicionalObs")}
+                        />
                       </div>
                     </div>
                   ) : (
@@ -1142,10 +1166,12 @@ export function PrintDocument({ kind, id, via }: { kind: DocKind; id: string; vi
                     <span>{rtPerc > 0 ? ` (${rtPerc}%)` : ""}</span>
                   </div>
                 )}
-                <div className="row muted">
-                  <span>Desconto{descontoPerc > 0 ? ` (${descontoPerc}%)` : ""}</span>
-                  <span>{desconto > 0 ? `- ${fmtMoney(desconto)}` : fmtMoney(0)}</span>
-                </div>
+                {desconto > 0 && (
+                  <div className="row muted">
+                    <span>Desconto{descontoPerc > 0 ? ` (${descontoPerc}%)` : ""}</span>
+                    <span>{`- ${fmtMoney(desconto)}`}</span>
+                  </div>
+                )}
                 {variant === "loja" && (
                   <div className="row muted">
                     <span>Total dos itens</span>
