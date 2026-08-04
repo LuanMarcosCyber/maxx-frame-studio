@@ -913,6 +913,11 @@ function NovoOrcamento() {
   const [valorSinalStr, setValorSinalStr] = useState<string>("");
   const [dataEntrega, setDataEntrega] = useState<string>("");
   const [dataVencimento, setDataVencimento] = useState<string>("");
+  // Data de emissão do orçamento (hoje, ou a data de criação quando editando).
+  const [dataEmissao, setDataEmissao] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [observacoes, setObservacoes] = useState<string>("");
   const [salvando, setSalvando] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -1628,6 +1633,10 @@ function NovoOrcamento() {
       setValorSinalStr(s("valorSinalStr"));
       setDataEntrega(s("dataEntrega"));
       setDataVencimento(budget.data_vencimento ?? "");
+      {
+        const created = (budget as { created_at?: string | null }).created_at;
+        if (created) setDataEmissao(String(created).slice(0, 10));
+      }
       setObservacoes(s("observacoes"));
       setInstalacaoAtivo(d.instalacaoAtivo === "sim" ? "sim" : "nao");
       setValorInstalacaoStr(s("valorInstalacaoStr"));
@@ -4178,6 +4187,7 @@ function NovoOrcamento() {
                                   key={p.numero}
                                   parcela={p}
                                   total={parcelas.length}
+                                  minDate={dataEmissao}
                                   onChange={(np) => {
                                     setParcelas((prev) =>
                                       prev.map((x, i) => (i === idx ? np : x)),
@@ -4304,6 +4314,7 @@ function NovoOrcamento() {
                       <Input
                         id="data-entrega"
                         type="date"
+                        min={dataEmissao}
                         value={dataEntrega}
                         onChange={(e) => setDataEntrega(e.target.value)}
                       />
@@ -4317,6 +4328,7 @@ function NovoOrcamento() {
                         <Input
                           id="venc"
                           type="date"
+                          min={dataEmissao}
                           value={dataVencimento}
                           onChange={(e) => setDataVencimento(e.target.value)}
                         />
@@ -4603,6 +4615,7 @@ function NovoOrcamento() {
                 key={p.numero}
                 parcela={p}
                 total={parcelas.length}
+                minDate={dataEmissao}
                 onChange={(np) => {
                   setParcelas((prev) =>
                     prev.map((x, i) => (i === idx ? np : x)),
@@ -4753,10 +4766,12 @@ function ParcelaRow({
   parcela,
   total,
   onChange,
+  minDate,
 }: {
   parcela: Parcela;
   total: number;
   onChange: (p: Parcela) => void;
+  minDate?: string;
 }) {
   const [valorStr, setValorStr] = useState<string>(parcela.valor.toFixed(2));
   useEffect(() => {
@@ -4782,6 +4797,7 @@ function ParcelaRow({
       />
       <Input
         type="date"
+        min={minDate}
         value={parcela.vencimento}
         onChange={(e) => onChange({ ...parcela, vencimento: e.target.value })}
       />

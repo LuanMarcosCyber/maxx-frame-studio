@@ -92,6 +92,7 @@ function Orcamentos() {
   const { requirePin } = useOperator();
   const { view: viewParam } = Route.useSearch();
 
+  const [search, setSearch] = useState("");
   const [viewing, setViewing] = useState<BudgetRow | null>(null);
   const [deleting, setDeleting] = useState<BudgetRow | null>(null);
   const [approving, setApproving] = useState<BudgetRow | null>(null);
@@ -181,6 +182,43 @@ function Orcamentos() {
     },
   });
   const namesMap = creatorNames ?? new Map<string, string>();
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    const digitsQ = q.replace(/\D+/g, "");
+    return rows.filter((b) => {
+      const d = (b.details ?? {}) as any;
+      const haystack = [
+        b.number,
+        b.client_name,
+        b.status,
+        d?.client?.document,
+        d?.client?.phone,
+        d?.client?.mobile_phone,
+        d?.client?.commercial_phone,
+        d?.client?.whatsapp,
+        d?.client?.email,
+        d?.observacoes,
+        d?.obs,
+        ...(Array.isArray(d?.items)
+          ? d.items.flatMap((it: any) => [
+              it?.descricao,
+              it?.description,
+              ...(Array.isArray(it?.componentes)
+                ? it.componentes.map((c: any) => `${c?.codigo ?? ""} ${c?.descricao ?? ""}`)
+                : []),
+            ])
+          : []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (haystack.includes(q)) return true;
+      if (digitsQ.length >= 3 && haystack.replace(/\D+/g, "").includes(digitsQ)) return true;
+      return false;
+    });
+  }, [rows, search]);
 
   // Abrir automaticamente o resumo quando vindo de /pedidos?view=<id>
   useEffect(() => {
@@ -341,7 +379,12 @@ function Orcamentos() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-5">
           <div className="relative w-full sm:max-w-sm">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Buscar por cliente ou número..." className="pl-9" />
+            <Input
+              placeholder="Buscar por número, cliente, CPF/CNPJ, telefone, produto..."
+              className="pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <NovoOrcamentoButton />
 
@@ -369,14 +412,14 @@ function Orcamentos() {
                     Carregando...
                   </td>
                 </tr>
-              ) : rows.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={showCollaborator ? 7 : 6} className="py-8 text-center text-muted-foreground">
                     Nenhum orçamento cadastrado.
                   </td>
                 </tr>
               ) : (
-                rows.map((b) => (
+                filtered.map((b) => (
                   <tr key={b.id} className="hover:bg-muted/40 transition">
                     {showCollaborator && (
                       <td className="py-3.5 px-6 text-muted-foreground">
