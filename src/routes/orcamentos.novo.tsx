@@ -4187,6 +4187,7 @@ function NovoOrcamento() {
                                   key={p.numero}
                                   parcela={p}
                                   total={parcelas.length}
+                                  minDate={dataEmissao}
                                   onChange={(np) => {
                                     setParcelas((prev) =>
                                       prev.map((x, i) => (i === idx ? np : x)),
@@ -4614,6 +4615,7 @@ function NovoOrcamento() {
                 key={p.numero}
                 parcela={p}
                 total={parcelas.length}
+                minDate={dataEmissao}
                 onChange={(np) => {
                   setParcelas((prev) =>
                     prev.map((x, i) => (i === idx ? np : x)),
@@ -4764,10 +4766,12 @@ function ParcelaRow({
   parcela,
   total,
   onChange,
+  minDate,
 }: {
   parcela: Parcela;
   total: number;
   onChange: (p: Parcela) => void;
+  minDate?: string;
 }) {
   const [valorStr, setValorStr] = useState<string>(parcela.valor.toFixed(2));
   useEffect(() => {
@@ -4793,6 +4797,7 @@ function ParcelaRow({
       />
       <Input
         type="date"
+        min={minDate}
         value={parcela.vencimento}
         onChange={(e) => onChange({ ...parcela, vencimento: e.target.value })}
       />
