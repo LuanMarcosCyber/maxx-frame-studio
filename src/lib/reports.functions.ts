@@ -253,6 +253,33 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       operatorsQ,
     ]);
 
+    // Nomes de clientes realmente usados em pedidos/orçamentos (mesmo sem cadastro)
+    const docClient = isAdmin
+      ? (await import("@/integrations/supabase/client.server")).supabaseAdmin
+      : supabase;
+    const [{ data: usedOrders }, { data: usedBudgets }] = await Promise.all([
+      docClient.from("orders").select("client_name").limit(5000),
+      docClient.from("budgets").select("client_name").limit(5000),
+    ]);
+    const registeredByName = new Map<string, { id: string; name: string }>();
+    for (const c of (clients ?? []) as Array<{ id: string; name: string }>) {
+      registeredByName.set(normName(c.name), c);
+    }
+    const extraNames = new Map<string, string>();
+    for (const r of [...(usedOrders ?? []), ...(usedBudgets ?? [])] as Array<{
+      client_name: string | null;
+    }>) {
+      const raw = (r.client_name ?? "").trim();
+      if (!raw) continue;
+      const key = normName(raw);
+      if (registeredByName.has(key) || extraNames.has(key)) continue;
+      extraNames.set(key, raw);
+    }
+    const clientOptions = [
+      ...((clients ?? []) as Array<{ id: string; name: string }>),
+      ...Array.from(extraNames.values()).map((name) => ({ id: `name:${name}`, name })),
+    ].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
     let empresas: { id: string; name: string }[] = [];
     let activeEmpresaId: string | null = null;
     if (isAdmin) {
@@ -307,7 +334,7 @@ export const getVendasOptions = createServerFn({ method: "GET" })
 
     return {
       isAdmin,
-      clients: clients ?? [],
+      clients: clientOptions,
       operators: operators ?? [],
       empresas,
       activeEmpresaId,
@@ -317,6 +344,43 @@ export const getVendasOptions = createServerFn({ method: "GET" })
       cities,
     };
   });
+
+
+/** Normaliza nome de cliente para comparação (acentos/caixa/espaços). */
+function normName(v: unknown): string {
+  return String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Resolve o filtro de cliente. O valor pode ser:
+ *  - um uuid de cliente cadastrado → casa por client_id OU pelo nome cadastrado;
+ *  - "name:<NOME>" → cliente digitado manualmente (sem cadastro), casa por nome.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+async function resolveClientFilter(
+  client: any,
+  clientId: string | undefined,
+): Promise<{ id?: string; name?: string } | null> {
+  if (!clientId) return null;
+  if (clientId.startsWith("name:")) return { name: normName(clientId.slice(5)) };
+  const { data } = await client.from("clients").select("name").eq("id", clientId).maybeSingle();
+  return { id: clientId, name: data?.name ? normName(data.name) : undefined };
+}
+
+function matchesClient(
+  f: { id?: string; name?: string } | null,
+  row: { client_id?: string | null; client_name?: string | null },
+): boolean {
+  if (!f) return true;
+  if (f.id && row.client_id && row.client_id === f.id) return true;
+  if (f.name && normName(row.client_name) === f.name) return true;
+  return false;
+}
 
 export const getVendasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -360,8 +424,14 @@ export const getVendasReport = createServerFn({ method: "POST" })
 
     let filtered = (rows ?? []) as unknown as Row[];
 
-    if (data.clientId) {
-      filtered = filtered.filter((r) => r.budgets?.client_id === data.clientId);
+    const clientFilter = await resolveClientFilter(client, data.clientId);
+    if (clientFilter) {
+      filtered = filtered.filter((r) =>
+        matchesClient(clientFilter, {
+          client_id: r.budgets?.client_id ?? null,
+          client_name: r.client_name,
+        }),
+      );
     }
 
     const orders: VendasOrder[] = filtered.map((r) => {
@@ -468,7 +538,7 @@ function extractParts(item: Record<string, unknown>): PartExtract[] {
   for (const k of keys) {
     const id = String(item[k.idField] ?? "").trim();
     const val = num(item[k.valField]);
-    if (!id || val <= 0) continue;
+    if (!id) continue;
     parts.push({
       productId: id,
       code: String(item[k.codeField] ?? ""),
@@ -845,14 +915,14 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     if (to) q = q.lt("created_at", to);
     if (data.status && data.status !== "todos") q = q.eq("status", data.status);
     if (data.operatorId) q = q.eq("operator_id", data.operatorId);
-    if (data.clientId) q = q.eq("client_id", data.clientId);
+    const clientFilter = await resolveClientFilter(client, data.clientId);
     if (userIds) q = q.in("user_id", userIds);
 
 
     const { data: budgets, error } = await q;
     if (error) throw error;
 
-    const list = (budgets ?? []) as Array<{
+    const listAll = (budgets ?? []) as Array<{
       id: string;
       number: string;
       client_name: string;
@@ -865,6 +935,9 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       created_at: string;
       updated_at: string;
     }>;
+    const list = clientFilter
+      ? listAll.filter((b) => matchesClient(clientFilter, b))
+      : listAll;
 
     // Companies map (admin)
     let empresaMap = new Map<string, string>();
