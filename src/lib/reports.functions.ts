@@ -837,14 +837,9 @@ export interface OrcamentosReport {
   summary: {
     total: number;
     valorTotal: number;
-    aprovados: number;
-    pendentes: number;
-    cancelados: number;
-    taxaAprovacao: number; // %
     ticketMedio: number;
     maior: number;
     menor: number;
-    tempoMedioAprovacaoDias: number;
   };
   funnel: {
     criados: { qtd: number; valor: number };
@@ -852,7 +847,6 @@ export interface OrcamentosReport {
     aprovados: { qtd: number; valor: number };
     transformados: { qtd: number; valor: number };
   };
-  evolution: { bucket: string; qtd: number; valor: number }[];
   ranking: { id: string; number: string; client_name: string; value: number; status: string }[];
   rows: OrcamentoRow[];
 }
