@@ -1269,12 +1269,11 @@ function OrcamentosReportView({
   const f = data.funnel;
 
   const cards = [
-    { label: "Total de orçamentos", value: String(s.total), icon: FileText },
-    { label: "Valor total orçado", value: fmtMoney(s.valorTotal), icon: DollarSign },
-    { label: "Aprovados", value: String(s.aprovados), icon: CheckCircle2 },
-    { label: "Pendentes", value: String(s.pendentes), icon: Clock },
-    { label: "Cancelados", value: String(s.cancelados), icon: XCircle },
-    { label: "Taxa de aprovação", value: fmtPct(s.taxaAprovacao), icon: Percent },
+    { label: "Orçamentos pendentes", value: String(s.total), icon: FileText },
+    { label: "Valor total em aberto", value: fmtMoney(s.valorTotal), icon: DollarSign },
+    { label: "Ticket médio", value: fmtMoney(s.ticketMedio), icon: Receipt },
+    { label: "Maior orçamento", value: fmtMoney(s.maior), icon: Trophy },
+    { label: "Menor orçamento", value: fmtMoney(s.menor), icon: TrendingDown },
   ];
 
   const funnelSteps = [
@@ -1287,51 +1286,13 @@ function OrcamentosReportView({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {cards.map((c) => (
           <SummaryCard key={c.label} label={c.label} value={c.value} icon={c.icon} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard label="Ticket médio" value={fmtMoney(s.ticketMedio)} icon={Receipt} />
-        <SummaryCard label="Maior orçamento" value={fmtMoney(s.maior)} icon={Trophy} />
-        <SummaryCard label="Menor orçamento" value={fmtMoney(s.menor)} icon={TrendingDown} />
-        <SummaryCard
-          label="Tempo médio até aprovação"
-          value={`${s.tempoMedioAprovacaoDias.toFixed(1)} dias`}
-          icon={Clock}
-        />
-      </div>
 
-      <Card>
-        <div className="p-5 border-b">
-          <h3 className="text-base font-semibold text-foreground">Evolução no período</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {data.evolution.length} ponto(s) agregados
-          </p>
-        </div>
-        <div className="p-4 h-72">
-          {data.evolution.length === 0 ? (
-            <EmptyResults label="Sem dados no período." />
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.evolution}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="bucket" fontSize={11} />
-                <YAxis fontSize={11} />
-                <RTooltip
-                  formatter={(v: number, k: string) =>
-                    k === "valor" ? fmtMoney(v) : String(v)
-                  }
-                />
-                <Line type="monotone" dataKey="qtd" stroke="hsl(var(--primary))" strokeWidth={2} name="Qtd" />
-                <Line type="monotone" dataKey="valor" stroke="hsl(var(--muted-foreground))" strokeWidth={2} name="Valor" />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </Card>
 
       <Card>
         <div className="p-5 border-b">
