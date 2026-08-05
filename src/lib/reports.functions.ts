@@ -984,44 +984,19 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       };
     });
 
+    // Relatório de Orçamentos = apenas oportunidades em aberto (pendentes,
+    // ainda não aprovadas e não convertidas em pedido).
+    const rows = allRows.filter(
+      (r) => !r.has_order && !isAprovadoStatus(r.status) && !isCanceladoStatus(r.status),
+    );
+
     const total = rows.length;
     const valorTotal = rows.reduce((s, r) => s + r.total_value, 0);
-    const aprovadosArr = rows.filter((r) => isAprovadoStatus(r.status));
-    const pendentesArr = rows.filter((r) => isPendenteStatus(r.status));
-    const canceladosArr = rows.filter((r) => isCanceladoStatus(r.status));
-    const transformadosArr = rows.filter((r) => r.has_order);
     const values = rows.map((r) => r.total_value).filter((v) => v > 0);
     const maior = values.length ? Math.max(...values) : 0;
     const menor = values.length ? Math.min(...values) : 0;
     const ticketMedio = total ? valorTotal / total : 0;
-    const taxaAprovacao = total ? (aprovadosArr.length / total) * 100 : 0;
 
-    // Tempo médio criação → aprovação (approved_at - created_at)
-    const diffs = aprovadosArr
-      .map((r) =>
-        r.approved_at
-          ? (new Date(r.approved_at).getTime() - new Date(r.created_at).getTime()) /
-            (1000 * 60 * 60 * 24)
-          : null,
-      )
-      .filter((x): x is number => x !== null && x >= 0);
-    const tempoMedioAprovacaoDias = diffs.length
-      ? diffs.reduce((s, d) => s + d, 0) / diffs.length
-      : 0;
-
-    // Evolution
-    const granularity = data.granularity || "mes";
-    const buckets = new Map<string, { qtd: number; valor: number }>();
-    for (const r of rows) {
-      const k = bucketKey(r.created_at, granularity);
-      const b = buckets.get(k) ?? { qtd: 0, valor: 0 };
-      b.qtd += 1;
-      b.valor += r.total_value;
-      buckets.set(k, b);
-    }
-    const evolution = Array.from(buckets.entries())
-      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([bucket, v]) => ({ bucket, ...v }));
 
     const ranking = [...rows]
       .sort((a, b) => b.total_value - a.total_value)
