@@ -996,7 +996,10 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     const maior = values.length ? Math.max(...values) : 0;
     const menor = values.length ? Math.min(...values) : 0;
     const ticketMedio = total ? valorTotal / total : 0;
-
+    // Funil comercial: continua considerando todos os orçamentos do período
+    const aprovadosArr = allRows.filter((r) => isAprovadoStatus(r.status));
+    const pendentesArr = allRows.filter((r) => isPendenteStatus(r.status));
+    const transformadosArr = allRows.filter((r) => r.has_order);
 
     const ranking = [...rows]
       .sort((a, b) => b.total_value - a.total_value)
@@ -1013,17 +1016,12 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       summary: {
         total,
         valorTotal,
-        aprovados: aprovadosArr.length,
-        pendentes: pendentesArr.length,
-        cancelados: canceladosArr.length,
-        taxaAprovacao,
         ticketMedio,
         maior,
         menor,
-        tempoMedioAprovacaoDias,
       },
       funnel: {
-        criados: { qtd: total, valor: valorTotal },
+        criados: { qtd: allRows.length, valor: allRows.reduce((s, r) => s + r.total_value, 0) },
         pendentes: {
           qtd: pendentesArr.length,
           valor: pendentesArr.reduce((s, r) => s + r.total_value, 0),
@@ -1037,10 +1035,10 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
           valor: transformadosArr.reduce((s, r) => s + r.total_value, 0),
         },
       },
-      evolution,
       ranking,
       rows,
     };
+
   });
 
 // ============================================================================
