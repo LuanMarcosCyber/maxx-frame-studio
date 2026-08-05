@@ -966,7 +966,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       }
     }
 
-    const rows: OrcamentoRow[] = list.map((b) => {
+    const allRows: OrcamentoRow[] = list.map((b) => {
       const v = Number(b.total_value) || 0;
       const aprovado = isAprovadoStatus(b.status);
       return {
