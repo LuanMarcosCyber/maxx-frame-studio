@@ -37,6 +37,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
+import { getAdminDocumentView } from "@/lib/report-view.functions";
 import { isDiversosOnly } from "@/lib/frame-detection";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
@@ -1032,11 +1033,15 @@ function ResumoDialog({
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("budget_items")
-        .select("id, position, subtotal, data")
-        .eq("budget_id", budget.id)
-        .order("position", { ascending: true });
+      let data: BudgetItemRow[] | null = preloadedItems ?? null;
+      if (!data) {
+        const res = await supabase
+          .from("budget_items")
+          .select("id, position, subtotal, data")
+          .eq("budget_id", budget.id)
+          .order("position", { ascending: true });
+        data = (res.data ?? []) as BudgetItemRow[];
+      }
       if (cancelled) return;
       let rows = (data ?? []) as BudgetItemRow[];
       if (rows.length === 0) {
@@ -1056,7 +1061,7 @@ function ResumoDialog({
     return () => {
       cancelled = true;
     };
-  }, [budget?.id]);
+  }, [budget?.id, preloadedItems]);
 
   const tipoEntrega = gStr("tipoEntrega") || "Retirada";
   const instalacaoAtivo = general.instalacaoAtivo === "sim";
