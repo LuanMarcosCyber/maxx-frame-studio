@@ -567,6 +567,8 @@ function Relatorios() {
         <section>
           <ReportResults
             selected={selected}
+            isAdmin={isAdmin}
+
             filters={{
               period,
               status,
