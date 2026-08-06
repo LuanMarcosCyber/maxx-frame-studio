@@ -908,12 +908,18 @@ function ResumoDialog({
   onClose,
   extraActions,
   orderNumber,
+  preloadedItems,
+  readOnly,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
   extraActions?: ReactNode;
   orderNumber?: string | null;
+  /** Itens já carregados (consulta do Administrador Global). */
+  preloadedItems?: BudgetItemRow[] | null;
+  readOnly?: boolean;
 }) {
+
   const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
   const [pendingDiscount, setPendingDiscount] = useState<{
     percent: number;
