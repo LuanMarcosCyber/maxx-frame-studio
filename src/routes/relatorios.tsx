@@ -600,12 +600,14 @@ function ReportResults({
   granularity,
   cityFilter,
   search,
+  isAdmin,
 }: {
   selected: ReportKey | null;
   filters: VendasFilters;
   granularity: string;
   cityFilter?: string;
   search: string;
+  isAdmin?: boolean;
 }) {
   if (!selected) {
     return (
