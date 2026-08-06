@@ -822,44 +822,78 @@ export function BudgetSummaryById({
   onClose,
   extraActions,
   orderNumber,
+  orderId,
+  admin,
 }: {
   budgetId: string | null;
   onClose: () => void;
   extraActions?: ReactNode;
   orderNumber?: string | null;
+  /** Somente para consulta do Administrador Global (relatórios). */
+  orderId?: string | null;
+  admin?: boolean;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
+  const [adminItems, setAdminItems] = useState<BudgetItemRow[] | null>(null);
+  const [adminOrderNumber, setAdminOrderNumber] = useState<string | null>(null);
+  const fetchAdminDoc = useServerFn(getAdminDocumentView);
 
   useEffect(() => {
-    if (!budgetId) {
+    if (!budgetId && !(admin && orderId)) {
       setBudget(null);
+      setAdminItems(null);
+      setAdminOrderNumber(null);
       return;
     }
     let cancelled = false;
     (async () => {
+      if (admin) {
+        try {
+          const res = (await fetchAdminDoc({
+            data: { budget_id: budgetId ?? null, order_id: orderId ?? null },
+          })) as unknown as {
+            budget: BudgetRow | null;
+            items: BudgetItemRow[];
+            orderNumber: string | null;
+          };
+          if (cancelled) return;
+          setBudget(res.budget ?? null);
+          setAdminItems(res.items ?? []);
+          setAdminOrderNumber(res.orderNumber ?? null);
+        } catch {
+          if (!cancelled) {
+            setBudget(null);
+            setAdminItems(null);
+          }
+        }
+        return;
+      }
       const { data } = await supabase
         .from("budgets")
         .select(
           "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by",
         )
-        .eq("id", budgetId)
+        .eq("id", budgetId!)
         .maybeSingle();
       if (!cancelled) setBudget((data as BudgetRow | null) ?? null);
     })();
     return () => {
       cancelled = true;
     };
-  }, [budgetId]);
+  }, [budgetId, orderId, admin]);
 
   return (
     <ResumoDialog
       budget={budget}
       onClose={onClose}
       extraActions={extraActions}
-      orderNumber={orderNumber ?? null}
+      orderNumber={orderNumber ?? adminOrderNumber ?? null}
+      preloadedItems={adminItems}
+      readOnly={admin}
     />
   );
 }
+
 
 
 type BudgetItemRow = {
