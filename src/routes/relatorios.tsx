@@ -839,6 +839,14 @@ function VendasReportView({
           </div>
         )}
       </Card>
+      {admin && (
+        <BudgetSummaryById
+          admin
+          budgetId={viewingOrder?.budget_id ?? null}
+          orderId={viewingOrder?.id ?? null}
+          onClose={() => setViewingOrder(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1442,6 +1450,13 @@ function OrcamentosReportView({
           </div>
         )}
       </Card>
+      {admin && (
+        <BudgetSummaryById
+          admin
+          budgetId={viewingBudgetId}
+          onClose={() => setViewingBudgetId(null)}
+        />
+      )}
     </div>
   );
 }
