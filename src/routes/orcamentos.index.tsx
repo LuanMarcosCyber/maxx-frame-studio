@@ -37,6 +37,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import { toast } from "sonner";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
+import { getAdminDocumentView } from "@/lib/report-view.functions";
 import { isDiversosOnly } from "@/lib/frame-detection";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
@@ -822,44 +823,77 @@ export function BudgetSummaryById({
   onClose,
   extraActions,
   orderNumber,
+  orderId,
+  admin,
 }: {
   budgetId: string | null;
   onClose: () => void;
   extraActions?: ReactNode;
   orderNumber?: string | null;
+  /** Somente para consulta do Administrador Global (relatórios). */
+  orderId?: string | null;
+  admin?: boolean;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
+  const [adminItems, setAdminItems] = useState<BudgetItemRow[] | null>(null);
+  const [adminOrderNumber, setAdminOrderNumber] = useState<string | null>(null);
+  const fetchAdminDoc = useServerFn(getAdminDocumentView);
 
   useEffect(() => {
-    if (!budgetId) {
+    if (!budgetId && !(admin && orderId)) {
       setBudget(null);
+      setAdminItems(null);
+      setAdminOrderNumber(null);
       return;
     }
     let cancelled = false;
     (async () => {
+      if (admin) {
+        try {
+          const res = (await fetchAdminDoc({
+            data: { budget_id: budgetId ?? null, order_id: orderId ?? null },
+          })) as unknown as {
+            budget: BudgetRow | null;
+            items: BudgetItemRow[];
+            orderNumber: string | null;
+          };
+          if (cancelled) return;
+          setBudget(res.budget ?? null);
+          setAdminItems(res.items ?? []);
+          setAdminOrderNumber(res.orderNumber ?? null);
+        } catch {
+          if (!cancelled) {
+            setBudget(null);
+            setAdminItems(null);
+          }
+        }
+        return;
+      }
       const { data } = await supabase
         .from("budgets")
         .select(
           "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by",
         )
-        .eq("id", budgetId)
+        .eq("id", budgetId!)
         .maybeSingle();
       if (!cancelled) setBudget((data as BudgetRow | null) ?? null);
     })();
     return () => {
       cancelled = true;
     };
-  }, [budgetId]);
+  }, [budgetId, orderId, admin]);
 
   return (
     <ResumoDialog
       budget={budget}
       onClose={onClose}
       extraActions={extraActions}
-      orderNumber={orderNumber ?? null}
+      orderNumber={orderNumber ?? adminOrderNumber ?? null}
+      preloadedItems={adminItems}
     />
   );
 }
+
 
 
 type BudgetItemRow = {
@@ -874,12 +908,16 @@ function ResumoDialog({
   onClose,
   extraActions,
   orderNumber,
+  preloadedItems,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
   extraActions?: ReactNode;
   orderNumber?: string | null;
+  /** Itens já carregados (consulta do Administrador Global). */
+  preloadedItems?: BudgetItemRow[] | null;
 }) {
+
   const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
   const [pendingDiscount, setPendingDiscount] = useState<{
     percent: number;
@@ -992,11 +1030,15 @@ function ResumoDialog({
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("budget_items")
-        .select("id, position, subtotal, data")
-        .eq("budget_id", budget.id)
-        .order("position", { ascending: true });
+      let data: BudgetItemRow[] | null = preloadedItems ?? null;
+      if (!data) {
+        const res = await supabase
+          .from("budget_items")
+          .select("id, position, subtotal, data")
+          .eq("budget_id", budget.id)
+          .order("position", { ascending: true });
+        data = (res.data ?? []) as BudgetItemRow[];
+      }
       if (cancelled) return;
       let rows = (data ?? []) as BudgetItemRow[];
       if (rows.length === 0) {
@@ -1016,7 +1058,7 @@ function ResumoDialog({
     return () => {
       cancelled = true;
     };
-  }, [budget?.id]);
+  }, [budget?.id, preloadedItems]);
 
   const tipoEntrega = gStr("tipoEntrega") || "Retirada";
   const instalacaoAtivo = general.instalacaoAtivo === "sim";

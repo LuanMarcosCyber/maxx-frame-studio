@@ -26,6 +26,7 @@ export interface VendasOrder {
   total_value: number;
   discount_value: number;
   payment_method: string | null;
+  budget_id: string | null;
 }
 
 export interface VendasReport {
@@ -446,6 +447,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
         total_value: Number(r.total_value) || 0,
         discount_value: Number(details.descontoValor) || 0,
         payment_method: (details.formaPagamento as string) || null,
+        budget_id: r.budget_id ?? null,
       };
     });
 
