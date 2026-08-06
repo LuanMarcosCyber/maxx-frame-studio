@@ -890,7 +890,6 @@ export function BudgetSummaryById({
       extraActions={extraActions}
       orderNumber={orderNumber ?? adminOrderNumber ?? null}
       preloadedItems={adminItems}
-      readOnly={admin}
     />
   );
 }
@@ -910,7 +909,6 @@ function ResumoDialog({
   extraActions,
   orderNumber,
   preloadedItems,
-  readOnly,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
@@ -918,7 +916,6 @@ function ResumoDialog({
   orderNumber?: string | null;
   /** Itens já carregados (consulta do Administrador Global). */
   preloadedItems?: BudgetItemRow[] | null;
-  readOnly?: boolean;
 }) {
 
   const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
