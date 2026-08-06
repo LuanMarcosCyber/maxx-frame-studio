@@ -11,7 +11,7 @@ import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Eye } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BudgetSummaryById } from "@/routes/orcamentos.index";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import {
@@ -623,7 +624,7 @@ function ReportResults({
   }
 
   if (selected === "vendas") {
-    return <VendasReportView filters={filters} search={search} />;
+    return <VendasReportView filters={filters} search={search} admin={isAdmin} />;
   }
 
   if (selected === "fornecedores") {
@@ -635,7 +636,7 @@ function ReportResults({
   }
 
   if (selected === "orcamentos") {
-    return <OrcamentosReportView filters={{ ...filters, granularity }} search={search} />;
+    return <OrcamentosReportView filters={{ ...filters, granularity }} search={search} admin={isAdmin} />;
   }
 
   if (selected === "clientes") {
@@ -671,10 +672,14 @@ function ReportResults({
 function VendasReportView({
   filters,
   search,
+  admin,
 }: {
   filters: VendasFilters;
   search: string;
+  admin?: boolean;
 }) {
+  // Consulta rápida (somente leitura) reservada ao Administrador Global.
+  const [viewingOrder, setViewingOrder] = useState<{ id: string; budget_id: string | null } | null>(null);
   const fetchReport = useServerFn(getVendasReport);
   const query = useQuery({
     queryKey: ["relatorios", "vendas", filters],
@@ -784,6 +789,7 @@ function VendasReportView({
                 <TableRow>
                   <TableHead>Nº Pedido</TableHead>
                   <TableHead>Cliente</TableHead>
+                  {admin && <TableHead className="w-10" />}
                   <TableHead>Colaborador</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
@@ -797,6 +803,19 @@ function VendasReportView({
                   <TableRow key={o.id}>
                     <TableCell className="font-medium">{o.number}</TableCell>
                     <TableCell>{o.client_name}</TableCell>
+                    {admin && (
+                      <TableCell className="w-10">
+                        <button
+                          type="button"
+                          title="Visualizar pedido"
+                          aria-label="Visualizar pedido"
+                          onClick={() => setViewingOrder({ id: o.id, budget_id: o.budget_id })}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </TableCell>
+                    )}
                     <TableCell>{o.operator_name ?? "—"}</TableCell>
                     <TableCell>{fmtDateTime(o.created_at)}</TableCell>
                     <TableCell>
@@ -1225,10 +1244,14 @@ function ProdutosReportView({
 function OrcamentosReportView({
   filters,
   search,
+  admin,
 }: {
   filters: OrcamentosFilters;
   search: string;
+  admin?: boolean;
 }) {
+  // Consulta rápida (somente leitura) reservada ao Administrador Global.
+  const [viewingBudgetId, setViewingBudgetId] = useState<string | null>(null);
   const fetchReport = useServerFn(getOrcamentosReport);
   const query = useQuery({
     queryKey: ["relatorios", "orcamentos", filters],
@@ -1377,6 +1400,7 @@ function OrcamentosReportView({
                 <TableRow>
                   <TableHead>Número</TableHead>
                   <TableHead>Cliente</TableHead>
+                  {admin && <TableHead className="w-10" />}
                   <TableHead>Colaborador</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Status</TableHead>
@@ -1389,6 +1413,19 @@ function OrcamentosReportView({
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.number}</TableCell>
                     <TableCell>{r.client_name}</TableCell>
+                    {admin && (
+                      <TableCell className="w-10">
+                        <button
+                          type="button"
+                          title="Visualizar orçamento"
+                          aria-label="Visualizar orçamento"
+                          onClick={() => setViewingBudgetId(r.id)}
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </TableCell>
+                    )}
                     <TableCell>{r.operator_name ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
                     <TableCell>
