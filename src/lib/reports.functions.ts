@@ -385,6 +385,12 @@ function matchesClient(
   return false;
 }
 
+// Origem da compra fica salva no JSON `details` do orçamento (origemCompra).
+function matchesOrigem(details: Record<string, unknown> | null, origem: string): boolean {
+  const raw = typeof details?.origemCompra === "string" ? (details.origemCompra as string) : "";
+  return raw.trim().toLowerCase() === origem.trim().toLowerCase();
+}
+
 export const getVendasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
