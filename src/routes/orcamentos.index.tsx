@@ -1230,10 +1230,10 @@ function ResumoDialog({
 
   return (
     <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="w-[95vw] sm:max-w-[90vw] max-h-[92vh] overflow-y-auto p-0">
+      <DialogContent className="w-[95vw] sm:max-w-[90vw] max-h-[96vh] overflow-y-auto p-0">
         {budget && (
           <>
-            <DialogHeader className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-5 py-4 sm:px-6">
+            <DialogHeader className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-4 py-3 sm:px-5">
               <DialogTitle className="flex flex-wrap items-center gap-3 text-left">
                 <span className="flex items-center gap-2 text-lg font-semibold">
                   <FileText className="h-5 w-5 text-primary" />
@@ -1253,12 +1253,12 @@ function ResumoDialog({
               </DialogTitle>
             </DialogHeader>
 
-            <div className="px-5 pb-6 sm:px-6 space-y-5">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+            <div className="px-4 pb-5 sm:px-5 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                 {/* ---------- Coluna esquerda ---------- */}
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-3">
                       <InfoLine icon={User} label="Cliente" value={budget.client_name} />
                       {isPedido ? (
                         <InfoLine icon={FileText} label="Origem do orçamento" value={budget.number} mono />
