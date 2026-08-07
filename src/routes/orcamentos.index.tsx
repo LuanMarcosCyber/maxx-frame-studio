@@ -1386,7 +1386,7 @@ function ResumoDialog({
                           key={it.id}
                           className="rounded-xl border border-border bg-card overflow-hidden"
                         >
-                          <div className="px-4 py-3 border-b border-border">
+                          <div className="px-3 py-2 border-b border-border">
                             <div className="flex items-start justify-between gap-3">
                               <span className="font-semibold text-foreground">
                                 Item {i + 1}
@@ -1406,7 +1406,7 @@ function ResumoDialog({
                           <div className="divide-y divide-border">
                             {rows.map((r, ri) => (
                               <div key={r.key ?? `${r.label}-${ri}`}>
-                                <div className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+                                <div className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
                                   <div className="min-w-0">
                                     <div className="font-medium text-foreground">{r.label}</div>
                                     {r.sub && (
@@ -1420,7 +1420,7 @@ function ResumoDialog({
                                   </div>
                                 </div>
                                 {r.note && (
-                                  <div className="mx-4 mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                                  <div className="mx-3 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5">
                                     <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
                                       ↓ {r.note.title}
                                     </div>
