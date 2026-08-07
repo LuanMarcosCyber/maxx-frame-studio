@@ -1472,15 +1472,15 @@ function ResumoDialog({
               </div>
 
               {/* ---------- Resumo financeiro ---------- */}
-              <div className="rounded-2xl border border-border bg-muted/30 p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-brand text-brand-foreground">
-                    <DollarSign className="h-4 w-4" />
+              <div className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-brand text-brand-foreground">
+                    <DollarSign className="h-3.5 w-3.5" />
                   </span>
                   <span className="text-base font-semibold">Resumo financeiro</span>
                 </div>
-                <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
-                  <div className="grid flex-1 grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-stretch gap-3">
+                  <div className="grid flex-1 grid-cols-2 sm:grid-cols-3 gap-3">
                     <FinCell label="Subtotal dos itens" value={fmtMoney(subtotalItens)} />
                     <FinCell label="Custos extras" value={fmtMoney(custosExtras)} />
                     {temDesconto && (
@@ -1492,14 +1492,14 @@ function ResumoDialog({
                     )}
                   </div>
 
-                  <div className="grid place-items-center rounded-xl bg-gradient-brand text-brand-foreground px-8 py-4 shadow-brand min-w-[220px]">
+                  <div className="grid place-items-center rounded-xl bg-gradient-brand text-brand-foreground px-6 py-3 shadow-brand min-w-[220px]">
                     <span className="text-sm font-medium opacity-90">Total geral</span>
                     <span className="text-3xl font-bold leading-tight">
                       {fmtMoney(Number(budget.total_value))}
                     </span>
                   </div>
 
-                  <div className="grid flex-1 grid-cols-2 gap-4">
+                  <div className="grid flex-1 grid-cols-2 gap-3">
                     <FinCell
                       label="Valor recebido / Sinal"
                       value={fmtMoney(temSinal ? gNum("valorSinal") : 0)}
