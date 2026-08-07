@@ -1084,449 +1084,440 @@ function ResumoDialog({
   const dNum = (d: Record<string, unknown>, k: string) =>
     typeof d[k] === "number" ? (d[k] as number) : 0;
 
-  const activeItem = items[activeIdx];
-  const d = (activeItem?.data ?? {}) as Record<string, unknown>;
-  const paspaturAtivo = d.paspaturAtivo === "sim";
-  const vidroAtivo = d.vidroTipo === "sim";
-  const colagemAtivo = d.colagemAtivo === "sim";
-  const impressaoAtivo = d.impressaoAtivo === "sim";
-
   const isPedido = !!orderNumber;
   const diversosOnly = isPedido && isDiversosOnly(items);
 
-  const frameRows: {
+  type ItemRow = {
     label: string;
     value: string;
     sub?: string;
     key?: string;
     note?: { title: string; text: string };
-  }[] = activeItem
-    ? [
-        {
-          label: "Tamanho original",
-          value: `${fmtMeasure(dNum(d, "larguraOriginal"))} × ${fmtMeasure(dNum(d, "alturaOriginal"))} cm`,
-        },
-        {
-          label: "Tamanho final",
-          value: `${fmtMeasure(dNum(d, "larguraFinal"))} × ${fmtMeasure(dNum(d, "alturaFinal"))} cm`,
-        },
-        ...(d.paspaturAdicionalAtivo === "sim" && paspaturAtivo
-          ? [
-              {
-                label: "Paspatur externo",
-                value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspaturPrincipal")),
-                sub: productLabel(d, "paspaturCode", "paspaturDescription"),
-              },
-              {
-                label: "Paspatur interno",
-                value: fmtMoneyRt(dNum(d, "valorPaspaturAdicional")),
-                sub: productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription"),
-                note: (() => {
-                  const obs =
-                    typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs.trim() : "";
-                  return obs ? { title: "Observação do Paspatur Interno", text: obs } : undefined;
-                })(),
-              },
-              {
-                label: "Total Paspatur",
-                value: fmtMoneyRt(dNum(d, "valorPaspatur")),
-              },
-            ]
-          : [
-              {
-                label: "Paspatur",
-                value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspatur")),
-                sub: paspaturAtivo ? productLabel(d, "paspaturCode", "paspaturDescription") : undefined,
-              },
-            ]),
-        ...(d.perfilAdicionalAtivo === "sim"
-          ? [
-              {
-                label: "Perfil externo",
-                value: fmtMoneyRt(dNum(d, "valorPerfilPrincipal")),
-                sub: productLabel(d, "perfilCode", "perfilDescription"),
-              },
-              {
-                label: "Perfil interno",
-                value: fmtMoneyRt(dNum(d, "valorPerfilAdicional")),
-                sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${fmtMeasure(dNum(d, "larguraPerfilAdicional"))} × ${fmtMeasure(dNum(d, "alturaPerfilAdicional"))} cm`,
-              },
-              {
-                label: "Total Perfil",
-                value: fmtMoneyRt(dNum(d, "valorPerfil")),
-              },
-            ]
-          : [
-              {
-                label: "Perfil",
-                value: fmtMoneyRt(dNum(d, "valorPerfil")),
-                sub: productLabel(d, "perfilCode", "perfilDescription"),
-              },
-            ]),
-        {
-          label: "Vidro / Espelho",
-          value: moneyOrNA(vidroAtivo, dNum(d, "valorVidro")),
-          sub: vidroAtivo
-            ? (() => {
-                const base = productLabel(d, "vidroCode", "vidroDescription");
-                const qtd = Number(d.vidroQuantidade) || 1;
-                const unit = Number(d.valorVidroUnit) || 0;
-                return qtd > 1
-                  ? `${base} · ${qtd}× ${fmtMoneyRt(unit)}`
-                  : base;
-              })()
-            : undefined,
-        },
-        {
-          label: "Foam / MDF",
-          value: fmtMoneyRt(dNum(d, "valorFoam")),
-          sub: productLabel(d, "foamCode", "foamDescription"),
-        },
-        {
-          label: "Colagem",
-          value: moneyOrNA(colagemAtivo, dNum(d, "valorColagem")),
-          sub: colagemAtivo ? productLabel(d, "colagemCode", "colagemDescription") : undefined,
-        },
-        {
-          label: "Impressão",
-          value: moneyOrNA(impressaoAtivo, dNum(d, "valorImpressao")),
-          sub: impressaoAtivo ? productLabel(d, "impressaoCode", "impressaoDescription") : undefined,
-        },
-      ]
-    : [];
+  };
 
-  const diversosRows: { label: string; value: string; sub?: string; key?: string }[] = activeItem
-    && Array.isArray(d.produtosDiversos) && (d.produtosDiversos as unknown[]).length > 0
-    ? [
-        ...(d.produtosDiversos as Array<Record<string, unknown>>).map((di, i) => {
-          const qtd = Number(di.quantidade) || 1;
-          const unit = Number(di.valorUnitario) || 0;
-          const total = Number(di.total) || unit * qtd;
-          const code = typeof di.code === "string" ? di.code : "";
-          const nome = typeof di.nome === "string" ? di.nome : "Produto";
-          return {
-            label: `${code ? `${code} · ` : ""}${nome}`,
-            value: fmtMoneyRt(total),
-            sub: `Qtd ${qtd} × ${fmtMoneyRt(unit)}`,
-            key: `div-${i}`,
-          };
-        }),
-        {
-          label: "Total Produtos Diversos",
-          value: fmtMoneyRt(dNum(d, "valorDiversos")),
-        },
-      ]
-    : [];
+  const buildFrameRows = (d: Record<string, unknown>): ItemRow[] => {
+    const paspaturAtivo = d.paspaturAtivo === "sim";
+    const vidroAtivo = d.vidroTipo === "sim";
+    const colagemAtivo = d.colagemAtivo === "sim";
+    const impressaoAtivo = d.impressaoAtivo === "sim";
+    return [
+      {
+        label: "Tamanho original",
+        value: `${fmtMeasure(dNum(d, "larguraOriginal"))} × ${fmtMeasure(dNum(d, "alturaOriginal"))} cm`,
+      },
+      {
+        label: "Tamanho final",
+        value: `${fmtMeasure(dNum(d, "larguraFinal"))} × ${fmtMeasure(dNum(d, "alturaFinal"))} cm`,
+      },
+      ...(d.paspaturAdicionalAtivo === "sim" && paspaturAtivo
+        ? [
+            {
+              label: "Paspatur externo",
+              value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspaturPrincipal")),
+              sub: productLabel(d, "paspaturCode", "paspaturDescription"),
+            },
+            {
+              label: "Paspatur interno",
+              value: fmtMoneyRt(dNum(d, "valorPaspaturAdicional")),
+              sub: productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription"),
+              note: (() => {
+                const obs =
+                  typeof d.paspaturAdicionalObs === "string" ? d.paspaturAdicionalObs.trim() : "";
+                return obs ? { title: "Observação do Paspatur Interno", text: obs } : undefined;
+              })(),
+            },
+            {
+              label: "Total Paspatur",
+              value: fmtMoneyRt(dNum(d, "valorPaspatur")),
+            },
+          ]
+        : [
+            {
+              label: "Paspatur",
+              value: moneyOrNA(paspaturAtivo, dNum(d, "valorPaspatur")),
+              sub: paspaturAtivo ? productLabel(d, "paspaturCode", "paspaturDescription") : undefined,
+            },
+          ]),
+      ...(d.perfilAdicionalAtivo === "sim"
+        ? [
+            {
+              label: "Perfil externo",
+              value: fmtMoneyRt(dNum(d, "valorPerfilPrincipal")),
+              sub: productLabel(d, "perfilCode", "perfilDescription"),
+            },
+            {
+              label: "Perfil interno",
+              value: fmtMoneyRt(dNum(d, "valorPerfilAdicional")),
+              sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${fmtMeasure(dNum(d, "larguraPerfilAdicional"))} × ${fmtMeasure(dNum(d, "alturaPerfilAdicional"))} cm`,
+            },
+            {
+              label: "Total Perfil",
+              value: fmtMoneyRt(dNum(d, "valorPerfil")),
+            },
+          ]
+        : [
+            {
+              label: "Perfil",
+              value: fmtMoneyRt(dNum(d, "valorPerfil")),
+              sub: productLabel(d, "perfilCode", "perfilDescription"),
+            },
+          ]),
+      {
+        label: "Vidro / Espelho",
+        value: moneyOrNA(vidroAtivo, dNum(d, "valorVidro")),
+        sub: vidroAtivo
+          ? (() => {
+              const base = productLabel(d, "vidroCode", "vidroDescription");
+              const qtd = Number(d.vidroQuantidade) || 1;
+              const unit = Number(d.valorVidroUnit) || 0;
+              return qtd > 1 ? `${base} · ${qtd}× ${fmtMoneyRt(unit)}` : base;
+            })()
+          : undefined,
+      },
+      {
+        label: "Foam / MDF",
+        value: fmtMoneyRt(dNum(d, "valorFoam")),
+        sub: productLabel(d, "foamCode", "foamDescription"),
+      },
+      {
+        label: "Colagem",
+        value: moneyOrNA(colagemAtivo, dNum(d, "valorColagem")),
+        sub: colagemAtivo ? productLabel(d, "colagemCode", "colagemDescription") : undefined,
+      },
+      {
+        label: "Impressão",
+        value: moneyOrNA(impressaoAtivo, dNum(d, "valorImpressao")),
+        sub: impressaoAtivo ? productLabel(d, "impressaoCode", "impressaoDescription") : undefined,
+      },
+    ];
+  };
 
-  const itemRows = diversosOnly ? diversosRows : [...frameRows, ...diversosRows];
+  const buildDiversosRows = (d: Record<string, unknown>): ItemRow[] =>
+    Array.isArray(d.produtosDiversos) && (d.produtosDiversos as unknown[]).length > 0
+      ? [
+          ...(d.produtosDiversos as Array<Record<string, unknown>>).map((di, i) => {
+            const qtd = Number(di.quantidade) || 1;
+            const unit = Number(di.valorUnitario) || 0;
+            const total = Number(di.total) || unit * qtd;
+            const code = typeof di.code === "string" ? di.code : "";
+            const nome = typeof di.nome === "string" ? di.nome : "Produto";
+            return {
+              label: `${code ? `${code} · ` : ""}${nome}`,
+              value: fmtMoneyRt(total),
+              sub: `Qtd ${qtd} × ${fmtMoneyRt(unit)}`,
+              key: `div-${i}`,
+            };
+          }),
+          {
+            label: "Total Produtos Diversos",
+            value: fmtMoneyRt(dNum(d, "valorDiversos")),
+          },
+        ]
+      : [];
+
+  const rowsForItem = (d: Record<string, unknown>): ItemRow[] =>
+    diversosOnly ? buildDiversosRows(d) : [...buildFrameRows(d), ...buildDiversosRows(d)];
+
+  // ---- Resumo financeiro (apenas apresentação; nenhum cálculo alterado) ----
+  const subtotalItens = items.reduce((acc, it) => acc + Number(it.subtotal) * rtMult, 0);
+  const custosExtras =
+    (instalacaoAtivo ? gNum("valorInstalacao") * rtMult : 0) +
+    (entregaAtiva ? gNum("valorEntrega") * rtMult : 0) +
+    gNum("maoDeObraExtra");
+  const descontoValor = gNum("descontoValor");
+  const temDesconto = gNum("descontoPercentual") > 0 && descontoValor > 0;
+  const temSinal = general.sinalAtivo === "sim" && gNum("valorSinal") > 0;
 
   return (
     <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Resumo</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="w-[95vw] sm:max-w-[90vw] max-h-[92vh] overflow-y-auto p-0">
         {budget && (
-          <div className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              {orderNumber ? (
-                <>
-                  <Info label="Pedido" value={orderNumber} mono />
-                  <Info label="Originado do orçamento" value={budget.number} mono />
-                </>
-              ) : (
-                <>
-                  <Info label="Número" value={budget.number} mono />
-                  {linkedOrderNumber && (
-                    <Info label="Pedido gerado" value={linkedOrderNumber} mono />
+          <>
+            <DialogHeader className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-5 py-4 sm:px-6">
+              <DialogTitle className="flex flex-wrap items-center gap-3 text-left">
+                <span className="flex items-center gap-2 text-lg font-semibold">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Resumo do {isPedido ? "pedido" : "orçamento"}
+                </span>
+                <span className="font-mono text-sm text-muted-foreground">
+                  {orderNumber ?? budget.number}
+                </span>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                    statusStyle[budget.status] ?? "bg-muted text-muted-foreground",
                   )}
-                </>
-              )}
-              <Info label="Cliente" value={budget.client_name} />
-              <Info label="Data" value={fmtDate(budget.created_at)} />
-              <Info label="Status" value={budget.status} />
-              <Info label="Usuário" value={creatorName} />
-              <Info
-                label="Forma de pagamento"
-                value={gStr("formaPagamento") || "—"}
-              />
-              <Info
-                label="Condição"
-                value={
-                  isParcelado ? `Parcelado · ${parcelasList.length}x` : "À vista"
-                }
-              />
-              <Info
-                label="Entrega"
-                value={gStr("dataEntrega") ? fmtDateBR(gStr("dataEntrega")) : "—"}
-              />
-              {!isParcelado && (
-                <Info
-                  label="Vencimento"
-                  value={budget.data_vencimento ? fmtDateBR(budget.data_vencimento) : "—"}
-                />
-              )}
+                >
+                  {budget.status}
+                </span>
+              </DialogTitle>
+            </DialogHeader>
 
-            </div>
-
-            {arquitetoNome.trim() && (
-              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Arquiteto
-                  </div>
-                  <div className="text-sm font-semibold text-foreground">
-                    {arquitetoNome}
-                  </div>
-                </div>
-                {arquitetoPerc > 0 && (
-                  <div className="text-right">
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Comissão (RT)
+            <div className="px-5 pb-6 sm:px-6 space-y-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+                {/* ---------- Coluna esquerda ---------- */}
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
+                      <InfoLine icon={User} label="Cliente" value={budget.client_name} />
+                      {isPedido ? (
+                        <InfoLine icon={FileText} label="Origem do orçamento" value={budget.number} mono />
+                      ) : linkedOrderNumber ? (
+                        <InfoLine icon={FileText} label="Pedido gerado" value={linkedOrderNumber} mono />
+                      ) : null}
+                      <InfoLine icon={ClipboardCheck} label="Status" value={budget.status} />
+                      <InfoLine
+                        icon={CalendarDays}
+                        label={isPedido ? "Data do pedido" : "Data do orçamento"}
+                        value={fmtDate(budget.created_at)}
+                      />
+                      <InfoLine
+                        icon={CalendarDays}
+                        label="Data de entrega"
+                        value={gStr("dataEntrega") ? fmtDateBR(gStr("dataEntrega")) : "—"}
+                      />
+                      {!isParcelado && (
+                        <InfoLine
+                          icon={CalendarDays}
+                          label="Vencimento"
+                          value={budget.data_vencimento ? fmtDateBR(budget.data_vencimento) : "—"}
+                        />
+                      )}
+                      <InfoLine icon={UserCog} label="Usuário" value={creatorName} />
+                      <InfoLine
+                        icon={CreditCard}
+                        label="Forma de pagamento"
+                        value={gStr("formaPagamento") || "—"}
+                      />
+                      <InfoLine
+                        icon={Wallet}
+                        label="Condição de pagamento"
+                        value={isParcelado ? `Parcelado · ${parcelasList.length}x` : "À vista"}
+                      />
+                      {arquitetoNome.trim() && (
+                        <InfoLine
+                          icon={Users}
+                          label="Arquiteto"
+                          value={
+                            arquitetoPerc > 0
+                              ? `${arquitetoNome} (${fmtPct(arquitetoPerc)})`
+                              : arquitetoNome
+                          }
+                        />
+                      )}
                     </div>
-                    <div className="text-sm font-semibold text-foreground">
-                      {fmtPct(arquitetoPerc)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
-
-
-            {isParcelado && (
-              <div className="rounded-lg border border-border p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    Parcelas ({parcelasList.length}x)
-                  </span>
-                  {parcelasList.length > 3 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setVerParcelasOpen(true)}
-                    >
-                      Ver parcelas
-                    </Button>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {parcelasList.slice(0, 3).map((p) => (
-                    <div
-                      key={p.numero}
-                      className="flex items-center justify-between text-xs"
-                    >
-                      <span className="text-muted-foreground">
-                        {p.numero}/{parcelasList.length} ·{" "}
-                        {p.vencimento
-                          ? fmtDateBR(p.vencimento)
-                          : "—"}
-
-                      </span>
-                      <span className="font-medium">{fmtMoney(p.valor)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-
-            {/* Item chips */}
-            {items.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {items.map((it, i) => (
-                  <button
-                    key={it.id}
-                    type="button"
-                    onClick={() => setActiveIdx(i)}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
-                      i === activeIdx
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-background hover:bg-accent",
-                    )}
-                  >
-                    <ImageIcon className="h-3.5 w-3.5" />
-                    Item {i + 1}
-                    <span className="text-muted-foreground font-normal">
-                      {fmtMoneyRt(Number(it.subtotal))}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {activeItem && itemRows.length > 0 && (
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Item {activeIdx + 1}{diversosOnly ? " — Produtos Diversos" : ""}
-                </div>
-                <div className="mb-2 text-sm">
-                  <span className="text-muted-foreground">Quantidade: </span>
-                  <span className="font-semibold text-foreground">
-                    {Number(d.quantidade) || 1}
-                  </span>
-                </div>
-
-                <div className="rounded-lg border border-border divide-y divide-border">
-                  {itemRows.map((r, i) => {
-                    const note = (r as { note?: { title: string; text: string } }).note;
-                    return (
-                    <div key={r.key ?? `${r.label}-${i}`}>
-                      <div className="flex items-start justify-between px-4 py-3 text-sm">
-                        <div>
-                          <div className="font-medium text-foreground">{r.label}</div>
-                          {r.sub && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {r.sub}
-                            </div>
+                    {isParcelado && (
+                      <div className="mt-5 border-t border-border pt-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold">
+                            Parcelas ({parcelasList.length}x)
+                          </span>
+                          {parcelasList.length > 6 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setVerParcelasOpen(true)}
+                            >
+                              Ver todas
+                            </Button>
                           )}
                         </div>
-                        <div className="font-semibold text-foreground whitespace-nowrap ml-4">
-                          {r.value}
+                        <div className="rounded-lg border border-border divide-y divide-border">
+                          {parcelasList.slice(0, 6).map((p) => (
+                            <div
+                              key={p.numero}
+                              className="flex items-center justify-between px-3 py-2 text-sm"
+                            >
+                              <span className="text-muted-foreground">
+                                {p.numero}/{parcelasList.length} ·{" "}
+                                {p.vencimento ? fmtDateBR(p.vencimento) : "—"}
+                              </span>
+                              <span className="font-medium">{fmtMoney(p.valor)}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      {note && (
-                        <div className="mx-4 mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-                          <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
-                            🟨 {note.title}
+                    )}
+                  </div>
+
+                  {gStr("observacoes") && (
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-900">
+                        <AlertCircle className="h-4 w-4" />
+                        Observação do {isPedido ? "pedido" : "orçamento"}
+                      </div>
+                      <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
+                        {gStr("observacoes")}
+                      </div>
+                    </div>
+                  )}
+
+                  {pendingDiscount && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      Possível total se o desconto de {fmtPct(pendingDiscount.percent)} for
+                      aprovado:{" "}
+                      <span className="font-semibold">
+                        {fmtMoney(pendingDiscount.potentialTotal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ---------- Coluna direita: itens ---------- */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    <span className="text-base font-semibold">
+                      Itens do {isPedido ? "pedido" : "orçamento"}
+                    </span>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                      {items.length} {items.length === 1 ? "item" : "itens"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                    {items.map((it, i) => {
+                      const di = (it.data ?? {}) as Record<string, unknown>;
+                      const rows = rowsForItem(di);
+                      return (
+                        <div
+                          key={it.id}
+                          className="rounded-xl border border-border bg-card overflow-hidden"
+                        >
+                          <div className="px-4 py-3 border-b border-border">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="font-semibold text-foreground">
+                                Item {i + 1}
+                                {diversosOnly ? " — Produtos Diversos" : ""}
+                              </span>
+                              <span className="font-bold text-primary whitespace-nowrap">
+                                {fmtMoneyRt(Number(it.subtotal))}
+                              </span>
+                            </div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Quantidade:{" "}
+                              <span className="font-semibold text-foreground">
+                                {Number(di.quantidade) || 1}
+                              </span>
+                            </div>
                           </div>
-                          <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
-                            {note.text}
+                          <div className="divide-y divide-border">
+                            {rows.map((r, ri) => (
+                              <div key={r.key ?? `${r.label}-${ri}`}>
+                                <div className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-foreground">{r.label}</div>
+                                    {r.sub && (
+                                      <div className="text-xs text-muted-foreground mt-0.5">
+                                        {r.sub}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="font-semibold text-foreground whitespace-nowrap">
+                                    {r.value}
+                                  </div>
+                                </div>
+                                {r.note && (
+                                  <div className="mx-4 mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                                    <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+                                      ↓ {r.note.title}
+                                    </div>
+                                    <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
+                                      {r.note.text}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                           </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {(instalacaoAtivo || entregaAtiva || gNum("maoDeObraExtra") > 0) && (
+                    <div className="rounded-xl border border-border bg-card divide-y divide-border">
+                      {instalacaoAtivo && (
+                        <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                          <span className="text-muted-foreground">Instalação</span>
+                          <span className="font-semibold">
+                            {fmtMoneyRt(gNum("valorInstalacao"))}
+                          </span>
+                        </div>
+                      )}
+                      {entregaAtiva && (
+                        <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                          <span className="text-muted-foreground">
+                            Entrega / Frete ({tipoEntrega})
+                            {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
+                              <span className="block text-xs text-foreground/70 mt-0.5">
+                                Transportadora: {gStr("transportadoraNome")}
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-semibold">{fmtMoneyRt(gNum("valorEntrega"))}</span>
+                        </div>
+                      )}
+                      {gNum("maoDeObraExtra") > 0 && (
+                        <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                          <span className="text-muted-foreground">MDOE</span>
+                          <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
                         </div>
                       )}
                     </div>
-                    );
-                  })}
-                  <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
-                    <span className="font-semibold text-foreground">
-                      Subtotal Item {activeIdx + 1}
-                    </span>
-                    <span className="font-semibold">
-                      {fmtMoneyRt(Number(activeItem.subtotal))}
-                    </span>
-                  </div>
+                  )}
                 </div>
               </div>
-            )}
 
-            {/* Outros itens + extras gerais */}
-            <div className="rounded-lg border border-border divide-y divide-border">
-              {items.length > 1 &&
-                items.map((it, i) =>
-                  i === activeIdx ? null : (
-                    <div
-                      key={it.id}
-                      className="flex items-center justify-between px-4 py-3 text-sm"
-                    >
-                      <span className="font-medium text-foreground">Item {i + 1}</span>
-                      <span className="font-semibold">{fmtMoneyRt(Number(it.subtotal))}</span>
-                    </div>
-                  ),
-                )}
-              {(!diversosOnly || instalacaoAtivo) && (
-                <div className="flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="text-muted-foreground">Instalação</span>
-                  <span className="font-semibold">
-                    {moneyOrNA(instalacaoAtivo, gNum("valorInstalacao"))}
+              {/* ---------- Resumo financeiro ---------- */}
+              <div className="rounded-2xl border border-border bg-muted/30 p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-brand text-brand-foreground">
+                    <DollarSign className="h-4 w-4" />
                   </span>
+                  <span className="text-base font-semibold">Resumo financeiro</span>
                 </div>
-              )}
-              {(!diversosOnly || entregaAtiva) && (
-                <div className="flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="text-muted-foreground">
-                    Entrega / Frete ({tipoEntrega})
-                    {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
-                      <span className="block text-xs text-foreground/70 mt-0.5">
-                        Transportadora: {gStr("transportadoraNome")}
-                      </span>
+                <div className="flex flex-col lg:flex-row lg:items-stretch gap-4">
+                  <div className="grid flex-1 grid-cols-2 sm:grid-cols-3 gap-4">
+                    <FinCell label="Subtotal dos itens" value={fmtMoney(subtotalItens)} />
+                    <FinCell label="Custos extras" value={fmtMoney(custosExtras)} />
+                    {temDesconto && (
+                      <FinCell
+                        label={`Desconto (${fmtPct(gNum("descontoPercentual"))})`}
+                        value={`- ${fmtMoney(descontoValor)}`}
+                        tone="negative"
+                      />
                     )}
-                  </span>
-                  <span className="font-semibold">
-                    {moneyOrNA(entregaAtiva, gNum("valorEntrega"))}
-                  </span>
+                  </div>
+
+                  <div className="grid place-items-center rounded-xl bg-gradient-brand text-brand-foreground px-8 py-4 shadow-brand min-w-[220px]">
+                    <span className="text-sm font-medium opacity-90">Total geral</span>
+                    <span className="text-3xl font-bold leading-tight">
+                      {fmtMoney(Number(budget.total_value))}
+                    </span>
+                  </div>
+
+                  <div className="grid flex-1 grid-cols-2 gap-4">
+                    <FinCell
+                      label="Valor recebido / Sinal"
+                      value={fmtMoney(temSinal ? gNum("valorSinal") : 0)}
+                    />
+                    <FinCell
+                      label="Valor a receber"
+                      value={fmtMoney(
+                        temSinal ? gNum("valorAReceber") : Number(budget.total_value),
+                      )}
+                      tone="positive"
+                    />
+                  </div>
                 </div>
-              )}
-              {(!diversosOnly || gNum("maoDeObraExtra") > 0) && (
-                <div className="flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="text-muted-foreground">MDOE</span>
-                  <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
-                </div>
-              )}
-              {gNum("descontoPercentual") > 0 && (
-                <>
-                  <div className="flex items-center justify-between px-4 py-3 text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-semibold">
-                      {fmtMoney(gNum("subtotalSemDesconto"))}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3 text-sm">
-                    <span className="text-muted-foreground">
-                      Desconto aplicado ({fmtPct(gNum("descontoPercentual"))})
-                    </span>
-                    <span className="font-semibold text-rose-600">
-                      - {fmtMoney(gNum("descontoValor"))}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3 text-sm">
-                    <span className="text-muted-foreground">Subtotal com desconto</span>
-                    <span className="font-semibold">
-                      {fmtMoney(gNum("subtotalComDesconto"))}
-                    </span>
-                  </div>
-                </>
-              )}
+              </div>
+
+              {extraActions}
             </div>
-
-            {gStr("observacoes") && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
-                <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
-                  🟨 Observação do {isPedido ? "Pedido" : "Orçamento"}
-                </div>
-                <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
-                  {gStr("observacoes")}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between rounded-lg bg-gradient-brand text-brand-foreground px-5 py-4 shadow-brand">
-              <span className="text-sm font-medium">Total geral</span>
-              <span className="text-xl font-bold">
-                {fmtMoney(Number(budget.total_value))}
-              </span>
-            </div>
-
-            {pendingDiscount && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                Possível total se o desconto de {fmtPct(pendingDiscount.percent)}{" "}
-                for aprovado:{" "}
-                <span className="font-semibold">
-                  {fmtMoney(pendingDiscount.potentialTotal)}
-                </span>
-              </div>
-            )}
-
-
-            {general.sinalAtivo === "sim" && gNum("valorSinal") > 0 && (
-              <div className="rounded-lg border border-border divide-y divide-border">
-                <div className="flex items-center justify-between px-4 py-3 text-sm">
-                  <span className="text-muted-foreground">Sinal aplicado</span>
-                  <span className="font-semibold">{fmtMoney(gNum("valorSinal"))}</span>
-                </div>
-                <div className="flex items-center justify-between px-4 py-3 text-sm bg-muted/30">
-                  <span className="font-semibold text-foreground">Valor a receber</span>
-                  <span className="font-bold text-emerald-600">
-                    {fmtMoney(gNum("valorAReceber"))}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {extraActions}
-          </div>
+          </>
         )}
       </DialogContent>
 
@@ -1552,6 +1543,55 @@ function ResumoDialog({
         </DialogContent>
       </Dialog>
     </Dialog>
+  );
+}
+
+function InfoLine({
+  icon: Icon,
+  label,
+  value,
+  mono,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-2 min-w-0">
+      <Icon className="h-4 w-4 shrink-0 text-primary/70 mt-0.5" />
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className={cn("text-sm font-medium text-foreground break-words", mono && "font-mono")}>
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FinCell({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "positive" | "negative";
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div
+        className={cn(
+          "text-lg font-semibold",
+          tone === "positive" && "text-emerald-600",
+          tone === "negative" && "text-rose-600",
+        )}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
 
