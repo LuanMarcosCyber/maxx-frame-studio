@@ -1440,7 +1440,7 @@ function ResumoDialog({
                   {(instalacaoAtivo || entregaAtiva || gNum("maoDeObraExtra") > 0) && (
                     <div className="rounded-xl border border-border bg-card divide-y divide-border">
                       {instalacaoAtivo && (
-                        <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                        <div className="flex items-center justify-between px-3 py-2 text-sm">
                           <span className="text-muted-foreground">Instalação</span>
                           <span className="font-semibold">
                             {fmtMoneyRt(gNum("valorInstalacao"))}
@@ -1448,7 +1448,7 @@ function ResumoDialog({
                         </div>
                       )}
                       {entregaAtiva && (
-                        <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                        <div className="flex items-center justify-between px-3 py-2 text-sm">
                           <span className="text-muted-foreground">
                             Entrega / Frete ({tipoEntrega})
                             {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
@@ -1461,7 +1461,7 @@ function ResumoDialog({
                         </div>
                       )}
                       {gNum("maoDeObraExtra") > 0 && (
-                        <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                        <div className="flex items-center justify-between px-3 py-2 text-sm">
                           <span className="text-muted-foreground">MDOE</span>
                           <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
                         </div>
