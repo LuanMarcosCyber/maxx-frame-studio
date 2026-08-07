@@ -935,7 +935,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     const { data: budgets, error } = await q;
     if (error) throw error;
 
-    const listAll = (budgets ?? []) as Array<{
+    const listAll0 = (budgets ?? []) as Array<{
       id: string;
       number: string;
       client_name: string;
@@ -947,8 +947,13 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       total_value: number | string;
       created_at: string;
       updated_at: string;
+      details: Record<string, unknown> | null;
     }>;
+    const listAll = data.origem
+      ? listAll0.filter((b) => matchesOrigem(b.details ?? null, data.origem!))
+      : listAll0;
     const list = clientFilter
+
       ? listAll.filter((b) => matchesClient(clientFilter, b))
       : listAll;
 
