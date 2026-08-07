@@ -266,6 +266,8 @@ function Relatorios() {
     if (!showProductFilter) setProductId("todos");
     if (!showGranularity) setGranularity("mes");
     if (!showCityFilter) setCityFilter("todos");
+    if (!showOrigemFilter) setOrigem("todos");
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
