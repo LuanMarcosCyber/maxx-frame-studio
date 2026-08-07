@@ -14,6 +14,8 @@ export interface VendasFilters {
   dateFrom?: string; // yyyy-mm-dd (period === "personalizado")
   dateTo?: string; // yyyy-mm-dd (period === "personalizado")
   excludeTotalmaxx?: boolean; // "Todas (Sem TOTALMAXX)"
+  origem?: string; // Origem da compra (details.origemCompra)
+
 }
 
 export interface VendasOrder {
@@ -383,6 +385,12 @@ function matchesClient(
   return false;
 }
 
+// Origem da compra fica salva no JSON `details` do orçamento (origemCompra).
+function matchesOrigem(details: Record<string, unknown> | null, origem: string): boolean {
+  const raw = typeof details?.origemCompra === "string" ? (details.origemCompra as string) : "";
+  return raw.trim().toLowerCase() === origem.trim().toLowerCase();
+}
+
 export const getVendasReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: VendasFilters) => data)
@@ -434,6 +442,14 @@ export const getVendasReport = createServerFn({ method: "POST" })
         }),
       );
     }
+
+    if (data.origem) {
+      filtered = filtered.filter(
+        (r) => matchesOrigem((r.budgets?.details ?? null) as Record<string, unknown> | null, data.origem!),
+      );
+    }
+
+
 
     const orders: VendasOrder[] = filtered.map((r) => {
       const details = (r.budgets?.details ?? {}) as Record<string, unknown>;
@@ -901,8 +917,9 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     let q = client
       .from("budgets")
       .select(
-        "id, number, client_name, client_id, operator_name, operator_id, user_id, status, total_value, created_at, updated_at",
+        "id, number, client_name, client_id, operator_name, operator_id, user_id, status, total_value, created_at, updated_at, details",
       )
+
       .order("created_at", { ascending: false })
       .limit(1000);
 
@@ -918,7 +935,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     const { data: budgets, error } = await q;
     if (error) throw error;
 
-    const listAll = (budgets ?? []) as Array<{
+    const listAll0 = (budgets ?? []) as Array<{
       id: string;
       number: string;
       client_name: string;
@@ -930,8 +947,13 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
       total_value: number | string;
       created_at: string;
       updated_at: string;
+      details: Record<string, unknown> | null;
     }>;
+    const listAll = data.origem
+      ? listAll0.filter((b) => matchesOrigem(b.details ?? null, data.origem!))
+      : listAll0;
     const list = clientFilter
+
       ? listAll.filter((b) => matchesClient(clientFilter, b))
       : listAll;
 

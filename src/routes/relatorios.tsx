@@ -160,6 +160,17 @@ const PERIOD_OPTIONS: ComboboxOption[] = [
   { value: "personalizado", label: "Personalizado" },
 ];
 
+const ORIGEM_OPTIONS: string[] = [
+  "Presencial",
+  "Arquiteto",
+  "Site",
+  "Mercado Livre",
+  "Amazon",
+  "Shopee",
+  "Outros",
+];
+
+
 const EMPRESA_SEM_TOTALMAXX = "sem_totalmaxx";
 const EMPRESA_TODAS = "todos";
 
@@ -242,6 +253,7 @@ function Relatorios() {
   const [productId, setProductId] = useState<string>("todos");
   const [granularity, setGranularity] = useState<string>("mes");
   const [cityFilter, setCityFilter] = useState<string>("todos");
+  const [origem, setOrigem] = useState<string>("todos");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [search, setSearch] = useState("");
@@ -253,6 +265,8 @@ function Relatorios() {
   const showProductFilter = selected === "produtos";
   const showGranularity = selected === "orcamentos";
   const showCityFilter = selected === "clientes";
+  const showOrigemFilter = selected === "vendas" || selected === "orcamentos";
+
 
   // Cada relatório mantém apenas os filtros que lhe pertencem: ao trocar de
   // relatório, qualquer filtro que não exista na nova tela é descartado para
@@ -263,6 +277,8 @@ function Relatorios() {
     if (!showProductFilter) setProductId("todos");
     if (!showGranularity) setGranularity("mes");
     if (!showCityFilter) setCityFilter("todos");
+    if (!showOrigemFilter) setOrigem("todos");
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
@@ -397,6 +413,23 @@ function Relatorios() {
                   searchPlaceholder="Pesquisar status..."
                 />
               </div>
+
+              {showOrigemFilter && (
+                <div className="space-y-1.5">
+                  <Label>Origem da compra</Label>
+                  <Combobox
+                    value={origem}
+                    onChange={setOrigem}
+                    placeholder="Todos"
+                    searchPlaceholder="Pesquisar origem..."
+                    options={[
+                      { value: "todos", label: "Todos" },
+                      ...ORIGEM_OPTIONS.map((o) => ({ value: o, label: o })),
+                    ]}
+                  />
+                </div>
+              )}
+
 
               <div className="space-y-1.5">
                 <Label>Cliente</Label>
@@ -584,6 +617,8 @@ function Relatorios() {
               productId: productId === "todos" ? undefined : productId,
               dateFrom: period === "personalizado" ? toISODate(dateFrom) : undefined,
               dateTo: period === "personalizado" ? toISODate(dateTo) : undefined,
+              origem: origem === "todos" ? undefined : origem,
+
             }}
 
             granularity={granularity}
