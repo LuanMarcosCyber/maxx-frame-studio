@@ -1308,7 +1308,7 @@ function ResumoDialog({
                     </div>
 
                     {isParcelado && (
-                      <div className="mt-5 border-t border-border pt-4">
+                      <div className="mt-4 border-t border-border pt-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-semibold">
                             Parcelas ({parcelasList.length}x)
@@ -1328,7 +1328,7 @@ function ResumoDialog({
                           {parcelasList.slice(0, 6).map((p) => (
                             <div
                               key={p.numero}
-                              className="flex items-center justify-between px-3 py-2 text-sm"
+                              className="flex items-center justify-between px-3 py-1.5 text-sm"
                             >
                               <span className="text-muted-foreground">
                                 {p.numero}/{parcelasList.length} ·{" "}
