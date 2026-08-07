@@ -1343,7 +1343,7 @@ function ResumoDialog({
                   </div>
 
                   {gStr("observacoes") && (
-                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
                       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-900">
                         <AlertCircle className="h-4 w-4" />
                         Observação do {isPedido ? "pedido" : "orçamento"}
@@ -1355,7 +1355,7 @@ function ResumoDialog({
                   )}
 
                   {pendingDiscount && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
                       Possível total se o desconto de {fmtPct(pendingDiscount.percent)} for
                       aprovado:{" "}
                       <span className="font-semibold">
