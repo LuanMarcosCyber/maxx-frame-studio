@@ -1064,8 +1064,17 @@ function ResumoDialog({
   const instalacaoAtivo = general.instalacaoAtivo === "sim";
   const entregaAtiva = tipoEntrega !== "Retirada";
 
+  // RT / comissão de arquiteto (e qualquer reajuste percentual sobre os itens)
+  // já aplicada nos valores exibidos, para que a soma bata com o total geral.
+  const rtPercNum = gNum("rtPercentual");
+  const rtMult = 1 + (rtPercNum || 0) / 100;
+  const fmtMoneyRt = (n: number) => fmtMoney(n * rtMult);
+  const arquitetoNome = gStr("arquitetoNome");
+  const arquitetoPerc = gNum("arquitetoPercentual") || rtPercNum;
+
   const moneyOrNA = (active: boolean, value: number) =>
-    !active ? "Não aplicado" : fmtMoney(value);
+    !active ? "Não aplicado" : fmtMoneyRt(value);
+
   const productLabel = (d: Record<string, unknown>, code: string, desc: string) => {
     const c = typeof d[code] === "string" ? (d[code] as string) : "";
     const dd = typeof d[desc] === "string" ? (d[desc] as string) : "";
@@ -1110,7 +1119,7 @@ function ResumoDialog({
               },
               {
                 label: "Paspatur interno",
-                value: fmtMoney(dNum(d, "valorPaspaturAdicional")),
+                value: fmtMoneyRt(dNum(d, "valorPaspaturAdicional")),
                 sub: productLabel(d, "paspaturAdicionalCode", "paspaturAdicionalDescription"),
                 note: (() => {
                   const obs =
@@ -1120,7 +1129,7 @@ function ResumoDialog({
               },
               {
                 label: "Total Paspatur",
-                value: fmtMoney(dNum(d, "valorPaspatur")),
+                value: fmtMoneyRt(dNum(d, "valorPaspatur")),
               },
             ]
           : [
@@ -1134,23 +1143,23 @@ function ResumoDialog({
           ? [
               {
                 label: "Perfil externo",
-                value: fmtMoney(dNum(d, "valorPerfilPrincipal")),
+                value: fmtMoneyRt(dNum(d, "valorPerfilPrincipal")),
                 sub: productLabel(d, "perfilCode", "perfilDescription"),
               },
               {
                 label: "Perfil interno",
-                value: fmtMoney(dNum(d, "valorPerfilAdicional")),
+                value: fmtMoneyRt(dNum(d, "valorPerfilAdicional")),
                 sub: `${productLabel(d, "perfilAdicionalCode", "perfilAdicionalDescription")} · medida ${fmtMeasure(dNum(d, "larguraPerfilAdicional"))} × ${fmtMeasure(dNum(d, "alturaPerfilAdicional"))} cm`,
               },
               {
                 label: "Total Perfil",
-                value: fmtMoney(dNum(d, "valorPerfil")),
+                value: fmtMoneyRt(dNum(d, "valorPerfil")),
               },
             ]
           : [
               {
                 label: "Perfil",
-                value: fmtMoney(dNum(d, "valorPerfil")),
+                value: fmtMoneyRt(dNum(d, "valorPerfil")),
                 sub: productLabel(d, "perfilCode", "perfilDescription"),
               },
             ]),
@@ -1163,14 +1172,14 @@ function ResumoDialog({
                 const qtd = Number(d.vidroQuantidade) || 1;
                 const unit = Number(d.valorVidroUnit) || 0;
                 return qtd > 1
-                  ? `${base} · ${qtd}× ${fmtMoney(unit)}`
+                  ? `${base} · ${qtd}× ${fmtMoneyRt(unit)}`
                   : base;
               })()
             : undefined,
         },
         {
           label: "Foam / MDF",
-          value: fmtMoney(dNum(d, "valorFoam")),
+          value: fmtMoneyRt(dNum(d, "valorFoam")),
           sub: productLabel(d, "foamCode", "foamDescription"),
         },
         {
@@ -1197,14 +1206,14 @@ function ResumoDialog({
           const nome = typeof di.nome === "string" ? di.nome : "Produto";
           return {
             label: `${code ? `${code} · ` : ""}${nome}`,
-            value: fmtMoney(total),
-            sub: `Qtd ${qtd} × ${fmtMoney(unit)}`,
+            value: fmtMoneyRt(total),
+            sub: `Qtd ${qtd} × ${fmtMoneyRt(unit)}`,
             key: `div-${i}`,
           };
         }),
         {
           label: "Total Produtos Diversos",
-          value: fmtMoney(dNum(d, "valorDiversos")),
+          value: fmtMoneyRt(dNum(d, "valorDiversos")),
         },
       ]
     : [];
@@ -1259,6 +1268,31 @@ function ResumoDialog({
               )}
 
             </div>
+
+            {arquitetoNome.trim() && (
+              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Arquiteto
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {arquitetoNome}
+                  </div>
+                </div>
+                {arquitetoPerc > 0 && (
+                  <div className="text-right">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Comissão (RT)
+                    </div>
+                    <div className="text-sm font-semibold text-foreground">
+                      {fmtPct(arquitetoPerc)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+
 
             {isParcelado && (
               <div className="rounded-lg border border-border p-3 space-y-2">
@@ -1316,7 +1350,7 @@ function ResumoDialog({
                     <ImageIcon className="h-3.5 w-3.5" />
                     Item {i + 1}
                     <span className="text-muted-foreground font-normal">
-                      {fmtMoney(Number(it.subtotal))}
+                      {fmtMoneyRt(Number(it.subtotal))}
                     </span>
                   </button>
                 ))}
@@ -1364,7 +1398,7 @@ function ResumoDialog({
                       Subtotal Item {activeIdx + 1}
                     </span>
                     <span className="font-semibold">
-                      {fmtMoney(Number(activeItem.subtotal))}
+                      {fmtMoneyRt(Number(activeItem.subtotal))}
                     </span>
                   </div>
                 </div>
@@ -1381,7 +1415,7 @@ function ResumoDialog({
                       className="flex items-center justify-between px-4 py-3 text-sm"
                     >
                       <span className="font-medium text-foreground">Item {i + 1}</span>
-                      <span className="font-semibold">{fmtMoney(Number(it.subtotal))}</span>
+                      <span className="font-semibold">{fmtMoneyRt(Number(it.subtotal))}</span>
                     </div>
                   ),
                 )}
