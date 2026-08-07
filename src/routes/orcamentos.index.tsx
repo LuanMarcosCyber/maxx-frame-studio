@@ -1362,6 +1362,13 @@ function ResumoDialog({
                 <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
                   Item {activeIdx + 1}{diversosOnly ? " — Produtos Diversos" : ""}
                 </div>
+                <div className="mb-2 text-sm">
+                  <span className="text-muted-foreground">Quantidade: </span>
+                  <span className="font-semibold text-foreground">
+                    {Number(d.quantidade) || 1}
+                  </span>
+                </div>
+
                 <div className="rounded-lg border border-border divide-y divide-border">
                   {itemRows.map((r, i) => {
                     const note = (r as { note?: { title: string; text: string } }).note;
