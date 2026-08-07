@@ -1269,6 +1269,31 @@ function ResumoDialog({
 
             </div>
 
+            {arquitetoNome.trim() && (
+              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Arquiteto
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {arquitetoNome}
+                  </div>
+                </div>
+                {arquitetoPerc > 0 && (
+                  <div className="text-right">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Comissão (RT)
+                    </div>
+                    <div className="text-sm font-semibold text-foreground">
+                      {fmtPct(arquitetoPerc)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+
+
             {isParcelado && (
               <div className="rounded-lg border border-border p-3 space-y-2">
                 <div className="flex items-center justify-between">
