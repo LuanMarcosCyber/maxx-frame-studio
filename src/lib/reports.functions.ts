@@ -14,6 +14,8 @@ export interface VendasFilters {
   dateFrom?: string; // yyyy-mm-dd (period === "personalizado")
   dateTo?: string; // yyyy-mm-dd (period === "personalizado")
   excludeTotalmaxx?: boolean; // "Todas (Sem TOTALMAXX)"
+  origem?: string; // Origem da compra (details.origemCompra)
+
 }
 
 export interface VendasOrder {
