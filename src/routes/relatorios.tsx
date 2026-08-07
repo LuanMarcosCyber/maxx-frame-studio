@@ -160,6 +160,17 @@ const PERIOD_OPTIONS: ComboboxOption[] = [
   { value: "personalizado", label: "Personalizado" },
 ];
 
+const ORIGEM_OPTIONS: string[] = [
+  "Presencial",
+  "Arquiteto",
+  "Site",
+  "Mercado Livre",
+  "Amazon",
+  "Shopee",
+  "Outros",
+];
+
+
 const EMPRESA_SEM_TOTALMAXX = "sem_totalmaxx";
 const EMPRESA_TODAS = "todos";
 
