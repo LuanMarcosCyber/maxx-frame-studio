@@ -917,8 +917,9 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
     let q = client
       .from("budgets")
       .select(
-        "id, number, client_name, client_id, operator_name, operator_id, user_id, status, total_value, created_at, updated_at",
+        "id, number, client_name, client_id, operator_name, operator_id, user_id, status, total_value, created_at, updated_at, details",
       )
+
       .order("created_at", { ascending: false })
       .limit(1000);
 
