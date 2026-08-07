@@ -617,6 +617,8 @@ function Relatorios() {
               productId: productId === "todos" ? undefined : productId,
               dateFrom: period === "personalizado" ? toISODate(dateFrom) : undefined,
               dateTo: period === "personalizado" ? toISODate(dateTo) : undefined,
+              origem: origem === "todos" ? undefined : origem,
+
             }}
 
             granularity={granularity}
