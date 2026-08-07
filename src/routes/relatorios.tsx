@@ -403,6 +403,23 @@ function Relatorios() {
                 />
               </div>
 
+              {showOrigemFilter && (
+                <div className="space-y-1.5">
+                  <Label>Origem da compra</Label>
+                  <Combobox
+                    value={origem}
+                    onChange={setOrigem}
+                    placeholder="Todos"
+                    searchPlaceholder="Pesquisar origem..."
+                    options={[
+                      { value: "todos", label: "Todos" },
+                      ...ORIGEM_OPTIONS.map((o) => ({ value: o, label: o })),
+                    ]}
+                  />
+                </div>
+              )}
+
+
               <div className="space-y-1.5">
                 <Label>Cliente</Label>
                 <Combobox
