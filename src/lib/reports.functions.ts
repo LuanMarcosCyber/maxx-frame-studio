@@ -437,6 +437,14 @@ export const getVendasReport = createServerFn({ method: "POST" })
       );
     }
 
+    if (data.origem) {
+      filtered = filtered.filter(
+        (r) => matchesOrigem((r.budgets?.details ?? null) as Record<string, unknown> | null, data.origem!),
+      );
+    }
+
+
+
     const orders: VendasOrder[] = filtered.map((r) => {
       const details = (r.budgets?.details ?? {}) as Record<string, unknown>;
       return {
