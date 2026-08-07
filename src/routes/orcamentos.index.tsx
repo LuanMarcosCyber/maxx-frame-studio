@@ -1064,8 +1064,17 @@ function ResumoDialog({
   const instalacaoAtivo = general.instalacaoAtivo === "sim";
   const entregaAtiva = tipoEntrega !== "Retirada";
 
+  // RT / comissão de arquiteto (e qualquer reajuste percentual sobre os itens)
+  // já aplicada nos valores exibidos, para que a soma bata com o total geral.
+  const rtPercNum = gNum("rtPercentual");
+  const rtMult = 1 + (rtPercNum || 0) / 100;
+  const fmtMoneyRt = (n: number) => fmtMoney(n * rtMult);
+  const arquitetoNome = gStr("arquitetoNome");
+  const arquitetoPerc = gNum("arquitetoPercentual") || rtPercNum;
+
   const moneyOrNA = (active: boolean, value: number) =>
-    !active ? "Não aplicado" : fmtMoney(value);
+    !active ? "Não aplicado" : fmtMoneyRt(value);
+
   const productLabel = (d: Record<string, unknown>, code: string, desc: string) => {
     const c = typeof d[code] === "string" ? (d[code] as string) : "";
     const dd = typeof d[desc] === "string" ? (d[desc] as string) : "";
