@@ -1159,6 +1159,8 @@ export type Database = {
         }
         Returns: number
       }
+      caller_can_delete_orders: { Args: never; Returns: boolean }
+      caller_max_discount_percent: { Args: never; Returns: number }
       can_switch_to_company: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
