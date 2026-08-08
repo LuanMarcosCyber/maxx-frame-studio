@@ -1362,7 +1362,7 @@ function ResumoDialog({
                 {/* ---------- Coluna direita: informações + financeiro ---------- */}
                 <div className="order-1 lg:order-2 min-w-0 space-y-3">
                   <div className="rounded-xl border border-border bg-card p-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-x-4 gap-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-3 gap-y-2">
                       <InfoLine icon={User} label="Cliente" value={budget.client_name} />
                       {isPedido ? (
                         <InfoLine icon={FileText} label="Origem do orçamento" value={budget.number} mono />
