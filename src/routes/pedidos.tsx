@@ -58,9 +58,8 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/pedidos")({
   head: () => ({ meta: [{ title: "Pedidos — Total Maxx ERP" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    view: typeof search.view === "string" ? search.view : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { view?: string } =>
+    typeof search.view === "string" ? { view: search.view } : {},
   component: Pedidos,
 });
 
@@ -538,6 +537,7 @@ function Pedidos() {
         orderNumber={viewing?.number ?? null}
         onClose={() => setViewing(null)}
         extraActions={actions}
+        statusOverride={viewing?.status ?? null}
       />
 
       {/* Fallback: pedido sem orçamento vinculado — abrir modal simples só com ações */}
