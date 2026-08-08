@@ -1253,12 +1253,99 @@ function ResumoDialog({
               </DialogTitle>
             </DialogHeader>
 
-            <div className="px-4 pb-5 sm:px-5 space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-                {/* ---------- Coluna esquerda ---------- */}
-                <div className="space-y-3">
-                  <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-3">
+            <div className="px-3 pb-4 sm:px-5 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[1.65fr_1fr] gap-4 items-start">
+                {/* ---------- Coluna esquerda: itens ---------- */}
+                <div className="order-2 lg:order-1 min-w-0 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 shrink-0 text-primary" />
+                    <span className="text-base font-semibold">
+                      Itens do {isPedido ? "pedido" : "orçamento"}
+                    </span>
+                    <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                      {items.length} {items.length === 1 ? "item" : "itens"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                    {items.map((it, i) => {
+                      const di = (it.data ?? {}) as Record<string, unknown>;
+                      const rows = rowsForItem(di);
+                      return (
+                        <div
+                          key={it.id}
+                          className="min-w-0 rounded-xl border border-border bg-card overflow-hidden"
+                        >
+                          <div className="px-3 py-2 border-b border-border bg-muted/40">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="min-w-0 truncate font-semibold text-foreground">
+                                Item {i + 1}
+                                {diversosOnly ? " — Produtos Diversos" : ""}
+                              </span>
+                              <span className="shrink-0 font-bold text-primary whitespace-nowrap">
+                                {fmtMoneyRt(Number(it.subtotal))}
+                              </span>
+                            </div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                              Quantidade:{" "}
+                              <span className="font-semibold text-foreground">
+                                {Number(di.quantidade) || 1}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="divide-y divide-border">
+                            {rows.map((r, ri) => (
+                              <div key={r.key ?? `${r.label}-${ri}`}>
+                                <div className="flex items-start justify-between gap-2 px-3 py-1.5 text-sm">
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-foreground break-words">
+                                      {r.label}
+                                    </div>
+                                    {r.sub && (
+                                      <div className="text-xs text-muted-foreground break-words">
+                                        {r.sub}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="shrink-0 font-semibold text-foreground whitespace-nowrap">
+                                    {r.value}
+                                  </div>
+                                </div>
+                                {r.note && (
+                                  <div className="mx-3 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5">
+                                    <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
+                                      ↓ {r.note.title}
+                                    </div>
+                                    <div className="mt-0.5 text-sm text-amber-900 whitespace-pre-wrap break-words">
+                                      {r.note.text}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {gStr("observacoes") && (
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-900">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        Observação do {isPedido ? "pedido" : "orçamento"}
+                      </div>
+                      <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap break-words">
+                        {gStr("observacoes")}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ---------- Coluna direita: informações + financeiro ---------- */}
+                <div className="order-1 lg:order-2 min-w-0 space-y-3">
+                  <div className="rounded-xl border border-border bg-card p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-x-4 gap-y-2.5">
                       <InfoLine icon={User} label="Cliente" value={budget.client_name} />
                       {isPedido ? (
                         <InfoLine icon={FileText} label="Origem do orçamento" value={budget.number} mono />
@@ -1308,8 +1395,8 @@ function ResumoDialog({
                     </div>
 
                     {isParcelado && (
-                      <div className="mt-4 border-t border-border pt-3">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="mt-3 border-t border-border pt-2.5">
+                        <div className="flex items-center justify-between mb-1.5">
                           <span className="text-sm font-semibold">
                             Parcelas ({parcelasList.length}x)
                           </span>
@@ -1328,13 +1415,13 @@ function ResumoDialog({
                           {parcelasList.slice(0, 6).map((p) => (
                             <div
                               key={p.numero}
-                              className="flex items-center justify-between px-3 py-1.5 text-sm"
+                              className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm"
                             >
-                              <span className="text-muted-foreground">
+                              <span className="min-w-0 truncate text-muted-foreground">
                                 {p.numero}/{parcelasList.length} ·{" "}
                                 {p.vencimento ? fmtDateBR(p.vencimento) : "—"}
                               </span>
-                              <span className="font-medium">{fmtMoney(p.valor)}</span>
+                              <span className="shrink-0 font-medium">{fmtMoney(p.valor)}</span>
                             </div>
                           ))}
                         </div>
@@ -1342,17 +1429,99 @@ function ResumoDialog({
                     )}
                   </div>
 
-                  {gStr("observacoes") && (
-                    <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-900">
-                        <AlertCircle className="h-4 w-4" />
-                        Observação do {isPedido ? "pedido" : "orçamento"}
-                      </div>
-                      <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
-                        {gStr("observacoes")}
-                      </div>
+                  {/* ---------- Resumo financeiro ---------- */}
+                  <div className="rounded-xl border border-border bg-muted/30 p-3">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-brand text-brand-foreground">
+                        <DollarSign className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="text-sm font-semibold">Resumo financeiro</span>
                     </div>
-                  )}
+
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground">Subtotal dos itens</span>
+                        <span className="font-semibold whitespace-nowrap">
+                          {fmtMoney(subtotalItens)}
+                        </span>
+                      </div>
+                      {custosExtras > 0 && (
+                        <>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground">Custos extras</span>
+                            <span className="font-semibold whitespace-nowrap">
+                              {fmtMoney(custosExtras)}
+                            </span>
+                          </div>
+                          <div className="ml-2 space-y-0.5 text-xs text-muted-foreground">
+                            {instalacaoAtivo && (
+                              <div className="flex items-center justify-between gap-2">
+                                <span>Instalação</span>
+                                <span className="whitespace-nowrap">
+                                  {fmtMoneyRt(gNum("valorInstalacao"))}
+                                </span>
+                              </div>
+                            )}
+                            {entregaAtiva && (
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="min-w-0">
+                                  Entrega / Frete ({tipoEntrega})
+                                  {tipoEntrega === "Transportadora" &&
+                                    gStr("transportadoraNome") && (
+                                      <span className="block break-words">
+                                        {gStr("transportadoraNome")}
+                                      </span>
+                                    )}
+                                </span>
+                                <span className="whitespace-nowrap">
+                                  {fmtMoneyRt(gNum("valorEntrega"))}
+                                </span>
+                              </div>
+                            )}
+                            {gNum("maoDeObraExtra") > 0 && (
+                              <div className="flex items-center justify-between gap-2">
+                                <span>MDOE</span>
+                                <span className="whitespace-nowrap">
+                                  {fmtMoney(gNum("maoDeObraExtra"))}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      {temDesconto && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">
+                            Desconto ({fmtPct(gNum("descontoPercentual"))})
+                          </span>
+                          <span className="font-semibold text-rose-600 whitespace-nowrap">
+                            - {fmtMoney(descontoValor)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg bg-gradient-brand px-3 py-2.5 text-brand-foreground shadow-brand">
+                      <span className="text-sm font-medium opacity-90">Total geral</span>
+                      <span className="text-2xl font-bold leading-tight whitespace-nowrap">
+                        {fmtMoney(Number(budget.total_value))}
+                      </span>
+                    </div>
+
+                    {temSinal && (
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <FinCell
+                          label="Valor recebido / Sinal"
+                          value={fmtMoney(gNum("valorSinal"))}
+                        />
+                        <FinCell
+                          label="Valor a receber"
+                          value={fmtMoney(gNum("valorAReceber"))}
+                          tone="positive"
+                        />
+                      </div>
+                    )}
+                  </div>
 
                   {pendingDiscount && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -1363,155 +1532,6 @@ function ResumoDialog({
                       </span>
                     </div>
                   )}
-                </div>
-
-                {/* ---------- Coluna direita: itens ---------- */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    <span className="text-base font-semibold">
-                      Itens do {isPedido ? "pedido" : "orçamento"}
-                    </span>
-                    <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                      {items.length} {items.length === 1 ? "item" : "itens"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                    {items.map((it, i) => {
-                      const di = (it.data ?? {}) as Record<string, unknown>;
-                      const rows = rowsForItem(di);
-                      return (
-                        <div
-                          key={it.id}
-                          className="rounded-xl border border-border bg-card overflow-hidden"
-                        >
-                          <div className="px-3 py-2 border-b border-border">
-                            <div className="flex items-start justify-between gap-3">
-                              <span className="font-semibold text-foreground">
-                                Item {i + 1}
-                                {diversosOnly ? " — Produtos Diversos" : ""}
-                              </span>
-                              <span className="font-bold text-primary whitespace-nowrap">
-                                {fmtMoneyRt(Number(it.subtotal))}
-                              </span>
-                            </div>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              Quantidade:{" "}
-                              <span className="font-semibold text-foreground">
-                                {Number(di.quantidade) || 1}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="divide-y divide-border">
-                            {rows.map((r, ri) => (
-                              <div key={r.key ?? `${r.label}-${ri}`}>
-                                <div className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
-                                  <div className="min-w-0">
-                                    <div className="font-medium text-foreground">{r.label}</div>
-                                    {r.sub && (
-                                      <div className="text-xs text-muted-foreground mt-0.5">
-                                        {r.sub}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="font-semibold text-foreground whitespace-nowrap">
-                                    {r.value}
-                                  </div>
-                                </div>
-                                {r.note && (
-                                  <div className="mx-3 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5">
-                                    <div className="text-xs font-semibold uppercase tracking-wider text-amber-900">
-                                      ↓ {r.note.title}
-                                    </div>
-                                    <div className="mt-1 text-sm text-amber-900 whitespace-pre-wrap">
-                                      {r.note.text}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {(instalacaoAtivo || entregaAtiva || gNum("maoDeObraExtra") > 0) && (
-                    <div className="rounded-xl border border-border bg-card divide-y divide-border">
-                      {instalacaoAtivo && (
-                        <div className="flex items-center justify-between px-3 py-2 text-sm">
-                          <span className="text-muted-foreground">Instalação</span>
-                          <span className="font-semibold">
-                            {fmtMoneyRt(gNum("valorInstalacao"))}
-                          </span>
-                        </div>
-                      )}
-                      {entregaAtiva && (
-                        <div className="flex items-center justify-between px-3 py-2 text-sm">
-                          <span className="text-muted-foreground">
-                            Entrega / Frete ({tipoEntrega})
-                            {tipoEntrega === "Transportadora" && gStr("transportadoraNome") && (
-                              <span className="block text-xs text-foreground/70 mt-0.5">
-                                Transportadora: {gStr("transportadoraNome")}
-                              </span>
-                            )}
-                          </span>
-                          <span className="font-semibold">{fmtMoneyRt(gNum("valorEntrega"))}</span>
-                        </div>
-                      )}
-                      {gNum("maoDeObraExtra") > 0 && (
-                        <div className="flex items-center justify-between px-3 py-2 text-sm">
-                          <span className="text-muted-foreground">MDOE</span>
-                          <span className="font-semibold">{fmtMoney(gNum("maoDeObraExtra"))}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ---------- Resumo financeiro ---------- */}
-              <div className="rounded-2xl border border-border bg-muted/30 p-3 sm:p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-brand text-brand-foreground">
-                    <DollarSign className="h-3.5 w-3.5" />
-                  </span>
-                  <span className="text-base font-semibold">Resumo financeiro</span>
-                </div>
-                <div className="flex flex-col lg:flex-row lg:items-stretch gap-3">
-                  <div className="grid flex-1 grid-cols-2 sm:grid-cols-3 gap-3">
-                    <FinCell label="Subtotal dos itens" value={fmtMoney(subtotalItens)} />
-                    <FinCell label="Custos extras" value={fmtMoney(custosExtras)} />
-                    {temDesconto && (
-                      <FinCell
-                        label={`Desconto (${fmtPct(gNum("descontoPercentual"))})`}
-                        value={`- ${fmtMoney(descontoValor)}`}
-                        tone="negative"
-                      />
-                    )}
-                  </div>
-
-                  <div className="grid place-items-center rounded-xl bg-gradient-brand text-brand-foreground px-6 py-3 shadow-brand min-w-[220px]">
-                    <span className="text-sm font-medium opacity-90">Total geral</span>
-                    <span className="text-3xl font-bold leading-tight">
-                      {fmtMoney(Number(budget.total_value))}
-                    </span>
-                  </div>
-
-                  <div className="grid flex-1 grid-cols-2 gap-3">
-                    <FinCell
-                      label="Valor recebido / Sinal"
-                      value={fmtMoney(temSinal ? gNum("valorSinal") : 0)}
-                    />
-                    <FinCell
-                      label="Valor a receber"
-                      value={fmtMoney(
-                        temSinal ? gNum("valorAReceber") : Number(budget.total_value),
-                      )}
-                      tone="positive"
-                    />
-                  </div>
                 </div>
               </div>
 
