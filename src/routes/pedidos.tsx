@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteOrderSecure } from "@/lib/orders.functions";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,6 +119,7 @@ function Pedidos() {
   const { activeOperator, requirePin, hasPermission } = useOperator();
   const showCollaborator = role !== "colaborador";
   const canDelete = hasPermission("delete_orders");
+  const deleteOrderFn = useServerFn(deleteOrderSecure);
   const queryClient = useQueryClient();
   const logAct = useActivityLog();
   const navigate = useNavigate();
@@ -267,15 +270,11 @@ function Pedidos() {
     if (!t) return;
     const ok = await requirePin("excluir pedido");
     if (!ok) return;
-    // Devolve estoque antes de excluir (idempotente; ignora se não havia baixa).
-    const { error: rvErr } = await supabase.rpc("revert_order_stock", { _order_id: t.id });
-    if (rvErr) {
-      toast.error("Não foi possível devolver o estoque antes da exclusão.");
-      return;
-    }
-    const { error } = await supabase.from("orders").delete().eq("id", t.id);
-    if (error) {
-      toast.error("Não foi possível excluir o pedido.");
+    // Exclusão validada no servidor (permissão do usuário interno + estoque).
+    try {
+      await deleteOrderFn({ data: { orderId: t.id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível excluir o pedido.");
       return;
     }
     toast.success("Pedido excluído.");

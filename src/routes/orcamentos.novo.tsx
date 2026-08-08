@@ -88,6 +88,7 @@ import { perfilLinearMeters } from "@/lib/measures";
 import { toast } from "sonner";
 import { listActiveOperatorsV2 as listActiveOperators, validateOperatorPinV2 as validateOperatorPin } from "@/lib/operators.functions";
 import { nextDocumentNumber } from "@/lib/document-number.functions";
+import { assertDiscountAllowed } from "@/lib/orders.functions";
 import { OperatorSwitcher } from "@/components/layout/OperatorSwitcher";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
@@ -946,6 +947,7 @@ function NovoOrcamento() {
   const listOperatorsFn = useServerFn(listActiveOperators);
   const validateOperatorPinFn = useServerFn(validateOperatorPin);
   const nextDocumentNumberFn = useServerFn(nextDocumentNumber);
+  const assertDiscountAllowedFn = useServerFn(assertDiscountAllowed);
 
   const { data: operatorList = [] } = useQuery<
     { id: string; full_name: string; username: string | null; has_pin: boolean }[]
@@ -1747,8 +1749,17 @@ function NovoOrcamento() {
       return;
     }
 
-    // Discount limit (uses active operator's limit when present, else logged account's)
-    if (!opts.skipDiscountCheck && maxDiscount < 100 && descontoPercNum > maxDiscount + 0.001) {
+    // Discount limit — validado no servidor (limite do usuário interno ativo).
+    if (!opts.skipDiscountCheck && descontoPercNum > 0) {
+      const check = (await assertDiscountAllowedFn({
+        data: { percent: Number(descontoPercNum.toFixed(2)), budgetId: isEdit ? editId : null },
+      })) as { allowed: boolean };
+      if (!check.allowed) {
+        setDiscountAuthOpen(true);
+        return;
+      }
+    }
+    if (false) {
       let approved = false;
       if (isEdit && editId) {
         const { data: req } = await supabase
