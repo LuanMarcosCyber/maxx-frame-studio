@@ -489,7 +489,7 @@ export function SidebarContents({ onNavigate }: { onNavigate?: () => void } = {}
         </div>
       )}
 
-      <div className="px-3 pb-3 pt-1 text-[11px] text-white/50 select-none">
+      <div className="px-3 pb-3 pt-1 text-[11px] text-muted-foreground/70 select-none">
         {APP_VERSION_LABEL}
       </div>
     </div>
