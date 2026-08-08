@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check, Printer, Store, Hammer, User, FileText, CalendarDays, CreditCard, Wallet, Package, ClipboardCheck, UserCog, Users, DollarSign, AlertCircle } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Eye, Pencil, Trash2, Image as ImageIcon, Check, Printer, Store, Hammer, User, FileText, CalendarDays, CreditCard, Wallet, Package, ClipboardCheck, UserCog, Users, DollarSign, AlertCircle, X } from "lucide-react";
 import { cn, fmtMeasure, fmtDateBR, fmtPct } from "@/lib/utils";
 
 import {

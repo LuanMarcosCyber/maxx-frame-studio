@@ -537,6 +537,7 @@ function Pedidos() {
         orderNumber={viewing?.number ?? null}
         onClose={() => setViewing(null)}
         extraActions={actions}
+        statusOverride={viewing?.status ?? null}
       />
 
       {/* Fallback: pedido sem orçamento vinculado — abrir modal simples só com ações */}
