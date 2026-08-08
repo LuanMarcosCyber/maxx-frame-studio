@@ -1001,7 +1001,22 @@ function ResumoDialog({
 
   const [creatorName, setCreatorName] = useState<string>("—");
   useEffect(() => {
-    if (!budget || !budget.created_by || budget.created_by === budget.user_id) {
+    if (!budget) {
+      setCreatorName("—");
+      return;
+    }
+    // Origem preferencial: usuário interno (PIN) gravado no documento, depois o
+    // vendedor informado no orçamento e, por fim, o perfil que criou/possui o doc.
+    const operador = (budget.operator_name ?? "").trim();
+    const vendedor = (
+      (budget.details as { vendedorNome?: string } | null)?.vendedorNome ?? ""
+    ).trim();
+    if (operador || vendedor) {
+      setCreatorName(operador || vendedor);
+      return;
+    }
+    const profileId = budget.created_by || budget.user_id;
+    if (!profileId) {
       setCreatorName("—");
       return;
     }
@@ -1010,13 +1025,16 @@ function ResumoDialog({
       const { data } = await supabase
         .from("profiles")
         .select("full_name, username")
-        .eq("id", budget.created_by!)
+        .eq("id", profileId)
         .maybeSingle();
       if (cancelled) return;
-      setCreatorName((data as any)?.full_name || (data as any)?.username || "—");
+      const row = data as { full_name?: string | null; username?: string | null } | null;
+      setCreatorName(row?.full_name || row?.username || "—");
     })();
-    return () => { cancelled = true; };
-  }, [budget?.created_by, budget?.user_id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [budget?.id, budget?.operator_name, budget?.created_by, budget?.user_id, budget?.details]);
   const condicaoPagamento =
     typeof general.condicaoPagamento === "string"
       ? (general.condicaoPagamento as string)
@@ -1127,10 +1145,6 @@ function ResumoDialog({
                 return obs ? { title: "Observação do Paspatur Interno", text: obs } : undefined;
               })(),
             },
-            {
-              label: "Total Paspatur",
-              value: fmtMoneyRt(dNum(d, "valorPaspatur")),
-            },
           ]
         : [
             {
@@ -1209,10 +1223,6 @@ function ResumoDialog({
               key: `div-${i}`,
             };
           }),
-          {
-            label: "Total Produtos Diversos",
-            value: fmtMoneyRt(dNum(d, "valorDiversos")),
-          },
         ]
       : [];
 
@@ -1231,7 +1241,7 @@ function ResumoDialog({
 
   return (
     <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="w-[95vw] sm:max-w-[90vw] max-h-[96vh] overflow-y-auto p-0">
+      <DialogContent className="w-[96vw] sm:max-w-[1180px] max-h-[95vh] overflow-y-auto p-0">
         {budget && (
           <>
             <DialogHeader className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-4 py-3 sm:px-5">
@@ -1251,11 +1261,14 @@ function ResumoDialog({
                 >
                   {budget.status}
                 </span>
+                {extraActions && (
+                  <span className="ml-auto flex flex-wrap items-center gap-2">{extraActions}</span>
+                )}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="px-3 pb-4 sm:px-5 space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-[1.65fr_1fr] gap-4 items-start">
+            <div className="px-3 pb-4 sm:px-4 space-y-3">
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(300px,340px)] gap-3 items-start">
                 {/* ---------- Coluna esquerda: itens ---------- */}
                 <div className="order-2 lg:order-1 min-w-0 space-y-2.5">
                   <div className="flex items-center gap-2">
@@ -1536,7 +1549,6 @@ function ResumoDialog({
                 </div>
               </div>
 
-              {extraActions}
             </div>
           </>
         )}
