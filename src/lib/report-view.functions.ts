@@ -8,7 +8,7 @@ const schema = z.object({
 });
 
 const BUDGET_COLUMNS =
-  "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by";
+  "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by, operator_name";
 
 /**
  * Leitura somente-consulta de um orçamento/pedido para o Administrador Global.

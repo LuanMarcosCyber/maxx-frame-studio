@@ -71,6 +71,7 @@ type BudgetRow = {
   details: Record<string, unknown> | null;
   user_id: string;
   created_by: string | null;
+  operator_name?: string | null;
 };
 
 function collaboratorLabel(row: BudgetRow, names: Map<string, string>) {
@@ -157,7 +158,7 @@ function Orcamentos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("budgets")
-        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by")
+        .select("id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by, operator_name")
         .neq("status", "Aprovado")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -872,7 +873,7 @@ export function BudgetSummaryById({
       const { data } = await supabase
         .from("budgets")
         .select(
-          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by",
+          "id, number, client_name, client_id, total_value, status, created_at, data_vencimento, details, user_id, created_by, operator_name",
         )
         .eq("id", budgetId!)
         .maybeSingle();
