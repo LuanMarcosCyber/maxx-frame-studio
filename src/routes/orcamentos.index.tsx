@@ -1374,7 +1374,7 @@ function ResumoDialog({
                 </div>
 
                 {/* ---------- Coluna direita: informações + financeiro ---------- */}
-                <div className="order-1 lg:order-2 min-w-0 space-y-3">
+                <div className="order-1 lg:order-2 min-w-0 space-y-3 lg:sticky lg:top-16 self-start">
                   <div className="rounded-xl border border-border bg-card p-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-3 gap-y-2">
                       <InfoLine icon={User} label="Cliente" value={budget.client_name} />
