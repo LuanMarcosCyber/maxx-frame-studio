@@ -1357,6 +1357,8 @@ function ResumoDialog({
                       );
                     })}
                   </div>
+                  </div>
+
 
                   {gStr("observacoes") && (
                     <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
