@@ -1284,7 +1284,19 @@ function ResumoDialog({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                  <div
+                    className={cn(
+                      "min-w-0",
+                      items.length >= 3 && "lg:max-h-[calc(95vh-190px)] lg:overflow-y-auto lg:pr-1 lg:overscroll-contain",
+                    )}
+                  >
+                  <div
+                    className={cn(
+                      "grid gap-3",
+                      items.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 items-start",
+                    )}
+                  >
+
                     {items.map((it, i) => {
                       const di = (it.data ?? {}) as Record<string, unknown>;
                       const rows = rowsForItem(di);
@@ -1345,6 +1357,8 @@ function ResumoDialog({
                       );
                     })}
                   </div>
+                  </div>
+
 
                   {gStr("observacoes") && (
                     <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
@@ -1360,7 +1374,7 @@ function ResumoDialog({
                 </div>
 
                 {/* ---------- Coluna direita: informações + financeiro ---------- */}
-                <div className="order-1 lg:order-2 min-w-0 space-y-3">
+                <div className="order-1 lg:order-2 min-w-0 space-y-3 lg:sticky lg:top-16 self-start">
                   <div className="rounded-xl border border-border bg-card p-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-x-3 gap-y-2">
                       <InfoLine icon={User} label="Cliente" value={budget.client_name} />
