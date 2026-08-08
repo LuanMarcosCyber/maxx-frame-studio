@@ -94,9 +94,8 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 
 export const Route = createFileRoute("/orcamentos/novo")({
   head: () => ({ meta: [{ title: "Novo Orçamento — Total Maxx ERP" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    id: typeof search.id === "string" ? search.id : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { id?: string } =>
+    typeof search.id === "string" ? { id: search.id } : {},
   component: NovoOrcamento,
 });
 
