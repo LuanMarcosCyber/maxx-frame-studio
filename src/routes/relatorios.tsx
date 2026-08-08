@@ -113,8 +113,7 @@ type ReportKey =
   | "fornecedores"
   | "clientes"
   | "colaboradores"
-  | "empresas"
-  | "inteligencia";
+  | "empresas";
 
 interface ReportCardDef {
   key: ReportKey;
