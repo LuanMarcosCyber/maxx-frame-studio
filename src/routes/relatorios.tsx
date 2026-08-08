@@ -70,9 +70,6 @@ import {
   Repeat,
   TrendingDown,
   Award,
-  Sparkles,
-  AlertTriangle,
-  Info,
 } from "lucide-react";
 import {
   ResponsiveContainer,
