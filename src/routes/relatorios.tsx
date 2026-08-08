@@ -131,7 +131,6 @@ const REPORT_CARDS: ReportCardDef[] = [
   { key: "clientes", title: "Clientes", description: "Consulte histórico e ranking dos clientes.", icon: Users },
   { key: "colaboradores", title: "Colaboradores", description: "Acompanhe produtividade, descontos e desempenho.", icon: UserCog },
   { key: "empresas", title: "Empresas", description: "Compare desempenho de todas as empresas cadastradas.", icon: Building2, adminOnly: true },
-  { key: "inteligencia", title: "Central de Inteligência", description: "Insights automáticos baseados nos seus dados reais.", icon: Sparkles },
 ];
 
 const STATUS_OPTIONS = [
