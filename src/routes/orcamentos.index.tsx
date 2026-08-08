@@ -1284,7 +1284,19 @@ function ResumoDialog({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                  <div
+                    className={cn(
+                      "min-w-0",
+                      items.length >= 3 && "lg:max-h-[calc(95vh-190px)] lg:overflow-y-auto lg:pr-1 lg:overscroll-contain",
+                    )}
+                  >
+                  <div
+                    className={cn(
+                      "grid gap-3",
+                      items.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 items-start",
+                    )}
+                  >
+
                     {items.map((it, i) => {
                       const di = (it.data ?? {}) as Record<string, unknown>;
                       const rows = rowsForItem(di);
