@@ -828,6 +828,7 @@ export function BudgetSummaryById({
   orderNumber,
   orderId,
   admin,
+  statusOverride,
 }: {
   budgetId: string | null;
   onClose: () => void;
@@ -836,6 +837,8 @@ export function BudgetSummaryById({
   /** Somente para consulta do Administrador Global (relatórios). */
   orderId?: string | null;
   admin?: boolean;
+  /** Status atual do pedido (fonte de verdade quando aberto a partir de Pedidos). */
+  statusOverride?: string | null;
 }) {
   const [budget, setBudget] = useState<BudgetRow | null>(null);
   const [adminItems, setAdminItems] = useState<BudgetItemRow[] | null>(null);
@@ -893,6 +896,7 @@ export function BudgetSummaryById({
       extraActions={extraActions}
       orderNumber={orderNumber ?? adminOrderNumber ?? null}
       preloadedItems={adminItems}
+      statusOverride={statusOverride ?? null}
     />
   );
 }
@@ -912,6 +916,7 @@ function ResumoDialog({
   extraActions,
   orderNumber,
   preloadedItems,
+  statusOverride,
 }: {
   budget: BudgetRow | null;
   onClose: () => void;
@@ -919,7 +924,10 @@ function ResumoDialog({
   orderNumber?: string | null;
   /** Itens já carregados (consulta do Administrador Global). */
   preloadedItems?: BudgetItemRow[] | null;
+  /** Status atual do pedido; sobrepõe o status do orçamento na visualização. */
+  statusOverride?: string | null;
 }) {
+  const displayStatus = statusOverride ?? budget?.status ?? "";
 
   const [linkedOrderNumber, setLinkedOrderNumber] = useState<string | null>(null);
   const [pendingDiscount, setPendingDiscount] = useState<{
@@ -1243,7 +1251,7 @@ function ResumoDialog({
 
   return (
     <Dialog open={!!budget} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="w-[96vw] sm:max-w-[1180px] max-h-[95vh] overflow-y-auto p-0">
+      <DialogContent hideClose className="w-[96vw] sm:max-w-[1180px] max-h-[95vh] overflow-y-auto p-0">
         {budget && (
           <>
             <DialogHeader className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-4 py-3 sm:px-5">
@@ -1258,14 +1266,23 @@ function ResumoDialog({
                 <span
                   className={cn(
                     "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    statusStyle[budget.status] ?? "bg-muted text-muted-foreground",
+                    statusStyle[displayStatus] ?? "bg-muted text-muted-foreground",
                   )}
                 >
-                  {budget.status}
+                  {displayStatus}
                 </span>
-                {extraActions && (
-                  <span className="ml-auto flex flex-wrap items-center gap-2">{extraActions}</span>
-                )}
+                <span className="ml-auto flex flex-wrap items-center gap-2">
+                  {extraActions}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Fechar"
+                    title="Fechar"
+                    className="h-10 w-10 sm:h-9 sm:w-9 grid place-items-center rounded-md border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </span>
               </DialogTitle>
             </DialogHeader>
 
@@ -1382,7 +1399,7 @@ function ResumoDialog({
                       ) : linkedOrderNumber ? (
                         <InfoLine icon={FileText} label="Pedido gerado" value={linkedOrderNumber} mono />
                       ) : null}
-                      <InfoLine icon={ClipboardCheck} label="Status" value={budget.status} />
+                      <InfoLine icon={ClipboardCheck} label="Status" value={displayStatus} />
                       <InfoLine
                         icon={CalendarDays}
                         label={isPedido ? "Data do pedido" : "Data do orçamento"}
