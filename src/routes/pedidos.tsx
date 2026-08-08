@@ -291,33 +291,36 @@ function Pedidos() {
 
 
   const actions = viewing ? (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+    <div className="flex flex-wrap items-center gap-2">
       <Button
         type="button"
         variant="outline"
         onClick={(e) => { e.stopPropagation(); setTarget(viewing); setPrintOpen(true); }}
-        className="h-auto py-3 flex flex-col items-center gap-1"
+        size="sm"
+        className="gap-1.5"
       >
-        <Printer className="h-5 w-5" />
+        <Printer className="h-4 w-4" />
         <span className="text-sm font-medium">Imprimir</span>
       </Button>
       <Button
         type="button"
         onClick={(e) => { e.stopPropagation(); setTarget(viewing); setStatusOpen(true); }}
-        className="h-auto py-3 flex flex-col items-center gap-1 bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
+        size="sm"
+        className="gap-1.5 bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand"
       >
-        <RefreshCw className="h-5 w-5" />
+        <RefreshCw className="h-4 w-4" />
         <span className="text-sm font-medium">Mudar estado</span>
-        <span className="text-[10px] opacity-80">Status atual: {viewing.status}</span>
+        
       </Button>
       {canDelete && (
         <Button
           type="button"
           variant="outline"
           onClick={(e) => { e.stopPropagation(); setTarget(viewing); setDeleteOpen(true); }}
-          className="h-auto py-3 flex flex-col items-center gap-1 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          size="sm"
+          className="gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
-          <Trash2 className="h-5 w-5" />
+          <Trash2 className="h-4 w-4" />
           <span className="text-sm font-medium">Excluir pedido</span>
         </Button>
       )}

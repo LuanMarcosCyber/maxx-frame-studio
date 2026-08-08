@@ -533,8 +533,9 @@ function Orcamentos() {
         onClose={() => setViewing(null)}
         extraActions={
           viewing && (
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => {
                   const b = viewing;
@@ -546,6 +547,7 @@ function Orcamentos() {
                 <Trash2 className="h-4 w-4 mr-2" /> Excluir orçamento
               </Button>
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => {
                   const b = viewing;
@@ -556,6 +558,7 @@ function Orcamentos() {
                 <Printer className="h-4 w-4 mr-2" /> Imprimir
               </Button>
               <Button
+                size="sm"
                 onClick={() => {
                   const b = viewing;
                   setViewing(null);
