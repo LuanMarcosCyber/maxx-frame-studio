@@ -683,9 +683,6 @@ function ReportResults({
     return <EmpresasReportView filters={filters} search={search} />;
   }
 
-  if (selected === "inteligencia") {
-    return <InteligenciaReportView filters={filters} />;
-  }
 
   const label = REPORT_CARDS.find((c) => c.key === selected)?.title ?? "";
   return (
