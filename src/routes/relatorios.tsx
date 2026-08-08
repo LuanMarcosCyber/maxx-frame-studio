@@ -40,11 +40,9 @@ import {
   getClientesReport,
   getColaboradoresReport,
   getEmpresasReport,
-  getInsightsReport,
   type VendasFilters,
   type OrcamentosFilters,
   type ClientesFilters,
-  type Insight,
 } from "@/lib/reports.functions";
 import {
   Search,
