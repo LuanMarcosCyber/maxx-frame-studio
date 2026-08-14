@@ -295,8 +295,8 @@ function Pedidos() {
     return `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
   }
 
-  async function changeStatus(newStatus: string) {
-    const t = target ?? viewing;
+  async function changeStatus(newStatus: string, order?: OrderRow) {
+    const t = order ?? target ?? viewing;
     if (!t) return;
     setSavingStatus(true);
     const ok = await updateOrderStatus(t.id, newStatus);
@@ -519,7 +519,7 @@ function Pedidos() {
                                 e.stopPropagation();
                                 if (s !== o.status) {
                                   setTarget(o);
-                                  void changeStatus(s);
+                                  void changeStatus(s, o);
                                 }
                               }}
                               className="gap-2"
