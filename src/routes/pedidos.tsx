@@ -729,6 +729,27 @@ function Pedidos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirmação: encaminhar atualização via WhatsApp */}
+      <AlertDialog open={whatsappOpen} onOpenChange={(o) => { if (!o) dismissWhatsApp(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Encaminhar atualização para o cliente via WhatsApp?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {whatsappNumber && (
+                <>
+                  O número cadastrado é <strong>{whatsappNumber}</strong>.{" "}
+                </>
+              )}
+              Abrirá uma conversa no WhatsApp com a mensagem do novo status.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={dismissWhatsApp}>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={openWhatsApp}>Sim</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }
