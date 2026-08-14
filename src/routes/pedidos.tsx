@@ -517,7 +517,10 @@ function Pedidos() {
                               key={s}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (s !== o.status) void updateOrderStatus(o.id, s);
+                                if (s !== o.status) {
+                                  setTarget(o);
+                                  void changeStatus(s);
+                                }
                               }}
                               className="gap-2"
                             >
