@@ -531,7 +531,7 @@ function extractParts(item: Record<string, unknown>): PartExtract[] {
   const fwAdic = num(item.perfilAdicionalFrameWidthCm);
   const perimPerfilAdic =
     aPerfilAdic > 0 && lPerfilAdic > 0
-      ? (2 * (aPerfilAdic + lPerfilAdic) + 4 * fwAdic) / 100
+      ? (2 * (aPerfilAdic + lPerfilAdic) + 8 * fwAdic) / 100
       : 0;
   const vidroQtd = Math.max(1, Math.floor(num(item.vidroQuantidade) || 1));
 
