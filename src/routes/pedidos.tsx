@@ -254,6 +254,47 @@ function Pedidos() {
     return true;
   }
 
+  async function fetchClientMobilePhone(order: OrderRow): Promise<string | null> {
+    // Preferir o cliente vinculado ao orçamento; fallback por nome do pedido.
+    if (order.budget_id) {
+      const { data: budget } = await supabase
+        .from("budgets")
+        .select("client_id")
+        .eq("id", order.budget_id)
+        .maybeSingle();
+      if (budget?.client_id) {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("mobile_phone, phone, whatsapp")
+          .eq("id", budget.client_id)
+          .maybeSingle();
+        const raw = client?.mobile_phone || client?.phone || client?.whatsapp;
+        if (raw) return raw;
+      }
+    }
+    const { data: clients } = await supabase
+      .from("clients")
+      .select("mobile_phone, phone, whatsapp")
+      .ilike("name", order.client_name)
+      .limit(1);
+    const c = clients?.[0];
+    return c?.mobile_phone || c?.phone || c?.whatsapp || null;
+  }
+
+  function normalizeWhatsAppNumber(raw: string): string | null {
+    const digits = raw.replace(/\D+/g, "");
+    if (!digits || digits.length < 10) return null;
+    if (digits.startsWith("55")) return digits;
+    return `55${digits}`;
+  }
+
+  function buildWhatsAppLink(number: string, status: string): string {
+    const normalized = normalizeWhatsAppNumber(number);
+    if (!normalized) return "";
+    const text = `Olá, seu pedido está: ${status}`;
+    return `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
+  }
+
   async function changeStatus(newStatus: string) {
     const t = target ?? viewing;
     if (!t) return;
@@ -264,6 +305,33 @@ function Pedidos() {
     if (viewing && viewing.id === t.id) setViewing({ ...viewing, status: newStatus });
     setStatusOpen(false);
     setTarget(null);
+
+    const phone = await fetchClientMobilePhone(t);
+    if (!phone) {
+      toast.info("Cliente não possui telefone celular cadastrado. Status atualizado sem notificação.");
+      return;
+    }
+    const link = buildWhatsAppLink(phone, newStatus);
+    if (!link) {
+      toast.info("Número de telefone inválido. Status atualizado sem notificação.");
+      return;
+    }
+    setWhatsappNumber(phone);
+    setWhatsappLink(link);
+    setWhatsappOpen(true);
+  }
+
+  function openWhatsApp() {
+    if (whatsappLink) window.open(whatsappLink, "_blank");
+    setWhatsappOpen(false);
+    setWhatsappLink(null);
+    setWhatsappNumber(null);
+  }
+
+  function dismissWhatsApp() {
+    setWhatsappOpen(false);
+    setWhatsappLink(null);
+    setWhatsappNumber(null);
   }
 
 
