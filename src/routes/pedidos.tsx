@@ -129,6 +129,9 @@ function Pedidos() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappLink, setWhatsappLink] = useState<string | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
