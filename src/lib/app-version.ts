@@ -5,7 +5,7 @@
  * (1.0 -> 1.1 -> 1.2 -> 2.0). Todo o sistema (sidebar, verificação
  * automática e endpoint /api/public/version) usa este valor.
  */
-export const APP_VERSION = "1.0";
+export const APP_VERSION = "1.1";
 
 /** Rótulo amigável usado na interface. */
 export const APP_VERSION_LABEL = `Versão ${APP_VERSION}`;
