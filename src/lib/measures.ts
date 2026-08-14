@@ -2,10 +2,10 @@
  * Consumo de perfil (moldura) em metros lineares.
  *
  * Regra correta:
- *   metros = ( perímetro_cm + 4 × largura_perfil_cm ) / 100
+ *   metros = ( perímetro_cm + 8 × largura_perfil_cm ) / 100
  *
- * Os 4 × largura correspondem à sobra dos cortes em 45° em cada canto
- * (2 sobras por corte, 4 cantos), somada ao perímetro externo do quadro.
+ * Cada lado da moldura tem cortes em 45° nas duas pontas, adicionando
+ * 2 × largura por lado (4 lados = 8 × largura).
  *
  * Aceita valores inválidos retornando 0.
  */
@@ -19,6 +19,7 @@ export function perfilLinearMeters(
   const fw = Number(frameWidthCm) || 0;
   if (a <= 0 || l <= 0) return 0;
   const perimetroCm = 2 * (a + l);
-  const extraCm = 4 * fw;
+  const extraCm = 8 * fw;
   return (perimetroCm + extraCm) / 100;
 }
+
