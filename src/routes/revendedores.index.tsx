@@ -321,44 +321,84 @@ type WizardPayload = {
   };
 };
 
+type EditPayload = WizardPayload & { company_id: string };
+
+type CompanyDetails = {
+  id: string;
+  full_name: string | null;
+  store_name: string | null;
+  username: string | null;
+  company_group_id: string | null;
+  document: string | null;
+  document_type: string | null;
+  legal_name: string | null;
+  state_registration: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  cep: string | null;
+  address: string | null;
+  address_number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+};
+
 function NewCompanyWizard({
   onSubmit,
   submitting,
+  mode = "create",
+  initial,
+  companyName,
+  controlledOpen,
+  onOpenChange,
 }: {
   onSubmit: (d: WizardPayload) => Promise<unknown>;
   submitting: boolean;
+  mode?: "create" | "edit";
+  initial?: CompanyDetails;
+  companyName?: string;
+  controlledOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const isEdit = mode === "edit";
+  const [open, setOpen] = useState(!!controlledOpen);
   const [step, setStep] = useState<1 | 2>(1);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Step 1
-  const [ownerName, setOwnerName] = useState("");
-  const [storeName, setStoreName] = useState("");
-  const [username, setUsername] = useState("");
+  const [ownerName, setOwnerName] = useState(initial?.full_name ?? "");
+  const [storeName, setStoreName] = useState(initial?.store_name ?? "");
+  const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
-  const [companyGroupId, setCompanyGroupId] = useState<string | null>(null);
+  const [companyGroupId, setCompanyGroupId] = useState<string | null>(
+    initial?.company_group_id ?? null,
+  );
   const [companyQuery, setCompanyQuery] = useState("");
   const [companyOpen, setCompanyOpen] = useState(false);
 
   // Step 2 (commercial)
-  const [document, setDocument] = useState("");
-  const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">("CNPJ");
-  const [legalName, setLegalName] = useState("");
-  const [tradeName, setTradeName] = useState("");
-  const [stateRegistration, setStateRegistration] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [cep, setCep] = useState("");
-  const [address, setAddress] = useState("");
-  const [addressNumber, setAddressNumber] = useState("");
-  const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [document, setDocument] = useState(initial?.document ?? "");
+  const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">(
+    initial?.document_type === "CPF" ? "CPF" : "CNPJ",
+  );
+  const [legalName, setLegalName] = useState(initial?.legal_name ?? "");
+  const [tradeName, setTradeName] = useState(initial?.store_name ?? "");
+  const [stateRegistration, setStateRegistration] = useState(initial?.state_registration ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [whatsapp, setWhatsapp] = useState(initial?.whatsapp ?? "");
+  const [cep, setCep] = useState(initial?.cep ?? "");
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [addressNumber, setAddressNumber] = useState(initial?.address_number ?? "");
+  const [complement, setComplement] = useState(initial?.complement ?? "");
+  const [neighborhood, setNeighborhood] = useState(initial?.neighborhood ?? "");
+  const [city, setCity] = useState(initial?.city ?? "");
+  const [state, setState] = useState(initial?.state ?? "");
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
 
