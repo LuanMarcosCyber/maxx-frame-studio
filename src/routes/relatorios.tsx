@@ -817,6 +817,7 @@ function VendasReportView({
                   <TableHead>Nº Pedido</TableHead>
                   <TableHead>Cliente</TableHead>
                   {admin && <TableHead className="w-10" />}
+                  <TableHead>Empresa</TableHead>
                   <TableHead>Colaborador</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
@@ -843,6 +844,7 @@ function VendasReportView({
                         </button>
                       </TableCell>
                     )}
+                    <TableCell className="text-muted-foreground">{o.empresa_name ?? "—"}</TableCell>
                     <TableCell>{o.operator_name ?? "—"}</TableCell>
                     <TableCell>{fmtDateTime(o.created_at)}</TableCell>
                     <TableCell>
