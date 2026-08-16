@@ -195,3 +195,129 @@ export const updateCompanyCommercial = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Full company details for the admin edit modal. */
+const idSchema = z.object({ company_id: z.string().uuid() });
+
+export const getCompanyDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p, error } = await supabaseAdmin
+      .from("profiles")
+      .select(
+        "id, full_name, store_name, username, company_group_id, document, document_type, legal_name, state_registration, email, phone, whatsapp, cep, address, address_number, complement, neighborhood, city, state",
+      )
+      .eq("id", data.company_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!p) throw new Error("Empresa não encontrada.");
+    return p;
+  });
+
+const updateSchema = z.object({
+  company_id: z.string().uuid(),
+  owner_name: z.string().trim().min(1, "Informe o nome do proprietário.").max(120),
+  store_name: z.string().trim().min(1, "Informe o nome da loja.").max(120),
+  username: z
+    .string()
+    .trim()
+    .min(3, "Usuário muito curto.")
+    .max(40)
+    .regex(/^[a-z0-9._-]+$/, "Use letras minúsculas, números, ponto, hífen ou underscore."),
+  password: z.string().min(6, "Senha mínima de 6 caracteres.").max(72).optional().nullable(),
+  pin: z.string().regex(/^\d{4,6}$/, "PIN deve conter 4 a 6 dígitos.").optional().nullable(),
+  company_group_id: z.string().uuid().nullable().optional(),
+  commercial: commercialSchema.optional(),
+});
+
+/** Update every company field (admin only). Reflects changes on the login account. */
+export const updateCompanyFull = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => updateSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    await ensureAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const companyId = data.company_id;
+    const username = data.username.toLowerCase();
+    const ownerName = data.owner_name.trim().toUpperCase();
+    const storeName = data.store_name.trim().toUpperCase();
+
+    const { data: current } = await supabaseAdmin
+      .from("profiles")
+      .select("id, username")
+      .eq("id", companyId)
+      .maybeSingle();
+    if (!current) throw new Error("Empresa não encontrada.");
+
+    if (username !== (current.username ?? "")) {
+      const { data: taken } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .neq("id", companyId)
+        .maybeSingle();
+      if (taken) throw new Error("Este nome de usuário já está em uso.");
+    }
+
+    if (data.company_group_id) {
+      if (data.company_group_id === companyId) throw new Error("A empresa não pode ser filial dela mesma.");
+      const { data: parent } = await supabaseAdmin
+        .from("profiles")
+        .select("id, company_group_id")
+        .eq("id", data.company_group_id)
+        .maybeSingle();
+      if (!parent) throw new Error("Empresa principal não encontrada.");
+      if (parent.company_group_id) throw new Error("A empresa escolhida já é filial de outra.");
+    }
+
+    // Login account (auth.users): email derived from username + optional password
+    const authPatch: { email?: string; password?: string; user_metadata?: Record<string, unknown> } = {
+      user_metadata: { full_name: ownerName, username },
+    };
+    if (username !== (current.username ?? "")) authPatch.email = usernameToEmail(username);
+    if (data.password) authPatch.password = data.password;
+    const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(companyId, authPatch);
+    if (authErr) throw new Error(authErr.message);
+
+    const c = data.commercial ?? {};
+    const patch = {
+      full_name: ownerName,
+      store_name: c.trade_name ? c.trade_name.toUpperCase() : storeName,
+      username,
+      company_group_id: data.company_group_id ?? null,
+      document: c.document ?? null,
+      document_type: c.document_type ?? null,
+      legal_name: c.legal_name ?? null,
+      state_registration: c.state_registration ?? null,
+      email: c.email || null,
+      phone: c.phone ?? null,
+      whatsapp: c.whatsapp ?? null,
+      cep: c.cep ?? null,
+      address: c.address ?? null,
+      address_number: c.address_number ?? null,
+      complement: c.complement ?? null,
+      neighborhood: c.neighborhood ?? null,
+      city: c.city ?? null,
+      state: c.state ?? null,
+    };
+    const { error: profErr } = await supabaseAdmin.from("profiles").update(patch).eq("id", companyId);
+    if (profErr) throw new Error(profErr.message);
+
+    // Owner internal user: name always, PIN only when informed
+    const ownerPatch = {
+      name: ownerName,
+      ...(data.pin ? { pin_hash: hashPin(data.pin) } : {}),
+    };
+    const { error: opErr } = await supabaseAdmin
+      .from("operators")
+      .update(ownerPatch)
+      .eq("owner_user_id", companyId)
+      .eq("is_owner", true);
+    if (opErr) throw new Error(opErr.message);
+
+    return { ok: true };
+  });

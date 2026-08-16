@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, KeyRound, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Eye } from "lucide-react";
+import { UserPlus, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,8 +49,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { listResellers, resetPassword, deleteUser, listAllCompanies } from "@/lib/admin-users.functions";
-import { createCompanyWithOwner } from "@/lib/companies.functions";
+import { listResellers, deleteUser, listAllCompanies } from "@/lib/admin-users.functions";
+import { createCompanyWithOwner, getCompanyDetails, updateCompanyFull } from "@/lib/companies.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/")({
@@ -100,10 +100,11 @@ function Content() {
   const { user } = useAuth();
   const list = useServerFn(listResellers);
   const create = useServerFn(createCompanyWithOwner);
-  const reset = useServerFn(resetPassword);
+  const update = useServerFn(updateCompanyFull);
+  const getDetails = useServerFn(getCompanyDetails);
   const del = useServerFn(deleteUser);
 
-  const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
@@ -122,13 +123,24 @@ function Content() {
 
 
 
-  const resetMut = useMutation({
-    mutationFn: (data: { user_id: string; password: string }) => reset({ data }),
+  const updateMut = useMutation({
+    mutationFn: (data: EditPayload) =>
+      (update as unknown as (a: { data: EditPayload }) => Promise<unknown>)({ data }),
     onSuccess: () => {
-      toast.success("Senha redefinida com sucesso.");
-      setResetTarget(null);
+      toast.success("Informações da empresa atualizadas.");
+      setEditTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const { data: editData } = useQuery({
+    queryKey: ["admin", "company-details", editTarget?.id],
+    queryFn: () =>
+      (getDetails as unknown as (a: { data: { company_id: string } }) => Promise<CompanyDetails>)({
+        data: { company_id: editTarget!.id },
+      }),
+    enabled: !!editTarget,
   });
 
   const deleteMut = useMutation({
@@ -214,15 +226,15 @@ function Content() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to="/revendedores/$id" params={{ id: u.id }}>
-                            <Eye className="h-4 w-4 mr-2" /> Ver informações
-                          </Link>
-                        </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setResetTarget({ id: u.id, username: u.username || "" })}
+                          onClick={() =>
+                            setEditTarget({
+                              id: u.id,
+                              name: u.full_name || u.username || "esta empresa",
+                            })
+                          }
                         >
-                          <KeyRound className="h-4 w-4 mr-2" /> Redefinir senha
+                          <Pencil className="h-4 w-4 mr-2" /> Editar informações
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(u)}
@@ -240,14 +252,18 @@ function Content() {
         </Table>
       </div>
 
-      <ResetPasswordDialog
-        target={resetTarget}
-        onOpenChange={(o: boolean) => !o && setResetTarget(null)}
-        onSubmit={(pw) =>
-          resetTarget ? resetMut.mutateAsync({ user_id: resetTarget.id, password: pw }) : undefined
-        }
-        submitting={resetMut.isPending}
-      />
+      {editTarget && editData && (
+        <NewCompanyWizard
+          key={editTarget.id}
+          mode="edit"
+          initial={editData}
+          companyName={editTarget.name}
+          controlledOpen
+          onOpenChange={(o) => !o && setEditTarget(null)}
+          onSubmit={(d) => updateMut.mutateAsync({ ...d, company_id: editTarget.id })}
+          submitting={updateMut.isPending}
+        />
+      )}
 
       <AlertDialog
         open={!!deleteTarget}
@@ -305,44 +321,84 @@ type WizardPayload = {
   };
 };
 
+type EditPayload = WizardPayload & { company_id: string };
+
+type CompanyDetails = {
+  id: string;
+  full_name: string | null;
+  store_name: string | null;
+  username: string | null;
+  company_group_id: string | null;
+  document: string | null;
+  document_type: string | null;
+  legal_name: string | null;
+  state_registration: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  cep: string | null;
+  address: string | null;
+  address_number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+};
+
 function NewCompanyWizard({
   onSubmit,
   submitting,
+  mode = "create",
+  initial,
+  companyName,
+  controlledOpen,
+  onOpenChange,
 }: {
   onSubmit: (d: WizardPayload) => Promise<unknown>;
   submitting: boolean;
+  mode?: "create" | "edit";
+  initial?: CompanyDetails;
+  companyName?: string;
+  controlledOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const isEdit = mode === "edit";
+  const [open, setOpen] = useState(!!controlledOpen);
   const [step, setStep] = useState<1 | 2>(1);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Step 1
-  const [ownerName, setOwnerName] = useState("");
-  const [storeName, setStoreName] = useState("");
-  const [username, setUsername] = useState("");
+  const [ownerName, setOwnerName] = useState(initial?.full_name ?? "");
+  const [storeName, setStoreName] = useState(initial?.store_name ?? "");
+  const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
-  const [companyGroupId, setCompanyGroupId] = useState<string | null>(null);
+  const [companyGroupId, setCompanyGroupId] = useState<string | null>(
+    initial?.company_group_id ?? null,
+  );
   const [companyQuery, setCompanyQuery] = useState("");
   const [companyOpen, setCompanyOpen] = useState(false);
 
   // Step 2 (commercial)
-  const [document, setDocument] = useState("");
-  const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">("CNPJ");
-  const [legalName, setLegalName] = useState("");
-  const [tradeName, setTradeName] = useState("");
-  const [stateRegistration, setStateRegistration] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [cep, setCep] = useState("");
-  const [address, setAddress] = useState("");
-  const [addressNumber, setAddressNumber] = useState("");
-  const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const [document, setDocument] = useState(initial?.document ?? "");
+  const [documentType, setDocumentType] = useState<"CPF" | "CNPJ">(
+    initial?.document_type === "CPF" ? "CPF" : "CNPJ",
+  );
+  const [legalName, setLegalName] = useState(initial?.legal_name ?? "");
+  const [tradeName, setTradeName] = useState(initial?.store_name ?? "");
+  const [stateRegistration, setStateRegistration] = useState(initial?.state_registration ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [whatsapp, setWhatsapp] = useState(initial?.whatsapp ?? "");
+  const [cep, setCep] = useState(initial?.cep ?? "");
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [addressNumber, setAddressNumber] = useState(initial?.address_number ?? "");
+  const [complement, setComplement] = useState(initial?.complement ?? "");
+  const [neighborhood, setNeighborhood] = useState(initial?.neighborhood ?? "");
+  const [city, setCity] = useState(initial?.city ?? "");
+  const [state, setState] = useState(initial?.state ?? "");
   const [cepLoading, setCepLoading] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
 
@@ -463,6 +519,14 @@ function NewCompanyWizard({
     if (!storeName.trim()) return "Informe o nome da loja.";
     if (!/^[a-z0-9._-]{3,}$/.test(username.trim()))
       return "Usuário inválido. Use minúsculas, números, ponto, hífen ou underscore.";
+    if (isEdit) {
+      // Senha e PIN são opcionais na edição — em branco mantém os atuais.
+      if (password && password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
+      if (password && password !== passwordConfirm) return "As senhas não coincidem.";
+      if (pin && !/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
+      if (pin && pin !== pinConfirm) return "Os PINs não coincidem.";
+      return null;
+    }
     if (password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
     if (password !== passwordConfirm) return "As senhas não coincidem.";
     if (!/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
@@ -481,8 +545,7 @@ function NewCompanyWizard({
     setStep(2);
   };
 
-  const finish = async (e: FormEvent) => {
-    e.preventDefault();
+  const doSubmit = async () => {
     try {
       await onSubmit({
         owner_name: ownerName.trim().toUpperCase(),
@@ -509,33 +572,82 @@ function NewCompanyWizard({
           state: state.trim() || null,
         },
       });
-      setOpen(false);
-      reset();
+      setConfirmOpen(false);
+      if (isEdit) {
+        onOpenChange?.(false);
+      } else {
+        setOpen(false);
+        reset();
+      }
     } catch {
       // toast handled in mutation
     }
   };
 
+  const finish = async (e: FormEvent) => {
+    e.preventDefault();
+    const err = validateStep1();
+    if (err) {
+      toast.error(err);
+      setStep(1);
+      return;
+    }
+    if (isEdit) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  const dialogOpen = isEdit ? !!controlledOpen : open;
+
   return (
     <Dialog
-      open={open}
+      open={dialogOpen}
       onOpenChange={(o) => {
+        if (isEdit) {
+          onOpenChange?.(o);
+          return;
+        }
         setOpen(o);
         if (!o) reset();
       }}
     >
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
-          <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
-        </Button>
-      </DialogTrigger>
+      {!isEdit && (
+        <DialogTrigger asChild>
+          <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
+            <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova empresa</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar informações" : "Nova empresa"}</DialogTitle>
           <DialogDescription>
-            Etapa {step} de 2 — {step === 1 ? "Acesso e proprietário" : "Dados comerciais"}
+            Etapa {step} de 2 — {step === 1 ? "Acesso e proprietário" : "Informações empresariais"}
           </DialogDescription>
         </DialogHeader>
+
+        {isEdit && (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={step === 1 ? "default" : "outline"}
+              onClick={() => setStep(1)}
+            >
+              1. Acesso e proprietário
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={step === 2 ? "default" : "outline"}
+              onClick={() => setStep(2)}
+            >
+              2. Informações empresariais
+            </Button>
+          </div>
+        )}
 
         {step === 1 ? (
           <div className="space-y-4">
@@ -577,18 +689,22 @@ function NewCompanyWizard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="password">Senha inicial *</Label>
+                <Label htmlFor="password">
+                  {isEdit ? "Nova senha (opcional)" : "Senha inicial *"}
+                </Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
-                  placeholder="Mín. 6 caracteres"
+                  placeholder={isEdit ? "Deixe em branco para manter" : "Mín. 6 caracteres"}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password_confirm">Confirmar senha *</Label>
+                <Label htmlFor="password_confirm">
+                  {isEdit ? "Confirmar nova senha" : "Confirmar senha *"}
+                </Label>
                 <Input
                   id="password_confirm"
                   type="password"
@@ -600,18 +716,20 @@ function NewCompanyWizard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="pin">PIN do proprietário *</Label>
+                <Label htmlFor="pin">
+                  {isEdit ? "Novo PIN do proprietário (opcional)" : "PIN do proprietário *"}
+                </Label>
                 <Input
                   id="pin"
                   inputMode="numeric"
                   maxLength={6}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="4 a 6 dígitos"
+                  placeholder={isEdit ? "Deixe em branco para manter" : "4 a 6 dígitos"}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pin_confirm">Confirmar PIN *</Label>
+                <Label htmlFor="pin_confirm">{isEdit ? "Confirmar novo PIN" : "Confirmar PIN *"}</Label>
                 <Input
                   id="pin_confirm"
                   inputMode="numeric"
@@ -695,7 +813,7 @@ function NewCompanyWizard({
                 onClick={goNext}
                 className="bg-gradient-brand text-brand-foreground hover:opacity-95"
               >
-                Próximo
+                {isEdit ? "Continuar" : "Próximo"}
               </Button>
             </DialogFooter>
           </div>
@@ -904,76 +1022,41 @@ function NewCompanyWizard({
                 disabled={submitting}
                 className="bg-gradient-brand text-brand-foreground hover:opacity-95"
               >
-                {submitting ? "Criando..." : "Criar empresa"}
+                {submitting
+                  ? isEdit
+                    ? "Salvando..."
+                    : "Criando..."
+                  : isEdit
+                    ? "Salvar alterações"
+                    : "Criar empresa"}
               </Button>
             </DialogFooter>
           </form>
         )}
-      </DialogContent>
-    </Dialog>
-  );
-}
 
-
-
-function ResetPasswordDialog({
-  target,
-  onOpenChange,
-  onSubmit,
-  submitting,
-}: {
-  target: { id: string; username: string } | null;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (pw: string) => Promise<unknown> | undefined;
-  submitting: boolean;
-}) {
-  const [password, setPassword] = useState("");
-
-  useEffect(() => {
-    if (!target) setPassword("");
-  }, [target]);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      await onSubmit(password);
-      setPassword("");
-    } catch {
-      // toast handled
-    }
-  };
-
-  return (
-    <Dialog open={!!target} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Redefinir senha</DialogTitle>
-          <DialogDescription>
-            Defina uma nova senha para <span className="font-mono">{target?.username}</span>.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="new_password">Nova senha</Label>
-            <Input
-              id="new_password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="bg-gradient-brand text-brand-foreground hover:opacity-95"
-            >
-              {submitting ? "Salvando..." : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </form>
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar alterações</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja alterar as informações da empresa{" "}
+                <strong>{companyName || storeName}</strong>?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  void doSubmit();
+                }}
+                disabled={submitting}
+              >
+                {submitting ? "Salvando..." : "Confirmar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
