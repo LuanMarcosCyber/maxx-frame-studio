@@ -73,7 +73,6 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
