@@ -1954,33 +1954,8 @@ function EmpresasReportView({
         </div>
       </Card>
 
-      <Card>
-        <div className="p-5 border-b">
-          <h3 className="text-base font-semibold text-foreground">Comparativo mensal (últimos 6 meses)</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Faturamento por empresa (top 5) — linhas coloridas — e total geral (linha cinza).
-          </p>
-        </div>
-        <div className="p-4 h-80">
-          {data.monthly.length === 0 ? (
-            <EmptyResults label="Sem dados." />
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.monthly.map((m) => ({ bucket: m.bucket, total: m.total, ...m.series }))}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="bucket" fontSize={11} />
-                <YAxis fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
-                <RTooltip formatter={(v: number) => fmtMoney(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {data.topNames.map((n, i) => (
-                  <Line key={n} type="monotone" dataKey={n} stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={2} />
-                ))}
-                <Line type="monotone" dataKey="total" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" name="Total geral" />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </Card>
+
+
 
       <Card>
         <div className="p-5 border-b">
