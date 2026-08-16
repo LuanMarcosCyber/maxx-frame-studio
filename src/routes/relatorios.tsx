@@ -1595,6 +1595,38 @@ function ClientesReportView({
         />
       </div>
 
+      <ClientesTable rows={rows} />
+    </div>
+  );
+}
+
+const CLIENTES_PAGE_SIZE = 100;
+
+function ClientesTable({
+  rows,
+}: {
+  rows: Array<{
+    id: string;
+    name: string;
+    city: string | null;
+    state?: string | null;
+    qtdPedidos: number;
+    qtdOrcamentos: number;
+    valorComprado: number;
+    ultimaCompra: string | null;
+    ticketMedio: number;
+  }>;
+}) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(rows.length / CLIENTES_PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  useEffect(() => {
+    setPage(1);
+  }, [rows]);
+  const start = (current - 1) * CLIENTES_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + CLIENTES_PAGE_SIZE);
+
+  return (
       <Card>
         <div className="p-5 border-b">
           <h3 className="text-base font-semibold text-foreground">Clientes</h3>
@@ -1619,7 +1651,7 @@ function ClientesReportView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
+                {pageRows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -1634,12 +1666,40 @@ function ClientesReportView({
                 ))}
               </TableBody>
             </Table>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-3 py-3 mt-2">
+                <p className="text-xs text-muted-foreground">
+                  Exibindo {start + 1}–{start + pageRows.length} de {rows.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(current - 1)}
+                    disabled={current <= 1}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="text-xs text-muted-foreground px-1">
+                    Página {current} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(current + 1)}
+                    disabled={current >= totalPages}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>
-    </div>
   );
 }
+
 
 function ClienteRankingCard({
   title,
