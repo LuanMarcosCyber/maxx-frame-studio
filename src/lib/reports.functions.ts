@@ -1035,7 +1035,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
 
     const ranking = [...rows]
       .sort((a, b) => b.total_value - a.total_value)
-      .slice(0, 10)
+      .slice(0, 5)
       .map((r) => ({
         id: r.id,
         number: r.number,
