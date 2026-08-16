@@ -290,7 +290,10 @@ function Relatorios() {
 
 
   const empresasList = optionsQuery.data?.empresas ?? [];
+  // A coluna/filtro "Empresa" só faz sentido quando há mais de uma empresa no
+  // contexto: administrador global ou empresas vinculadas (matriz/filial).
   const showEmpresaFilter = isAdmin || empresasList.length > 1;
+  const showEmpresaColumn = showEmpresaFilter;
 
 
 
@@ -592,6 +595,7 @@ function Relatorios() {
           <ReportResults
             selected={selected}
             isAdmin={isAdmin}
+            showEmpresa={showEmpresaColumn}
 
             filters={{
               period,
@@ -629,6 +633,7 @@ function ReportResults({
   cityFilter,
   search,
   isAdmin,
+  showEmpresa,
 }: {
   selected: ReportKey | null;
   filters: VendasFilters;
@@ -636,6 +641,7 @@ function ReportResults({
   cityFilter?: string;
   search: string;
   isAdmin?: boolean;
+  showEmpresa?: boolean;
 }) {
   if (!selected) {
     return (
@@ -654,7 +660,7 @@ function ReportResults({
   }
 
   if (selected === "vendas") {
-    return <VendasReportView filters={filters} search={search} admin={isAdmin} />;
+    return <VendasReportView filters={filters} search={search} admin={isAdmin} showEmpresa={showEmpresa} />;
   }
 
   if (selected === "fornecedores") {
@@ -666,7 +672,7 @@ function ReportResults({
   }
 
   if (selected === "orcamentos") {
-    return <OrcamentosReportView filters={{ ...filters, granularity }} search={search} admin={isAdmin} />;
+    return <OrcamentosReportView filters={{ ...filters, granularity }} search={search} admin={isAdmin} showEmpresa={showEmpresa} />;
   }
 
   if (selected === "clientes") {
@@ -674,7 +680,7 @@ function ReportResults({
   }
 
   if (selected === "colaboradores") {
-    return <ColaboradoresReportView filters={filters} search={search} />;
+    return <ColaboradoresReportView filters={filters} search={search} showEmpresa={showEmpresa} />;
   }
 
   if (selected === "empresas") {
@@ -700,10 +706,12 @@ function VendasReportView({
   filters,
   search,
   admin,
+  showEmpresa,
 }: {
   filters: VendasFilters;
   search: string;
   admin?: boolean;
+  showEmpresa?: boolean;
 }) {
   // Consulta rápida (somente leitura) reservada ao Administrador Global.
   const [viewingOrder, setViewingOrder] = useState<{ id: string; budget_id: string | null } | null>(null);
@@ -817,7 +825,7 @@ function VendasReportView({
                   <TableHead>Nº Pedido</TableHead>
                   <TableHead>Cliente</TableHead>
                   {admin && <TableHead className="w-10" />}
-                  <TableHead>Empresa</TableHead>
+                  {showEmpresa && <TableHead>Empresa</TableHead>}
                   <TableHead>Colaborador</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
@@ -844,7 +852,9 @@ function VendasReportView({
                         </button>
                       </TableCell>
                     )}
-                    <TableCell className="text-muted-foreground">{o.empresa_name ?? "—"}</TableCell>
+                    {showEmpresa && (
+                      <TableCell className="text-muted-foreground">{o.empresa_name ?? "—"}</TableCell>
+                    )}
                     <TableCell>{o.operator_name ?? "—"}</TableCell>
                     <TableCell>{fmtDateTime(o.created_at)}</TableCell>
                     <TableCell>
@@ -1282,10 +1292,12 @@ function OrcamentosReportView({
   filters,
   search,
   admin,
+  showEmpresa,
 }: {
   filters: OrcamentosFilters;
   search: string;
   admin?: boolean;
+  showEmpresa?: boolean;
 }) {
   // Consulta rápida (somente leitura) reservada ao Administrador Global.
   const [viewingBudgetId, setViewingBudgetId] = useState<string | null>(null);
@@ -1438,7 +1450,7 @@ function OrcamentosReportView({
                   <TableHead>Número</TableHead>
                   <TableHead>Cliente</TableHead>
                   {admin && <TableHead className="w-10" />}
-                  <TableHead>Empresa</TableHead>
+                  {showEmpresa && <TableHead>Empresa</TableHead>}
                   <TableHead>Colaborador</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
@@ -1463,7 +1475,9 @@ function OrcamentosReportView({
                         </button>
                       </TableCell>
                     )}
-                    <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    {showEmpresa && (
+                      <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    )}
                     <TableCell>{r.operator_name ?? "—"}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
@@ -1784,9 +1798,11 @@ function IndicatorListCard({
 function ColaboradoresReportView({
   filters,
   search,
+  showEmpresa,
 }: {
   filters: VendasFilters;
   search: string;
+  showEmpresa?: boolean;
 }) {
   const fetchReport = useServerFn(getColaboradoresReport);
   const query = useQuery({
@@ -1901,7 +1917,7 @@ function ColaboradoresReportView({
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Empresa</TableHead>
+                  {showEmpresa && <TableHead>Empresa</TableHead>}
                   <TableHead className="text-right">Orçamentos</TableHead>
                   <TableHead className="text-right">Pedidos</TableHead>
                   <TableHead className="text-right">Conversão</TableHead>
@@ -1914,7 +1930,9 @@ function ColaboradoresReportView({
                 {rows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    {showEmpresa && (
+                      <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    )}
                     <TableCell className="text-right">{r.orcamentos}</TableCell>
                     <TableCell className="text-right">{r.pedidos}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{fmtPct(r.conversao)}</TableCell>
