@@ -73,8 +73,6 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip as RTooltip,
@@ -1595,6 +1593,38 @@ function ClientesReportView({
         />
       </div>
 
+      <ClientesTable rows={rows} />
+    </div>
+  );
+}
+
+const CLIENTES_PAGE_SIZE = 100;
+
+function ClientesTable({
+  rows,
+}: {
+  rows: Array<{
+    id: string;
+    name: string;
+    city: string | null;
+    state?: string | null;
+    qtdPedidos: number;
+    qtdOrcamentos: number;
+    valorComprado: number;
+    ultimaCompra: string | null;
+    ticketMedio: number;
+  }>;
+}) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(rows.length / CLIENTES_PAGE_SIZE));
+  const current = Math.min(page, totalPages);
+  useEffect(() => {
+    setPage(1);
+  }, [rows]);
+  const start = (current - 1) * CLIENTES_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + CLIENTES_PAGE_SIZE);
+
+  return (
       <Card>
         <div className="p-5 border-b">
           <h3 className="text-base font-semibold text-foreground">Clientes</h3>
@@ -1619,7 +1649,7 @@ function ClientesReportView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
+                {pageRows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.name}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -1634,12 +1664,40 @@ function ClientesReportView({
                 ))}
               </TableBody>
             </Table>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-3 py-3 mt-2">
+                <p className="text-xs text-muted-foreground">
+                  Exibindo {start + 1}–{start + pageRows.length} de {rows.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(current - 1)}
+                    disabled={current <= 1}
+                  >
+                    Anterior
+                  </Button>
+                  <span className="text-xs text-muted-foreground px-1">
+                    Página {current} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(current + 1)}
+                    disabled={current >= totalPages}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>
-    </div>
   );
 }
+
 
 function ClienteRankingCard({
   title,
@@ -1923,7 +1981,7 @@ function EmpresasReportView({
     { label: "Faturamento geral", value: fmtMoney(s.faturamentoGeral), icon: DollarSign },
   ];
 
-  const SERIES_COLORS = ["hsl(var(--primary))", "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b"];
+
 
   return (
     <div className="space-y-6">
@@ -1954,33 +2012,8 @@ function EmpresasReportView({
         </div>
       </Card>
 
-      <Card>
-        <div className="p-5 border-b">
-          <h3 className="text-base font-semibold text-foreground">Comparativo mensal (últimos 6 meses)</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Faturamento por empresa (top 5) — linhas coloridas — e total geral (linha cinza).
-          </p>
-        </div>
-        <div className="p-4 h-80">
-          {data.monthly.length === 0 ? (
-            <EmptyResults label="Sem dados." />
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.monthly.map((m) => ({ bucket: m.bucket, total: m.total, ...m.series }))}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="bucket" fontSize={11} />
-                <YAxis fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
-                <RTooltip formatter={(v: number) => fmtMoney(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {data.topNames.map((n, i) => (
-                  <Line key={n} type="monotone" dataKey={n} stroke={SERIES_COLORS[i % SERIES_COLORS.length]} strokeWidth={2} />
-                ))}
-                <Line type="monotone" dataKey="total" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="4 4" name="Total geral" />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </Card>
+
+
 
       <Card>
         <div className="p-5 border-b">
