@@ -519,6 +519,14 @@ function NewCompanyWizard({
     if (!storeName.trim()) return "Informe o nome da loja.";
     if (!/^[a-z0-9._-]{3,}$/.test(username.trim()))
       return "Usuário inválido. Use minúsculas, números, ponto, hífen ou underscore.";
+    if (isEdit) {
+      // Senha e PIN são opcionais na edição — em branco mantém os atuais.
+      if (password && password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
+      if (password && password !== passwordConfirm) return "As senhas não coincidem.";
+      if (pin && !/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
+      if (pin && pin !== pinConfirm) return "Os PINs não coincidem.";
+      return null;
+    }
     if (password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
     if (password !== passwordConfirm) return "As senhas não coincidem.";
     if (!/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
@@ -537,8 +545,7 @@ function NewCompanyWizard({
     setStep(2);
   };
 
-  const finish = async (e: FormEvent) => {
-    e.preventDefault();
+  const doSubmit = async () => {
     try {
       await onSubmit({
         owner_name: ownerName.trim().toUpperCase(),
@@ -565,33 +572,82 @@ function NewCompanyWizard({
           state: state.trim() || null,
         },
       });
-      setOpen(false);
-      reset();
+      setConfirmOpen(false);
+      if (isEdit) {
+        onOpenChange?.(false);
+      } else {
+        setOpen(false);
+        reset();
+      }
     } catch {
       // toast handled in mutation
     }
   };
 
+  const finish = async (e: FormEvent) => {
+    e.preventDefault();
+    const err = validateStep1();
+    if (err) {
+      toast.error(err);
+      setStep(1);
+      return;
+    }
+    if (isEdit) {
+      setConfirmOpen(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  const dialogOpen = isEdit ? !!controlledOpen : open;
+
   return (
     <Dialog
-      open={open}
+      open={dialogOpen}
       onOpenChange={(o) => {
+        if (isEdit) {
+          onOpenChange?.(o);
+          return;
+        }
         setOpen(o);
         if (!o) reset();
       }}
     >
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
-          <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
-        </Button>
-      </DialogTrigger>
+      {!isEdit && (
+        <DialogTrigger asChild>
+          <Button className="bg-gradient-brand text-brand-foreground hover:opacity-95 shadow-brand">
+            <UserPlus className="h-4 w-4 mr-2" /> Nova empresa
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova empresa</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar informações" : "Nova empresa"}</DialogTitle>
           <DialogDescription>
-            Etapa {step} de 2 — {step === 1 ? "Acesso e proprietário" : "Dados comerciais"}
+            Etapa {step} de 2 — {step === 1 ? "Acesso e proprietário" : "Informações empresariais"}
           </DialogDescription>
         </DialogHeader>
+
+        {isEdit && (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={step === 1 ? "default" : "outline"}
+              onClick={() => setStep(1)}
+            >
+              1. Acesso e proprietário
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={step === 2 ? "default" : "outline"}
+              onClick={() => setStep(2)}
+            >
+              2. Informações empresariais
+            </Button>
+          </div>
+        )}
 
         {step === 1 ? (
           <div className="space-y-4">
