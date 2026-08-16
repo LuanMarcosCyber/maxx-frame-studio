@@ -23,6 +23,7 @@ export interface VendasOrder {
   number: string;
   client_name: string;
   operator_name: string | null;
+  empresa_name: string | null;
   created_at: string;
   status: string;
   total_value: number;
