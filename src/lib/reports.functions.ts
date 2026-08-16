@@ -23,6 +23,7 @@ export interface VendasOrder {
   number: string;
   client_name: string;
   operator_name: string | null;
+  empresa_name: string | null;
   created_at: string;
   status: string;
   total_value: number;
@@ -424,6 +425,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
       number: string;
       client_name: string;
       operator_name: string | null;
+      user_id: string;
       created_at: string;
       status: string;
       total_value: number | string;
@@ -449,7 +451,18 @@ export const getVendasReport = createServerFn({ method: "POST" })
       );
     }
 
-
+    // Resolve company names from order owners
+    let empresaMap = new Map<string, string>();
+    if (filtered.length) {
+      const uids = Array.from(new Set(filtered.map((r) => r.user_id)));
+      const { data: profs } = await client
+        .from("profiles")
+        .select("id, store_name, full_name")
+        .in("id", uids);
+      for (const p of profs ?? []) {
+        empresaMap.set(p.id, p.store_name || p.full_name || "—");
+      }
+    }
 
     const orders: VendasOrder[] = filtered.map((r) => {
       const details = (r.budgets?.details ?? {}) as Record<string, unknown>;
@@ -458,6 +471,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
         number: r.number,
         client_name: r.client_name,
         operator_name: r.operator_name,
+        empresa_name: empresaMap.get(r.user_id) ?? null,
         created_at: r.created_at,
         status: r.status,
         total_value: Number(r.total_value) || 0,
@@ -1021,7 +1035,7 @@ export const getOrcamentosReport = createServerFn({ method: "POST" })
 
     const ranking = [...rows]
       .sort((a, b) => b.total_value - a.total_value)
-      .slice(0, 10)
+      .slice(0, 5)
       .map((r) => ({
         id: r.id,
         number: r.number,
