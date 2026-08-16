@@ -1983,7 +1983,7 @@ function EmpresasReportView({
     { label: "Faturamento geral", value: fmtMoney(s.faturamentoGeral), icon: DollarSign },
   ];
 
-  const SERIES_COLORS = ["hsl(var(--primary))", "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b"];
+
 
   return (
     <div className="space-y-6">
