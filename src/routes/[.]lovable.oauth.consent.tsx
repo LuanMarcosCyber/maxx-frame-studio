@@ -52,8 +52,8 @@ function Consent() {
     setBusy(true);
     setError(null);
     const { data, error } = approve
-      ? await oauth().approveAuthorization(authorization_id)
-      : await oauth().denyAuthorization(authorization_id);
+      ? await getOAuthApi().approveAuthorization(authorization_id)
+      : await getOAuthApi().denyAuthorization(authorization_id);
     if (error) {
       setBusy(false);
       setError(error.message);
