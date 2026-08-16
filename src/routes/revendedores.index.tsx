@@ -689,18 +689,22 @@ function NewCompanyWizard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="password">Senha inicial *</Label>
+                <Label htmlFor="password">
+                  {isEdit ? "Nova senha (opcional)" : "Senha inicial *"}
+                </Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   minLength={6}
-                  placeholder="Mín. 6 caracteres"
+                  placeholder={isEdit ? "Deixe em branco para manter" : "Mín. 6 caracteres"}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password_confirm">Confirmar senha *</Label>
+                <Label htmlFor="password_confirm">
+                  {isEdit ? "Confirmar nova senha" : "Confirmar senha *"}
+                </Label>
                 <Input
                   id="password_confirm"
                   type="password"
@@ -712,18 +716,20 @@ function NewCompanyWizard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="pin">PIN do proprietário *</Label>
+                <Label htmlFor="pin">
+                  {isEdit ? "Novo PIN do proprietário (opcional)" : "PIN do proprietário *"}
+                </Label>
                 <Input
                   id="pin"
                   inputMode="numeric"
                   maxLength={6}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="4 a 6 dígitos"
+                  placeholder={isEdit ? "Deixe em branco para manter" : "4 a 6 dígitos"}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pin_confirm">Confirmar PIN *</Label>
+                <Label htmlFor="pin_confirm">{isEdit ? "Confirmar novo PIN" : "Confirmar PIN *"}</Label>
                 <Input
                   id="pin_confirm"
                   inputMode="numeric"
@@ -807,7 +813,7 @@ function NewCompanyWizard({
                 onClick={goNext}
                 className="bg-gradient-brand text-brand-foreground hover:opacity-95"
               >
-                Próximo
+                {isEdit ? "Continuar" : "Próximo"}
               </Button>
             </DialogFooter>
           </div>
@@ -1016,11 +1022,41 @@ function NewCompanyWizard({
                 disabled={submitting}
                 className="bg-gradient-brand text-brand-foreground hover:opacity-95"
               >
-                {submitting ? "Criando..." : "Criar empresa"}
+                {submitting
+                  ? isEdit
+                    ? "Salvando..."
+                    : "Criando..."
+                  : isEdit
+                    ? "Salvar alterações"
+                    : "Criar empresa"}
               </Button>
             </DialogFooter>
           </form>
         )}
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar alterações</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja alterar as informações da empresa{" "}
+                <strong>{companyName || storeName}</strong>?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  void doSubmit();
+                }}
+                disabled={submitting}
+              >
+                {submitting ? "Salvando..." : "Confirmar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
