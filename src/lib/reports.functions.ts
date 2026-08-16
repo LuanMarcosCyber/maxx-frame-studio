@@ -425,6 +425,7 @@ export const getVendasReport = createServerFn({ method: "POST" })
       number: string;
       client_name: string;
       operator_name: string | null;
+      user_id: string;
       created_at: string;
       status: string;
       total_value: number | string;
