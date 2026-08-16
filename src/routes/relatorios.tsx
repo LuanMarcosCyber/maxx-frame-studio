@@ -73,7 +73,6 @@ import {
 } from "lucide-react";
 import {
   ResponsiveContainer,
-  Line,
   XAxis,
   YAxis,
   Tooltip as RTooltip,
