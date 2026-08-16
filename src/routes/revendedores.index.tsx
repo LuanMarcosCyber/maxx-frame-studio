@@ -1,8 +1,8 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, KeyRound, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Eye } from "lucide-react";
+import { UserPlus, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Pencil } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,8 +49,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { listResellers, resetPassword, deleteUser, listAllCompanies } from "@/lib/admin-users.functions";
-import { createCompanyWithOwner } from "@/lib/companies.functions";
+import { listResellers, deleteUser, listAllCompanies } from "@/lib/admin-users.functions";
+import { createCompanyWithOwner, getCompanyDetails, updateCompanyFull } from "@/lib/companies.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/revendedores/")({
@@ -100,10 +100,11 @@ function Content() {
   const { user } = useAuth();
   const list = useServerFn(listResellers);
   const create = useServerFn(createCompanyWithOwner);
-  const reset = useServerFn(resetPassword);
+  const update = useServerFn(updateCompanyFull);
+  const getDetails = useServerFn(getCompanyDetails);
   const del = useServerFn(deleteUser);
 
-  const [resetTarget, setResetTarget] = useState<{ id: string; username: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
@@ -122,13 +123,24 @@ function Content() {
 
 
 
-  const resetMut = useMutation({
-    mutationFn: (data: { user_id: string; password: string }) => reset({ data }),
+  const updateMut = useMutation({
+    mutationFn: (data: EditPayload) =>
+      (update as unknown as (a: { data: EditPayload }) => Promise<unknown>)({ data }),
     onSuccess: () => {
-      toast.success("Senha redefinida com sucesso.");
-      setResetTarget(null);
+      toast.success("Informações da empresa atualizadas.");
+      setEditTarget(null);
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const { data: editData } = useQuery({
+    queryKey: ["admin", "company-details", editTarget?.id],
+    queryFn: () =>
+      (getDetails as unknown as (a: { data: { company_id: string } }) => Promise<CompanyDetails>)({
+        data: { company_id: editTarget!.id },
+      }),
+    enabled: !!editTarget,
   });
 
   const deleteMut = useMutation({
@@ -214,15 +226,15 @@ function Content() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to="/revendedores/$id" params={{ id: u.id }}>
-                            <Eye className="h-4 w-4 mr-2" /> Ver informações
-                          </Link>
-                        </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setResetTarget({ id: u.id, username: u.username || "" })}
+                          onClick={() =>
+                            setEditTarget({
+                              id: u.id,
+                              name: u.full_name || u.username || "esta empresa",
+                            })
+                          }
                         >
-                          <KeyRound className="h-4 w-4 mr-2" /> Redefinir senha
+                          <Pencil className="h-4 w-4 mr-2" /> Editar informações
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(u)}
@@ -240,14 +252,18 @@ function Content() {
         </Table>
       </div>
 
-      <ResetPasswordDialog
-        target={resetTarget}
-        onOpenChange={(o: boolean) => !o && setResetTarget(null)}
-        onSubmit={(pw) =>
-          resetTarget ? resetMut.mutateAsync({ user_id: resetTarget.id, password: pw }) : undefined
-        }
-        submitting={resetMut.isPending}
-      />
+      {editTarget && editData && (
+        <NewCompanyWizard
+          key={editTarget.id}
+          mode="edit"
+          initial={editData}
+          companyName={editTarget.name}
+          controlledOpen
+          onOpenChange={(o) => !o && setEditTarget(null)}
+          onSubmit={(d) => updateMut.mutateAsync({ ...d, company_id: editTarget.id })}
+          submitting={updateMut.isPending}
+        />
+      )}
 
       <AlertDialog
         open={!!deleteTarget}
