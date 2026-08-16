@@ -1438,8 +1438,8 @@ function OrcamentosReportView({
                   <TableHead>Número</TableHead>
                   <TableHead>Cliente</TableHead>
                   {admin && <TableHead className="w-10" />}
-                  <TableHead>Colaborador</TableHead>
                   <TableHead>Empresa</TableHead>
+                  <TableHead>Colaborador</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Data</TableHead>
@@ -1463,8 +1463,8 @@ function OrcamentosReportView({
                         </button>
                       </TableCell>
                     )}
-                    <TableCell>{r.operator_name ?? "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
+                    <TableCell>{r.operator_name ?? "—"}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
                         {prettyLabel(r.status)}
