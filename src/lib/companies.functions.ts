@@ -284,7 +284,7 @@ export const updateCompanyFull = createServerFn({ method: "POST" })
     if (authErr) throw new Error(authErr.message);
 
     const c = data.commercial ?? {};
-    const patch: Record<string, unknown> = {
+    const patch = {
       full_name: ownerName,
       store_name: c.trade_name ? c.trade_name.toUpperCase() : storeName,
       username,
@@ -308,8 +308,10 @@ export const updateCompanyFull = createServerFn({ method: "POST" })
     if (profErr) throw new Error(profErr.message);
 
     // Owner internal user: name always, PIN only when informed
-    const ownerPatch: Record<string, unknown> = { name: ownerName };
-    if (data.pin) ownerPatch.pin_hash = hashPin(data.pin);
+    const ownerPatch = {
+      name: ownerName,
+      ...(data.pin ? { pin_hash: hashPin(data.pin) } : {}),
+    };
     const { error: opErr } = await supabaseAdmin
       .from("operators")
       .update(ownerPatch)
