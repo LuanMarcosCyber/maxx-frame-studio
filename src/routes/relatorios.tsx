@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BudgetSummaryById } from "@/routes/orcamentos.index";
+import { AdvancedCompaniesDialog } from "@/components/relatorios/AdvancedCompaniesDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import {
@@ -248,6 +249,7 @@ function Relatorios() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [search, setSearch] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
