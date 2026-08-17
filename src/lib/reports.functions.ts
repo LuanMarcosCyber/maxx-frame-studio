@@ -1239,7 +1239,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const now = Date.now();
     const inactivityDays = data.inactivityDays ?? 90;
 
-    let rows: ClienteRow[] = clientsList
+    const allRows: ClienteRow[] = clientsList
       .filter((c) => !cityFilter || (c.city ?? "") === cityFilter)
       .filter((c) => !data.clientId || c.id === data.clientId)
       .map((c) => {
@@ -1265,6 +1265,10 @@ export const getClientesReport = createServerFn({ method: "POST" })
         };
       });
 
+    // A listagem geral e os rankings por faturamento/pedidos/orçamentos
+    // excluem clientes que ainda não compraram (valor = 0).
+    const rows = allRows.filter((r) => r.valorComprado > 0);
+
     const totalClientes = rows.length;
     const ativos = rows.filter(
       (r) => r.ultimaCompra && (now - new Date(r.ultimaCompra).getTime()) / 86400000 <= inactivityDays,
@@ -1275,11 +1279,12 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const totalPedidos = rows.reduce((s, r) => s + r.qtdPedidos, 0);
     const ticketMedio = totalPedidos ? valorTotal / totalPedidos : 0;
 
-    const topFaturamento = [...rows].sort((a, b) => b.valorComprado - a.valorComprado).slice(0, 10);
-    const topPedidos = [...rows].sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
-    const topOrcamentos = [...rows].sort((a, b) => b.qtdOrcamentos - a.qtdOrcamentos).slice(0, 10);
+    const topFaturamento = [...rows].sort((a, b) => b.valorComprado - a.valorComprado).slice(0, 5);
+    const topPedidos = [...rows].sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 5);
+    const topOrcamentos = [...rows].sort((a, b) => b.qtdOrcamentos - a.qtdOrcamentos).slice(0, 5);
 
-    const semComprar = rows
+    // Indicadores especiais continuam considerando todos os clientes cadastrados.
+    const semComprar = allRows
       .filter(
         (r) =>
           !r.ultimaCompra ||
@@ -1292,8 +1297,8 @@ export const getClientesReport = createServerFn({ method: "POST" })
       })
       .slice(0, 10);
 
-    const recorrentes = rows.filter((r) => r.qtdPedidos > 1).sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
-    const novos = rows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 10);
+    const recorrentes = allRows.filter((r) => r.qtdPedidos > 1).sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
+    const novos = allRows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 10);
 
     // Cresceram: comparação valorPeriodo vs valorAnterior
     const growthList = clientsList
@@ -1306,7 +1311,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
       .filter((x): x is { id: string; growth: number; atual: number; anterior: number } => x !== null && x.growth > 0)
       .sort((a, b) => b.growth - a.growth)
       .slice(0, 10);
-    const rowIndex = new Map(rows.map((r) => [r.id, r]));
+    const rowIndex = new Map(allRows.map((r) => [r.id, r]));
     const maisCresceram = growthList
       .map((g) => rowIndex.get(g.id))
       .filter((r): r is ClienteRow => !!r);
