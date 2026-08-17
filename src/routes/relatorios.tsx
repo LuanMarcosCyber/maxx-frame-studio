@@ -1168,25 +1168,28 @@ function FornecedoresReportView({
       {suppliers.length > 0 && (
         <Card>
           <div className="p-5 border-b">
-            <h3 className="text-base font-semibold text-foreground">Produtos mais vendidos por fornecedor</h3>
+            <h3 className="text-base font-semibold text-foreground">Produtos mais usados por fornecedor</h3>
           </div>
           <div className="divide-y">
-            {suppliers.slice(0, 6).map((s) => {
-              const items = data?.topProductsPerSupplier[s.supplier] ?? [];
+            {suppliers.map((s) => {
+              const items = (data?.topProductsPerSupplier[s.supplier] ?? []).slice(0, 3);
               return (
                 <div key={s.supplier} className="p-4">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-foreground">{s.supplier}</div>
                     <div className="text-xs text-muted-foreground">{fmtMoney(s.value)}</div>
                   </div>
                   {items.length === 0 ? (
                     <div className="text-xs text-muted-foreground">Sem produtos.</div>
                   ) : (
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <ul className="space-y-2">
                       {items.map((p, i) => (
-                        <li key={i} className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1.5">
-                          <span className="truncate mr-2">{i + 1}. {p.name}</span>
-                          <span className="font-medium shrink-0">{fmtMoney(p.value)}</span>
+                        <li key={i} className="flex items-start justify-between gap-3 text-sm bg-muted/50 rounded px-3 py-2">
+                          <span className="break-words leading-snug">
+                            <span className="text-muted-foreground mr-1">{i + 1}.</span>
+                            {p.name}
+                          </span>
+                          <span className="font-medium shrink-0 text-right">{fmtMoney(p.value)}</span>
                         </li>
                       ))}
                     </ul>
