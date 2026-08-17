@@ -1052,7 +1052,7 @@ function FornecedoresReportView({
                     >
                       <span
                         className="w-3 h-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                        style={{ backgroundColor: supplierColor(d.name, i) }}
                       />
                       <span className="font-medium text-foreground truncate max-w-[16rem]">
                         {d.name}
@@ -1073,8 +1073,8 @@ function FornecedoresReportView({
                         outerRadius={90}
                         label={(e: { share?: number }) => `${(e.share ?? 0).toFixed(1)}%`}
                       >
-                        {chartData.map((_, i) => (
-                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        {chartData.map((d, i) => (
+                          <Cell key={i} fill={supplierColor(d.name, i)} />
                         ))}
                       </Pie>
                       <RTooltip formatter={(v: number) => fmtMoney(v)} />
