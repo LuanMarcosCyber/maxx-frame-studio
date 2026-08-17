@@ -1210,17 +1210,54 @@ export const getClientesReport = createServerFn({ method: "POST" })
       return a;
     };
 
+    // Índice por nome normalizado para casar pedidos sem client_id vinculado
+    const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+    const nameIndex = new Map<string, string>();
+    for (const c of clientsList) {
+      const k = norm(c.name);
+      if (!nameIndex.has(k)) nameIndex.set(k, c.id);
+    }
+    // Rows "virtuais" para clientes que aparecem em pedidos mas não estão cadastrados
+    const virtualNames = new Map<string, string>(); // key -> display name
+
+    const resolveKey = (clientId: string | null | undefined, clientName: string | null): string | null => {
+      if (clientId) return clientId;
+      const n = (clientName ?? "").trim();
+      if (!n) return null;
+      const byName = nameIndex.get(norm(n));
+      if (byName) return byName;
+      const key = `name:${norm(n)}`;
+      if (!virtualNames.has(key)) virtualNames.set(key, n);
+      return key;
+    };
+
+    // Agregação em período (base da listagem/resumo/rankings)
+    const aggPeriod = new Map<string, Agg>();
+    const ensurePeriod = (id: string): Agg => {
+      let a = aggPeriod.get(id);
+      if (!a) {
+        a = { qtdPedidos: 0, qtdOrcamentos: 0, valorComprado: 0, ultimaCompra: null, valorAnterior: 0, valorPeriodo: 0 };
+        aggPeriod.set(id, a);
+      }
+      return a;
+    };
+
     for (const o of orders) {
-      const cid = o.budgets?.client_id;
+      const cid = resolveKey(o.budgets?.client_id ?? null, o.client_name);
       if (!cid) continue;
       if (data.clientId && data.clientId !== cid) continue;
-      const a = ensure(cid);
       const v = Number(o.total_value) || 0;
+      const a = ensure(cid);
       a.qtdPedidos += 1;
       a.valorComprado += v;
       if (!a.ultimaCompra || o.created_at > a.ultimaCompra) a.ultimaCompra = o.created_at;
-      if (inRange(o.created_at)) a.valorPeriodo += v;
-      else if (fromTs !== null) {
+      if (inRange(o.created_at)) {
+        a.valorPeriodo += v;
+        const p = ensurePeriod(cid);
+        p.qtdPedidos += 1;
+        p.valorComprado += v;
+        if (!p.ultimaCompra || o.created_at > p.ultimaCompra) p.ultimaCompra = o.created_at;
+      } else if (fromTs !== null) {
         // previous window of same length
         const t = new Date(o.created_at).getTime();
         const windowSize = (toTs ?? Date.now()) - fromTs;
@@ -1228,10 +1265,11 @@ export const getClientesReport = createServerFn({ method: "POST" })
       }
     }
     for (const b of budgets) {
-      if (!b.client_id) continue;
-      if (data.clientId && data.clientId !== b.client_id) continue;
-      const a = ensure(b.client_id);
-      a.qtdOrcamentos += 1;
+      const cid = b.client_id;
+      if (!cid) continue;
+      if (data.clientId && data.clientId !== cid) continue;
+      ensure(cid).qtdOrcamentos += 1;
+      if (inRange(b.created_at)) ensurePeriod(cid).qtdOrcamentos += 1;
     }
 
     // Build rows
@@ -1239,35 +1277,45 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const now = Date.now();
     const inactivityDays = data.inactivityDays ?? 90;
 
-    const allRows: ClienteRow[] = clientsList
-      .filter((c) => !cityFilter || (c.city ?? "") === cityFilter)
-      .filter((c) => !data.clientId || c.id === data.clientId)
-      .map((c) => {
-        const a = agg.get(c.id) ?? {
-          qtdPedidos: 0,
-          qtdOrcamentos: 0,
-          valorComprado: 0,
-          ultimaCompra: null,
-          valorAnterior: 0,
-          valorPeriodo: 0,
-        };
-        return {
-          id: c.id,
-          name: c.name,
-          city: c.city,
-          state: c.state,
-          qtdPedidos: a.qtdPedidos,
-          qtdOrcamentos: a.qtdOrcamentos,
-          valorComprado: a.valorComprado,
-          ultimaCompra: a.ultimaCompra,
-          ticketMedio: a.qtdPedidos ? a.valorComprado / a.qtdPedidos : 0,
-          createdAt: c.created_at,
-        };
-      });
+    const buildRow = (id: string, a: Agg): ClienteRow => {
+      const c = clientMap.get(id);
+      return {
+        id,
+        name: c?.name ?? virtualNames.get(id) ?? "—",
+        city: c?.city ?? null,
+        state: c?.state ?? null,
+        qtdPedidos: a.qtdPedidos,
+        qtdOrcamentos: a.qtdOrcamentos,
+        valorComprado: a.valorComprado,
+        ultimaCompra: a.ultimaCompra,
+        ticketMedio: a.qtdPedidos ? a.valorComprado / a.qtdPedidos : 0,
+        createdAt: c?.created_at ?? a.ultimaCompra ?? new Date().toISOString(),
+      };
+    };
 
-    // A listagem geral e os rankings por faturamento/pedidos/orçamentos
-    // excluem clientes que ainda não compraram (valor = 0).
-    const rows = allRows.filter((r) => r.valorComprado > 0);
+    const emptyAgg = (): Agg => ({
+      qtdPedidos: 0,
+      qtdOrcamentos: 0,
+      valorComprado: 0,
+      ultimaCompra: null,
+      valorAnterior: 0,
+      valorPeriodo: 0,
+    });
+
+    const passesFilters = (r: ClienteRow) =>
+      (!cityFilter || (r.city ?? "") === cityFilter) && (!data.clientId || r.id === data.clientId);
+
+    // Todos os clientes cadastrados + clientes que só aparecem em pedidos
+    const allIds = new Set<string>([...clientsList.map((c) => c.id), ...agg.keys()]);
+    const allRows: ClienteRow[] = Array.from(allIds)
+      .map((id) => buildRow(id, agg.get(id) ?? emptyAgg()))
+      .filter(passesFilters);
+
+    // Listagem/resumo/rankings: apenas movimentação dentro do período filtrado
+    const rows = Array.from(aggPeriod.entries())
+      .map(([id, a]) => buildRow(id, a))
+      .filter(passesFilters)
+      .filter((r) => r.valorComprado > 0 || r.qtdPedidos > 0 || r.qtdOrcamentos > 0);
 
     const totalClientes = rows.length;
     const ativos = rows.filter(
@@ -1282,6 +1330,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const topFaturamento = [...rows].sort((a, b) => b.valorComprado - a.valorComprado).slice(0, 5);
     const topPedidos = [...rows].sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 5);
     const topOrcamentos = [...rows].sort((a, b) => b.qtdOrcamentos - a.qtdOrcamentos).slice(0, 5);
+
 
     // Indicadores especiais continuam considerando todos os clientes cadastrados.
     const semComprar = allRows
