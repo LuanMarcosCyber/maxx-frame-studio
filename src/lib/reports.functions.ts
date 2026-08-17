@@ -1360,7 +1360,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
       })
       .filter((x): x is { id: string; growth: number; atual: number; anterior: number } => x !== null && x.growth > 0)
       .sort((a, b) => b.growth - a.growth)
-      .slice(0, 10);
+      .slice(0, 5);
     const rowIndex = new Map(allRows.map((r) => [r.id, r]));
     const maisCresceram = growthList
       .map((g) => rowIndex.get(g.id))
