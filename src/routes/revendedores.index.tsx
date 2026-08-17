@@ -372,9 +372,9 @@ function NewCompanyWizard({
   const [storeName, setStoreName] = useState(initial?.store_name ?? "");
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const [companyGroupId, setCompanyGroupId] = useState<string | null>(
     initial?.company_group_id ?? null,
   );
