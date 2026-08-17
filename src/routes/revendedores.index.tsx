@@ -492,9 +492,9 @@ function NewCompanyWizard({
     setStoreName("");
     setUsername("");
     setPassword("");
-    setPasswordConfirm("");
     setPin("");
-    setPinConfirm("");
+    setShowPassword(false);
+    setShowPin(false);
     setCompanyGroupId(null);
     setCompanyQuery("");
     setDocument("");
