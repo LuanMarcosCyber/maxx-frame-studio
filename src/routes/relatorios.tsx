@@ -83,7 +83,6 @@ import {
   Cell,
   BarChart,
   Bar,
-  Legend,
 } from "recharts";
 
 
@@ -1035,21 +1034,49 @@ function FornecedoresReportView({
           <div className="p-5 border-b">
             <h3 className="text-base font-semibold text-foreground">Participação nas vendas</h3>
           </div>
-          <div className="p-4 h-72">
+          <div className="p-4">
             {chartData.length === 0 ? (
               <EmptyResults label="Sem dados no período." />
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={chartData} dataKey="value" nameKey="name" outerRadius={90} label={(e: { share?: number }) => `${(e.share ?? 0).toFixed(1)}%`}>
-                    {chartData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RTooltip formatter={(v: number) => fmtMoney(v)} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-3">
+                  {chartData.map((d, i) => (
+                    <div
+                      key={d.name}
+                      className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-2.5 py-1.5"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-sm shrink-0"
+                        style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                      />
+                      <span className="font-medium text-foreground truncate max-w-[16rem]">
+                        {d.name}
+                      </span>
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        {fmtPct(d.share)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        dataKey="value"
+                        nameKey="name"
+                        outerRadius={90}
+                        label={(e: { share?: number }) => `${(e.share ?? 0).toFixed(1)}%`}
+                      >
+                        {chartData.map((_, i) => (
+                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RTooltip formatter={(v: number) => fmtMoney(v)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             )}
           </div>
         </Card>
