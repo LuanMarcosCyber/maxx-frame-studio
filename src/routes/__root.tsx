@@ -103,6 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "LqorOG6LczwTtpL78pAFcyCubR9TeW0ghwiJgVk7YQY" },
       { title: "Total Maxx System— Gestão de Orçamentos e Pedidos" },
       { name: "description", content: "Total Maxx ERP — sistema web para revendedores criarem orçamentos e pedidos de componentes decorativos com agilidade e controle total." },
       { property: "og:site_name", content: "Total Maxx ERP" },
