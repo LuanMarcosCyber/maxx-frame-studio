@@ -155,7 +155,7 @@ export function AdvancedCompaniesDialog({
             {(detailsQuery.error as Error)?.message ?? "Falha ao carregar."}
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center gap-3">
               <Avatar className="h-14 w-14">
                 {p?.avatar_url ? <AvatarImage src={p.avatar_url} alt="" /> : null}
