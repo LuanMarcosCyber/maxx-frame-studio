@@ -692,51 +692,50 @@ function NewCompanyWizard({
                 <Label htmlFor="password">
                   {isEdit ? "Nova senha (opcional)" : "Senha inicial *"}
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  placeholder={isEdit ? "Deixe em branco para manter" : "Mín. 6 caracteres"}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    className="pr-9"
+                    placeholder={isEdit ? "Deixe em branco para manter" : "Mín. 6 caracteres"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password_confirm">
-                  {isEdit ? "Confirmar nova senha" : "Confirmar senha *"}
-                </Label>
-                <Input
-                  id="password_confirm"
-                  type="password"
-                  value={passwordConfirm}
-                  onChange={(e) => setPasswordConfirm(e.target.value)}
-                  minLength={6}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="pin">
                   {isEdit ? "Novo PIN do proprietário (opcional)" : "PIN do proprietário *"}
                 </Label>
-                <Input
-                  id="pin"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder={isEdit ? "Deixe em branco para manter" : "4 a 6 dígitos"}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pin_confirm">{isEdit ? "Confirmar novo PIN" : "Confirmar PIN *"}</Label>
-                <Input
-                  id="pin_confirm"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pinConfirm}
-                  onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                />
+                <div className="relative">
+                  <Input
+                    id="pin"
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="pr-9"
+                    placeholder={isEdit ? "Deixe em branco para manter" : "4 a 6 dígitos"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin((v) => !v)}
+                    aria-label={showPin ? "Ocultar PIN" : "Mostrar PIN"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 
