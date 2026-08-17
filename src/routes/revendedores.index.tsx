@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Pencil } from "lucide-react";
+import { UserPlus, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Pencil, Eye, EyeOff } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
