@@ -27,7 +27,7 @@ export const listCompaniesGrid = createServerFn({ method: "POST" })
 /** Detalhes avançados de uma empresa: dados comerciais, usuários, produtos e último login. */
 export const getCompanyAdvancedDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => idSchema.parse(input))
+  .inputValidator((input: unknown) => companyIdSchema.parse(input))
   .handler(async ({ context, data }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
