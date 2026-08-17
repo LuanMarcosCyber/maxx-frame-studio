@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Building2, Package, Search, Users, Clock } from "lucide-react";
 import { getInitials } from "@/lib/avatar";
-import { fmtDateTime } from "@/lib/utils";
+import { fmtDateTimeFull } from "@/lib/utils";
 import {
   listCompaniesGrid,
   getCompanyAdvancedDetails,
@@ -155,7 +155,7 @@ export function AdvancedCompaniesDialog({
             {(detailsQuery.error as Error)?.message ?? "Falha ao carregar."}
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center gap-3">
               <Avatar className="h-14 w-14">
                 {p?.avatar_url ? <AvatarImage src={p.avatar_url} alt="" /> : null}
@@ -191,7 +191,7 @@ export function AdvancedCompaniesDialog({
                 <div>
                   <p className="text-[11px] text-muted-foreground">Último acesso</p>
                   <p className="text-sm font-semibold">
-                    {d?.lastSignInAt ? fmtDateTime(d.lastSignInAt) : "Nunca acessou"}
+                    {d?.lastSignInAt ? fmtDateTimeFull(d.lastSignInAt) : "Nunca acessou"}
                   </p>
                 </div>
               </Card>

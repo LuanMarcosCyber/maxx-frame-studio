@@ -73,6 +73,19 @@ export function fmtDateTime(value: string | Date | null | undefined): string {
 }
 
 /**
+ * Formata uma data ISO timestamp com hora (ex.: 17/08/2026 às 14:32).
+ * Para strings vazias/nulas retorna "—".
+ */
+export function fmtDateTimeFull(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  const date = d.toLocaleDateString("pt-BR");
+  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return `${date} às ${time}`;
+}
+
+/**
  * Formata uma data tipo DATE (YYYY-MM-DD, sem hora) em dd/mm/aaaa
  * SEM aplicar fuso horário — evita o bug clássico de mostrar "23/06"
  * em vez de "24/06" porque new Date("2025-06-24") é interpretado em UTC.
