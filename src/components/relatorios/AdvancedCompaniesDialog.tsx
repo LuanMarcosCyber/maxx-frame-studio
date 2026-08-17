@@ -39,6 +39,17 @@ export function AdvancedCompaniesDialog({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [hasSession, setHasSession] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) setHasSession(!!data.session?.access_token);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open]);
 
   const fetchList = useServerFn(listCompaniesGrid);
   const fetchDetails = useServerFn(getCompanyAdvancedDetails);
@@ -46,15 +57,16 @@ export function AdvancedCompaniesDialog({
   const listQuery = useQuery({
     queryKey: ["empresas-avancado", "lista"],
     queryFn: () => fetchList(),
-    enabled: open,
+    enabled: open && hasSession,
     staleTime: 60_000,
   });
 
   const detailsQuery = useQuery({
     queryKey: ["empresas-avancado", "detalhes", selectedId],
     queryFn: () => fetchDetails({ data: { company_id: selectedId! } }),
-    enabled: open && !!selectedId,
+    enabled: open && hasSession && !!selectedId,
   });
+
 
   const companies = (listQuery.data ?? []).filter((c) => {
     const term = q.trim().toLowerCase();
