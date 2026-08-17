@@ -9,12 +9,23 @@ export const listCompaniesGrid = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Apenas empresas reais (papel "revendedor"), excluindo contas admin (TOTALMAXX)
+    const { data: roles, error: rErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id, role");
+    if (rErr) throw new Error(rErr.message);
+    const companyIds = (roles ?? []).filter((r) => r.role === "revendedor").map((r) => r.user_id);
+    const adminIds = new Set((roles ?? []).filter((r) => r.role === "admin").map((r) => r.user_id));
+    const ids = companyIds.filter((id) => !adminIds.has(id) && id !== context.userId);
+    if (ids.length === 0) return [];
     const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("id, store_name, full_name, username, avatar_url, company_group_id")
+      .in("id", ids)
       .is("parent_user_id", null)
       .order("store_name", { ascending: true });
     if (error) throw new Error(error.message);
+
     return (data ?? []).map((p) => ({
       id: p.id as string,
       name: (p.store_name || p.full_name || "Sem nome") as string,
