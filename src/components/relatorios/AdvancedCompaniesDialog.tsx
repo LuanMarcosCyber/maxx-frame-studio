@@ -191,7 +191,7 @@ export function AdvancedCompaniesDialog({
                 <div>
                   <p className="text-[11px] text-muted-foreground">Último acesso</p>
                   <p className="text-sm font-semibold">
-                    {d?.lastSignInAt ? fmtDateTime(d.lastSignInAt) : "Nunca acessou"}
+                    {d?.lastSignInAt ? fmtDateTimeFull(d.lastSignInAt) : "Nunca acessou"}
                   </p>
                 </div>
               </Card>
