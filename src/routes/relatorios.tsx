@@ -1584,6 +1584,7 @@ function ClientesReportView({
           }))}
         />
         <IndicatorListCard
+          className="self-start"
           title="Clientes recorrentes (mais de 1 pedido)"
           icon={Repeat}
           items={data.recorrentes.map((r) => ({
