@@ -1344,10 +1344,11 @@ export const getClientesReport = createServerFn({ method: "POST" })
         const tb = b.ultimaCompra ? new Date(b.ultimaCompra).getTime() : 0;
         return ta - tb;
       })
-      .slice(0, 10);
+      .slice(0, 5);
 
     const recorrentes = allRows.filter((r) => r.qtdPedidos > 1).sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
-    const novos = allRows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 10);
+    const novos = allRows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 5);
+
 
     // Cresceram: comparação valorPeriodo vs valorAnterior
     const growthList = clientsList
