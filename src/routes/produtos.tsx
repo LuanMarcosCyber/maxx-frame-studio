@@ -54,9 +54,9 @@ export const Route = createFileRoute("/produtos")({
       { name: "description", content: "Catálogo de produtos do Total Maxx ERP: foam, paspatur, impressão, perfil, vidro, colagem e produtos diversos." },
       { property: "og:title", content: "Produtos — Total Maxx ERP" },
       { property: "og:description", content: "Catálogo de produtos por categoria no Total Maxx ERP." },
-      { property: "og:url", content: "https://maxx-frame-studio.lovable.app/produtos" },
+      { property: "og:url", content: "https://total-maxx-system.lovable.app/produtos" },
     ],
-    links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/produtos" }],
+    links: [{ rel: "canonical", href: "https://total-maxx-system.lovable.app/produtos" }],
   }),
   component: () => (
     <PermissionGuard permission="products">

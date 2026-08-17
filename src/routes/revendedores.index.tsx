@@ -60,9 +60,9 @@ export const Route = createFileRoute("/revendedores/")({
       { name: "description", content: "Área administrativa do Total Maxx ERP para gerenciar empresas: criar contas, redefinir senhas e visualizar dados por loja." },
       { property: "og:title", content: "Empresas — Total Maxx ERP" },
       { property: "og:description", content: "Gestão de empresas no Total Maxx ERP." },
-      { property: "og:url", content: "https://maxx-frame-studio.lovable.app/revendedores" },
+      { property: "og:url", content: "https://total-maxx-system.lovable.app/revendedores" },
     ],
-    links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/revendedores" }],
+    links: [{ rel: "canonical", href: "https://total-maxx-system.lovable.app/revendedores" }],
   }),
   component: RevendedoresPage,
 });
