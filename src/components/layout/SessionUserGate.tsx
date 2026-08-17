@@ -24,10 +24,14 @@ export function SessionUserGate({ children }: { children: ReactNode }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const list = useServerFn(listActiveOperatorsV2);
+  const accessToken = session?.access_token ?? null;
   const { data: operators = [], isLoading } = useQuery<Op[]>({
-    queryKey: ["active-operators", "gate", effectiveOwnerId],
+    queryKey: ["active-operators", "gate", effectiveOwnerId, accessToken ? "auth" : "anon"],
     queryFn: () => list() as Promise<Op[]>,
-    enabled: !!session,
+    // Só chama o servidor quando já existe um token de acesso — sem ele o
+    // middleware de autenticação rejeita a chamada.
+    enabled: !!accessToken,
+    retry: false,
   });
 
   // Seleção de usuário é obrigatória — o sistema nunca assume um usuário

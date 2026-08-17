@@ -56,7 +56,7 @@ export function OperatorSwitcher({
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, session } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const clearActiveCompanyFn = useServerFn(clearActiveCompany);
@@ -68,7 +68,8 @@ export function OperatorSwitcher({
   const { data: operators = [], isLoading } = useQuery<Op[]>({
     queryKey: ["active-operators"],
     queryFn: () => list() as Promise<Op[]>,
-    enabled: open,
+    enabled: open && !!session?.access_token,
+    retry: false,
   });
 
   useEffect(() => {
