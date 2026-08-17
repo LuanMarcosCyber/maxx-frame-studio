@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UserPlus, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Pencil } from "lucide-react";
+import { UserPlus, ShieldCheck, User as UserIcon, MoreHorizontal, Trash2, Pencil, Eye, EyeOff } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -372,9 +372,9 @@ function NewCompanyWizard({
   const [storeName, setStoreName] = useState(initial?.store_name ?? "");
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const [companyGroupId, setCompanyGroupId] = useState<string | null>(
     initial?.company_group_id ?? null,
   );
@@ -492,9 +492,9 @@ function NewCompanyWizard({
     setStoreName("");
     setUsername("");
     setPassword("");
-    setPasswordConfirm("");
     setPin("");
-    setPinConfirm("");
+    setShowPassword(false);
+    setShowPin(false);
     setCompanyGroupId(null);
     setCompanyQuery("");
     setDocument("");
@@ -522,15 +522,11 @@ function NewCompanyWizard({
     if (isEdit) {
       // Senha e PIN são opcionais na edição — em branco mantém os atuais.
       if (password && password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
-      if (password && password !== passwordConfirm) return "As senhas não coincidem.";
       if (pin && !/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
-      if (pin && pin !== pinConfirm) return "Os PINs não coincidem.";
       return null;
     }
     if (password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
-    if (password !== passwordConfirm) return "As senhas não coincidem.";
     if (!/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
-    if (pin !== pinConfirm) return "Os PINs não coincidem.";
     return null;
   };
 
@@ -692,51 +688,50 @@ function NewCompanyWizard({
                 <Label htmlFor="password">
                   {isEdit ? "Nova senha (opcional)" : "Senha inicial *"}
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  placeholder={isEdit ? "Deixe em branco para manter" : "Mín. 6 caracteres"}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    className="pr-9"
+                    placeholder={isEdit ? "Deixe em branco para manter" : "Mín. 6 caracteres"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password_confirm">
-                  {isEdit ? "Confirmar nova senha" : "Confirmar senha *"}
-                </Label>
-                <Input
-                  id="password_confirm"
-                  type="password"
-                  value={passwordConfirm}
-                  onChange={(e) => setPasswordConfirm(e.target.value)}
-                  minLength={6}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="pin">
                   {isEdit ? "Novo PIN do proprietário (opcional)" : "PIN do proprietário *"}
                 </Label>
-                <Input
-                  id="pin"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder={isEdit ? "Deixe em branco para manter" : "4 a 6 dígitos"}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="pin_confirm">{isEdit ? "Confirmar novo PIN" : "Confirmar PIN *"}</Label>
-                <Input
-                  id="pin_confirm"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pinConfirm}
-                  onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                />
+                <div className="relative">
+                  <Input
+                    id="pin"
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="pr-9"
+                    placeholder={isEdit ? "Deixe em branco para manter" : "4 a 6 dígitos"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin((v) => !v)}
+                    aria-label={showPin ? "Ocultar PIN" : "Mostrar PIN"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 

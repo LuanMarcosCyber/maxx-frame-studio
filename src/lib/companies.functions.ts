@@ -227,8 +227,15 @@ const updateSchema = z.object({
     .min(3, "Usuário muito curto.")
     .max(40)
     .regex(/^[a-z0-9._-]+$/, "Use letras minúsculas, números, ponto, hífen ou underscore."),
-  password: z.string().min(6, "Senha mínima de 6 caracteres.").max(72).optional().nullable(),
-  pin: z.string().regex(/^\d{4,6}$/, "PIN deve conter 4 a 6 dígitos.").optional().nullable(),
+  // Campo em branco na edição significa "manter o valor atual".
+  password: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().min(6, "Senha mínima de 6 caracteres.").max(72).optional().nullable(),
+  ),
+  pin: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().regex(/^\d{4,6}$/, "PIN deve conter 4 a 6 dígitos.").optional().nullable(),
+  ),
   company_group_id: z.string().uuid().nullable().optional(),
   commercial: commercialSchema.optional(),
 });
