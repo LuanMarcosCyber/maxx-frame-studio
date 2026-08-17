@@ -522,15 +522,11 @@ function NewCompanyWizard({
     if (isEdit) {
       // Senha e PIN são opcionais na edição — em branco mantém os atuais.
       if (password && password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
-      if (password && password !== passwordConfirm) return "As senhas não coincidem.";
       if (pin && !/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
-      if (pin && pin !== pinConfirm) return "Os PINs não coincidem.";
       return null;
     }
     if (password.length < 6) return "Senha deve ter pelo menos 6 caracteres.";
-    if (password !== passwordConfirm) return "As senhas não coincidem.";
     if (!/^\d{4,6}$/.test(pin)) return "PIN deve conter de 4 a 6 dígitos.";
-    if (pin !== pinConfirm) return "Os PINs não coincidem.";
     return null;
   };
 
