@@ -1452,9 +1452,9 @@ function OrcamentosReportView({
                   {admin && <TableHead className="w-10" />}
                   {showEmpresa && <TableHead>Empresa</TableHead>}
                   <TableHead>Colaborador</TableHead>
+                  <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Data</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1479,13 +1479,13 @@ function OrcamentosReportView({
                       <TableCell className="text-muted-foreground">{r.empresa_name ?? "—"}</TableCell>
                     )}
                     <TableCell>{r.operator_name ?? "—"}</TableCell>
+                    <TableCell>{fmtDateTime(r.created_at)}</TableCell>
                     <TableCell>
                       <span className="inline-flex px-2 py-0.5 rounded-md text-xs bg-muted text-foreground">
                         {prettyLabel(r.status)}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-medium">{fmtMoney(r.total_value)}</TableCell>
-                    <TableCell>{fmtDateTime(r.created_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
