@@ -1008,6 +1008,11 @@ function FornecedoresReportView({
     "#8b5cf6",
     "#f97316",
   ];
+
+  function supplierColor(name: string, index: number): string {
+    if (/total\s*maxx/i.test(name)) return "#000000";
+    return PIE_COLORS[index % PIE_COLORS.length];
+  }
   const ranking = (data?.suppliers ?? []).slice(0, 3);
 
   return (
@@ -1047,7 +1052,7 @@ function FornecedoresReportView({
                     >
                       <span
                         className="w-3 h-3 rounded-sm shrink-0"
-                        style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                        style={{ backgroundColor: supplierColor(d.name, i) }}
                       />
                       <span className="font-medium text-foreground truncate max-w-[16rem]">
                         {d.name}
@@ -1068,8 +1073,8 @@ function FornecedoresReportView({
                         outerRadius={90}
                         label={(e: { share?: number }) => `${(e.share ?? 0).toFixed(1)}%`}
                       >
-                        {chartData.map((_, i) => (
-                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        {chartData.map((d, i) => (
+                          <Cell key={i} fill={supplierColor(d.name, i)} />
                         ))}
                       </Pie>
                       <RTooltip formatter={(v: number) => fmtMoney(v)} />
@@ -1081,21 +1086,37 @@ function FornecedoresReportView({
           </div>
         </Card>
 
-        <Card>
+        <Card className="flex flex-col">
           <div className="p-5 border-b">
             <h3 className="text-base font-semibold text-foreground">Valor vendido por fornecedor</h3>
           </div>
-          <div className="p-4 h-72">
+          <div className="p-4 flex-1 min-h-[420px]">
             {chartData.length === 0 ? (
               <EmptyResults label="Sem dados no período." />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ top: 10, right: 20, left: 20, bottom: 10 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis type="number" fontSize={11} tickFormatter={(v) => fmtMoney(Number(v))} />
-                  <YAxis type="category" dataKey="name" fontSize={11} width={110} />
+                  <XAxis type="number" fontSize={12} tickFormatter={(v) => fmtMoney(Number(v))} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    fontSize={12}
+                    width={140}
+                    tick={{ fill: "hsl(var(--foreground))" }}
+                  />
                   <RTooltip formatter={(v: number) => fmtMoney(v)} />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" name="Valor" radius={[0, 4, 4, 0]} />
+                  <Bar
+                    dataKey="value"
+                    fill="hsl(var(--primary))"
+                    name="Valor"
+                    radius={[0, 4, 4, 0]}
+                    barSize={28}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
