@@ -1008,6 +1008,11 @@ function FornecedoresReportView({
     "#8b5cf6",
     "#f97316",
   ];
+
+  function supplierColor(name: string, index: number): string {
+    if (/total\s*maxx/i.test(name)) return "#000000";
+    return PIE_COLORS[index % PIE_COLORS.length];
+  }
   const ranking = (data?.suppliers ?? []).slice(0, 3);
 
   return (
