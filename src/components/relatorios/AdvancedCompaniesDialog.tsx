@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Building2, Package, Search, Users, Clock } from "lucide-react";
 import { getInitials } from "@/lib/avatar";
-import { fmtDateTime } from "@/lib/utils";
+import { fmtDateTimeFull } from "@/lib/utils";
 import {
   listCompaniesGrid,
   getCompanyAdvancedDetails,
