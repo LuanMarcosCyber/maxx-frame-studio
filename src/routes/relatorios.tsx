@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BudgetSummaryById } from "@/routes/orcamentos.index";
+import { AdvancedCompaniesDialog } from "@/components/relatorios/AdvancedCompaniesDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useOperator } from "@/hooks/useOperator";
 import {
@@ -248,6 +249,7 @@ function Relatorios() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [search, setSearch] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
 
   const visibleCards = REPORT_CARDS.filter((c) => !c.adminOnly || isAdmin);
@@ -303,17 +305,32 @@ function Relatorios() {
       subtitle="Consulte informações, acompanhe indicadores e pesquise qualquer dado cadastrado no sistema."
     >
       <div className="space-y-4">
-        <Card className="p-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pesquisar cliente, pedido, orçamento, produto, fornecedor, colaborador..."
-              className="pl-10 h-10 text-sm border-0 shadow-none focus-visible:ring-0"
-            />
-          </div>
-        </Card>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <Card className="p-2 flex-1 sm:max-w-xl">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Pesquisar cliente, pedido, orçamento, produto, fornecedor, colaborador..."
+                className="pl-10 h-10 text-sm border-0 shadow-none focus-visible:ring-0"
+              />
+            </div>
+          </Card>
+          {isAdmin && (
+            <Button
+              type="button"
+              className="h-[52px] sm:h-[52px] gap-2"
+              onClick={() => setAdvancedOpen(true)}
+            >
+              <Eye className="h-4 w-4" />
+              Ver detalhes avançados
+            </Button>
+          )}
+        </div>
+        {isAdmin && (
+          <AdvancedCompaniesDialog open={advancedOpen} onOpenChange={setAdvancedOpen} />
+        )}
 
         <section>
           <h2 className="text-sm font-semibold text-foreground mb-2">
