@@ -1315,9 +1315,11 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const rows = Array.from(aggPeriod.entries())
       .map(([id, a]) => buildRow(id, a))
       .filter(passesFilters)
-      .filter((r) => r.valorComprado > 0 || r.qtdPedidos > 0 || r.qtdOrcamentos > 0);
+      .filter((r) => r.valorComprado > 0);
 
-    const totalClientes = rows.length;
+    // Total de clientes = base cadastrada completa (independe do período)
+    const totalClientes = allRows.length;
+    const clientesPeriodo = rows.length;
     const ativos = rows.filter(
       (r) => r.ultimaCompra && (now - new Date(r.ultimaCompra).getTime()) / 86400000 <= inactivityDays,
     ).length;
