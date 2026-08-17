@@ -1,14 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { companyIdSchema, ensureAdmin } from "./company-insights.helpers";
 
-const idSchema = z.object({ company_id: z.string().uuid() });
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function ensureAdmin(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (data !== true) throw new Error("Acesso restrito ao Administrador Global.");
-}
 
 /** Lista todas as empresas cadastradas (grade de perfis). Admin global apenas. */
 export const listCompaniesGrid = createServerFn({ method: "POST" })
@@ -34,7 +27,7 @@ export const listCompaniesGrid = createServerFn({ method: "POST" })
 /** Detalhes avançados de uma empresa: dados comerciais, usuários, produtos e último login. */
 export const getCompanyAdvancedDetails = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => idSchema.parse(input))
+  .inputValidator((input: unknown) => companyIdSchema.parse(input))
   .handler(async ({ context, data }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
