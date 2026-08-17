@@ -1315,13 +1315,15 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const rows = Array.from(aggPeriod.entries())
       .map(([id, a]) => buildRow(id, a))
       .filter(passesFilters)
-      .filter((r) => r.valorComprado > 0 || r.qtdPedidos > 0 || r.qtdOrcamentos > 0);
+      .filter((r) => r.valorComprado > 0);
 
-    const totalClientes = rows.length;
+    // Total de clientes = base cadastrada completa (independe do período)
+    const totalClientes = allRows.length;
+    const clientesPeriodo = rows.length;
     const ativos = rows.filter(
       (r) => r.ultimaCompra && (now - new Date(r.ultimaCompra).getTime()) / 86400000 <= inactivityDays,
     ).length;
-    const inativos = totalClientes - ativos;
+    const inativos = clientesPeriodo - ativos;
     const novosNoPeriodo = rows.filter((r) => inRange(r.createdAt)).length;
     const valorTotal = rows.reduce((s, r) => s + r.valorComprado, 0);
     const totalPedidos = rows.reduce((s, r) => s + r.qtdPedidos, 0);
@@ -1344,10 +1346,11 @@ export const getClientesReport = createServerFn({ method: "POST" })
         const tb = b.ultimaCompra ? new Date(b.ultimaCompra).getTime() : 0;
         return ta - tb;
       })
-      .slice(0, 10);
+      .slice(0, 5);
 
     const recorrentes = allRows.filter((r) => r.qtdPedidos > 1).sort((a, b) => b.qtdPedidos - a.qtdPedidos).slice(0, 10);
-    const novos = allRows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 10);
+    const novos = allRows.filter((r) => inRange(r.createdAt)).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 5);
+
 
     // Cresceram: comparação valorPeriodo vs valorAnterior
     const growthList = clientsList
@@ -1359,7 +1362,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
       })
       .filter((x): x is { id: string; growth: number; atual: number; anterior: number } => x !== null && x.growth > 0)
       .sort((a, b) => b.growth - a.growth)
-      .slice(0, 10);
+      .slice(0, 5);
     const rowIndex = new Map(allRows.map((r) => [r.id, r]));
     const maisCresceram = growthList
       .map((g) => rowIndex.get(g.id))

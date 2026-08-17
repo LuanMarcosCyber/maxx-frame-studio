@@ -1584,6 +1584,7 @@ function ClientesReportView({
           }))}
         />
         <IndicatorListCard
+          className="self-start"
           title="Clientes recorrentes (mais de 1 pedido)"
           icon={Repeat}
           items={data.recorrentes.map((r) => ({
@@ -1762,13 +1763,15 @@ function IndicatorListCard({
   title,
   icon: Icon,
   items,
+  className,
 }: {
   title: string;
   icon: typeof BarChart3;
   items: { label: string; sub: string }[];
+  className?: string;
 }) {
   return (
-    <Card>
+    <Card className={className}>
       <div className="p-4 border-b flex items-center gap-2">
         <div className="h-8 w-8 rounded-lg bg-gradient-brand text-brand-foreground grid place-items-center shadow-brand">
           <Icon className="h-4 w-4" />
