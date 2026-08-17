@@ -8,4 +8,4 @@ Disallow: /colaboradores
 Disallow: /configuracoes
 Disallow: /conta
 
-Sitemap: https://maxx-frame-studio.lovable.app/sitemap.xml
+Sitemap: https://total-maxx-system.lovable.app/sitemap.xml

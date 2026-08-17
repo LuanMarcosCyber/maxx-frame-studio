@@ -17,9 +17,9 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Acesse o Total Maxx ERP com seu usuário e senha para gerenciar orçamentos, pedidos e produtos da sua loja." },
       { property: "og:title", content: "Entrar — Total Maxx ERP" },
       { property: "og:description", content: "Faça login no Total Maxx ERP." },
-      { property: "og:url", content: "https://maxx-frame-studio.lovable.app/login" },
+      { property: "og:url", content: "https://total-maxx-system.lovable.app/login" },
     ],
-    links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/login" }],
+    links: [{ rel: "canonical", href: "https://total-maxx-system.lovable.app/login" }],
   }),
   component: Login,
 });

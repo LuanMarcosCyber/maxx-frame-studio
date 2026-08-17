@@ -21,9 +21,9 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Painel principal do Total Maxx ERP: acompanhe orçamentos, pedidos, faturamento do mês e atividade recente em um só lugar." },
       { property: "og:title", content: "Dashboard — Total Maxx ERP" },
       { property: "og:description", content: "Painel principal do Total Maxx ERP com orçamentos, pedidos e indicadores do mês." },
-      { property: "og:url", content: "https://maxx-frame-studio.lovable.app/" },
+      { property: "og:url", content: "https://total-maxx-system.lovable.app/" },
     ],
-    links: [{ rel: "canonical", href: "https://maxx-frame-studio.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://total-maxx-system.lovable.app/" }],
     scripts: [
       {
         type: "application/ld+json",
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "Total Maxx ERP",
-          url: "https://maxx-frame-studio.lovable.app/",
+          url: "https://total-maxx-system.lovable.app/",
         }),
       },
     ],
