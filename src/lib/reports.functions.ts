@@ -1323,7 +1323,7 @@ export const getClientesReport = createServerFn({ method: "POST" })
     const ativos = rows.filter(
       (r) => r.ultimaCompra && (now - new Date(r.ultimaCompra).getTime()) / 86400000 <= inactivityDays,
     ).length;
-    const inativos = totalClientes - ativos;
+    const inativos = clientesPeriodo - ativos;
     const novosNoPeriodo = rows.filter((r) => inRange(r.createdAt)).length;
     const valorTotal = rows.reduce((s, r) => s + r.valorComprado, 0);
     const totalPedidos = rows.reduce((s, r) => s + r.qtdPedidos, 0);
